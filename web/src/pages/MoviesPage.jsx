@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { cleanTitle, detectEdition, detectFormat } from "../upc.js";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
 const REGIONS = ["Region-free", "A", "B", "C", "1", "2", "3", "4"];
@@ -70,6 +72,36 @@ export default function MoviesPage() {
       alert(e.message);
     } finally {
       setSearching(false);
+    }
+  };
+
+  // barcode → product title → prefill fields → auto-run the TMDB search.
+  // A movie UPC names the exact edition, so format/edition come along free.
+  const onBarcode = async (code) => {
+    try {
+      const res = await api.barcodeLookup(code);
+      if (!res.found) {
+        alert("No product match for that barcode — type the title instead.");
+        return;
+      }
+      const raw = res.titles[0].title;
+      const title = cleanTitle(raw) || raw;
+      setForm((f) => ({
+        ...f,
+        title,
+        format: detectFormat(raw) || f.format,
+        edition: detectEdition(raw) || f.edition,
+        tmdb_id: null,
+        image_url: null,
+      }));
+      setSearching(true);
+      try {
+        setResults(await api.tmdbSearch(title));
+      } finally {
+        setSearching(false);
+      }
+    } catch (e) {
+      alert(e.message);
     }
   };
 
@@ -197,6 +229,7 @@ export default function MoviesPage() {
             <button type="button" className="ghost" onClick={tmdbSearch} disabled={searching}>
               {searching ? "…" : "Search TMDB"}
             </button>
+            <BarcodeScan onCode={onBarcode} />
           </div>
           <div className="form-row">
             <select

@@ -32,6 +32,7 @@ export const api = {
     request(`/api/movies/${itemId}`, { method: "DELETE" }),
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
+  barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
   settings: () => request("/api/settings"),
   stats: () => request("/api/stats"),
   health: () => request("/api/health"),

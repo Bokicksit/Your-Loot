@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import cards, collection, games, images, movies
+from app.routers import cards, collection, games, images, lookup, movies
 from app.routers import settings as settings_router
 
 
@@ -37,6 +37,7 @@ app.include_router(games.router)
 app.include_router(movies.router)
 app.include_router(images.router)
 app.include_router(settings_router.router)
+app.include_router(lookup.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.image_dir), name="images")

@@ -1023,6 +1023,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .modal p { margin: 0; color: var(--text-dim); font-size: var(--f-2); }
 .modal input { text-align: center; }
 .modal button { width: 100%; }
+.modal .form-row button { width: auto; }
+
+.scan-video {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-2);
+  background: #000;
+  border: 1px solid var(--line);
+}
 
 /* ============================ desktop ============================ */
 

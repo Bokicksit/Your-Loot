@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { cleanTitle } from "../upc.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -99,6 +101,28 @@ export default function GamesPage() {
       alert(e.message);
     } finally {
       setSearching(false);
+    }
+  };
+
+  // barcode (CIB boxes) → product title → auto-run the IGDB search
+  const onBarcode = async (code) => {
+    try {
+      const res = await api.barcodeLookup(code);
+      if (!res.found) {
+        alert("No product match for that barcode — type the title instead.");
+        return;
+      }
+      const raw = res.titles[0].title;
+      const title = cleanTitle(raw) || raw;
+      setForm((f) => ({ ...f, title, igdb_id: null, image_url: null }));
+      setSearching(true);
+      try {
+        setResults(await api.igdbSearch(title));
+      } finally {
+        setSearching(false);
+      }
+    } catch (e) {
+      alert(e.message);
     }
   };
 
@@ -237,6 +261,7 @@ export default function GamesPage() {
             <button type="button" className="ghost" onClick={igdbSearch} disabled={searching}>
               {searching ? "…" : "Search IGDB"}
             </button>
+            <BarcodeScan onCode={onBarcode} />
           </div>
           <div className="form-row">
             <select
