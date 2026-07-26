@@ -1,0 +1,177 @@
+[
+  {
+    "id": "base1-1",
+    "name": "Alakazam",
+    "number": "1",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [65],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/1.png",
+      "large": "https://images.pokemontcg.io/base1/1_hires.png"
+    }
+  },
+  {
+    "id": "base1-2",
+    "name": "Blastoise",
+    "number": "2",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [9],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/2.png",
+      "large": "https://images.pokemontcg.io/base1/2_hires.png"
+    }
+  },
+  {
+    "id": "base1-4",
+    "name": "Charizard",
+    "number": "4",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [6],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/4.png",
+      "large": "https://images.pokemontcg.io/base1/4_hires.png"
+    }
+  },
+  {
+    "id": "base1-6",
+    "name": "Gyarados",
+    "number": "6",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [130],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/6.png",
+      "large": "https://images.pokemontcg.io/base1/6_hires.png"
+    }
+  },
+  {
+    "id": "base1-10",
+    "name": "Mewtwo",
+    "number": "10",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [150],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/10.png",
+      "large": "https://images.pokemontcg.io/base1/10_hires.png"
+    }
+  },
+  {
+    "id": "base1-14",
+    "name": "Raichu",
+    "number": "14",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [26],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/14.png",
+      "large": "https://images.pokemontcg.io/base1/14_hires.png"
+    }
+  },
+  {
+    "id": "base1-15",
+    "name": "Venusaur",
+    "number": "15",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [3],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/15.png",
+      "large": "https://images.pokemontcg.io/base1/15_hires.png"
+    }
+  },
+  {
+    "id": "base1-16",
+    "name": "Zapdos",
+    "number": "16",
+    "rarity": "Rare Holo",
+    "nationalPokedexNumbers": [145],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/16.png",
+      "large": "https://images.pokemontcg.io/base1/16_hires.png"
+    }
+  },
+  {
+    "id": "base1-24",
+    "name": "Charmeleon",
+    "number": "24",
+    "rarity": "Uncommon",
+    "nationalPokedexNumbers": [5],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/24.png",
+      "large": "https://images.pokemontcg.io/base1/24_hires.png"
+    }
+  },
+  {
+    "id": "base1-30",
+    "name": "Ivysaur",
+    "number": "30",
+    "rarity": "Uncommon",
+    "nationalPokedexNumbers": [2],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/30.png",
+      "large": "https://images.pokemontcg.io/base1/30_hires.png"
+    }
+  },
+  {
+    "id": "base1-42",
+    "name": "Wartortle",
+    "number": "42",
+    "rarity": "Uncommon",
+    "nationalPokedexNumbers": [8],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/42.png",
+      "large": "https://images.pokemontcg.io/base1/42_hires.png"
+    }
+  },
+  {
+    "id": "base1-44",
+    "name": "Bulbasaur",
+    "number": "44",
+    "rarity": "Common",
+    "nationalPokedexNumbers": [1],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/44.png",
+      "large": "https://images.pokemontcg.io/base1/44_hires.png"
+    }
+  },
+  {
+    "id": "base1-46",
+    "name": "Charmander",
+    "number": "46",
+    "rarity": "Common",
+    "nationalPokedexNumbers": [4],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/46.png",
+      "large": "https://images.pokemontcg.io/base1/46_hires.png"
+    }
+  },
+  {
+    "id": "base1-58",
+    "name": "Pikachu",
+    "number": "58",
+    "rarity": "Common",
+    "nationalPokedexNumbers": [25],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/58.png",
+      "large": "https://images.pokemontcg.io/base1/58_hires.png"
+    }
+  },
+  {
+    "id": "base1-63",
+    "name": "Squirtle",
+    "number": "63",
+    "rarity": "Common",
+    "nationalPokedexNumbers": [7],
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/63.png",
+      "large": "https://images.pokemontcg.io/base1/63_hires.png"
+    }
+  },
+  {
+    "id": "base1-98",
+    "name": "Fire Energy",
+    "number": "98",
+    "rarity": "Common",
+    "images": {
+      "small": "https://images.pokemontcg.io/base1/98.png",
+      "large": "https://images.pokemontcg.io/base1/98_hires.png"
+    }
+  }
+]

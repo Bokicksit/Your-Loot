@@ -1,0 +1,45 @@
+# Local dev: builds from source. Copy .env.example -> .env first.
+#   docker compose up --build
+# Deployment on TrueNAS uses deploy/compose.truenas.yaml (pulls GHCR images).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-getloot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-getloot}
+    volumes:
+      # bind mount (not a named volume) to mirror the TrueNAS dataset setup
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-getloot}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: . # repo root so the image can include /seed (see api/Dockerfile)
+      dockerfile: api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-getloot}
+      IMAGE_DIR: /data/images
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+    volumes:
+      - ./data/images:/data/images
+      - ./seed:/seed # live-edit seed scripts without rebuilding
+    ports:
+      - "${API_PORT:-8000}:8000" # direct API access for curl/docs during dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api

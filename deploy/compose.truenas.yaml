@@ -1,0 +1,53 @@
+# TrueNAS SCALE deployment — paste into Apps -> Discover Apps -> Custom App
+# -> "Install via YAML". Pulls prebuilt images from GHCR (no build on the NAS).
+#
+# BEFORE PASTING, edit:
+#   1. YOURUSER          -> your GitHub username (lowercase)
+#   2. CHANGE_ME         -> a real Postgres password (both places)
+#   3. /mnt/tank/apps/…  -> your actual dataset paths (create them first:
+#                           one dataset for postgres, one for images)
+#
+# Update flow: push to main -> Actions builds :latest -> update the app
+# (re-deploy) on TrueNAS to pull the new images. Pin a sha tag instead of
+# :latest if you want explicit upgrades.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: getloot
+      POSTGRES_PASSWORD: CHANGE_ME
+      POSTGRES_DB: getloot
+    volumes:
+      - /mnt/tank/apps/getloot/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getloot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ghcr.io/YOURUSER/getloot-api:latest
+    container_name: getloot-api # stable name for the refresh cron job
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://getloot:CHANGE_ME@postgres:5432/getloot
+      IMAGE_DIR: /data/images
+      # IGDB (Twitch dev app) — fill in to enable game search
+      IGDB_CLIENT_ID: ""
+      IGDB_CLIENT_SECRET: ""
+      TMDB_API_KEY: ""
+    volumes:
+      - /mnt/tank/apps/getloot/images:/data/images
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/YOURUSER/getloot-web:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80" # the only published port; nginx proxies /api internally
+    depends_on:
+      - api

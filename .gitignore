@@ -1,0 +1,18 @@
+# local runtime data (bind mounts for postgres + images)
+data/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# node
+node_modules/
+web/dist/
+
+# secrets
+.env
+
+# any .env variant except the template
+.env.*
+!.env.example
