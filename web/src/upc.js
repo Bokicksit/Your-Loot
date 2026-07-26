@@ -28,10 +28,20 @@ export function detectEdition(title) {
 const PLATFORM_CUT =
   /[\s\-–—:,/]+(for\s+(the\s+)?)?((microsoft\s+)?xbox(\s*(360|one|series\s*[xs]))?|(sony\s+)?playstation(\s*[1-5]|\s+(portable|vita))?|ps[1-5]|psp|ps\s*vita|(super\s+)?nintendo(\s+(entertainment\s+system|switch|64|ds|3ds|gamecube|wii\s*u?))?|snes|nes|n64|gamecube|game\s*cube|wii\s*u?|game\s*boy(\s+(color|advance))?|gba|gbc|nds|3ds|sega(\s+(genesis|dreamcast|saturn|cd))?|genesis|dreamcast|pc)\b/i;
 
+// Publishers glued to the end ("Grand Theft Auto IV Rockstar Games") —
+// strip repeatedly, end-of-string only.
+const PUBLISHER_SUFFIX =
+  /[\s\-–—:,/]+(by\s+)?(rockstar(\s+games)?|capcom|nintendo(\s+of\s+america)?|electronic\s+arts|ea(\s+(games|sports))?|ubisoft|activision(\s+blizzard)?|blizzard(\s+entertainment)?|sony(\s+(interactive|computer)\s+entertainment)?|microsoft(\s+(game\s+)?studios)?|sega(\s+of\s+america)?|square\s*(enix|soft)?|enix|konami|bandai(\s+namco)?(\s+(games|entertainment))?|namco|thq(\s+nordic)?|atlus|bethesda(\s+softworks)?|2k(\s+(games|sports))?|take[-\s]?two(\s+interactive)?|warner\s+bros\.?(\s+(games|interactive(\s+entertainment)?))?|wb\s+games|midway(\s+games)?|atari|lucasarts|eidos(\s+interactive)?|infogrames|acclaim(\s+entertainment)?|vivendi(\s+games)?|sierra(\s+entertainment)?|hudson(\s+soft)?|(tecmo\s+)?koei(\s+tecmo)?|tecmo|snk|nis\s+america|xseed(\s+games)?|natsume|working\s+designs)\s*$/i;
+
 export function cleanGameTitle(title) {
   const t = cleanTitle(title);
   const m = t.match(PLATFORM_CUT);
-  const cut = m ? t.slice(0, m.index) : t;
+  let cut = m ? t.slice(0, m.index) : t;
+  let prev;
+  do {
+    prev = cut;
+    cut = cut.replace(PUBLISHER_SUFFIX, "").trim();
+  } while (cut !== prev);
   return cut.replace(/[\s\-–—:,]+$/g, "").trim();
 }
 

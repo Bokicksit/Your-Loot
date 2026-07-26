@@ -117,7 +117,17 @@ export default function GamesPage() {
       setForm((f) => ({ ...f, title, igdb_id: null, image_url: null }));
       setSearching(true);
       try {
-        setResults(await api.igdbSearch(title));
+        // unknown junk words (publishers we don't know, edition blurbs) can
+        // blank the search — retry with trailing words dropped
+        let q = title;
+        let found = await api.igdbSearch(q);
+        for (let i = 0; i < 2 && found.length === 0; i++) {
+          const words = q.split(" ");
+          if (words.length <= 2) break;
+          q = words.slice(0, -1).join(" ");
+          found = await api.igdbSearch(q);
+        }
+        setResults(found);
       } finally {
         setSearching(false);
       }
