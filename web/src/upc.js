@@ -20,20 +20,19 @@ export function detectEdition(title) {
   return null;
 }
 
-// Product titles often end in the platform ("Splinter Cell - Xbox"), which
-// wrecks IGDB search. Strip platform names — but only as a trailing suffix,
-// so real titles like "Wii Sports" keep their words.
-const PLATFORM_SUFFIX =
-  /[\s\-–—:,/]+(for\s+(the\s+)?)?((microsoft\s+)?xbox(\s*(360|one|series\s*[xs]))?|(sony\s+)?playstation(\s*[1-5]|\s+(portable|vita))?|ps[1-5]|psp|ps\s*vita|(super\s+)?nintendo(\s+(entertainment\s+system|switch|64|ds|3ds|gamecube|wii\s*u?))?|snes|nes|n64|gamecube|game\s*cube|wii\s*u?|game\s*boy(\s+(color|advance))?|gba|gbc|nds|3ds|sega(\s+(genesis|dreamcast|saturn|cd))?|genesis|dreamcast|pc)\s*$/i;
+// Product titles name the platform mid-string with junk after it
+// ("Mega Man Legacy Collection 2 for PlayStation 4 Capcom"), so everything
+// from the first platform mention onward is noise — cut there. The platform
+// must be preceded by a separator/space, so titles that *start* with one
+// ("Wii Sports", "PlayStation All-Stars") are never touched.
+const PLATFORM_CUT =
+  /[\s\-–—:,/]+(for\s+(the\s+)?)?((microsoft\s+)?xbox(\s*(360|one|series\s*[xs]))?|(sony\s+)?playstation(\s*[1-5]|\s+(portable|vita))?|ps[1-5]|psp|ps\s*vita|(super\s+)?nintendo(\s+(entertainment\s+system|switch|64|ds|3ds|gamecube|wii\s*u?))?|snes|nes|n64|gamecube|game\s*cube|wii\s*u?|game\s*boy(\s+(color|advance))?|gba|gbc|nds|3ds|sega(\s+(genesis|dreamcast|saturn|cd))?|genesis|dreamcast|pc)\b/i;
 
 export function cleanGameTitle(title) {
-  let t = cleanTitle(title);
-  let prev;
-  do {
-    prev = t;
-    t = t.replace(PLATFORM_SUFFIX, "").trim();
-  } while (t !== prev);
-  return t;
+  const t = cleanTitle(title);
+  const m = t.match(PLATFORM_CUT);
+  const cut = m ? t.slice(0, m.index) : t;
+  return cut.replace(/[\s\-–—:,]+$/g, "").trim();
 }
 
 // Strip bracketed segments and format/edition noise so the remaining string
