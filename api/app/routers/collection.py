@@ -98,10 +98,15 @@ def _detail(item: CollectionItem) -> str:
 
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)):
-    """Per-module counts for the home screen tiles."""
+    """Per-module counts for the home screen tiles. `items` counts only
+    titles with at least one owned copy — wanted-only entries belong to the
+    Wanted tile, not the collection counts."""
+    owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
     items = dict(
         db.execute(
-            select(CollectionItem.module, func.count()).group_by(CollectionItem.module)
+            select(CollectionItem.module, func.count())
+            .where(owned_exists)
+            .group_by(CollectionItem.module)
         ).all()
     )
     owned = dict(

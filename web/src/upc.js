@@ -20,6 +20,22 @@ export function detectEdition(title) {
   return null;
 }
 
+// Product titles often end in the platform ("Splinter Cell - Xbox"), which
+// wrecks IGDB search. Strip platform names — but only as a trailing suffix,
+// so real titles like "Wii Sports" keep their words.
+const PLATFORM_SUFFIX =
+  /[\s\-–—:,/]+(for\s+(the\s+)?)?((microsoft\s+)?xbox(\s*(360|one|series\s*[xs]))?|(sony\s+)?playstation(\s*[1-5]|\s+(portable|vita))?|ps[1-5]|psp|ps\s*vita|(super\s+)?nintendo(\s+(entertainment\s+system|switch|64|ds|3ds|gamecube|wii\s*u?))?|snes|nes|n64|gamecube|game\s*cube|wii\s*u?|game\s*boy(\s+(color|advance))?|gba|gbc|nds|3ds|sega(\s+(genesis|dreamcast|saturn|cd))?|genesis|dreamcast|pc)\s*$/i;
+
+export function cleanGameTitle(title) {
+  let t = cleanTitle(title);
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(PLATFORM_SUFFIX, "").trim();
+  } while (t !== prev);
+  return t;
+}
+
 // Strip bracketed segments and format/edition noise so the remaining string
 // works as a TMDB/IGDB query.
 export function cleanTitle(title) {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
-import { cleanTitle } from "../upc.js";
+import { cleanGameTitle } from "../upc.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -113,7 +113,7 @@ export default function GamesPage() {
         return;
       }
       const raw = res.titles[0].title;
-      const title = cleanTitle(raw) || raw;
+      const title = cleanGameTitle(raw) || raw;
       setForm((f) => ({ ...f, title, igdb_id: null, image_url: null }));
       setSearching(true);
       try {
