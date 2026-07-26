@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
-import { cleanGameTitle } from "../upc.js";
+import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -117,15 +117,21 @@ export default function GamesPage() {
       setForm((f) => ({ ...f, title, igdb_id: null, image_url: null }));
       setSearching(true);
       try {
-        // unknown junk words (publishers we don't know, edition blurbs) can
-        // blank the search — retry with trailing words dropped
-        let q = title;
-        let found = await api.igdbSearch(q);
-        for (let i = 0; i < 2 && found.length === 0; i++) {
-          const words = q.split(" ");
-          if (words.length <= 2) break;
-          q = words.slice(0, -1).join(" ");
+        // fallback ladder: full title first (protects titles that genuinely
+        // start with a publisher), then publisher-prefix stripped, then
+        // trailing words dropped — stop at the first query with results
+        const queries = [title];
+        const pre = stripPublisherPrefix(title);
+        if (pre && pre !== title) queries.push(pre);
+        let words = (pre || title).split(" ");
+        while (words.length > 2 && queries.length < 5) {
+          words = words.slice(0, -1);
+          queries.push(words.join(" "));
+        }
+        let found = [];
+        for (const q of queries) {
           found = await api.igdbSearch(q);
+          if (found.length) break;
         }
         setResults(found);
       } finally {
