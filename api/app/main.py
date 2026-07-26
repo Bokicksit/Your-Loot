@@ -8,7 +8,20 @@ from app.config import settings
 from app.routers import cards, collection, games, images, movies
 from app.routers import settings as settings_router
 
-app = FastAPI(title="Your Loot", version="0.2.0")
+
+def read_version() -> str:
+    """Repo-root VERSION file, bumped +0.01 every commit. Path differs between
+    the container (/app/VERSION) and local dev (repo root)."""
+    here = Path(__file__).resolve()
+    for candidate in (here.parents[1] / "VERSION", here.parents[2] / "VERSION"):
+        if candidate.is_file():
+            return candidate.read_text().strip()
+    return "dev"
+
+
+VERSION = read_version()
+
+app = FastAPI(title="Your Loot", version=VERSION)
 
 # nginx fronts this in deployment; permissive CORS is for `npm run dev` only
 app.add_middleware(
@@ -31,4 +44,4 @@ app.mount("/images", StaticFiles(directory=settings.image_dir), name="images")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": VERSION}

@@ -24,6 +24,8 @@ export const api = {
   igdbSearch: (q) =>
     request(`/api/games/igdb/search?q=${encodeURIComponent(q)}`),
   settings: () => request("/api/settings"),
+  stats: () => request("/api/stats"),
+  health: () => request("/api/health"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
   addGame: (body) =>

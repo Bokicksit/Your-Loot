@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 import { api } from "./api.js";
 import { Icon, IconDefs } from "./components/Icons.jsx";
+import HomePage from "./pages/HomePage.jsx";
 import CardsPage from "./pages/CardsPage.jsx";
 import PokedexPage from "./pages/PokedexPage.jsx";
 import WantedPage from "./pages/WantedPage.jsx";
@@ -34,14 +35,17 @@ export default function App() {
     <BrowserRouter>
       <IconDefs />
       <header className="topbar">
-        <h1 className="brand">
-          <Icon id="coin" />
-          {ownerName ? `${ownerName}’s` : "Your"} <em>Loot</em>
-        </h1>
+        {/* brand doubles as the way home */}
+        <Link to="/" className="brand-link">
+          <h1 className="brand">
+            <Icon id="coin" />
+            {ownerName ? `${ownerName}’s` : "Your"} <em>Loot</em>
+          </h1>
+        </Link>
       </header>
       <main className="content">
         <Routes>
-          <Route path="/" element={<Navigate to="/cards" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/cards" element={<CardsPage />} />
           <Route path="/pokedex" element={<PokedexPage />} />
           <Route path="/wanted" element={<WantedPage />} />

@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api/ /app/
 COPY seed/ /seed/
+COPY VERSION /app/VERSION
 
 EXPOSE 8000
 

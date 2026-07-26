@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
@@ -94,6 +94,38 @@ def _detail(item: CollectionItem) -> str:
     else:
         parts = []
     return " · ".join(p for p in parts if p)
+
+
+@router.get("/stats")
+def stats(db: Session = Depends(get_db)):
+    """Per-module counts for the home screen tiles."""
+    items = dict(
+        db.execute(
+            select(CollectionItem.module, func.count()).group_by(CollectionItem.module)
+        ).all()
+    )
+    owned = dict(
+        db.execute(
+            select(CollectionItem.module, func.count(Owned.id))
+            .join(Owned, Owned.item_id == CollectionItem.id)
+            .group_by(CollectionItem.module)
+        ).all()
+    )
+    wanted = dict(
+        db.execute(
+            select(CollectionItem.module, func.count(Wanted.id))
+            .join(Wanted, Wanted.item_id == CollectionItem.id)
+            .group_by(CollectionItem.module)
+        ).all()
+    )
+    return {
+        m.value: {
+            "items": items.get(m.value, 0),
+            "owned": owned.get(m.value, 0),
+            "wanted": wanted.get(m.value, 0),
+        }
+        for m in Module
+    }
 
 
 @router.get("/wanted", response_model=list[WantedItemOut])
