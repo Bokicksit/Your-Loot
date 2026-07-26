@@ -23,6 +23,15 @@ export const api = {
   platformsInUse: () => request("/api/games/platforms?in_use=true"),
   igdbSearch: (q) =>
     request(`/api/games/igdb/search?q=${encodeURIComponent(q)}`),
+  movies: (params = {}) =>
+    request(`/api/movies?${new URLSearchParams(params)}`),
+  movieFormats: () => request("/api/movies/formats"),
+  addMovie: (body) =>
+    request("/api/movies", { method: "POST", body: JSON.stringify(body) }),
+  deleteMovie: (itemId) =>
+    request(`/api/movies/${itemId}`, { method: "DELETE" }),
+  tmdbSearch: (q) =>
+    request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   settings: () => request("/api/settings"),
   stats: () => request("/api/stats"),
   health: () => request("/api/health"),

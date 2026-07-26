@@ -38,10 +38,11 @@ export default function WantedPage() {
   // condition/completeness instead of a blank record
   const startGotIt = (r) => {
     setAcquiring(r.item_id);
+    // games & movies track completeness; cards are condition-only
     setAcqVals(
-      r.module === "games"
-        ? { completeness: "CIB", condition: "Good" }
-        : { condition: CONDITIONS[r.module] ? CONDITIONS[r.module][0] : null }
+      r.module === "cards"
+        ? { condition: CONDITIONS.cards[0] }
+        : { completeness: "CIB", condition: "Good" }
     );
   };
 
@@ -134,7 +135,7 @@ export default function WantedPage() {
             {acquiring === r.item_id && (
               <li className="acquire-edit">
                 <span className="acquire-label">Got it as:</span>
-                {r.module === "games" && (
+                {r.module !== "cards" && (
                   <select
                     value={acqVals.completeness}
                     onChange={(e) =>
