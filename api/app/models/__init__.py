@@ -4,6 +4,7 @@ from app.models.collection import Owned, Wanted
 from app.models.games import GameAttrs, Platform
 from app.models.item import CollectionItem, Module
 from app.models.movies import MovieAttrs
+from app.models.settings import Setting
 
 __all__ = [
     "Base",
@@ -14,5 +15,6 @@ __all__ = [
     "MovieAttrs",
     "Owned",
     "Platform",
+    "Setting",
     "Wanted",
 ]

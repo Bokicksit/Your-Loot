@@ -1,7 +1,11 @@
-# 💰 Get Loot
+# 💰 Your Loot
 
 Self-hosted collection tracker: Pokémon cards, video games & hardware, physical
-movies — one app, one database, one cross-module wanted list.
+movies — one app, one database, one cross-module wanted list. On first run it
+asks for your name and becomes "<Name>'s Loot".
+
+(Docker images keep the original `getloot-*` names — cosmetic renames shouldn't
+churn the registry.)
 
 **Phase 1 status:** Cards module is fully working (seed → search → own/want →
 Pokédex grid). Games and Movies have schema, API stubs, and placeholder pages.

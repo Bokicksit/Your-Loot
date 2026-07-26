@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { api } from "./api.js";
 import { Icon, IconDefs } from "./components/Icons.jsx";
 import CardsPage from "./pages/CardsPage.jsx";
 import PokedexPage from "./pages/PokedexPage.jsx";
@@ -15,13 +17,26 @@ const TABS = [
 ];
 
 export default function App() {
+  // undefined = loading, null = never set (first run), "" = skipped, "Bo" = set
+  const [ownerName, setOwnerName] = useState(undefined);
+  const [nameDraft, setNameDraft] = useState("");
+
+  useEffect(() => {
+    api.settings().then((s) => setOwnerName(s.owner_name)).catch(() => setOwnerName(""));
+  }, []);
+
+  const saveName = async (name) => {
+    const saved = await api.saveSettings({ owner_name: name });
+    setOwnerName(saved.owner_name);
+  };
+
   return (
     <BrowserRouter>
       <IconDefs />
       <header className="topbar">
         <h1 className="brand">
           <Icon id="coin" />
-          Get <em>Loot</em>
+          {ownerName ? `${ownerName}’s` : "Your"} <em>Loot</em>
         </h1>
       </header>
       <main className="content">
@@ -43,6 +58,34 @@ export default function App() {
           </NavLink>
         ))}
       </nav>
+
+      {/* first run: personalize the vault */}
+      {ownerName === null && (
+        <div className="modal-scrim">
+          <form
+            className="modal"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveName(nameDraft.trim());
+            }}
+          >
+            <span className="glyph"><Icon id="coin" /></span>
+            <h2>Whose loot is this?</h2>
+            <p>Your name goes on the vault door. You can leave it blank.</p>
+            <input
+              type="text"
+              maxLength={50}
+              autoFocus
+              placeholder="Collector name"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+            />
+            <button type="submit" className="primary">
+              {nameDraft.trim() ? `Make it ${nameDraft.trim()}’s Loot` : "Keep it “Your Loot”"}
+            </button>
+          </form>
+        </div>
+      )}
     </BrowserRouter>
   );
 }

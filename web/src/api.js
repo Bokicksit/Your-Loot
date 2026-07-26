@@ -23,6 +23,9 @@ export const api = {
   platformsInUse: () => request("/api/games/platforms?in_use=true"),
   igdbSearch: (q) =>
     request(`/api/games/igdb/search?q=${encodeURIComponent(q)}`),
+  settings: () => request("/api/settings"),
+  saveSettings: (body) =>
+    request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
   addGame: (body) =>
     request("/api/games", { method: "POST", body: JSON.stringify(body) }),
   deleteGame: (itemId) =>

@@ -2,10 +2,10 @@
 # -> "Install via YAML". Pulls prebuilt images from GHCR (no build on the NAS).
 #
 # BEFORE PASTING, edit:
-#   1. YOURUSER          -> your GitHub username (lowercase)
-#   2. CHANGE_ME         -> a real Postgres password (both places)
-#   3. /mnt/tank/apps/…  -> your actual dataset paths (create them first:
+#   1. CHANGE_ME         -> a real Postgres password (both places)
+#   2. /mnt/tank/apps/…  -> your actual dataset paths (create them first:
 #                           one dataset for postgres, one for images)
+#   3. IGDB credentials  -> paste your client id/secret (games search)
 #
 # Update flow: push to main -> Actions builds :latest -> update the app
 # (re-deploy) on TrueNAS to pull the new images. Pin a sha tag instead of
@@ -28,7 +28,7 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/YOURUSER/getloot-api:latest
+    image: ghcr.io/bokicksit/getloot-api:latest
     container_name: getloot-api # stable name for the refresh cron job
     restart: unless-stopped
     environment:
@@ -45,7 +45,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/YOURUSER/getloot-web:latest
+    image: ghcr.io/bokicksit/getloot-web:latest
     restart: unless-stopped
     ports:
       - "8080:80" # the only published port; nginx proxies /api internally

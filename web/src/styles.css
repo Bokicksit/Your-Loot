@@ -937,6 +937,37 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .error svg.i { width: 15px; height: 15px; flex: none; }
 
+/* ============================ first-run modal ============================ */
+
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  background: rgba(7, 6, 10, .8);
+  backdrop-filter: blur(6px);
+}
+.modal {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-3);
+  width: min(360px, 100%);
+  padding: var(--s-5);
+  text-align: center;
+  background: var(--bg-2);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-2), 0 0 40px -10px var(--gold-glow);
+}
+.modal .glyph { color: var(--gold); }
+.modal .glyph svg.i { width: 34px; height: 34px; }
+.modal h2 { margin: 0; font-size: var(--f-5); }
+.modal p { margin: 0; color: var(--text-dim); font-size: var(--f-2); }
+.modal input { text-align: center; }
+.modal button { width: 100%; }
+
 /* ============================ desktop ============================ */
 
 @media (min-width: 760px) {
