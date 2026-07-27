@@ -5,13 +5,15 @@ from app.schemas.common import OwnedOut, WantedOut
 
 class WantedItemOut(BaseModel):
     """A row in the cross-module wanted list. `detail` is a per-module summary
-    string built server-side so the UI never needs module-specific logic."""
+    string built server-side so the UI never needs module-specific logic.
+    `facet` is the row's sub-filter value: system for games, genre for movies."""
 
     item_id: int
     module: str
     title: str
     image_url: str | None = None
     detail: str = ""
+    facet: str | None = None
     wanted: WantedOut
 
 

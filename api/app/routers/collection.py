@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
-from app.models import CollectionItem, Module, Owned, Wanted
+from app.models import CollectionItem, GameAttrs, Module, Owned, Wanted
 from app.schemas.collection import ItemStatusOut, WantedItemOut
 from app.schemas.common import OwnedCreate, WantedCreate
 
@@ -141,13 +141,24 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
         .join(CollectionItem)
         .options(
             joinedload(Wanted.item).joinedload(CollectionItem.card_attrs),
-            joinedload(Wanted.item).joinedload(CollectionItem.game_attrs),
+            joinedload(Wanted.item)
+            .joinedload(CollectionItem.game_attrs)
+            .joinedload(GameAttrs.platform),
             joinedload(Wanted.item).joinedload(CollectionItem.movie_attrs),
         )
         .order_by(Wanted.priority.asc().nulls_last(), Wanted.created_at)
     )
     if module:
         q = q.where(CollectionItem.module == module)
+    def _facet(item: CollectionItem) -> str | None:
+        """Sub-filter value: system for games, genre for movies."""
+        if item.module == Module.games.value and item.game_attrs and item.game_attrs.platform:
+            p = item.game_attrs.platform
+            return p.abbreviation or p.name
+        if item.module == Module.movies.value and item.movie_attrs:
+            return item.movie_attrs.genre
+        return None
+
     rows = db.scalars(q).unique().all()
     return [
         WantedItemOut(
@@ -156,6 +167,7 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             title=w.item.title,
             image_url=w.item.image_url,
             detail=_detail(w.item),
+            facet=_facet(w.item),
             wanted=w,
         )
         for w in rows

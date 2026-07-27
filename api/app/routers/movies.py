@@ -22,6 +22,7 @@ def movie_to_out(item: CollectionItem) -> MovieOut:
             format=a.format,
             edition=a.edition,
             region_code=a.region_code,
+            genre=a.genre,
             tmdb_id=a.tmdb_id,
         ),
         owned=item.owned,
@@ -131,6 +132,7 @@ def create_movie(body: MovieCreate, db: Session = Depends(get_db)):
             format=body.format,
             edition=body.edition,
             region_code=body.region_code,
+            genre=body.genre,
             tmdb_id=body.tmdb_id,
         ),
     )

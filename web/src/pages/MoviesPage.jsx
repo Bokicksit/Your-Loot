@@ -7,6 +7,11 @@ import { cleanTitle, detectEdition, detectFormat } from "../upc.js";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
 const REGIONS = ["Region-free", "A", "B", "C", "1", "2", "3", "4"];
+const GENRES = [
+  "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
+  "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
+  "Romance", "Sci-Fi", "Thriller", "War", "Western",
+];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
 const COMPLETENESS = ["loose", "CIB", "sealed"]; // loose = disc only
 
@@ -15,6 +20,7 @@ const EMPTY_FORM = {
   format: "Blu-ray",
   edition: "",
   region_code: "",
+  genre: "",
   image_url: null,
   tmdb_id: null,
   own: true,
@@ -111,6 +117,7 @@ export default function MoviesPage() {
       title: r.year ? `${r.title} (${r.year})` : r.title,
       tmdb_id: r.tmdb_id,
       image_url: r.poster_url,
+      genre: r.genre || form.genre,
     });
     setResults(null);
   };
@@ -123,6 +130,7 @@ export default function MoviesPage() {
         format: form.format || null,
         edition: form.edition.trim() || null,
         region_code: form.region_code || null,
+        genre: form.genre || null,
         image_url: form.image_url,
         tmdb_id: form.tmdb_id,
       });
@@ -258,6 +266,16 @@ export default function MoviesPage() {
               value={form.edition}
               onChange={(e) => setForm({ ...form, edition: e.target.value })}
             />
+            <select
+              title="Genre"
+              value={form.genre}
+              onChange={(e) => setForm({ ...form, genre: e.target.value })}
+            >
+              <option value="">Genre…</option>
+              {GENRES.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
           </div>
           <div className="form-row">
             <button

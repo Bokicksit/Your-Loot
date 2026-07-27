@@ -21,6 +21,7 @@ const COMPLETENESS = ["loose", "CIB", "sealed"];
 export default function WantedPage() {
   const [rows, setRows] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [facet, setFacet] = useState(""); // system (games) / genre (movies)
   const [acquiring, setAcquiring] = useState(null); // item_id being acquired
   const [acqVals, setAcqVals] = useState({});
 
@@ -64,7 +65,21 @@ export default function WantedPage() {
     return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`;
   };
 
-  const shown = filter === "all" ? rows : rows.filter((r) => r.module === filter);
+  const moduleRows =
+    filter === "all" ? rows : rows.filter((r) => r.module === filter);
+  // sub-filter values present among the current module's wanted rows
+  const facets =
+    filter === "games" || filter === "movies"
+      ? [...new Set(moduleRows.map((r) => r.facet).filter(Boolean))].sort()
+      : [];
+  const shown = facet
+    ? moduleRows.filter((r) => r.facet === facet)
+    : moduleRows;
+
+  const pickFilter = (key) => {
+    setFilter(key);
+    setFacet("");
+  };
 
   return (
     <div>
@@ -73,7 +88,7 @@ export default function WantedPage() {
           <button
             key={f.key}
             className={`chip ${filter === f.key ? "active" : ""}`}
-            onClick={() => setFilter(f.key)}
+            onClick={() => pickFilter(f.key)}
           >
             {f.icon && <Icon id={f.icon} />}
             {f.label}
@@ -83,6 +98,25 @@ export default function WantedPage() {
           {shown.length}
         </span>
       </div>
+      {facets.length > 0 && (
+        <div className="chip-row">
+          <button
+            className={`chip ${facet === "" ? "active" : ""}`}
+            onClick={() => setFacet("")}
+          >
+            {filter === "games" ? "All systems" : "All genres"}
+          </button>
+          {facets.map((f) => (
+            <button
+              key={f}
+              className={`chip ${facet === f ? "active" : ""}`}
+              onClick={() => setFacet(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
       {shown.length === 0 && (
         <div className="empty">
           <span className="glyph"><Icon id="star" /></span>
