@@ -479,10 +479,17 @@ function GameRow({ game, platforms, onChange, onReload }) {
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
-  const [infoOpen, setInfoOpen] = useState(false); // expandable game info
+  const [infoOpen, setInfoOpen] = useState(false); // expandable detail card
 
   const a = game.attrs;
-  const hasInfo = !!(a.summary || a.release_year || a.genres || a.developer || a.publisher);
+  const infoLine = [
+    a.release_year,
+    a.genres,
+    a.developer && `Dev: ${a.developer}`,
+    a.publisher && a.publisher !== a.developer && `Pub: ${a.publisher}`,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
 
   const run = async (fn) => {
     if (busy) return;
@@ -557,18 +564,22 @@ function GameRow({ game, platforms, onChange, onReload }) {
           src={game.image_url}
           alt=""
           loading="lazy"
-          style={hasInfo ? { cursor: "pointer" } : undefined}
-          onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
         />
       ) : (
-        <span className="game-icon">
+        <span
+          className="game-icon"
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
+        >
           <Icon id={game.attrs.is_hardware ? "pad" : "disc"} />
         </span>
       )}
       <span
         className="game-text"
-        style={hasInfo ? { cursor: "pointer" } : undefined}
-        onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+        style={{ cursor: "pointer" }}
+        onClick={() => setInfoOpen(!infoOpen)}
       >
         <strong>{game.title}</strong>
         <small className="game-meta">
@@ -611,18 +622,22 @@ function GameRow({ game, platforms, onChange, onReload }) {
           <Icon id="trash" />
         </button>
       </span>
-      {infoOpen && hasInfo && (
+      {infoOpen && (
         <span className="entry-edit game-info">
-          <span className="game-info-line">
-            {[
-              a.release_year,
-              a.genres,
-              a.developer && `Dev: ${a.developer}`,
-              a.publisher && a.publisher !== a.developer && `Pub: ${a.publisher}`,
-            ]
-              .filter(Boolean)
-              .join("  ·  ")}
-          </span>
+          <div className="expand-card">
+            {game.image_url && (
+              <img className="expand-cover" src={game.image_url} alt="" loading="lazy" />
+            )}
+            <div className="expand-body">
+              <span className="expand-title">{game.title}</span>
+              <span className="expand-sub">
+                {[a.platform_name, a.region, a.is_hardware && "Hardware"]
+                  .filter(Boolean)
+                  .join(" · ") || "No system set"}
+              </span>
+              {infoLine && <span className="game-info-line">{infoLine}</span>}
+            </div>
+          </div>
           {a.summary && <p className="game-summary">{a.summary}</p>}
         </span>
       )}

@@ -732,6 +732,25 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* rows that should reflow instead of squeeze at phone width */
 .form-row.wrap { flex-wrap: wrap; }
 
+/* expanded detail card: big art + full title + system line */
+.expand-card { display: flex; gap: var(--s-3); align-items: flex-start; min-width: 0; }
+.expand-cover {
+  flex: none;
+  width: 96px;
+  max-height: 140px;
+  object-fit: contain;
+  border-radius: var(--r-2);
+  background: var(--bg-0);
+}
+.expand-body { display: grid; gap: 4px; min-width: 0; }
+.expand-title {
+  font-size: var(--f-4);
+  font-weight: var(--w-bold);
+  line-height: 1.25;
+  overflow-wrap: anywhere; /* the whole point: no ellipsis here */
+}
+.expand-sub { color: var(--text-dim); font-size: var(--f-2); }
+
 /* expandable game info panel */
 .game-info { cursor: default; }
 .game-info-line {

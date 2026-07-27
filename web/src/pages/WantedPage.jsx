@@ -168,9 +168,8 @@ export default function WantedPage() {
               )}
               <span
                 className="game-text"
-                style={r.info_line || r.info_text ? { cursor: "pointer" } : undefined}
+                style={{ cursor: "pointer" }}
                 onClick={() =>
-                  (r.info_line || r.info_text) &&
                   setOpenInfo(openInfo === r.item_id ? null : r.item_id)
                 }
               >
@@ -203,11 +202,20 @@ export default function WantedPage() {
                 <Icon id="x" />
               </button>
             </li>
-            {openInfo === r.item_id && (r.info_line || r.info_text) && (
+            {openInfo === r.item_id && (
               <li className="acquire-edit wanted-info">
-                {r.info_line && (
-                  <span className="game-info-line">{r.info_line}</span>
-                )}
+                <div className="expand-card">
+                  {r.image_url && (
+                    <img className="expand-cover" src={r.image_url} alt="" loading="lazy" />
+                  )}
+                  <div className="expand-body">
+                    <span className="expand-title">{r.title}</span>
+                    {r.detail && <span className="expand-sub">{r.detail}</span>}
+                    {r.info_line && (
+                      <span className="game-info-line">{r.info_line}</span>
+                    )}
+                  </div>
+                </div>
                 {r.info_text && <p className="game-summary">{r.info_text}</p>}
               </li>
             )}

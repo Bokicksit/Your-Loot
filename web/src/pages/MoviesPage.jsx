@@ -381,9 +381,7 @@ function MovieRow({ movie, onChange, onReload }) {
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
-  const [infoOpen, setInfoOpen] = useState(false); // genre/overview panel
-
-  const hasInfo = !!(movie.attrs.genre || movie.attrs.overview);
+  const [infoOpen, setInfoOpen] = useState(false); // expandable detail card
 
   const run = async (fn) => {
     if (busy) return;
@@ -454,14 +452,27 @@ function MovieRow({ movie, onChange, onReload }) {
   return (
     <div className={`game-row ${movie.owned.length ? "row-owned" : ""}`}>
       {movie.image_url ? (
-        <img className="game-cover" src={movie.image_url} alt="" loading="lazy" />
+        <img
+          className="game-cover"
+          src={movie.image_url}
+          alt=""
+          loading="lazy"
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
+        />
       ) : (
-        <span className="game-icon"><Icon id="disc" /></span>
+        <span
+          className="game-icon"
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
+        >
+          <Icon id="disc" />
+        </span>
       )}
       <span
         className="game-text"
-        style={hasInfo ? { cursor: "pointer" } : undefined}
-        onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+        style={{ cursor: "pointer" }}
+        onClick={() => setInfoOpen(!infoOpen)}
       >
         <strong>{movie.title}</strong>
         <small className="game-meta">
@@ -507,11 +518,28 @@ function MovieRow({ movie, onChange, onReload }) {
           <Icon id="trash" />
         </button>
       </span>
-      {infoOpen && hasInfo && (
+      {infoOpen && (
         <span className="entry-edit game-info">
-          {movie.attrs.genre && (
-            <span className="game-info-line">{movie.attrs.genre}</span>
-          )}
+          <div className="expand-card">
+            {movie.image_url && (
+              <img className="expand-cover" src={movie.image_url} alt="" loading="lazy" />
+            )}
+            <div className="expand-body">
+              <span className="expand-title">{movie.title}</span>
+              <span className="expand-sub">
+                {[
+                  movie.attrs.format,
+                  movie.attrs.edition,
+                  movie.attrs.region_code && `Region ${movie.attrs.region_code}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              {movie.attrs.genre && (
+                <span className="game-info-line">{movie.attrs.genre}</span>
+              )}
+            </div>
+          </div>
           {movie.attrs.overview && (
             <p className="game-summary">{movie.attrs.overview}</p>
           )}
