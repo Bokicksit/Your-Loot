@@ -42,22 +42,21 @@ def _base_query():
 def search_cards(
     db: Session = Depends(get_db),
     name: str = Query(min_length=2),
-    number: str = Query(min_length=1),
+    number: str | None = None,
     set: str | None = None,
     limit: int = Query(40, le=100),
 ):
-    """Find the exact physical card: name + printed number, both on the card
-    itself. "91/108" also matches the printed set size; set name narrows."""
-    m = re.match(r"^\s*(\w+)\s*(?:/\s*(\d+))?\s*$", number)
-    num = (m.group(1) if m else number).strip()
-    total = int(m.group(2)) if m and m.group(2) else None
-    # numbers are strings ("4", "091", "TG12") — match ignoring leading zeros
-    stripped = num.lstrip("0") or num
-
-    q = _base_query().where(
-        CollectionItem.title.ilike(f"%{name.strip()}%"),
-        func.ltrim(CardAttrs.card_number, "0") == stripped,
-    )
+    """Find a physical card by name; the printed number ("91/108", which also
+    matches the set size) and set name narrow it to the exact card."""
+    q = _base_query().where(CollectionItem.title.ilike(f"%{name.strip()}%"))
+    total = None
+    if number and number.strip():
+        m = re.match(r"^\s*(\w+)\s*(?:/\s*(\d+))?\s*$", number)
+        num = (m.group(1) if m else number).strip()
+        total = int(m.group(2)) if m and m.group(2) else None
+        # numbers are strings ("4", "091", "TG12") — match ignoring leading zeros
+        stripped = num.lstrip("0") or num
+        q = q.where(func.ltrim(CardAttrs.card_number, "0") == stripped)
     if total:
         q = q.where(CardAttrs.set_total == total)
     if set:

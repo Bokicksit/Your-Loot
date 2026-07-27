@@ -47,11 +47,12 @@ export default function CardsPage() {
   }, [search]);
 
   const doSearch = async () => {
-    if (searching || form.name.trim().length < 2 || !form.number.trim()) return;
+    if (searching || form.name.trim().length < 2) return;
     setSearching(true);
     setPicked(null);
     try {
-      const params = { name: form.name.trim(), number: form.number.trim() };
+      const params = { name: form.name.trim() };
+      if (form.number.trim()) params.number = form.number.trim();
       if (form.set.trim()) params.set = form.set.trim();
       setResults((await api.cardsSearch(params)).items);
     } catch (e) {
@@ -133,8 +134,8 @@ export default function CardsPage() {
             />
             <input
               type="text"
-              style={{ maxWidth: "110px" }}
-              placeholder="91/108"
+              style={{ maxWidth: "130px" }}
+              placeholder="91/108 (opt.)"
               value={form.number}
               onChange={(e) => setForm({ ...form, number: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}
