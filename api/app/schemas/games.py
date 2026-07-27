@@ -9,6 +9,11 @@ class GameAttrsOut(BaseModel):
     platform_abbr: str | None = None
     region: str | None = None
     is_hardware: bool = False
+    summary: str | None = None
+    release_year: int | None = None
+    genres: str | None = None
+    developer: str | None = None
+    publisher: str | None = None
 
 
 class GameOut(BaseModel):
@@ -45,3 +50,8 @@ class GameCreate(BaseModel):
     image_url: str | None = None
     notes: str | None = None
     igdb_id: int | None = None  # set when the entry came from IGDB search
+    summary: str | None = None
+    release_year: int | None = None
+    genres: str | None = None
+    developer: str | None = None
+    publisher: str | None = None

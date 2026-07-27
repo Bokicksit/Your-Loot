@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -26,6 +26,12 @@ class GameAttrs(Base):
     is_hardware: Mapped[bool] = mapped_column(Boolean, default=False)
     # NOTE: completeness (loose/CIB/sealed) lives on the `owned` record — it
     # describes your copy, not the game itself.
+    # info panel metadata, captured from IGDB at add time (manual adds: blank)
+    summary: Mapped[str | None] = mapped_column(Text)
+    release_year: Mapped[int | None] = mapped_column()
+    genres: Mapped[str | None] = mapped_column(String(120))
+    developer: Mapped[str | None] = mapped_column(String(100))
+    publisher: Mapped[str | None] = mapped_column(String(100))
 
     item = relationship("CollectionItem", back_populates="game_attrs")
     platform = relationship("Platform")

@@ -45,7 +45,9 @@ class IGDBClient:
         q = query.replace('"', "")
         body = (
             f'search "{q}"; '
-            "fields name,first_release_date,platforms.name,cover.url; "
+            "fields name,first_release_date,platforms.name,cover.url,"
+            "summary,genres.name,involved_companies.company.name,"
+            "involved_companies.developer,involved_companies.publisher; "
             f"limit {limit};"
         )
         resp = httpx.post(
@@ -83,12 +85,23 @@ class IGDBClient:
                 year = datetime.fromtimestamp(
                     g["first_release_date"], tz=timezone.utc
                 ).year
+            companies = g.get("involved_companies") or []
             results.append({
                 "igdb_id": g["id"],
                 "title": g["name"],
                 "year": year,
                 "platforms": [p["name"] for p in g.get("platforms", [])],
                 "cover_url": cover,
+                "summary": g.get("summary"),
+                "genres": [x["name"] for x in (g.get("genres") or [])][:4],
+                "developer": next(
+                    (c["company"]["name"] for c in companies if c.get("developer")),
+                    None,
+                ),
+                "publisher": next(
+                    (c["company"]["name"] for c in companies if c.get("publisher")),
+                    None,
+                ),
             })
         return results
 

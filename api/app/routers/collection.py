@@ -74,6 +74,13 @@ def remove_wanted(item_id: int, db: Session = Depends(get_db)):
     item = _get_item(db, item_id)
     if item.wanted is not None:
         db.delete(item.wanted)
+        # a games/movies entry that was wanted-only existed solely for the
+        # wishlist — prune it, or it would surface in the library as an
+        # unowned ghost row. Cards are catalog rows and always stay.
+        if item.module != Module.cards.value and not item.owned:
+            db.delete(item)
+            db.commit()
+            return ItemStatusOut(item_id=item_id, owned=[], wanted=None)
         db.commit()
         db.refresh(item)
     return _status(item)
@@ -159,6 +166,15 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return item.movie_attrs.genre
         return None
 
+    def _badge(item: CollectionItem) -> str | None:
+        """Left-edge row badge: system for games, media format for movies."""
+        if item.module == Module.games.value and item.game_attrs and item.game_attrs.platform:
+            p = item.game_attrs.platform
+            return p.abbreviation or p.name
+        if item.module == Module.movies.value and item.movie_attrs:
+            return item.movie_attrs.format
+        return None
+
     rows = db.scalars(q).unique().all()
     return [
         WantedItemOut(
@@ -168,6 +184,7 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             image_url=w.item.image_url,
             detail=_detail(w.item),
             facet=_facet(w.item),
+            badge=_badge(w.item),
             wanted=w,
         )
         for w in rows

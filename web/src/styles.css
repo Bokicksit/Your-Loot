@@ -732,6 +732,31 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* rows that should reflow instead of squeeze at phone width */
 .form-row.wrap { flex-wrap: wrap; }
 
+/* expandable game info panel */
+.game-info { cursor: default; }
+.game-info-line {
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.game-summary {
+  margin: 0;
+  font-size: var(--f-2);
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+/* wanted-row badges: platform logo / media format tag */
+.module-chip .plat-logo { height: 16px; max-width: 26px; object-fit: contain; }
+.module-chip.media {
+  width: auto;
+  min-width: 30px;
+  padding: 0 4px;
+}
+.module-chip.media .plat-badge { border: none; background: none; padding: 0; }
+
 /* ============================ Wanted ============================ */
 
 .wanted-list, .game-list {

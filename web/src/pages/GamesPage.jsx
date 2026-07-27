@@ -20,6 +20,12 @@ const EMPTY_FORM = {
   own: true, // most additions are things already on the shelf
   completeness: "CIB",
   condition: "Good",
+  // info-panel metadata, filled by an IGDB pick
+  summary: null,
+  release_year: null,
+  genres: null,
+  developer: null,
+  publisher: null,
 };
 
 // best-effort map from IGDB platform names to our lookup table.
@@ -35,12 +41,29 @@ function matchPlatform(igdbNames, platforms) {
       .filter((p) => n.startsWith(p.name.toLowerCase()))
       .sort((a, b) => b.name.length - a.name.length)[0];
     if (prefix) return prefix.id;
-    const partial = platforms
-      .filter((p) => n.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(n))
+    // theirs contains ours ("…Entertainment System" ⊃ "Super Nintendo"):
+    // longest of ours wins. Ours contains theirs ("Nintendo Wii" ⊃ "Wii"):
+    // shortest of ours wins — "Wii" must not match "Nintendo Wii U".
+    const contained = platforms
+      .filter((p) => n.includes(p.name.toLowerCase()))
       .sort((a, b) => b.name.length - a.name.length)[0];
-    if (partial) return partial.id;
+    if (contained) return contained.id;
+    const containing = platforms
+      .filter((p) => p.name.toLowerCase().includes(n))
+      .sort((a, b) => a.name.length - b.name.length)[0];
+    if (containing) return containing.id;
   }
   return "";
+}
+
+// all our platform ids a game was released on (for restricting the dropdown)
+function matchAllPlatforms(igdbNames, platforms) {
+  const ids = new Set();
+  for (const name of igdbNames) {
+    const id = matchPlatform([name], platforms);
+    if (id) ids.add(id);
+  }
+  return [...ids];
 }
 
 export default function GamesPage() {
@@ -55,6 +78,7 @@ export default function GamesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null); // null = no search yet
+  const [allowedPlatforms, setAllowedPlatforms] = useState([]); // from IGDB pick
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -143,12 +167,20 @@ export default function GamesPage() {
   };
 
   const pickResult = (r) => {
+    // restrict the platform dropdown to systems this game shipped on
+    const allowed = matchAllPlatforms(r.platforms, platforms);
+    setAllowedPlatforms(allowed);
     setForm({
       ...form,
       title: r.year ? `${r.title} (${r.year})` : r.title,
       igdb_id: r.igdb_id,
       image_url: r.cover_url, // IGDB cover = box art
-      platform_id: matchPlatform(r.platforms, platforms) || form.platform_id,
+      platform_id: matchPlatform(r.platforms, platforms) || "",
+      summary: r.summary || null,
+      release_year: r.year ? Number(r.year) : null,
+      genres: r.genres?.length ? r.genres.join(", ") : null,
+      developer: r.developer || null,
+      publisher: r.publisher || null,
     });
     setResults(null);
   };
@@ -163,6 +195,11 @@ export default function GamesPage() {
         is_hardware: form.is_hardware,
         igdb_id: form.igdb_id,
         image_url: form.image_url,
+        summary: form.summary,
+        release_year: form.release_year,
+        genres: form.genres,
+        developer: form.developer,
+        publisher: form.publisher,
       });
       if (form.own) {
         // catalog + first copy in one go
@@ -178,6 +215,7 @@ export default function GamesPage() {
       const wantMode = !form.own;
       setForm(EMPTY_FORM);
       setResults(null);
+      setAllowedPlatforms([]);
       setShowForm(false);
       if (wantMode) {
         navigate("/wanted");
@@ -262,10 +300,21 @@ export default function GamesPage() {
               required
               placeholder="Title — then search IGDB"
               value={form.title}
-              onChange={(e) =>
-                // manual edits detach the IGDB link/cover
-                setForm({ ...form, title: e.target.value, igdb_id: null, image_url: null })
-              }
+              onChange={(e) => {
+                // manual edits detach the IGDB link/cover/metadata
+                setForm({
+                  ...form,
+                  title: e.target.value,
+                  igdb_id: null,
+                  image_url: null,
+                  summary: null,
+                  release_year: null,
+                  genres: null,
+                  developer: null,
+                  publisher: null,
+                });
+                setAllowedPlatforms([]);
+              }}
               onKeyDown={(e) => {
                 // Enter always searches IGDB — the form only submits via Add
                 if (e.key === "Enter") {
@@ -285,7 +334,10 @@ export default function GamesPage() {
               onChange={(e) => setForm({ ...form, platform_id: e.target.value })}
             >
               <option value="">Platform…</option>
-              {platforms.map((p) => (
+              {(form.igdb_id && allowedPlatforms.length > 0
+                ? platforms.filter((p) => allowedPlatforms.includes(p.id))
+                : platforms
+              ).map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
@@ -427,6 +479,10 @@ function GameRow({ game, platforms, onChange, onReload }) {
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
+  const [infoOpen, setInfoOpen] = useState(false); // expandable game info
+
+  const a = game.attrs;
+  const hasInfo = !!(a.summary || a.release_year || a.genres || a.developer || a.publisher);
 
   const run = async (fn) => {
     if (busy) return;
@@ -496,13 +552,24 @@ function GameRow({ game, platforms, onChange, onReload }) {
   return (
     <div className={`game-row ${game.owned.length ? "row-owned" : ""}`}>
       {game.image_url ? (
-        <img className="game-cover" src={game.image_url} alt="" loading="lazy" />
+        <img
+          className="game-cover"
+          src={game.image_url}
+          alt=""
+          loading="lazy"
+          style={hasInfo ? { cursor: "pointer" } : undefined}
+          onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+        />
       ) : (
         <span className="game-icon">
           <Icon id={game.attrs.is_hardware ? "pad" : "disc"} />
         </span>
       )}
-      <span className="game-text">
+      <span
+        className="game-text"
+        style={hasInfo ? { cursor: "pointer" } : undefined}
+        onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+      >
         <strong>{game.title}</strong>
         <small className="game-meta">
           <PlatformBadge abbr={game.attrs.platform_abbr} name={game.attrs.platform_name} />
@@ -544,6 +611,21 @@ function GameRow({ game, platforms, onChange, onReload }) {
           <Icon id="trash" />
         </button>
       </span>
+      {infoOpen && hasInfo && (
+        <span className="entry-edit game-info">
+          <span className="game-info-line">
+            {[
+              a.release_year,
+              a.genres,
+              a.developer && `Dev: ${a.developer}`,
+              a.publisher && a.publisher !== a.developer && `Pub: ${a.publisher}`,
+            ]
+              .filter(Boolean)
+              .join("  ·  ")}
+          </span>
+          {a.summary && <p className="game-summary">{a.summary}</p>}
+        </span>
+      )}
       {entryOpen && (
         <span className="entry-edit">
           <div className="form-row">

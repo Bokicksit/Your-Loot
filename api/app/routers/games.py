@@ -24,6 +24,11 @@ def game_to_out(item: CollectionItem) -> GameOut:
             platform_abbr=a.platform.abbreviation if a.platform else None,
             region=a.region,
             is_hardware=a.is_hardware,
+            summary=a.summary,
+            release_year=a.release_year,
+            genres=a.genres,
+            developer=a.developer,
+            publisher=a.publisher,
         ),
         owned=item.owned,
         wanted=item.wanted,
@@ -155,6 +160,11 @@ def create_game(body: GameCreate, db: Session = Depends(get_db)):
             platform_id=body.platform_id,
             region=body.region,
             is_hardware=body.is_hardware,
+            summary=body.summary,
+            release_year=body.release_year,
+            genres=body.genres,
+            developer=body.developer,
+            publisher=body.publisher,
         ),
     )
     db.add(item)

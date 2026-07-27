@@ -14,6 +14,8 @@ class WantedItemOut(BaseModel):
     image_url: str | None = None
     detail: str = ""
     facet: str | None = None
+    # left-edge badge: platform abbr for games (logo lookup), format for movies
+    badge: str | None = None
     wanted: WantedOut
 
 

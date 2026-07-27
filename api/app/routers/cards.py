@@ -70,10 +70,38 @@ def search_cards(
     return CardListOut(total=len(items), items=[card_to_out(i) for i in items])
 
 
+@router.get("/facets")
+def card_facets(db: Session = Depends(get_db)):
+    """Sets and rarities present among OWNED cards, with counts — drives the
+    collection filter dropdowns."""
+    owned_exists = select(Owned.id).where(Owned.item_id == CardAttrs.item_id).exists()
+    sets = [
+        {"code": c, "name": n, "count": cnt}
+        for c, n, cnt in db.execute(
+            select(CardAttrs.set_code, CardAttrs.set_name, func.count())
+            .where(owned_exists)
+            .group_by(CardAttrs.set_code, CardAttrs.set_name)
+            .order_by(CardAttrs.set_name)
+        )
+    ]
+    rarities = [
+        {"rarity": r, "count": cnt}
+        for r, cnt in db.execute(
+            select(CardAttrs.rarity, func.count())
+            .where(owned_exists, CardAttrs.rarity.is_not(None))
+            .group_by(CardAttrs.rarity)
+            .order_by(CardAttrs.rarity)
+        )
+    ]
+    return {"sets": sets, "rarities": rarities}
+
+
 @router.get("", response_model=CardListOut)
 def list_cards(
     db: Session = Depends(get_db),
     search: str | None = None,
+    set_code: str | None = None,
+    rarity: str | None = None,
     collection: bool = True,
     limit: int = Query(120, le=300),
     offset: int = 0,
@@ -90,6 +118,10 @@ def list_cards(
     filters = []
     if search:
         filters.append(CollectionItem.title.ilike(f"%{search}%"))
+    if set_code:
+        filters.append(CardAttrs.set_code == set_code)
+    if rarity:
+        filters.append(CardAttrs.rarity == rarity)
     if collection:
         filters.append(
             select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()

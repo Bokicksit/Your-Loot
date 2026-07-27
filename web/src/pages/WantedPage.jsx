@@ -3,6 +3,37 @@ import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 
 const MODULE_ICONS = { cards: "card", games: "pad", movies: "disc" };
+
+// Left-edge badge: system logo for games, media-format tag for movies,
+// module icon otherwise.
+function RowBadge({ row }) {
+  const [logoOk, setLogoOk] = useState(true);
+  if (row.module === "games" && row.badge && logoOk) {
+    return (
+      <span className="module-chip">
+        <img
+          className="plat-logo"
+          src={`/platforms/${row.badge}.svg`}
+          alt={row.badge}
+          title={row.badge}
+          onError={() => setLogoOk(false)}
+        />
+      </span>
+    );
+  }
+  if (row.module === "movies" && row.badge) {
+    return (
+      <span className="module-chip media">
+        <span className="plat-badge">{row.badge}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="module-chip">
+      <Icon id={MODULE_ICONS[row.module] || "coin"} />
+    </span>
+  );
+}
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "cards", label: "Cards", icon: "card" },
@@ -128,9 +159,7 @@ export default function WantedPage() {
         {shown.map((r) => (
           <Fragment key={r.item_id}>
             <li>
-              <span className="module-chip">
-                <Icon id={MODULE_ICONS[r.module] || "coin"} />
-              </span>
+              <RowBadge row={r} />
               {r.image_url ? (
                 <img src={r.image_url} alt="" loading="lazy" />
               ) : (

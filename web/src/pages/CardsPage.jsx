@@ -13,6 +13,9 @@ export default function CardsPage() {
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [facets, setFacets] = useState({ sets: [], rarities: [] });
+  const [setFilter, setSetFilter] = useState("");
+  const [rarityFilter, setRarityFilter] = useState("");
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -31,8 +34,12 @@ export default function CardsPage() {
   const navigate = useNavigate();
 
   const load = () => {
+    const params = {};
+    if (search) params.search = search;
+    if (setFilter) params.set_code = setFilter;
+    if (rarityFilter) params.rarity = rarityFilter;
     api
-      .cards(search ? { search } : {})
+      .cards(params)
       .then((d) => {
         setCards(d.items);
         setTotal(d.total);
@@ -40,12 +47,18 @@ export default function CardsPage() {
         setLoaded(true);
       })
       .catch((e) => setError(e.message));
+    api.cardFacets().then((f) => {
+      setFacets(f);
+      if (setFilter && !f.sets.some((s) => s.code === setFilter)) setSetFilter("");
+      if (rarityFilter && !f.rarities.some((r) => r.rarity === rarityFilter))
+        setRarityFilter("");
+    });
   };
 
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [search, setFilter, rarityFilter]);
 
   const doSearch = async () => {
     if (searching || form.name.trim().length < 2) return;
@@ -121,6 +134,37 @@ export default function CardsPage() {
           {!showForm && "Add"}
         </button>
       </div>
+
+      {(facets.sets.length > 0 || facets.rarities.length > 0) && (
+        <div className="chip-row">
+          <select
+            className="chip-select"
+            title="Filter by set"
+            value={setFilter}
+            onChange={(e) => setSetFilter(e.target.value)}
+          >
+            <option value="">All sets</option>
+            {facets.sets.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.name} ({s.count})
+              </option>
+            ))}
+          </select>
+          <select
+            className="chip-select"
+            title="Filter by rarity"
+            value={rarityFilter}
+            onChange={(e) => setRarityFilter(e.target.value)}
+          >
+            <option value="">All rarities</option>
+            {facets.rarities.map((r) => (
+              <option key={r.rarity} value={r.rarity}>
+                {r.rarity} ({r.count})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {showForm && (
         <div className="add-form">
