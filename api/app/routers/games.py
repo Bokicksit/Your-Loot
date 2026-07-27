@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted
-from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut
+from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
 
 router = APIRouter(prefix="/api/games", tags=["games"])
 
@@ -158,6 +158,26 @@ def create_game(body: GameCreate, db: Session = Depends(get_db)):
         ),
     )
     db.add(item)
+    db.commit()
+    db.refresh(item)
+    return game_to_out(item)
+
+
+@router.patch("/{item_id}", response_model=GameOut)
+def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db)):
+    item = db.get(CollectionItem, item_id)
+    if not item or item.module != Module.games.value:
+        raise HTTPException(404, "game not found")
+    data = body.model_dump(exclude_unset=True)
+    if "platform_id" in data and data["platform_id"] is not None:
+        if db.get(Platform, data["platform_id"]) is None:
+            raise HTTPException(400, "unknown platform_id")
+    for field in ("title", "image_url", "notes"):
+        if field in data:
+            setattr(item, field, data[field])
+    for field in ("platform_id", "region", "is_hardware"):
+        if field in data:
+            setattr(item.game_attrs, field, data[field])
     db.commit()
     db.refresh(item)
     return game_to_out(item)

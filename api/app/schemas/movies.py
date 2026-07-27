@@ -26,6 +26,18 @@ class MovieListOut(BaseModel):
     items: list[MovieOut]
 
 
+class MovieUpdate(BaseModel):
+    """PATCH body — only fields present in the request change."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    format: str | None = None
+    edition: str | None = None
+    region_code: str | None = None
+    genre: str | None = None
+    image_url: str | None = None
+    notes: str | None = None
+
+
 class MovieCreate(BaseModel):
     title: str = Field(min_length=1, max_length=300)
     format: str | None = None

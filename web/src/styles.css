@@ -422,6 +422,19 @@ button.ghost.icon svg.i, button.primary.icon svg.i, a.ghost.icon svg.i { width: 
 }
 .chip.copy:hover { border-style: solid; border-color: var(--gold); }
 
+/* inline entry editor (pencil on a row): full-width panel of form rows */
+.entry-edit {
+  grid-column: 1 / -1;
+  flex: 1 0 100%;
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-2);
+}
+
 /* inline per-copy editor, opened by tapping a copy chip */
 .copy-edit {
   grid-column: 1 / -1;
@@ -734,8 +747,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .game-row > .game-cover, .game-row > .game-icon { grid-column: 1; }
 .game-row > .game-text { grid-column: 2; }
-.game-row > button.ghost { grid-column: 3; }
-.game-row > .copy-edit { grid-column: 1 / -1; }
+.game-row > button.ghost, .game-row > .row-buttons { grid-column: 3; }
+.game-row > .row-buttons { display: flex; gap: 4px; }
+.game-row > .copy-edit, .game-row > .entry-edit { grid-column: 1 / -1; }
 .game-cover, .game-icon {
   flex: none;
   width: 44px;

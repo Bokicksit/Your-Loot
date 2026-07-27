@@ -389,7 +389,13 @@ export default function GamesPage() {
 
       <div className="game-list">
         {games.map((g) => (
-          <GameRow key={g.id} game={g} onChange={patchGame} onDelete={load} />
+          <GameRow
+            key={g.id}
+            game={g}
+            platforms={platforms}
+            onChange={patchGame}
+            onReload={load}
+          />
         ))}
       </div>
     </div>
@@ -415,10 +421,12 @@ function PlatformBadge({ abbr, name }) {
   );
 }
 
-function GameRow({ game, onChange, onDelete }) {
+function GameRow({ game, platforms, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned id being edited
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
+  const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
+  const [entry, setEntry] = useState({});
 
   const run = async (fn) => {
     if (busy) return;
@@ -448,12 +456,41 @@ function GameRow({ game, onChange, onDelete }) {
       setEditing(null);
       return status;
     });
+  const openEntry = () => {
+    setEntry({
+      title: game.title,
+      platform_id: game.attrs.platform_id ? String(game.attrs.platform_id) : "",
+      region: game.attrs.region || "",
+      is_hardware: game.attrs.is_hardware,
+    });
+    setEntryOpen(true);
+  };
+
+  const saveEntry = async () => {
+    if (busy || !entry.title.trim()) return;
+    setBusy(true);
+    try {
+      await api.updateGame(game.id, {
+        title: entry.title.trim(),
+        platform_id: entry.platform_id ? Number(entry.platform_id) : null,
+        region: entry.region || null,
+        is_hardware: entry.is_hardware,
+      });
+      setEntryOpen(false);
+      onReload(); // re-fetch: sort order and filter counts may have changed
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // no want-star here: wanting happens at add time ("I want it") and is
   // managed on the Wanted tab — library rows are for owned copies
   const del = async () => {
     if (!confirm(`Delete "${game.title}" and its records?`)) return;
     await api.deleteGame(game.id);
-    onDelete();
+    onReload();
   };
 
   return (
@@ -495,9 +532,71 @@ function GameRow({ game, onChange, onDelete }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entryOpen ? setEntryOpen(false) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+      {entryOpen && (
+        <span className="entry-edit">
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <select
+              value={entry.platform_id}
+              onChange={(e) => setEntry({ ...entry, platform_id: e.target.value })}
+            >
+              <option value="">Platform…</option>
+              {platforms.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <select
+              value={entry.region}
+              onChange={(e) => setEntry({ ...entry, region: e.target.value })}
+            >
+              <option value="">Region…</option>
+              {REGIONS.map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <button
+              type="button"
+              className={`toggle ${entry.is_hardware ? "on" : ""}`}
+              onClick={() => setEntry({ ...entry, is_hardware: !entry.is_hardware })}
+            >
+              Hardware
+            </button>
+            <button
+              className="primary icon"
+              style={{ marginLeft: "auto" }}
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntryOpen(false)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
       {editing !== null && (
         <span className="copy-edit">
           <select

@@ -359,17 +359,19 @@ export default function MoviesPage() {
 
       <div className="game-list">
         {movies.map((m) => (
-          <MovieRow key={m.id} movie={m} onChange={patchMovie} onDelete={load} />
+          <MovieRow key={m.id} movie={m} onChange={patchMovie} onReload={load} />
         ))}
       </div>
     </div>
   );
 }
 
-function MovieRow({ movie, onChange, onDelete }) {
+function MovieRow({ movie, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
+  const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
+  const [entry, setEntry] = useState({});
 
   const run = async (fn) => {
     if (busy) return;
@@ -400,10 +402,41 @@ function MovieRow({ movie, onChange, onDelete }) {
       return status;
     });
 
+  const openEntry = () => {
+    setEntry({
+      title: movie.title,
+      format: movie.attrs.format || "Blu-ray",
+      edition: movie.attrs.edition || "",
+      region_code: movie.attrs.region_code || "",
+      genre: movie.attrs.genre || "",
+    });
+    setEntryOpen(true);
+  };
+
+  const saveEntry = async () => {
+    if (busy || !entry.title.trim()) return;
+    setBusy(true);
+    try {
+      await api.updateMovie(movie.id, {
+        title: entry.title.trim(),
+        format: entry.format || null,
+        edition: entry.edition.trim() || null,
+        region_code: entry.region_code || null,
+        genre: entry.genre || null,
+      });
+      setEntryOpen(false);
+      onReload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const del = async () => {
     if (!confirm(`Delete "${movie.title}" and its records?`)) return;
     await api.deleteMovie(movie.id);
-    onDelete();
+    onReload();
   };
 
   return (
@@ -446,9 +479,78 @@ function MovieRow({ movie, onChange, onDelete }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entryOpen ? setEntryOpen(false) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+      {entryOpen && (
+        <span className="entry-edit">
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <select
+              value={entry.format}
+              onChange={(e) => setEntry({ ...entry, format: e.target.value })}
+            >
+              {FORMATS.map((f) => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+            <select
+              value={entry.region_code}
+              onChange={(e) => setEntry({ ...entry, region_code: e.target.value })}
+            >
+              <option value="">Region…</option>
+              {REGIONS.map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+            <select
+              value={entry.genre}
+              onChange={(e) => setEntry({ ...entry, genre: e.target.value })}
+            >
+              <option value="">Genre…</option>
+              {GENRES.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Edition"
+              value={entry.edition}
+              onChange={(e) => setEntry({ ...entry, edition: e.target.value })}
+            />
+            <button
+              className="primary icon"
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntryOpen(false)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
       {editing !== null && (
         <span className="copy-edit">
           <select

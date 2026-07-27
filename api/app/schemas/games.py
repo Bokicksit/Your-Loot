@@ -26,6 +26,17 @@ class GameListOut(BaseModel):
     items: list[GameOut]
 
 
+class GameUpdate(BaseModel):
+    """PATCH body — only fields present in the request change."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    platform_id: int | None = None
+    region: str | None = None
+    is_hardware: bool | None = None
+    image_url: str | None = None
+    notes: str | None = None
+
+
 class GameCreate(BaseModel):
     title: str = Field(min_length=1, max_length=300)
     platform_id: int | None = None

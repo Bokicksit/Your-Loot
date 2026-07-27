@@ -30,6 +30,8 @@ export const api = {
     request("/api/movies", { method: "POST", body: JSON.stringify(body) }),
   deleteMovie: (itemId) =>
     request(`/api/movies/${itemId}`, { method: "DELETE" }),
+  updateMovie: (itemId, body) =>
+    request(`/api/movies/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
@@ -42,6 +44,8 @@ export const api = {
     request("/api/games", { method: "POST", body: JSON.stringify(body) }),
   deleteGame: (itemId) =>
     request(`/api/games/${itemId}`, { method: "DELETE" }),
+  updateGame: (itemId, body) =>
+    request(`/api/games/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
   addOwned: (itemId, body = {}) =>
     request(`/api/items/${itemId}/owned`, { method: "POST", body: JSON.stringify(body) }),
   removeOwned: (itemId, ownedId) =>

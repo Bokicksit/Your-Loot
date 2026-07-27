@@ -6,7 +6,13 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.tmdb import tmdb_client
 from app.models import CollectionItem, Module, MovieAttrs, Owned, Wanted
-from app.schemas.movies import MovieAttrsOut, MovieCreate, MovieListOut, MovieOut
+from app.schemas.movies import (
+    MovieAttrsOut,
+    MovieCreate,
+    MovieListOut,
+    MovieOut,
+    MovieUpdate,
+)
 
 router = APIRouter(prefix="/api/movies", tags=["movies"])
 
@@ -137,6 +143,23 @@ def create_movie(body: MovieCreate, db: Session = Depends(get_db)):
         ),
     )
     db.add(item)
+    db.commit()
+    db.refresh(item)
+    return movie_to_out(item)
+
+
+@router.patch("/{item_id}", response_model=MovieOut)
+def update_movie(item_id: int, body: MovieUpdate, db: Session = Depends(get_db)):
+    item = db.get(CollectionItem, item_id)
+    if not item or item.module != Module.movies.value:
+        raise HTTPException(404, "movie not found")
+    data = body.model_dump(exclude_unset=True)
+    for field in ("title", "image_url", "notes"):
+        if field in data:
+            setattr(item, field, data[field])
+    for field in ("format", "edition", "region_code", "genre"):
+        if field in data:
+            setattr(item.movie_attrs, field, data[field])
     db.commit()
     db.refresh(item)
     return movie_to_out(item)
