@@ -133,11 +133,14 @@ def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
 def pokedex(db: Session = Depends(get_db)):
     """The binder: one entry per national dex number (1..MAX_DEX), each with
     up to three layer occupants chosen from OWNED cards — the binder mirror."""
+    # binder membership is opt-in per copy: only in_binder copies occupy slots
     owned_cards = (
         db.scalars(
             _base_query().where(
                 CardAttrs.national_dex_no.is_not(None),
-                select(Owned.id).where(Owned.item_id == CollectionItem.id).exists(),
+                select(Owned.id)
+                .where(Owned.item_id == CollectionItem.id, Owned.in_binder)
+                .exists(),
             )
         )
         .unique()
@@ -155,7 +158,7 @@ def pokedex(db: Session = Depends(get_db)):
         dex = it.card_attrs.national_dex_no
         if dex is None or dex > MAX_DEX:
             continue
-        counts[dex] = counts.get(dex, 0) + len(it.owned)
+        counts[dex] = counts.get(dex, 0) + sum(1 for o in it.owned if o.in_binder)
         layer = it.card_attrs.layer or 1
         cur = slots.setdefault(dex, {}).get(layer)
         if cur is None or rank(it) > rank(cur):
@@ -181,6 +184,8 @@ def pokedex(db: Session = Depends(get_db)):
             return None
         return {
             "id": item.id,
+            # the binder copy itself, so the UI can pull it out of the binder
+            "owned_id": next((o.id for o in item.owned if o.in_binder), None),
             "title": item.title,
             "image_url": item.image_url,
             "set_name": item.card_attrs.set_name,

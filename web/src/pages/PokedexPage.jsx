@@ -33,6 +33,13 @@ export default function PokedexPage() {
     );
   };
 
+  // pull this copy out of the binder (it stays in the collection)
+  const removeFromBinder = async (c) => {
+    if (!c.owned_id) return;
+    await api.updateOwned(c.id, c.owned_id, { in_binder: false });
+    api.pokedex().then((d) => setEntries(d.entries));
+  };
+
   const q = query.trim().toLowerCase();
   const shown = entries.filter((e) => {
     if (filter !== "all" && status(e) !== filter) return false;
@@ -139,10 +146,17 @@ export default function PokedexPage() {
                                 {c.set_name} #{c.card_number} · {c.rarity}
                               </small>
                             </span>
+                            <button
+                              className="ghost danger icon"
+                              onClick={() => removeFromBinder(c)}
+                              title="Remove from binder (stays in collection)"
+                            >
+                              <Icon id="x" />
+                            </button>
                           </>
                         ) : (
                           <span className="game-text">
-                            <small>empty — add via the Cards tab</small>
+                            <small>empty — mark a copy "Binder" on the Cards tab</small>
                           </span>
                         )}
                       </li>

@@ -9,6 +9,7 @@ class OwnedOut(BaseModel):
     completeness: str | None = None
     grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
     grade: str | None = None
+    in_binder: bool = False  # cards: this copy occupies a binder slot
     notes: str | None = None
 
 
@@ -17,6 +18,7 @@ class OwnedCreate(BaseModel):
     completeness: str | None = None  # games only
     grader: str | None = None  # cards only
     grade: str | None = None
+    in_binder: bool = False  # cards only
     notes: str | None = None
 
 

@@ -20,6 +20,8 @@ class Owned(TimestampMixin, Base):
     # cards only: grading ("PSA" + "9"); both null = raw
     grader: Mapped[str | None] = mapped_column(String(10))
     grade: Mapped[str | None] = mapped_column(String(6))
+    # cards only: this specific copy sits in the Pokédex binder (opt-in)
+    in_binder: Mapped[bool] = mapped_column(default=False, server_default="false")
     notes: Mapped[str | None] = mapped_column(Text)
 
     item = relationship("CollectionItem", back_populates="owned")

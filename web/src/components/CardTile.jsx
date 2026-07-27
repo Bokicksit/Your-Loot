@@ -10,7 +10,12 @@ const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
 export default function CardTile({ card, onChange }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned id being edited
-  const [vals, setVals] = useState({ condition: "NM", grader: "Raw", grade: "" });
+  const [vals, setVals] = useState({
+    condition: "NM",
+    grader: "Raw",
+    grade: "",
+    in_binder: false,
+  });
 
   const run = async (fn) => {
     if (busy) return;
@@ -34,6 +39,7 @@ export default function CardTile({ card, onChange }) {
       condition: o.condition || "NM",
       grader: o.grader || "Raw",
       grade: o.grade || "",
+      in_binder: o.in_binder,
     });
   };
   const saveEdit = () =>
@@ -43,6 +49,7 @@ export default function CardTile({ card, onChange }) {
         condition: vals.condition,
         grader: graded ? vals.grader : null,
         grade: graded && vals.grade ? vals.grade : null,
+        in_binder: vals.in_binder && !!card.attrs.national_dex_no,
       });
       setEditing(null);
       return status;
@@ -73,6 +80,7 @@ export default function CardTile({ card, onChange }) {
               onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
               title="Edit this copy"
             >
+              {o.in_binder && <Icon id="ball" />}
               {chipLabel(o)}
               <button
                 onClick={(e) => {
@@ -123,6 +131,15 @@ export default function CardTile({ card, onChange }) {
               onChange={(e) => setVals({ ...vals, grade: e.target.value })}
             />
           </div>
+          {card.attrs.national_dex_no && (
+            <button
+              type="button"
+              className={`toggle ${vals.in_binder ? "on" : ""}`}
+              onClick={() => setVals({ ...vals, in_binder: !vals.in_binder })}
+            >
+              Binder
+            </button>
+          )}
           <div className="form-row">
             <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
               <Icon id="check" />

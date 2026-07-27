@@ -26,6 +26,7 @@ export default function CardsPage() {
     condition: "NM",
     grader: "Raw",
     grade: "",
+    binder: false, // opt-in: only flagged copies occupy Pokédex binder slots
   });
   const navigate = useNavigate();
 
@@ -71,6 +72,7 @@ export default function CardsPage() {
           condition: addVals.condition,
           grader: graded ? addVals.grader : null,
           grade: graded && addVals.grade ? addVals.grade : null,
+          in_binder: addVals.binder && !!picked.attrs.national_dex_no,
         });
       } else {
         await api.addWanted(picked.id);
@@ -80,7 +82,7 @@ export default function CardsPage() {
       setForm((f) => ({ ...f, number: "" }));
       setResults(null);
       setPicked(null);
-      setAddVals({ own: true, condition: "NM", grader: "Raw", grade: "" });
+      setAddVals({ own: true, condition: "NM", grader: "Raw", grade: "", binder: false });
       if (wantMode) {
         navigate("/wanted");
       } else {
@@ -198,6 +200,16 @@ export default function CardsPage() {
                 >
                   {addVals.own ? "I own it" : "I want it"}
                 </button>
+                {addVals.own && picked.attrs.national_dex_no && (
+                  <button
+                    type="button"
+                    className={`toggle ${addVals.binder ? "on" : ""}`}
+                    onClick={() => setAddVals({ ...addVals, binder: !addVals.binder })}
+                    title="This copy goes in the Pokédex binder"
+                  >
+                    Binder
+                  </button>
+                )}
                 <select
                   disabled={!addVals.own}
                   value={addVals.condition}
