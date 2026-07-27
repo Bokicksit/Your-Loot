@@ -14,8 +14,14 @@ async function request(path, options = {}) {
 export const api = {
   cards: (params = {}) =>
     request(`/api/cards?${new URLSearchParams(params)}`),
-  pokedex: (ownedOnly) =>
-    request(`/api/cards/pokedex?owned_only=${ownedOnly ? "true" : "false"}`),
+  cardsSearch: (params) =>
+    request(`/api/cards/search?${new URLSearchParams(params)}`),
+  pokedex: () => request("/api/cards/pokedex"),
+  dexHappy: (dexNo, happy) =>
+    request(`/api/cards/pokedex/${dexNo}/happy`, {
+      method: "PUT",
+      body: JSON.stringify({ happy }),
+    }),
   wanted: () => request("/api/wanted"),
   games: (params = {}) =>
     request(`/api/games?${new URLSearchParams(params)}`),

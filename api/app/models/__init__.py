@@ -1,5 +1,5 @@
 from app.models.base import Base
-from app.models.cards import CardAttrs
+from app.models.cards import CardAttrs, DexSlot
 from app.models.collection import Owned, Wanted
 from app.models.games import GameAttrs, Platform
 from app.models.item import CollectionItem, Module
@@ -10,6 +10,7 @@ __all__ = [
     "Base",
     "CardAttrs",
     "CollectionItem",
+    "DexSlot",
     "GameAttrs",
     "Module",
     "MovieAttrs",

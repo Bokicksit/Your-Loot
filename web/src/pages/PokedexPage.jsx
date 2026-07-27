@@ -2,76 +2,174 @@ import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 
-// Pokédex grid: one slot per national dex number, owned slots in gold.
-// Tapping a slot opens a full-width detail strip listing that Pokémon's cards.
+const LAYERS = [
+  { key: "1", label: "Basic" },
+  { key: "2", label: "Full Art" },
+  { key: "3", label: "IR · SIR" },
+];
+
+// The binder mirror: one slot per national dex number, three layers each
+// (Basic / Full Art EX / IR-SIR). A slot is settled when it has an IR/SIR
+// or is marked "happy" (keeper card).
 export default function PokedexPage() {
   const [entries, setEntries] = useState([]);
-  const [ownedOnly, setOwnedOnly] = useState(false);
-  const [open, setOpen] = useState(null); // dex_no of expanded slot
+  const [filter, setFilter] = useState("all"); // all|missing|upgrade|done
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(null);
 
   useEffect(() => {
-    api.pokedex(ownedOnly).then((d) => setEntries(d.entries));
-  }, [ownedOnly]);
+    api.pokedex().then((d) => setEntries(d.entries));
+  }, []);
+
+  const hasAny = (e) => e.layers["1"] || e.layers["2"] || e.layers["3"];
+  const done = (e) => !!e.layers["3"] || (e.happy && hasAny(e));
+  const status = (e) => (done(e) ? "done" : hasAny(e) ? "upgrade" : "missing");
+
+  const toggleHappy = async (e) => {
+    const next = !e.happy;
+    await api.dexHappy(e.dex_no, next);
+    setEntries((es) =>
+      es.map((x) => (x.dex_no === e.dex_no ? { ...x, happy: next } : x))
+    );
+  };
+
+  const q = query.trim().toLowerCase();
+  const shown = entries.filter((e) => {
+    if (filter !== "all" && status(e) !== filter) return false;
+    if (!q) return true;
+    if (q.startsWith("#")) return String(e.dex_no) === q.slice(1).replace(/^0+/, "");
+    if (/^\d+$/.test(q)) return String(e.dex_no).startsWith(q);
+    return (e.name || "").toLowerCase().includes(q);
+  });
+
+  const counts = {
+    done: entries.filter((e) => status(e) === "done").length,
+    upgrade: entries.filter((e) => status(e) === "upgrade").length,
+  };
+
+  const slotImage = (e) =>
+    (e.layers["3"] || e.layers["2"] || e.layers["1"])?.image_url || null;
 
   return (
     <div>
       <div className="toolbar">
-        <button
-          type="button"
-          className={`toggle ${ownedOnly ? "on" : ""}`}
-          onClick={() => setOwnedOnly(!ownedOnly)}
-        >
-          Owned only
-        </button>
-        <span className="count" style={{ marginLeft: "auto" }}>
-          {entries.filter((e) => e.owned_count > 0).length} / {entries.length}
+        <input
+          type="search"
+          placeholder="Name or #025…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <span className="count">
+          {counts.done} / {entries.length || "…"}
         </span>
       </div>
+      <div className="chip-row">
+        {[
+          ["all", "All"],
+          ["missing", "Missing"],
+          ["upgrade", `Needs upgrade (${counts.upgrade})`],
+          ["done", "Done"],
+        ].map(([k, label]) => (
+          <button
+            key={k}
+            className={`chip ${filter === k ? "active" : ""}`}
+            onClick={() => setFilter(k)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="dex-grid">
-        {entries.map((e) => (
+        {shown.map((e) => (
           <Fragment key={e.dex_no}>
             <button
-              className={`dex-slot ${e.owned_count ? "owned" : "unowned"}`}
+              className={`dex-slot ${
+                done(e) ? "owned" : hasAny(e) ? "partial" : "unowned"
+              }`}
               aria-expanded={open === e.dex_no}
               onClick={() => setOpen(open === e.dex_no ? null : e.dex_no)}
             >
-              <span className="dex-no">#{String(e.dex_no).padStart(3, "0")}</span>
-              {e.display_image ? (
-                <img src={e.display_image} alt={e.display_title} loading="lazy" />
+              <span className="dex-no">#{String(e.dex_no).padStart(4, "0")}</span>
+              {slotImage(e) ? (
+                <img src={slotImage(e)} alt={e.name || ""} loading="lazy" />
               ) : (
-                <span className="placeholder" data-label="no art" />
+                <span className="placeholder" data-label="" />
               )}
-              <span className="name">{e.display_title}</span>
-              <span className="count">
-                {e.owned_count} / {e.card_count}
+              <span className="name">{e.name || "—"}</span>
+              <span className="layer-pips">
+                {LAYERS.map((l) => (
+                  <span
+                    key={l.key}
+                    className={`pip ${e.layers[l.key] ? "filled" : ""}`}
+                    title={l.label}
+                  />
+                ))}
+                {e.happy && !e.layers["3"] && (
+                  <span className="pip-happy" title="Happy with it">
+                    <Icon id="check" />
+                  </span>
+                )}
               </span>
             </button>
             {open === e.dex_no && (
               <div className="dex-detail">
                 <h3>
-                  #{String(e.dex_no).padStart(3, "0")} {e.display_title} —{" "}
-                  {e.owned_count} owned
+                  #{String(e.dex_no).padStart(4, "0")} {e.name || ""}
+                  {e.copies > 0 && (
+                    <span className="dex-no" style={{ marginLeft: "8px" }}>
+                      ×{e.copies} copies
+                    </span>
+                  )}
                 </h3>
                 <ul>
-                  {e.cards.map((c) => (
-                    <li key={c.id}>
-                      <span className="module-chip"><Icon id="card" /></span>
-                      {c.attrs.set_name} #{c.attrs.card_number}
-                      {c.attrs.variant && c.attrs.variant !== "normal"
-                        ? ` · ${c.attrs.variant}`
-                        : ""}
-                      {c.wanted ? " ★" : ""}
-                      <span className="dex-no">
-                        {c.owned.length ? `×${c.owned.length}` : "—"}
-                      </span>
-                    </li>
-                  ))}
+                  {LAYERS.map((l) => {
+                    const c = e.layers[l.key];
+                    return (
+                      <li key={l.key} className={c ? "" : "layer-empty"}>
+                        <span className="layer-tag">{l.label}</span>
+                        {c ? (
+                          <>
+                            {c.image_url && (
+                              <img className="layer-thumb" src={c.image_url} alt="" loading="lazy" />
+                            )}
+                            <span className="game-text">
+                              <strong>{c.title}</strong>
+                              <small>
+                                {c.set_name} #{c.card_number} · {c.rarity}
+                              </small>
+                            </span>
+                          </>
+                        ) : (
+                          <span className="game-text">
+                            <small>empty — add via the Cards tab</small>
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
+                {!e.layers["3"] && hasAny(e) && (
+                  <button
+                    type="button"
+                    className={`toggle ${e.happy ? "on" : ""}`}
+                    onClick={() => toggleHappy(e)}
+                  >
+                    Happy with it — no IR/SIR needed
+                  </button>
+                )}
               </div>
             )}
           </Fragment>
         ))}
       </div>
+      {shown.length === 0 && entries.length > 0 && (
+        <div className="empty">
+          <span className="glyph"><Icon id="ball" /></span>
+          <strong>No dex slots match</strong>
+          <p>Adjust the filter or search.</p>
+        </div>
+      )}
     </div>
   );
 }

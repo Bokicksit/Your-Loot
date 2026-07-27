@@ -8,10 +8,12 @@ class CardAttrsOut(BaseModel):
 
     set_code: str | None = None
     set_name: str | None = None
+    set_total: int | None = None
     card_number: str | None = None
     rarity: str | None = None
     national_dex_no: int | None = None
     variant: str | None = None
+    layer: int = 1
 
 
 class CardOut(BaseModel):

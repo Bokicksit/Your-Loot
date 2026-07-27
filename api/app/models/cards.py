@@ -21,5 +21,19 @@ class CardAttrs(Base):
     rarity: Mapped[str | None] = mapped_column(String(50))
     national_dex_no: Mapped[int | None] = mapped_column(index=True)
     variant: Mapped[str | None] = mapped_column(String(20))  # normal/reverse/holo/full-art
+    # binder layer, classified from rarity at seed time:
+    # 1 basic (incl. regular ex, vintage holos, golds) / 2 full-art / 3 IR-SIR
+    layer: Mapped[int] = mapped_column(default=1, server_default="1")
+    set_total: Mapped[int | None] = mapped_column()  # printed size: "91/108" -> 108
 
     item = relationship("CollectionItem", back_populates="card_attrs")
+
+
+class DexSlot(Base):
+    """Per-dex binder flag: happy=True means 'the current occupant stays even
+    if it isn't an IR/SIR' — the keeper-card case."""
+
+    __tablename__ = "dex_slots"
+
+    dex_no: Mapped[int] = mapped_column(primary_key=True)
+    happy: Mapped[bool] = mapped_column(default=False, server_default="false")

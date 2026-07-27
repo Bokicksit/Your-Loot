@@ -7,12 +7,16 @@ class OwnedOut(BaseModel):
     id: int
     condition: str | None = None
     completeness: str | None = None
+    grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
+    grade: str | None = None
     notes: str | None = None
 
 
 class OwnedCreate(BaseModel):
     condition: str | None = None
     completeness: str | None = None  # games only
+    grader: str | None = None  # cards only
+    grade: str | None = None
     notes: str | None = None
 
 

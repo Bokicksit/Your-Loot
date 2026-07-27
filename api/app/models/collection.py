@@ -17,6 +17,9 @@ class Owned(TimestampMixin, Base):
     # games only: loose/CIB/sealed — per copy, since you can own a loose one
     # and later add a CIB one
     completeness: Mapped[str | None] = mapped_column(String(20))
+    # cards only: grading ("PSA" + "9"); both null = raw
+    grader: Mapped[str | None] = mapped_column(String(10))
+    grade: Mapped[str | None] = mapped_column(String(6))
     notes: Mapped[str | None] = mapped_column(Text)
 
     item = relationship("CollectionItem", back_populates="owned")

@@ -1,12 +1,17 @@
+import re
+
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
-from app.models import CardAttrs, CollectionItem, Module
-from app.schemas.cards import CardListOut, CardOut, PokedexEntry, PokedexOut
+from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
+from app.schemas.cards import CardListOut, CardOut
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
+
+MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
 
 
 def card_to_out(item: CollectionItem) -> CardOut:
@@ -33,16 +38,49 @@ def _base_query():
     )
 
 
+@router.get("/search", response_model=CardListOut)
+def search_cards(
+    db: Session = Depends(get_db),
+    name: str = Query(min_length=2),
+    number: str = Query(min_length=1),
+    set: str | None = None,
+    limit: int = Query(40, le=100),
+):
+    """Find the exact physical card: name + printed number, both on the card
+    itself. "91/108" also matches the printed set size; set name narrows."""
+    m = re.match(r"^\s*(\w+)\s*(?:/\s*(\d+))?\s*$", number)
+    num = (m.group(1) if m else number).strip()
+    total = int(m.group(2)) if m and m.group(2) else None
+    # numbers are strings ("4", "091", "TG12") — match ignoring leading zeros
+    stripped = num.lstrip("0") or num
+
+    q = _base_query().where(
+        CollectionItem.title.ilike(f"%{name.strip()}%"),
+        func.ltrim(CardAttrs.card_number, "0") == stripped,
+    )
+    if total:
+        q = q.where(CardAttrs.set_total == total)
+    if set:
+        q = q.where(CardAttrs.set_name.ilike(f"%{set.strip()}%"))
+
+    items = (
+        db.scalars(q.order_by(CardAttrs.set_code, CollectionItem.title).limit(limit))
+        .unique()
+        .all()
+    )
+    return CardListOut(total=len(items), items=[card_to_out(i) for i in items])
+
+
 @router.get("", response_model=CardListOut)
 def list_cards(
     db: Session = Depends(get_db),
     search: str | None = None,
-    set_code: str | None = None,
-    rarity: str | None = None,
-    dex: int | None = None,
-    limit: int = Query(60, le=200),
+    collection: bool = True,
+    limit: int = Query(120, le=300),
     offset: int = 0,
 ):
+    """The card collection: owned cards by default (collection=false browses
+    the full catalog, mostly for debugging)."""
     q = _base_query()
     count_q = (
         select(func.count())
@@ -53,12 +91,10 @@ def list_cards(
     filters = []
     if search:
         filters.append(CollectionItem.title.ilike(f"%{search}%"))
-    if set_code:
-        filters.append(CardAttrs.set_code == set_code)
-    if rarity:
-        filters.append(CardAttrs.rarity == rarity)
-    if dex is not None:
-        filters.append(CardAttrs.national_dex_no == dex)
+    if collection:
+        filters.append(
+            select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
+        )
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)
@@ -66,7 +102,7 @@ def list_cards(
     total = db.scalar(count_q) or 0
     items = (
         db.scalars(
-            q.order_by(CardAttrs.set_code, CardAttrs.national_dex_no, CollectionItem.title)
+            q.order_by(CardAttrs.national_dex_no.asc().nulls_last(), CollectionItem.title)
             .limit(limit)
             .offset(offset)
         )
@@ -76,38 +112,95 @@ def list_cards(
     return CardListOut(total=total, items=[card_to_out(i) for i in items])
 
 
-@router.get("/pokedex", response_model=PokedexOut)
-def pokedex(db: Session = Depends(get_db), owned_only: bool = False):
-    """Cards grouped by national dex number. The UI renders this as the
-    Pokédex grid; owned_only trims to slots where you own at least one card."""
-    items = (
+class HappyUpdate(BaseModel):
+    happy: bool
+
+
+@router.put("/pokedex/{dex_no}/happy")
+def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
+    """'Happy with it' — this dex slot's keeper card stays even without an
+    IR/SIR, so the binder stops flagging it for upgrade."""
+    slot = db.get(DexSlot, dex_no)
+    if slot is None:
+        slot = DexSlot(dex_no=dex_no, happy=body.happy)
+        db.add(slot)
+    else:
+        slot.happy = body.happy
+    db.commit()
+    return {"dex_no": dex_no, "happy": body.happy}
+
+
+@router.get("/pokedex")
+def pokedex(db: Session = Depends(get_db)):
+    """The binder: one entry per national dex number (1..MAX_DEX), each with
+    up to three layer occupants chosen from OWNED cards — the binder mirror."""
+    owned_cards = (
         db.scalars(
-            _base_query()
-            .where(CardAttrs.national_dex_no.is_not(None))
-            .order_by(CardAttrs.national_dex_no, CollectionItem.title)
+            _base_query().where(
+                CardAttrs.national_dex_no.is_not(None),
+                select(Owned.id).where(Owned.item_id == CollectionItem.id).exists(),
+            )
         )
         .unique()
         .all()
     )
 
-    by_dex: dict[int, list[CollectionItem]] = {}
-    for item in items:
-        by_dex.setdefault(item.card_attrs.national_dex_no, []).append(item)
+    # best occupant per (dex, layer): SIR beats IR in layer 3, then newest
+    def rank(item):
+        r = (item.card_attrs.rarity or "").lower()
+        return (1 if "special" in r else 0, item.id)
+
+    slots: dict[int, dict[int, CollectionItem]] = {}
+    counts: dict[int, int] = {}
+    for it in owned_cards:
+        dex = it.card_attrs.national_dex_no
+        if dex is None or dex > MAX_DEX:
+            continue
+        counts[dex] = counts.get(dex, 0) + len(it.owned)
+        layer = it.card_attrs.layer or 1
+        cur = slots.setdefault(dex, {}).get(layer)
+        if cur is None or rank(it) > rank(cur):
+            slots[dex][layer] = it
+
+    # display names for every dex number that exists in the catalog (shortest
+    # title is a decent proxy for the plain species name)
+    names: dict[int, str] = {}
+    for dex, title in db.execute(
+        select(CardAttrs.national_dex_no, CollectionItem.title)
+        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
+        .where(CardAttrs.national_dex_no.is_not(None))
+    ):
+        if dex <= MAX_DEX and (dex not in names or len(title) < len(names[dex])):
+            names[dex] = title
+
+    happy = {
+        s.dex_no for s in db.scalars(select(DexSlot).where(DexSlot.happy)).all()
+    }
+
+    def layer_out(item):
+        if item is None:
+            return None
+        return {
+            "id": item.id,
+            "title": item.title,
+            "image_url": item.image_url,
+            "set_name": item.card_attrs.set_name,
+            "card_number": item.card_attrs.card_number,
+            "rarity": item.card_attrs.rarity,
+        }
 
     entries = []
-    for dex_no, group in sorted(by_dex.items()):
-        owned_cards = [i for i in group if i.owned]
-        if owned_only and not owned_cards:
-            continue
-        display = owned_cards[0] if owned_cards else group[0]
-        entries.append(
-            PokedexEntry(
-                dex_no=dex_no,
-                display_title=display.title,
-                display_image=display.image_url,
-                owned_count=sum(len(i.owned) for i in group),
-                card_count=len(group),
-                cards=[card_to_out(i) for i in group],
-            )
-        )
-    return PokedexOut(entries=entries)
+    for dex in range(1, MAX_DEX + 1):
+        s = slots.get(dex, {})
+        entries.append({
+            "dex_no": dex,
+            "name": names.get(dex),
+            "layers": {
+                "1": layer_out(s.get(1)),
+                "2": layer_out(s.get(2)),
+                "3": layer_out(s.get(3)),
+            },
+            "copies": counts.get(dex, 0),
+            "happy": dex in happy,
+        })
+    return {"max_dex": MAX_DEX, "entries": entries}
