@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
 
@@ -6,7 +7,8 @@ const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
 
 // A card in the collection grid. Copies are chips ("PSA 9" / "NM") —
-// tap a chip to edit condition + grading, + adds another copy.
+// tap a chip to edit in a modal (tiles are too narrow for an inline form),
+// + adds another copy. Graded chips are jade, binder chips carry a pokéball.
 export default function CardTile({ card, onChange }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned id being edited
@@ -58,6 +60,71 @@ export default function CardTile({ card, onChange }) {
   const chipLabel = (o) =>
     o.grader ? `${o.grader} ${o.grade || "?"}` : o.condition || "set condition…";
 
+  const setLine = `${card.attrs.set_name} #${card.attrs.card_number}${
+    card.attrs.set_total ? `/${card.attrs.set_total}` : ""
+  }`;
+
+  const editorModal = (
+    <div className="modal-scrim" onClick={() => setEditing(null)}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>Edit copy</h2>
+        <p>
+          {card.title} · {setLine}
+        </p>
+        <div className="form-row" style={{ width: "100%" }}>
+          <select
+            value={vals.condition}
+            onChange={(e) => setVals({ ...vals, condition: e.target.value })}
+          >
+            {CONDITIONS.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+          <select
+            value={vals.grader}
+            onChange={(e) => setVals({ ...vals, grader: e.target.value })}
+          >
+            {GRADERS.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="9.5"
+            style={{ maxWidth: "80px" }}
+            disabled={vals.grader === "Raw"}
+            value={vals.grade}
+            onChange={(e) => setVals({ ...vals, grade: e.target.value })}
+          />
+        </div>
+        {card.attrs.national_dex_no && (
+          <button
+            type="button"
+            className={`toggle ${vals.in_binder ? "on" : ""}`}
+            onClick={() => setVals({ ...vals, in_binder: !vals.in_binder })}
+          >
+            In the Pokédex binder
+          </button>
+        )}
+        <div className="form-row" style={{ width: "100%" }}>
+          <button
+            className="primary"
+            style={{ flex: 1 }}
+            onClick={saveEdit}
+            disabled={busy}
+          >
+            <Icon id="check" />
+            Save
+          </button>
+          <button className="ghost" onClick={() => setEditing(null)}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
       {card.owned.length > 0 && <span className="owned-badge">×{card.owned.length}</span>}
@@ -68,15 +135,12 @@ export default function CardTile({ card, onChange }) {
       )}
       <div className="tile-info">
         <strong>{card.title}</strong>
-        <small>
-          {card.attrs.set_name} #{card.attrs.card_number}
-          {card.attrs.set_total ? `/${card.attrs.set_total}` : ""}
-        </small>
+        <small>{setLine}</small>
         <span className="copy-chips">
           {card.owned.map((o) => (
             <span
               key={o.id}
-              className="chip copy"
+              className={`chip copy ${o.grader ? "graded" : ""}`}
               onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
               title="Edit this copy"
             >
@@ -103,53 +167,7 @@ export default function CardTile({ card, onChange }) {
           </button>
         </span>
       </div>
-      {editing !== null && (
-        <div className="copy-edit stack">
-          <select
-            value={vals.condition}
-            onChange={(e) => setVals({ ...vals, condition: e.target.value })}
-          >
-            {CONDITIONS.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-          <div className="form-row">
-            <select
-              value={vals.grader}
-              onChange={(e) => setVals({ ...vals, grader: e.target.value })}
-            >
-              {GRADERS.map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="9.5"
-              disabled={vals.grader === "Raw"}
-              value={vals.grade}
-              onChange={(e) => setVals({ ...vals, grade: e.target.value })}
-            />
-          </div>
-          {card.attrs.national_dex_no && (
-            <button
-              type="button"
-              className={`toggle ${vals.in_binder ? "on" : ""}`}
-              onClick={() => setVals({ ...vals, in_binder: !vals.in_binder })}
-            >
-              Binder
-            </button>
-          )}
-          <div className="form-row">
-            <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
-              <Icon id="check" />
-            </button>
-            <button className="ghost icon" onClick={() => setEditing(null)} title="Cancel">
-              <Icon id="x" />
-            </button>
-          </div>
-        </div>
-      )}
+      {editing !== null && createPortal(editorModal, document.body)}
     </div>
   );
 }

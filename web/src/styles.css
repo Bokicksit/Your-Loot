@@ -718,12 +718,19 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   box-shadow: 0 0 0 2px var(--gold), 0 10px 26px -12px var(--gold-glow);
 }
 
-/* "+" chip to add a copy, and stacked copy editor inside card tiles */
+/* "+" chip to add a copy */
 .chip.copy.add { cursor: pointer; padding: 0 8px; }
 .chip.copy.add svg.i { width: 12px; height: 12px; }
-.copy-edit.stack { display: grid; gap: var(--s-2); padding-top: var(--s-2); }
-.copy-edit.stack .form-row { width: 100%; }
-.copy-edit.stack .form-row > input { flex: 1 1 50px; }
+
+/* graded copies read as slabs: jade instead of gold */
+.chip.copy.graded {
+  color: var(--jade);
+  background: var(--jade-wash);
+  border-color: rgba(88, 217, 168, .45);
+}
+
+/* rows that should reflow instead of squeeze at phone width */
+.form-row.wrap { flex-wrap: wrap; }
 
 /* ============================ Wanted ============================ */
 

@@ -192,7 +192,7 @@ export default function CardsPage() {
 
           {picked && (
             <>
-              <div className="form-row">
+              <div className="form-row wrap">
                 <button
                   type="button"
                   className={`toggle ${addVals.own ? "on" : ""}`}
