@@ -48,6 +48,7 @@ class TMDBClient:
                 "year": (m.get("release_date") or "")[:4] or None,
                 "poster_url": IMG_URL + m["poster_path"] if m.get("poster_path") else None,
                 "genre": genre,
+                "overview": m.get("overview") or None,
             })
         return results
 

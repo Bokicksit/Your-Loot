@@ -25,6 +25,7 @@ class CardAttrs(Base):
     # 1 basic (incl. regular ex, vintage holos, golds) / 2 full-art / 3 IR-SIR
     layer: Mapped[int] = mapped_column(default=1, server_default="1")
     set_total: Mapped[int | None] = mapped_column()  # printed size: "91/108" -> 108
+    set_year: Mapped[int | None] = mapped_column()  # set release year (from dump)
 
     item = relationship("CollectionItem", back_populates="card_attrs")
 

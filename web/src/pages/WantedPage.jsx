@@ -55,6 +55,7 @@ export default function WantedPage() {
   const [facet, setFacet] = useState(""); // system (games) / genre (movies)
   const [acquiring, setAcquiring] = useState(null); // item_id being acquired
   const [acqVals, setAcqVals] = useState({});
+  const [openInfo, setOpenInfo] = useState(null); // item_id with info expanded
 
   const load = () => api.wanted().then(setRows);
   useEffect(() => {
@@ -165,7 +166,14 @@ export default function WantedPage() {
               ) : (
                 <span className="placeholder" data-label="art" />
               )}
-              <span className="game-text">
+              <span
+                className="game-text"
+                style={r.info_line || r.info_text ? { cursor: "pointer" } : undefined}
+                onClick={() =>
+                  (r.info_line || r.info_text) &&
+                  setOpenInfo(openInfo === r.item_id ? null : r.item_id)
+                }
+              >
                 <strong>{r.title}</strong>
                 <small>{r.detail}</small>
               </span>
@@ -195,6 +203,14 @@ export default function WantedPage() {
                 <Icon id="x" />
               </button>
             </li>
+            {openInfo === r.item_id && (r.info_line || r.info_text) && (
+              <li className="acquire-edit wanted-info">
+                {r.info_line && (
+                  <span className="game-info-line">{r.info_line}</span>
+                )}
+                {r.info_text && <p className="game-summary">{r.info_text}</p>}
+              </li>
+            )}
             {acquiring === r.item_id && (
               <li className="acquire-edit">
                 <span className="acquire-label">Got it as:</span>

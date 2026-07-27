@@ -8,6 +8,7 @@ class MovieAttrsOut(BaseModel):
     edition: str | None = None
     region_code: str | None = None
     genre: str | None = None
+    overview: str | None = None
     tmdb_id: int | None = None
 
 
@@ -44,6 +45,7 @@ class MovieCreate(BaseModel):
     edition: str | None = None
     region_code: str | None = None
     genre: str | None = None
+    overview: str | None = None
     image_url: str | None = None
     notes: str | None = None
     tmdb_id: int | None = None  # metadata link; duplicates allowed (editions)

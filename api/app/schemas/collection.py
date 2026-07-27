@@ -16,6 +16,9 @@ class WantedItemOut(BaseModel):
     facet: str | None = None
     # left-edge badge: platform abbr for games (logo lookup), format for movies
     badge: str | None = None
+    # expandable info, server-built: a facts line + optional longer text
+    info_line: str = ""
+    info_text: str | None = None
     wanted: WantedOut
 
 

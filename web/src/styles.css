@@ -874,6 +874,14 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   letter-spacing: .08em;
 }
 
+/* expanded info panel on wanted rows */
+.wanted-list li.wanted-info {
+  display: grid;
+  gap: var(--s-1);
+  border-left: 3px solid var(--gold);
+  background: var(--bg-2);
+}
+
 /* inline acquire editor on the wanted list ("Got it as: …") */
 .wanted-list li.acquire-edit {
   border-left: 3px solid var(--gold);

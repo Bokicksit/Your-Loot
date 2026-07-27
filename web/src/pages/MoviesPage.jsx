@@ -21,6 +21,7 @@ const EMPTY_FORM = {
   edition: "",
   region_code: "",
   genre: "",
+  overview: null,
   image_url: null,
   tmdb_id: null,
   own: true,
@@ -118,6 +119,7 @@ export default function MoviesPage() {
       tmdb_id: r.tmdb_id,
       image_url: r.poster_url,
       genre: r.genre || form.genre,
+      overview: r.overview || null,
     });
     setResults(null);
   };
@@ -131,6 +133,7 @@ export default function MoviesPage() {
         edition: form.edition.trim() || null,
         region_code: form.region_code || null,
         genre: form.genre || null,
+        overview: form.overview,
         image_url: form.image_url,
         tmdb_id: form.tmdb_id,
       });
@@ -223,8 +226,14 @@ export default function MoviesPage() {
               placeholder="Title — then search TMDB"
               value={form.title}
               onChange={(e) =>
-                // manual edits detach the TMDB link/poster
-                setForm({ ...form, title: e.target.value, tmdb_id: null, image_url: null })
+                // manual edits detach the TMDB link/poster/overview
+                setForm({
+                  ...form,
+                  title: e.target.value,
+                  tmdb_id: null,
+                  image_url: null,
+                  overview: null,
+                })
               }
               onKeyDown={(e) => {
                 // Enter always searches — the form only submits via Add
@@ -372,6 +381,9 @@ function MovieRow({ movie, onChange, onReload }) {
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
+  const [infoOpen, setInfoOpen] = useState(false); // genre/overview panel
+
+  const hasInfo = !!(movie.attrs.genre || movie.attrs.overview);
 
   const run = async (fn) => {
     if (busy) return;
@@ -446,7 +458,11 @@ function MovieRow({ movie, onChange, onReload }) {
       ) : (
         <span className="game-icon"><Icon id="disc" /></span>
       )}
-      <span className="game-text">
+      <span
+        className="game-text"
+        style={hasInfo ? { cursor: "pointer" } : undefined}
+        onClick={() => hasInfo && setInfoOpen(!infoOpen)}
+      >
         <strong>{movie.title}</strong>
         <small className="game-meta">
           {[movie.attrs.format, movie.attrs.edition, movie.attrs.region_code]
@@ -491,6 +507,16 @@ function MovieRow({ movie, onChange, onReload }) {
           <Icon id="trash" />
         </button>
       </span>
+      {infoOpen && hasInfo && (
+        <span className="entry-edit game-info">
+          {movie.attrs.genre && (
+            <span className="game-info-line">{movie.attrs.genre}</span>
+          )}
+          {movie.attrs.overview && (
+            <p className="game-summary">{movie.attrs.overview}</p>
+          )}
+        </span>
+      )}
       {entryOpen && (
         <span className="entry-edit">
           <div className="form-row">

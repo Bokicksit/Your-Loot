@@ -166,6 +166,29 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return item.movie_attrs.genre
         return None
 
+    def _info(item: CollectionItem) -> tuple[str, str | None]:
+        """Expandable row info: (facts line, optional longer text)."""
+        parts: list = []
+        text = None
+        if item.module == Module.cards.value and item.card_attrs:
+            a = item.card_attrs
+            parts = [a.set_name, a.set_year, a.rarity]
+        elif item.module == Module.games.value and item.game_attrs:
+            a = item.game_attrs
+            parts = [
+                a.release_year,
+                a.genres,
+                a.developer and f"Dev: {a.developer}",
+                a.publisher and a.publisher != a.developer and f"Pub: {a.publisher}",
+            ]
+            text = a.summary
+        elif item.module == Module.movies.value and item.movie_attrs:
+            a = item.movie_attrs
+            parts = [a.genre]
+            text = a.overview
+        line = "  ·  ".join(str(p) for p in parts if p)
+        return line, text
+
     def _badge(item: CollectionItem) -> str | None:
         """Left-edge row badge: system for games, media format for movies."""
         if item.module == Module.games.value and item.game_attrs and item.game_attrs.platform:
@@ -176,16 +199,21 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
         return None
 
     rows = db.scalars(q).unique().all()
-    return [
-        WantedItemOut(
-            item_id=w.item.id,
-            module=w.item.module,
-            title=w.item.title,
-            image_url=w.item.image_url,
-            detail=_detail(w.item),
-            facet=_facet(w.item),
-            badge=_badge(w.item),
-            wanted=w,
+    out = []
+    for w in rows:
+        line, text = _info(w.item)
+        out.append(
+            WantedItemOut(
+                item_id=w.item.id,
+                module=w.item.module,
+                title=w.item.title,
+                image_url=w.item.image_url,
+                detail=_detail(w.item),
+                facet=_facet(w.item),
+                badge=_badge(w.item),
+                info_line=line,
+                info_text=text,
+                wanted=w,
+            )
         )
-        for w in rows
-    ]
+    return out
