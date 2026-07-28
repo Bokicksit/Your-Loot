@@ -2,7 +2,7 @@ import re
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
@@ -60,7 +60,14 @@ def search_cards(
     if total:
         q = q.where(CardAttrs.set_total == total)
     if set:
-        q = q.where(CardAttrs.set_name.ilike(f"%{set.strip()}%"))
+        s = set.strip()
+        # match the set name OR the code printed on modern cards (MEW, JTG)
+        q = q.where(
+            or_(
+                CardAttrs.set_name.ilike(f"%{s}%"),
+                func.upper(CardAttrs.set_abbr) == s.upper(),
+            )
+        )
 
     items = (
         db.scalars(q.order_by(CardAttrs.set_code, CollectionItem.title).limit(limit))

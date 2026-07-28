@@ -8,6 +8,7 @@ class CardAttrsOut(BaseModel):
 
     set_code: str | None = None
     set_name: str | None = None
+    set_abbr: str | None = None
     set_total: int | None = None
     card_number: str | None = None
     rarity: str | None = None

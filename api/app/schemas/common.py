@@ -10,6 +10,8 @@ class OwnedOut(BaseModel):
     grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
     grade: str | None = None
     in_binder: bool = False  # cards: this copy occupies a binder slot
+    variant: str | None = None  # cards: Non-Holo/Reverse Holo/Holo
+    stamp: str | None = None  # cards: promo stamp text
     notes: str | None = None
 
 
@@ -19,6 +21,8 @@ class OwnedCreate(BaseModel):
     grader: str | None = None  # cards only
     grade: str | None = None
     in_binder: bool = False  # cards only
+    variant: str | None = None  # cards only
+    stamp: str | None = None  # cards only
     notes: str | None = None
 
 

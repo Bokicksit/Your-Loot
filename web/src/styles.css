@@ -698,6 +698,13 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .pip-happy { color: var(--jade); display: inline-flex; }
 .pip-happy svg.i { width: 12px; height: 12px; stroke-width: 2.4; }
+
+/* printed rarity symbols: ● ◆ ★ — black/silver/gold */
+.rarity-mark { letter-spacing: 1px; font-size: 9px; }
+.rarity-mark.mark-bw { color: var(--text-dim); }
+.rarity-mark.mark-silver { color: var(--text); }
+.rarity-mark.mark-gold { color: var(--gold); }
+
 .rarity-tag {
   padding: 1px 6px;
   border: 1px solid var(--line);

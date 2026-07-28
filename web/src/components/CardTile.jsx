@@ -2,9 +2,12 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
+import RarityMark from "./RarityMark.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
+const VARIANTS = ["Non-Holo", "Reverse Holo", "Holo"];
+const VARIANT_SHORT = { "Reverse Holo": "RH", Holo: "Holo" };
 
 // A card in the collection grid. Copies are chips ("PSA 9" / "NM") —
 // tap a chip to edit in a modal (tiles are too narrow for an inline form),
@@ -17,6 +20,8 @@ export default function CardTile({ card, onChange }) {
     grader: "Raw",
     grade: "",
     in_binder: false,
+    variant: "Non-Holo",
+    stamp: "",
   });
 
   const run = async (fn) => {
@@ -52,6 +57,8 @@ export default function CardTile({ card, onChange }) {
       grader: o.grader || "Raw",
       grade: o.grade || "",
       in_binder: o.in_binder,
+      variant: o.variant || "Non-Holo",
+      stamp: o.stamp || "",
     });
   };
   const saveEdit = () =>
@@ -62,13 +69,21 @@ export default function CardTile({ card, onChange }) {
         grader: graded ? vals.grader : null,
         grade: graded && vals.grade ? vals.grade : null,
         in_binder: vals.in_binder && !!card.attrs.national_dex_no,
+        variant: vals.variant === "Non-Holo" ? null : vals.variant,
+        stamp: vals.stamp.trim() || null,
       });
       setEditing(null);
       return status;
     });
 
   const chipLabel = (o) =>
-    o.grader ? `${o.grader} ${o.grade || "?"}` : o.condition || "set condition…";
+    [
+      VARIANT_SHORT[o.variant],
+      o.grader ? `${o.grader} ${o.grade || "?"}` : o.condition,
+      o.stamp && "stamped",
+    ]
+      .filter(Boolean)
+      .join(" · ") || "set condition…";
 
   const setLine = `${card.attrs.set_name} #${card.attrs.card_number}${
     card.attrs.set_total ? `/${card.attrs.set_total}` : ""
@@ -108,6 +123,23 @@ export default function CardTile({ card, onChange }) {
             onChange={(e) => setVals({ ...vals, grade: e.target.value })}
           />
         </div>
+        <div className="form-row" style={{ width: "100%" }}>
+          <select
+            value={vals.variant}
+            onChange={(e) => setVals({ ...vals, variant: e.target.value })}
+          >
+            {VARIANTS.map((v) => (
+              <option key={v}>{v}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            className="grow"
+            placeholder="Stamp (Mega Evolution…)"
+            value={vals.stamp}
+            onChange={(e) => setVals({ ...vals, stamp: e.target.value })}
+          />
+        </div>
         {card.attrs.national_dex_no && (
           <button
             type="button"
@@ -145,7 +177,9 @@ export default function CardTile({ card, onChange }) {
       )}
       <div className="tile-info">
         <strong>{card.title}</strong>
-        <small>{setLine}</small>
+        <small>
+          <RarityMark rarity={card.attrs.rarity} /> {setLine}
+        </small>
         <span className="copy-chips">
           {card.owned.map((o) => (
             <span

@@ -67,6 +67,7 @@ def seed_file(db, cards_path: Path, sets_by_id: dict):
     set_total = set_meta.get("printedTotal")
     release = set_meta.get("releaseDate") or ""  # "1999/01/09"
     set_year = int(release[:4]) if release[:4].isdigit() else None
+    set_abbr = set_meta.get("ptcgoCode")  # printed code on modern cards (MEW, JTG)
     cards = json.loads(cards_path.read_text(encoding="utf-8"))
 
     created = updated = 0
@@ -93,6 +94,7 @@ def seed_file(db, cards_path: Path, sets_by_id: dict):
         a.set_name = set_name
         a.set_total = set_total
         a.set_year = set_year
+        a.set_abbr = set_abbr
         a.card_number = card.get("number")
         a.rarity = card.get("rarity")
         a.national_dex_no = dex_nums[0] if dex_nums else None

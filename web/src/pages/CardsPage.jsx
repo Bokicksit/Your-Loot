@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile from "../components/CardTile.jsx";
 import { Icon } from "../components/Icons.jsx";
+import RarityMark from "../components/RarityMark.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
+const VARIANTS = ["Non-Holo", "Reverse Holo", "Holo"];
 
 // Collection view + card-in-hand add flow: search by name + printed number
 // (both on the physical card), set optional to narrow.
@@ -32,6 +34,8 @@ export default function CardsPage() {
     grade: "",
     binder: false, // opt-in: only flagged copies occupy Pokédex binder slots
     keeper: false, // binder card is "the one" vs a placeholder to upgrade
+    variant: "Non-Holo",
+    stamp: "",
   });
   const navigate = useNavigate();
 
@@ -89,6 +93,8 @@ export default function CardsPage() {
           grader: graded ? addVals.grader : null,
           grade: graded && addVals.grade ? addVals.grade : null,
           in_binder: toBinder,
+          variant: addVals.variant === "Non-Holo" ? null : addVals.variant,
+          stamp: addVals.stamp.trim() || null,
         });
         if (toBinder) {
           // record whether this occupant is the desired card or a placeholder
@@ -109,6 +115,8 @@ export default function CardsPage() {
         grade: "",
         binder: false,
         keeper: false,
+        variant: "Non-Holo",
+        stamp: "",
       });
       if (wantMode) {
         navigate("/wanted");
@@ -215,7 +223,7 @@ export default function CardsPage() {
             <input
               type="text"
               className="grow"
-              placeholder="Set (optional — Scarlet & Violet 151)"
+              placeholder="Set (optional — 151, MEW, JTG…)"
               value={form.set}
               onChange={(e) => setForm({ ...form, set: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}
@@ -238,7 +246,19 @@ export default function CardsPage() {
                 <div
                   key={c.id}
                   className={`tile pick ${picked?.id === c.id ? "sel" : ""}`}
-                  onClick={() => setPicked(picked?.id === c.id ? null : c)}
+                  onClick={() => {
+                    const now = picked?.id === c.id ? null : c;
+                    setPicked(now);
+                    if (now) {
+                      // cards printed as holos default the copy variant
+                      setAddVals((v) => ({
+                        ...v,
+                        variant: /holo/i.test(now.attrs.rarity || "")
+                          ? "Holo"
+                          : "Non-Holo",
+                      }));
+                    }
+                  }}
                 >
                   {c.image_url ? (
                     <img src={c.image_url} alt={c.title} loading="lazy" />
@@ -251,7 +271,9 @@ export default function CardsPage() {
                       {c.attrs.set_name} #{c.attrs.card_number}
                       {c.attrs.set_total ? `/${c.attrs.set_total}` : ""}
                     </small>
-                    <small>{c.attrs.rarity}</small>
+                    <small>
+                      <RarityMark rarity={c.attrs.rarity} /> {c.attrs.rarity}
+                    </small>
                   </div>
                 </div>
               ))}
@@ -304,6 +326,24 @@ export default function CardsPage() {
                     <option key={c}>{c}</option>
                   ))}
                 </select>
+                <select
+                  disabled={!addVals.own}
+                  title="Print style of your copy"
+                  value={addVals.variant}
+                  onChange={(e) => setAddVals({ ...addVals, variant: e.target.value })}
+                >
+                  {VARIANTS.map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  style={{ maxWidth: "150px" }}
+                  placeholder="Stamp (opt.)"
+                  disabled={!addVals.own}
+                  value={addVals.stamp}
+                  onChange={(e) => setAddVals({ ...addVals, stamp: e.target.value })}
+                />
                 <select
                   disabled={!addVals.own}
                   value={addVals.grader}

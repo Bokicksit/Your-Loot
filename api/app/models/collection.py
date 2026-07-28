@@ -22,6 +22,10 @@ class Owned(TimestampMixin, Base):
     grade: Mapped[str | None] = mapped_column(String(6))
     # cards only: this specific copy sits in the Pokédex binder (opt-in)
     in_binder: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # cards only: YOUR copy's print style + promo stamp — the catalog row is
+    # the same card whether you pulled the reverse holo or the plain one
+    variant: Mapped[str | None] = mapped_column(String(20))  # Non-Holo/Reverse Holo/Holo
+    stamp: Mapped[str | None] = mapped_column(String(60))  # "Mega Evolution"…
     notes: Mapped[str | None] = mapped_column(Text)
 
     item = relationship("CollectionItem", back_populates="owned")
