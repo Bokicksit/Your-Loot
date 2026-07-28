@@ -716,6 +716,7 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .tile-owned .set-abbr { color: var(--gold-bright); border-color: var(--gold-line); }
 
 /* card photo picker */
+.img-picker { display: grid; gap: var(--s-2); flex: 1 1 260px; min-width: 0; }
 .img-picker-row { display: flex; align-items: center; gap: var(--s-2); }
 .img-thumb {
   flex: none;

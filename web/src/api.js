@@ -24,6 +24,8 @@ export const api = {
   deleteCard: (itemId) => request(`/api/cards/${itemId}`, { method: "DELETE" }),
   updateCard: (itemId, body) =>
     request(`/api/cards/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  fetchImage: (url) =>
+    request("/api/images/fetch", { method: "POST", body: JSON.stringify({ url }) }),
   uploadImage: async (file) => {
     const fd = new FormData();
     fd.append("file", file);
