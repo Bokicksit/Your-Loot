@@ -14,6 +14,10 @@ class GameAttrsOut(BaseModel):
     genres: str | None = None
     developer: str | None = None
     publisher: str | None = None
+    model_number: str | None = None
+    serial_number: str | None = None
+    working: str | None = None
+    parent_id: int | None = None
 
 
 class GameOut(BaseModel):
@@ -40,6 +44,10 @@ class GameUpdate(BaseModel):
     is_hardware: bool | None = None
     image_url: str | None = None
     notes: str | None = None
+    model_number: str | None = None
+    serial_number: str | None = None
+    working: str | None = None
+    parent_id: int | None = None
 
 
 class GameCreate(BaseModel):
@@ -55,3 +63,7 @@ class GameCreate(BaseModel):
     genres: str | None = None
     developer: str | None = None
     publisher: str | None = None
+    model_number: str | None = None
+    serial_number: str | None = None
+    working: str | None = None
+    parent_id: int | None = None

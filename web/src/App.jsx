@@ -7,6 +7,7 @@ import CardsPage from "./pages/CardsPage.jsx";
 import PokedexPage from "./pages/PokedexPage.jsx";
 import WantedPage from "./pages/WantedPage.jsx";
 import GamesPage from "./pages/GamesPage.jsx";
+import HardwarePage from "./pages/HardwarePage.jsx";
 import MoviesPage from "./pages/MoviesPage.jsx";
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   { to: "/pokedex", icon: "ball", label: "Pokédex" },
   { to: "/wanted", icon: "star", label: "Wanted" },
   { to: "/games", icon: "pad", label: "Games" },
+  { to: "/hardware", icon: "console", label: "Hardware" },
   { to: "/movies", icon: "disc", label: "Movies" },
 ];
 
@@ -50,6 +52,7 @@ export default function App() {
           <Route path="/pokedex" element={<PokedexPage />} />
           <Route path="/wanted" element={<WantedPage />} />
           <Route path="/games" element={<GamesPage />} />
+          <Route path="/hardware" element={<HardwarePage />} />
           <Route path="/movies" element={<MoviesPage />} />
         </Routes>
       </main>

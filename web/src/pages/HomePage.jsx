@@ -30,6 +30,10 @@ export default function HomePage() {
           <Icon id="pad" />
           <strong>Games</strong>
         </Link>
+        <Link to="/hardware" className="home-tile">
+          <Icon id="console" />
+          <strong>Hardware</strong>
+        </Link>
         <Link to="/movies" className="home-tile">
           <Icon id="disc" />
           <strong>Movies</strong>

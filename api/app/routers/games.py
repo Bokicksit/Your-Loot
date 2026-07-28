@@ -29,6 +29,10 @@ def game_to_out(item: CollectionItem) -> GameOut:
             genres=a.genres,
             developer=a.developer,
             publisher=a.publisher,
+            model_number=a.model_number,
+            serial_number=a.serial_number,
+            working=a.working,
+            parent_id=a.parent_id,
         ),
         owned=item.owned,
         wanted=item.wanted,
@@ -165,6 +169,10 @@ def create_game(body: GameCreate, db: Session = Depends(get_db)):
             genres=body.genres,
             developer=body.developer,
             publisher=body.publisher,
+            model_number=body.model_number,
+            serial_number=body.serial_number,
+            working=body.working,
+            parent_id=body.parent_id,
         ),
     )
     db.add(item)
@@ -185,7 +193,10 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db)):
     for field in ("title", "image_url", "notes"):
         if field in data:
             setattr(item, field, data[field])
-    for field in ("platform_id", "region", "is_hardware"):
+    for field in (
+        "platform_id", "region", "is_hardware",
+        "model_number", "serial_number", "working", "parent_id",
+    ):
         if field in data:
             setattr(item.game_attrs, field, data[field])
     db.commit()

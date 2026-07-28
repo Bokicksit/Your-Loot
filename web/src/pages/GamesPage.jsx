@@ -71,7 +71,6 @@ export default function GamesPage() {
   const [total, setTotal] = useState(0);
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all"); // all | games | hardware
   const [platformFilter, setPlatformFilter] = useState(""); // system; genre later
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
   const [sort, setSort] = useState("title"); // title | platform | added
@@ -89,9 +88,9 @@ export default function GamesPage() {
   }, []);
 
   const load = () => {
-    const params = { sort };
+    // hardware lives on its own tab now — this page is games only
+    const params = { sort, is_hardware: false };
     if (search) params.search = search;
-    if (filter !== "all") params.is_hardware = filter === "hardware";
     if (platformFilter) params.platform_id = platformFilter;
     api
       .games(params)
@@ -114,7 +113,7 @@ export default function GamesPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, filter, platformFilter, sort]);
+  }, [search, platformFilter, sort]);
 
   const igdbSearch = async () => {
     if (form.title.trim().length < 2 || searching) return;
@@ -255,17 +254,6 @@ export default function GamesPage() {
       </div>
 
       <div className="chip-row">
-        {["all", "games", "hardware"].map((f) => (
-          <button
-            key={f}
-            className={`chip ${filter === f ? "active" : ""}`}
-            onClick={() => setFilter(f)}
-          >
-            {f === "games" && <Icon id="pad" />}
-            {f === "hardware" && <Icon id="sliders" />}
-            {f[0].toUpperCase() + f.slice(1)}
-          </button>
-        ))}
         <select
           className="chip-select"
           title="Filter by system"
@@ -387,13 +375,6 @@ export default function GamesPage() {
                 IGDB #{form.igdb_id} linked
               </span>
             )}
-            <button
-              type="button"
-              className={`toggle ${form.is_hardware ? "on" : ""}`}
-              onClick={() => setForm({ ...form, is_hardware: !form.is_hardware })}
-            >
-              Hardware
-            </button>
             <button type="submit" className="primary" style={{ marginLeft: "auto" }}>
               <Icon id="plus" />
               Add

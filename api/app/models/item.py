@@ -29,7 +29,13 @@ class CollectionItem(TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
     card_attrs = relationship("CardAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
-    game_attrs = relationship("GameAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
+    game_attrs = relationship(
+        "GameAttrs",
+        back_populates="item",
+        uselist=False,
+        cascade="all, delete-orphan",
+        foreign_keys="GameAttrs.item_id",
+    )
     movie_attrs = relationship("MovieAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     owned = relationship("Owned", back_populates="item", cascade="all, delete-orphan")
     wanted = relationship("Wanted", back_populates="item", uselist=False, cascade="all, delete-orphan")

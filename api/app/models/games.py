@@ -32,6 +32,17 @@ class GameAttrs(Base):
     genres: Mapped[str | None] = mapped_column(String(120))
     developer: Mapped[str | None] = mapped_column(String(100))
     publisher: Mapped[str | None] = mapped_column(String(100))
+    # hardware-only fields (is_hardware=true)
+    model_number: Mapped[str | None] = mapped_column(String(50))  # SNS-001…
+    serial_number: Mapped[str | None] = mapped_column(String(60))
+    working: Mapped[str | None] = mapped_column(String(12))  # works/partial/broken/untested
+    # accessory -> its console (both are hardware entries)
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("collection_item.id", ondelete="SET NULL")
+    )
 
-    item = relationship("CollectionItem", back_populates="game_attrs")
+    # two FKs point at collection_item (item_id + parent_id) — be explicit
+    item = relationship(
+        "CollectionItem", back_populates="game_attrs", foreign_keys=[item_id]
+    )
     platform = relationship("Platform")
