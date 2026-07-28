@@ -129,6 +129,11 @@ export default function PokedexPage() {
               )}
               <span className="name">{e.name || "—"}</span>
               <span className="layer-pips">
+                {e.card?.set_abbr && (
+                  <span className="set-abbr" title={e.card.set_name}>
+                    {e.card.set_abbr}
+                  </span>
+                )}
                 {e.card && (
                   <span className="rarity-tag" title={e.card.rarity}>
                     {abbrevRarity(e.card.rarity)}
@@ -160,9 +165,25 @@ export default function PokedexPage() {
                       <div className="expand-body">
                         <span className="expand-title">{e.card.title}</span>
                         <span className="expand-sub">
-                          {e.card.set_name} #{e.card.card_number}
+                          {e.card.set_name}
+                          {e.card.set_abbr ? ` (${e.card.set_abbr})` : ""}
+                          {e.card.set_year ? ` · ${e.card.set_year}` : ""}
                         </span>
-                        <span className="game-info-line">{e.card.rarity}</span>
+                        <span className="game-info-line">
+                          {e.card.rarity} · Card #{e.card.card_number}
+                          {e.card.set_total ? `/${e.card.set_total}` : ""}
+                        </span>
+                        <span className="expand-sub">
+                          {[
+                            e.card.variant,
+                            e.card.grader
+                              ? `${e.card.grader} ${e.card.grade || "?"}`
+                              : e.card.condition,
+                            e.card.stamp && `${e.card.stamp} stamp`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
                       </div>
                     </div>
                     <div className="form-row">

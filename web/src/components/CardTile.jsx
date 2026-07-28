@@ -14,6 +14,7 @@ const VARIANT_SHORT = { "Reverse Holo": "RH", Holo: "Holo" };
 // + adds another copy. Graded chips are jade, binder chips carry a pokéball.
 export default function CardTile({ card, onChange }) {
   const [busy, setBusy] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
   const [editing, setEditing] = useState(null); // owned id being edited
   const [vals, setVals] = useState({
     condition: "NM",
@@ -85,9 +86,11 @@ export default function CardTile({ card, onChange }) {
       .filter(Boolean)
       .join(" · ") || "set condition…";
 
-  const setLine = `${card.attrs.set_name} #${card.attrs.card_number}${
-    card.attrs.set_total ? `/${card.attrs.set_total}` : ""
-  }`;
+  const a = card.attrs;
+  // tile stays terse: the printed set code, full name lives in the expansion
+  const shortSet = a.set_abbr || a.set_name;
+  const numLine = `#${a.card_number}${a.set_total ? `/${a.set_total}` : ""}`;
+  const setLine = `${a.set_name} ${numLine}`;
 
   const editorModal = (
     <div className="modal-scrim" onClick={() => setEditing(null)}>
@@ -168,17 +171,32 @@ export default function CardTile({ card, onChange }) {
   );
 
   return (
+    <>
     <div className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
       {card.owned.length > 0 && <span className="owned-badge">×{card.owned.length}</span>}
       {card.image_url ? (
-        <img src={card.image_url} alt={card.title} loading="lazy" />
+        <img
+          src={card.image_url}
+          alt={card.title}
+          loading="lazy"
+          style={{ cursor: "pointer" }}
+          onClick={() => setDetailOpen(!detailOpen)}
+        />
       ) : (
-        <div className="placeholder" data-label={card.title} />
+        <div
+          className="placeholder"
+          data-label={card.title}
+          style={{ cursor: "pointer" }}
+          onClick={() => setDetailOpen(!detailOpen)}
+        />
       )}
       <div className="tile-info">
-        <strong>{card.title}</strong>
-        <small>
-          <RarityMark rarity={card.attrs.rarity} /> {setLine}
+        <strong style={{ cursor: "pointer" }} onClick={() => setDetailOpen(!detailOpen)}>
+          {card.title}
+        </strong>
+        <small style={{ cursor: "pointer" }} onClick={() => setDetailOpen(!detailOpen)}>
+          <RarityMark rarity={a.rarity} />
+          <span className="set-abbr">{shortSet}</span> {numLine}
         </small>
         <span className="copy-chips">
           {card.owned.map((o) => (
@@ -213,5 +231,41 @@ export default function CardTile({ card, onChange }) {
       </div>
       {editing !== null && createPortal(editorModal, document.body)}
     </div>
+    {detailOpen && (
+      <div className="dex-detail card-detail">
+        <div className="expand-card">
+          {card.image_url && (
+            <img className="expand-cover" src={card.image_url} alt="" loading="lazy" />
+          )}
+          <div className="expand-body">
+            <span className="expand-title">{card.title}</span>
+            <span className="expand-sub">
+              {a.set_name}
+              {a.set_abbr ? ` (${a.set_abbr})` : ""}
+              {a.set_year ? ` · ${a.set_year}` : ""}
+            </span>
+            <span className="game-info-line">
+              <RarityMark rarity={a.rarity} /> {a.rarity || "—"} · Card {numLine}
+              {a.national_dex_no ? ` · Dex #${a.national_dex_no}` : ""}
+            </span>
+          </div>
+        </div>
+        <ul>
+          {card.owned.map((o) => (
+            <li key={o.id}>
+              <span className="layer-tag">{o.in_binder ? "Binder" : "Box"}</span>
+              <span className="game-text">
+                <strong>{chipLabel(o)}</strong>
+                {o.stamp && <small>{o.stamp} stamp</small>}
+              </span>
+              <button className="ghost icon" onClick={() => openEdit(o)} title="Edit copy">
+                <Icon id="pencil" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+    </>
   );
 }

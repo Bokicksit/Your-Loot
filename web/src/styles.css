@@ -556,6 +556,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .tile-owned .tile-info strong { color: var(--gold-bright); }
 .tile-info small,
 .tile-info .meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-num);
   font-size: var(--f-1);
   letter-spacing: .03em;
@@ -698,6 +701,23 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .pip-happy { color: var(--jade); display: inline-flex; }
 .pip-happy svg.i { width: 12px; height: 12px; stroke-width: 2.4; }
+
+/* printed set code (MEW, JTG) — terse on tiles, full name in the expansion */
+.set-abbr {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-3);
+  color: var(--text-dim);
+  font-family: var(--font-num);
+  font-size: 9.5px;
+  letter-spacing: .06em;
+}
+.tile-owned .set-abbr { color: var(--gold-bright); border-color: var(--gold-line); }
+
+/* card detail spans the whole grid row so a narrow tile never cramps it */
+.card-detail { grid-column: 1 / -1; }
+.card-detail li .layer-tag { width: 46px; }
 
 /* printed rarity symbols: ● ◆ ★ — black/silver/gold */
 .rarity-mark { letter-spacing: 1px; font-size: 9px; }

@@ -226,16 +226,26 @@ def pokedex(db: Session = Depends(get_db)):
         if item is None:
             return None
         a = item.card_attrs
+        binder_copy = next((o for o in item.owned if o.in_binder), None)
         return {
             "id": item.id,
             # the binder copy itself, so the UI can pull it out of the binder
-            "owned_id": next((o.id for o in item.owned if o.in_binder), None),
+            "owned_id": binder_copy.id if binder_copy else None,
             "title": item.title,
             "image_url": item.image_url,
             "set_name": a.set_name,
+            "set_abbr": a.set_abbr,
+            "set_total": a.set_total,
+            "set_year": a.set_year,
             "card_number": a.card_number,
             "rarity": a.rarity,
             "layer": a.layer or 1,
+            # print details of the copy actually sleeved in the binder
+            "variant": binder_copy.variant if binder_copy else None,
+            "stamp": binder_copy.stamp if binder_copy else None,
+            "condition": binder_copy.condition if binder_copy else None,
+            "grader": binder_copy.grader if binder_copy else None,
+            "grade": binder_copy.grade if binder_copy else None,
         }
 
     entries = []
