@@ -16,6 +16,7 @@ export default function CardsPage() {
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
+  const [showBinder, setShowBinder] = useState(false); // binder cards hidden by default
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -35,7 +36,7 @@ export default function CardsPage() {
   const navigate = useNavigate();
 
   const load = () => {
-    const params = {};
+    const params = { include_binder: showBinder };
     if (search) params.search = search;
     if (setFilter) params.set_code = setFilter;
     if (rarityFilter) params.rarity = rarityFilter;
@@ -48,7 +49,7 @@ export default function CardsPage() {
         setLoaded(true);
       })
       .catch((e) => setError(e.message));
-    api.cardFacets().then((f) => {
+    api.cardFacets({ include_binder: showBinder }).then((f) => {
       setFacets(f);
       if (setFilter && !f.sets.some((s) => s.code === setFilter)) setSetFilter("");
       if (rarityFilter && !f.rarities.some((r) => r.rarity === rarityFilter))
@@ -59,7 +60,7 @@ export default function CardsPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, setFilter, rarityFilter]);
+  }, [search, setFilter, rarityFilter, showBinder]);
 
   const doSearch = async () => {
     if (searching || form.name.trim().length < 2) return;
@@ -148,9 +149,18 @@ export default function CardsPage() {
         </button>
       </div>
 
-      {(facets.sets.length > 0 || facets.rarities.length > 0) && (
-        <div className="chip-row">
-          <select
+      <div className="chip-row">
+        <button
+          type="button"
+          className={`toggle ${showBinder ? "on" : ""}`}
+          onClick={() => setShowBinder(!showBinder)}
+          title="Binder cards live on the Pokédex tab — toggle to see them here too"
+        >
+          Binder cards
+        </button>
+        {(facets.sets.length > 0 || facets.rarities.length > 0) && (
+          <>
+            <select
             className="chip-select"
             title="Filter by set"
             value={setFilter}
@@ -175,9 +185,10 @@ export default function CardsPage() {
                 {r.rarity} ({r.count})
               </option>
             ))}
-          </select>
-        </div>
-      )}
+            </select>
+          </>
+        )}
+      </div>
 
       {showForm && (
         <div className="add-form">

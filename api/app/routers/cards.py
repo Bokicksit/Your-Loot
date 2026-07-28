@@ -71,10 +71,13 @@ def search_cards(
 
 
 @router.get("/facets")
-def card_facets(db: Session = Depends(get_db)):
+def card_facets(db: Session = Depends(get_db), include_binder: bool = False):
     """Sets and rarities present among OWNED cards, with counts — drives the
-    collection filter dropdowns."""
-    owned_exists = select(Owned.id).where(Owned.item_id == CardAttrs.item_id).exists()
+    collection filter dropdowns. Mirrors the list's binder-hiding default."""
+    owned_q = select(Owned.id).where(Owned.item_id == CardAttrs.item_id)
+    if not include_binder:
+        owned_q = owned_q.where(~Owned.in_binder)
+    owned_exists = owned_q.exists()
     sets = [
         {"code": c, "name": n, "count": cnt}
         for c, n, cnt in db.execute(
@@ -103,11 +106,13 @@ def list_cards(
     set_code: str | None = None,
     rarity: str | None = None,
     collection: bool = True,
+    include_binder: bool = False,
     limit: int = Query(120, le=300),
     offset: int = 0,
 ):
     """The card collection: owned cards by default (collection=false browses
-    the full catalog, mostly for debugging)."""
+    the full catalog, mostly for debugging). Binder-only cards are hidden
+    unless include_binder — the binder is its own view."""
     q = _base_query()
     count_q = (
         select(func.count())
@@ -123,9 +128,10 @@ def list_cards(
     if rarity:
         filters.append(CardAttrs.rarity == rarity)
     if collection:
-        filters.append(
-            select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        )
+        owned_q = select(Owned.id).where(Owned.item_id == CollectionItem.id)
+        if not include_binder:
+            owned_q = owned_q.where(~Owned.in_binder)
+        filters.append(owned_q.exists())
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)

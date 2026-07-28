@@ -14,7 +14,8 @@ async function request(path, options = {}) {
 export const api = {
   cards: (params = {}) =>
     request(`/api/cards?${new URLSearchParams(params)}`),
-  cardFacets: () => request("/api/cards/facets"),
+  cardFacets: (params = {}) =>
+    request(`/api/cards/facets?${new URLSearchParams(params)}`),
   cardsSearch: (params) =>
     request(`/api/cards/search?${new URLSearchParams(params)}`),
   pokedex: () => request("/api/cards/pokedex"),
