@@ -485,7 +485,11 @@ function GameRow({ game, platforms, onChange, onReload }) {
     }
   };
 
-  const removeCopy = (ownedId) => run(() => api.removeOwned(game.id, ownedId));
+  const removeCopy = (o) => {
+    const label = [o.completeness, o.condition].filter(Boolean).join(" · ") || "copy";
+    if (!confirm(`Remove this copy of ${game.title} (${label})?`)) return;
+    run(() => api.removeOwned(game.id, o.id));
+  };
 
   const openEdit = (o) => {
     setEditing(o.id);
@@ -580,7 +584,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeCopy(o.id);
+                    removeCopy(o);
                   }}
                   title="Remove this copy"
                 >

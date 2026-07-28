@@ -33,7 +33,17 @@ export default function CardTile({ card, onChange }) {
   };
 
   const addCopy = () => run(() => api.addOwned(card.id, { condition: "NM" }));
-  const removeCopy = (ownedId) => run(() => api.removeOwned(card.id, ownedId));
+  const removeCopy = (o) => {
+    const last = card.owned.length === 1;
+    if (
+      !confirm(
+        `Remove ${card.title} (${chipLabel(o)})?` +
+          (last ? " This is your last copy — it leaves the collection." : "")
+      )
+    )
+      return;
+    run(() => api.removeOwned(card.id, o.id));
+  };
 
   const openEdit = (o) => {
     setEditing(o.id);
@@ -149,7 +159,7 @@ export default function CardTile({ card, onChange }) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeCopy(o.id);
+                  removeCopy(o);
                 }}
                 title="Remove this copy"
               >

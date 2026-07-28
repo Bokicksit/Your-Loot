@@ -396,7 +396,11 @@ function MovieRow({ movie, onChange, onReload }) {
     }
   };
 
-  const removeCopy = (ownedId) => run(() => api.removeOwned(movie.id, ownedId));
+  const removeCopy = (o) => {
+    const label = [o.completeness, o.condition].filter(Boolean).join(" · ") || "copy";
+    if (!confirm(`Remove this copy of ${movie.title} (${label})?`)) return;
+    run(() => api.removeOwned(movie.id, o.id));
+  };
 
   const openEdit = (o) => {
     setEditing(o.id);
@@ -495,7 +499,7 @@ function MovieRow({ movie, onChange, onReload }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeCopy(o.id);
+                    removeCopy(o);
                   }}
                   title="Remove this copy"
                 >
