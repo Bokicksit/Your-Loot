@@ -15,7 +15,16 @@ export default function PokedexPage() {
   const [rarityFilter, setRarityFilter] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+  // binder density — remembered per device, since it's a screen-size taste
+  const [cols, setCols] = useState(
+    () => Number(localStorage.getItem("dexCols")) || 4
+  );
   const navigate = useNavigate();
+
+  const pickCols = (n) => {
+    setCols(n);
+    localStorage.setItem("dexCols", String(n));
+  };
 
   // jump straight to the Cards add flow, pre-searched for this Pokémon —
   // the usual next step when a slot is empty or wants an upgrade
@@ -114,9 +123,24 @@ export default function PokedexPage() {
             ))}
           </select>
         )}
+        <span className="col-picker" style={{ marginLeft: "auto" }}>
+          {[3, 4, 5].map((n) => (
+            <button
+              key={n}
+              className={`chip ${cols === n ? "active" : ""}`}
+              title={`${n} per row`}
+              onClick={() => pickCols(n)}
+            >
+              {n}
+            </button>
+          ))}
+        </span>
       </div>
 
-      <div className="dex-grid">
+      <div
+        className="dex-grid"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
         {shown.map((e) => (
           <Fragment key={e.dex_no}>
             <button

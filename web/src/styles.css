@@ -724,6 +724,52 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .tile-owned .set-abbr { color: var(--gold-bright); border-color: var(--gold-line); }
 
+/* binder density picker */
+.col-picker { display: flex; gap: 4px; }
+.col-picker .chip { min-width: 32px; justify-content: center; padding: 0 8px; }
+
+/* set field: inline suggestions (2+ chars) and the browse-all list */
+.set-field { position: relative; flex: 1 1 160px; min-width: 0; display: flex; }
+.set-field > input { width: 100%; }
+.set-hints {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--s-1);
+  list-style: none;
+  background: #17161e;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-2);
+}
+.set-hints li, .set-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border-radius: var(--r-1);
+  cursor: pointer;
+  min-height: var(--tap);
+}
+.set-hints li:hover, .set-list li:hover { background: var(--gold-wash); }
+.set-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.set-hints .year, .set-list .year {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  color: var(--text-mute);
+}
+
 /* card photo picker */
 .img-picker { display: grid; gap: var(--s-2); flex: 1 1 260px; min-width: 0; }
 .img-picker-row { display: flex; align-items: center; gap: var(--s-2); }

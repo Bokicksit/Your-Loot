@@ -24,6 +24,26 @@ export default function CardsPage() {
   const [manual, setManual] = useState(null); // manual catalog entry draft
   const [online, setOnline] = useState(null); // TCGdex results (null = not searched)
   const [onlineBusy, setOnlineBusy] = useState(false);
+  const [setHints, setSetHints] = useState([]); // autocomplete, 2+ chars
+  const [setBrowser, setSetBrowser] = useState(null); // browse-all filter text
+
+  // suggest sets only once there's something to go on — 176 sets in a
+  // dropdown is noise, not help
+  const suggestSets = (text) => {
+    const t = text.trim().toLowerCase();
+    if (t.length < 2) return setSetHints([]);
+    const hit = (s) =>
+      (s.abbr || "").toLowerCase().startsWith(t) ||
+      (s.code || "").toLowerCase().startsWith(t) ||
+      (s.name || "").toLowerCase().includes(t);
+    setSetHints(sets.filter(hit).slice(0, 8));
+  };
+
+  const chooseSet = (s) => {
+    setForm((f) => ({ ...f, set: s.abbr || s.name }));
+    setSetHints([]);
+    setSetBrowser(null);
+  };
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -252,28 +272,95 @@ export default function CardsPage() {
             />
           </div>
           <div className="form-row">
-            <input
-              type="text"
-              className="grow"
-              list="card-sets"
-              placeholder="Set (optional — 151, MEW, JTG…)"
-              value={form.set}
-              onChange={(e) => setForm({ ...form, set: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}
-            />
-            <datalist id="card-sets">
-              {sets.map((s) => (
-                <option key={s.code} value={s.abbr || s.name}>
-                  {s.name}
-                  {s.abbr ? ` (${s.abbr})` : ""}
-                  {s.year ? ` · ${s.year}` : ""}
-                </option>
-              ))}
-            </datalist>
+            <span className="set-field">
+              <input
+                type="text"
+                placeholder="Set (optional — 151, MEW, JTG…)"
+                value={form.set}
+                onChange={(e) => {
+                  setForm({ ...form, set: e.target.value });
+                  suggestSets(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setSetHints([]);
+                    doSearch();
+                  } else if (e.key === "Escape") {
+                    setSetHints([]);
+                  }
+                }}
+              />
+              {setHints.length > 0 && (
+                <ul className="set-hints">
+                  {setHints.map((s) => (
+                    <li key={s.code || s.name} onClick={() => chooseSet(s)}>
+                      <span className="set-abbr">{s.abbr || "—"}</span>
+                      <span className="game-text">
+                        <strong>{s.name}</strong>
+                      </span>
+                      <span className="year">{s.year || ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </span>
+            <button
+              type="button"
+              className="ghost icon"
+              title="Browse all sets"
+              onClick={() => setSetBrowser(setBrowser === null ? "" : null)}
+            >
+              <Icon id="sliders" />
+            </button>
             <button type="button" className="ghost" onClick={doSearch} disabled={searching}>
               {searching ? "…" : "Search"}
             </button>
           </div>
+
+          {setBrowser !== null && (
+            <div className="entry-edit">
+              <div className="form-row">
+                <input
+                  type="text"
+                  className="grow"
+                  autoFocus
+                  placeholder={`Filter ${sets.length} sets…`}
+                  value={setBrowser}
+                  onChange={(e) => setSetBrowser(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="ghost icon"
+                  onClick={() => setSetBrowser(null)}
+                  title="Close"
+                >
+                  <Icon id="x" />
+                </button>
+              </div>
+              <ul className="set-list">
+                {sets
+                  .filter((s) => {
+                    const t = setBrowser.trim().toLowerCase();
+                    if (!t) return true;
+                    return (
+                      (s.name || "").toLowerCase().includes(t) ||
+                      (s.abbr || "").toLowerCase().includes(t) ||
+                      String(s.year || "").includes(t)
+                    );
+                  })
+                  .map((s) => (
+                    <li key={s.code || s.name} onClick={() => chooseSet(s)}>
+                      <span className="set-abbr">{s.abbr || "—"}</span>
+                      <span className="game-text">
+                        <strong>{s.name}</strong>
+                      </span>
+                      <span className="year">{s.year || ""}</span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
 
           {results && results.length === 0 && !manual && (
             <div className="form-row wrap">
