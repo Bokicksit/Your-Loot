@@ -5,8 +5,11 @@ from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+import httpx
+
 from app.cards_util import classify_layer
 from app.db import get_db
+from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 
@@ -192,6 +195,62 @@ def list_cards(
     return CardListOut(total=total, items=[card_to_out(i) for i in items])
 
 
+@router.get("/tcgdex/search")
+def tcgdex_search(name: str = Query(min_length=2), set: str | None = None):
+    """Look the card up in TCGdex — the open catalog that carries sets our
+    offline dump hasn't picked up yet (new promo sets especially)."""
+    try:
+        results = tcgdex_client.search_cards(name)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"TCGdex unreachable: {e}")
+    if set:
+        s = set.strip().lower()
+        results = [r for r in results if s in (r["set_id"] or "").lower()]
+    return results
+
+
+@router.post("/tcgdex/{card_id}", response_model=CardOut, status_code=201)
+def add_from_tcgdex(card_id: str, db: Session = Depends(get_db)):
+    """Import a TCGdex card into the local catalog. Keyed on
+    (source='tcgdex', external_id) so re-importing returns the same row and a
+    dump reseed can never clobber it."""
+    existing = db.scalar(
+        select(CollectionItem).where(
+            CollectionItem.source == "tcgdex", CollectionItem.external_id == card_id
+        )
+    )
+    if existing:
+        return card_to_out(existing)
+    try:
+        d = tcgdex_client.get_card(card_id)
+    except httpx.HTTPStatusError:
+        raise HTTPException(404, "card not found in TCGdex")
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"TCGdex unreachable: {e}")
+
+    item = CollectionItem(
+        module=Module.cards.value,
+        source="tcgdex",
+        external_id=card_id,
+        title=d["title"],
+        image_url=d["image_url"],
+        card_attrs=CardAttrs(
+            set_code=d["set_id"],
+            set_name=d["set_name"],
+            set_abbr=(d["set_id"] or "").upper()[:10] or None,
+            card_number=d["card_number"],
+            set_total=d["set_total"],
+            rarity=d["rarity"],
+            national_dex_no=d["national_dex_no"],
+            layer=classify_layer(d["rarity"]),
+        ),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return card_to_out(item)
+
+
 @router.post("", response_model=CardOut, status_code=201)
 def create_card(body: CardCreate, db: Session = Depends(get_db)):
     """Add a card the dump doesn't have yet. A later reseed can't clobber it:
@@ -226,8 +285,10 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.cards.value:
         raise HTTPException(404, "card not found")
-    if item.source != "manual":
-        raise HTTPException(400, "only manually added cards can be edited")
+    # dump rows are read-only (a reseed would overwrite any edit); manual and
+    # TCGdex-imported rows are yours to correct
+    if item.source not in ("manual", "tcgdex"):
+        raise HTTPException(400, "cards from the offline dump can't be edited")
     data = body.model_dump(exclude_unset=True)
     if "title" in data:
         item.title = data["title"].strip()
@@ -256,9 +317,10 @@ def delete_card(item_id: int, db: Session = Depends(get_db)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.cards.value:
         raise HTTPException(404, "card not found")
-    if item.source != "manual":
+    if item.source not in ("manual", "tcgdex"):
         raise HTTPException(
-            400, "only manually added cards can be deleted; remove your copies instead"
+            400,
+            "cards from the offline dump can't be deleted; remove your copies instead",
         )
     db.delete(item)
     db.commit()

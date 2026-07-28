@@ -22,6 +22,8 @@ export default function CardsPage() {
   const [showBinder, setShowBinder] = useState(false); // binder cards hidden by default
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
+  const [online, setOnline] = useState(null); // TCGdex results (null = not searched)
+  const [onlineBusy, setOnlineBusy] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -78,6 +80,7 @@ export default function CardsPage() {
     setSearching(true);
     setPicked(null);
     try {
+      setOnline(null);
       const params = { name: form.name.trim() };
       if (form.number.trim()) params.number = form.number.trim();
       if (form.set.trim()) params.set = form.set.trim();
@@ -115,6 +118,7 @@ export default function CardsPage() {
       setForm((f) => ({ ...f, number: "" }));
       setResults(null);
       setPicked(null);
+      setOnline(null);
       setAddVals({
         own: true,
         condition: "NM",
@@ -254,9 +258,28 @@ export default function CardsPage() {
             <div className="form-row wrap">
               <p className="error" style={{ flex: 1 }}>
                 <Icon id="alert" />
-                Not in the card database — it may be a brand-new set (reseed to
-                refresh) or a promo the dump doesn't carry.
+                Not in the offline card database — try the online catalog,
+                which carries brand-new promo sets.
               </p>
+              <button
+                type="button"
+                className="primary"
+                disabled={onlineBusy}
+                onClick={async () => {
+                  setOnlineBusy(true);
+                  try {
+                    const p = { name: form.name.trim() };
+                    if (form.set.trim()) p.set = form.set.trim();
+                    setOnline(await api.tcgdexSearch(p));
+                  } catch (e) {
+                    alert(e.message);
+                  } finally {
+                    setOnlineBusy(false);
+                  }
+                }}
+              >
+                {onlineBusy ? "Searching…" : "Search online catalog"}
+              </button>
               <button
                 type="button"
                 className="ghost"
@@ -278,6 +301,54 @@ export default function CardsPage() {
                 Add it manually
               </button>
             </div>
+          )}
+
+          {online && (
+            <>
+              <span className="game-info-line">
+                Online catalog · {online.length} match{online.length === 1 ? "" : "es"}
+              </span>
+              {online.length === 0 && (
+                <p className="empty" style={{ padding: "var(--s-3)" }}>
+                  Nothing online either — add it by hand below.
+                </p>
+              )}
+              <div className="grid pick-grid">
+                {online.map((c) => (
+                  <div
+                    key={c.tcgdex_id}
+                    className="tile pick"
+                    title="Add this card"
+                    onClick={async () => {
+                      try {
+                        const created = await api.addFromTcgdex(c.tcgdex_id);
+                        setResults([created]);
+                        setPicked(created);
+                        setOnline(null);
+                        api.cardSets().then(setSets).catch(() => {});
+                      } catch (e) {
+                        alert(e.message);
+                      }
+                    }}
+                  >
+                    {c.image_url ? (
+                      <img src={c.image_url} alt={c.title} loading="lazy" />
+                    ) : (
+                      <div className="placeholder" data-label="no art yet" />
+                    )}
+                    <div className="tile-info">
+                      <strong>{c.title}</strong>
+                      <small>
+                        <span className="set-abbr">
+                          {(c.set_id || "").toUpperCase()}
+                        </span>{" "}
+                        #{c.card_number}
+                      </small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {manual && (

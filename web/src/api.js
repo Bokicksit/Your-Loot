@@ -15,6 +15,10 @@ export const api = {
   cards: (params = {}) =>
     request(`/api/cards?${new URLSearchParams(params)}`),
   cardSets: () => request("/api/cards/sets"),
+  tcgdexSearch: (params) =>
+    request(`/api/cards/tcgdex/search?${new URLSearchParams(params)}`),
+  addFromTcgdex: (cardId) =>
+    request(`/api/cards/tcgdex/${encodeURIComponent(cardId)}`, { method: "POST" }),
   addCard: (body) =>
     request("/api/cards", { method: "POST", body: JSON.stringify(body) }),
   deleteCard: (itemId) => request(`/api/cards/${itemId}`, { method: "DELETE" }),
