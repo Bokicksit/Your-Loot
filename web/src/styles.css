@@ -671,7 +671,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border-left: 3px solid var(--gold);
   border-radius: var(--r-2);
 }
-.dex-detail h3 { margin: 0; font-size: var(--f-4); }
+.dex-detail h3 {
+  margin: 0;
+  font-size: var(--f-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+.dex-slot .name.linked { cursor: pointer; }
+.dex-slot .name.linked:hover { color: var(--gold-bright); text-decoration: underline; }
 .dex-detail ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .dex-detail li {
   display: flex;

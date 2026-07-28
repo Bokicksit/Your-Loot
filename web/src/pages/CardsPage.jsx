@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile from "../components/CardTile.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -43,6 +43,7 @@ export default function CardsPage() {
     stamp: "",
   });
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const load = () => {
     const params = { include_binder: showBinder };
@@ -74,6 +75,26 @@ export default function CardsPage() {
   useEffect(() => {
     api.cardSets().then(setSets).catch(() => {});
   }, []);
+
+  // arriving from the Pokédex ("Find Alakazam cards"): open the add flow
+  // pre-filled and run the search straight away
+  useEffect(() => {
+    const name = searchParams.get("add");
+    if (!name) return;
+    setShowForm(true);
+    setForm((f) => ({ ...f, name, number: "", set: "" }));
+    setSearchParams({}, { replace: true });
+    (async () => {
+      setSearching(true);
+      try {
+        setResults((await api.cardsSearch({ name })).items);
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        setSearching(false);
+      }
+    })();
+  }, [searchParams]);
 
   const doSearch = async () => {
     if (searching || form.name.trim().length < 2) return;
@@ -500,6 +521,27 @@ export default function CardsPage() {
 
           {picked && (
             <>
+              {/* swap the art before adding — handy when the catalog has none
+                  (new promos) or the wrong print */}
+              <div className="form-row wrap">
+                <ImagePicker
+                  value={picked.image_url}
+                  label={picked.image_url ? "Photo" : "Add photo"}
+                  onChange={async (url) => {
+                    try {
+                      const updated = await api.updateCard(picked.id, {
+                        image_url: url,
+                      });
+                      setPicked(updated);
+                      setResults((rs) =>
+                        rs.map((c) => (c.id === updated.id ? updated : c))
+                      );
+                    } catch (e) {
+                      alert(e.message);
+                    }
+                  }}
+                />
+              </div>
               <div className="form-row wrap">
                 <button
                   type="button"

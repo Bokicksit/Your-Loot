@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 
@@ -14,6 +15,14 @@ export default function PokedexPage() {
   const [rarityFilter, setRarityFilter] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+  const navigate = useNavigate();
+
+  // jump straight to the Cards add flow, pre-searched for this Pokémon —
+  // the usual next step when a slot is empty or wants an upgrade
+  const findCards = (e, name) => {
+    e.stopPropagation();
+    if (name) navigate(`/cards?add=${encodeURIComponent(name)}`);
+  };
 
   const load = () => api.pokedex().then((d) => setEntries(d.entries));
   useEffect(() => {
@@ -127,7 +136,13 @@ export default function PokedexPage() {
               ) : (
                 <span className="placeholder" data-label="" />
               )}
-              <span className="name">{e.name || "—"}</span>
+              <span
+                className={`name ${e.name ? "linked" : ""}`}
+                title={e.name ? `Find ${e.name} cards` : undefined}
+                onClick={(ev) => findCards(ev, e.name)}
+              >
+                {e.name || "—"}
+              </span>
               <span className="layer-pips">
                 {e.card?.set_abbr && (
                   <span className="set-abbr" title={e.card.set_name}>
@@ -150,6 +165,14 @@ export default function PokedexPage() {
               <div className="dex-detail">
                 <h3>
                   #{String(e.dex_no).padStart(4, "0")} {e.name || ""}
+                  <button
+                    type="button"
+                    className="ghost"
+                    style={{ marginLeft: "auto" }}
+                    onClick={(ev) => findCards(ev, e.name)}
+                  >
+                    Find {e.name} cards
+                  </button>
                 </h3>
                 {e.card ? (
                   <>
