@@ -19,6 +19,8 @@ export default function CardsPage() {
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
   const [showBinder, setShowBinder] = useState(false); // binder cards hidden by default
+  const [sets, setSets] = useState([]); // for the set autocomplete
+  const [manual, setManual] = useState(null); // manual catalog entry draft
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -65,6 +67,10 @@ export default function CardsPage() {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
   }, [search, setFilter, rarityFilter, showBinder]);
+
+  useEffect(() => {
+    api.cardSets().then(setSets).catch(() => {});
+  }, []);
 
   const doSearch = async () => {
     if (searching || form.name.trim().length < 2) return;
@@ -223,22 +229,153 @@ export default function CardsPage() {
             <input
               type="text"
               className="grow"
+              list="card-sets"
               placeholder="Set (optional — 151, MEW, JTG…)"
               value={form.set}
               onChange={(e) => setForm({ ...form, set: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}
             />
+            <datalist id="card-sets">
+              {sets.map((s) => (
+                <option key={s.code} value={s.abbr || s.name}>
+                  {s.name}
+                  {s.abbr ? ` (${s.abbr})` : ""}
+                  {s.year ? ` · ${s.year}` : ""}
+                </option>
+              ))}
+            </datalist>
             <button type="button" className="ghost" onClick={doSearch} disabled={searching}>
               {searching ? "…" : "Search"}
             </button>
           </div>
 
-          {results && results.length === 0 && (
-            <p className="error">
-              <Icon id="alert" />
-              No card matches that name + number. Check the set, or reseed the
-              card database if it's a brand-new set.
-            </p>
+          {results && results.length === 0 && !manual && (
+            <div className="form-row wrap">
+              <p className="error" style={{ flex: 1 }}>
+                <Icon id="alert" />
+                Not in the card database — it may be a brand-new set (reseed to
+                refresh) or a promo the dump doesn't carry.
+              </p>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() =>
+                  setManual({
+                    title: form.name.trim(),
+                    set_name: "",
+                    set_abbr: form.set.trim().toUpperCase(),
+                    card_number: form.number.trim().split("/")[0],
+                    set_total: form.number.includes("/")
+                      ? form.number.trim().split("/")[1]
+                      : "",
+                    rarity: "Promo",
+                    national_dex_no: "",
+                  })
+                }
+              >
+                Add it manually
+              </button>
+            </div>
+          )}
+
+          {manual && (
+            <div className="entry-edit">
+              <span className="game-info-line">Manual card entry</span>
+              <div className="form-row">
+                <input
+                  type="text"
+                  className="grow"
+                  placeholder="Card name"
+                  value={manual.title}
+                  onChange={(e) => setManual({ ...manual, title: e.target.value })}
+                />
+                <input
+                  type="text"
+                  style={{ maxWidth: "110px" }}
+                  placeholder="Dex #"
+                  inputMode="numeric"
+                  value={manual.national_dex_no}
+                  onChange={(e) =>
+                    setManual({ ...manual, national_dex_no: e.target.value })
+                  }
+                />
+              </div>
+              <div className="form-row">
+                <input
+                  type="text"
+                  className="grow"
+                  placeholder="Set name (Mega Evolution Promos)"
+                  value={manual.set_name}
+                  onChange={(e) => setManual({ ...manual, set_name: e.target.value })}
+                />
+                <input
+                  type="text"
+                  style={{ maxWidth: "90px" }}
+                  placeholder="Code"
+                  value={manual.set_abbr}
+                  onChange={(e) => setManual({ ...manual, set_abbr: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <input
+                  type="text"
+                  style={{ maxWidth: "90px" }}
+                  placeholder="Number"
+                  value={manual.card_number}
+                  onChange={(e) => setManual({ ...manual, card_number: e.target.value })}
+                />
+                <input
+                  type="text"
+                  style={{ maxWidth: "90px" }}
+                  placeholder="of total"
+                  inputMode="numeric"
+                  value={manual.set_total}
+                  onChange={(e) => setManual({ ...manual, set_total: e.target.value })}
+                />
+                <input
+                  type="text"
+                  className="grow"
+                  placeholder="Rarity"
+                  value={manual.rarity}
+                  onChange={(e) => setManual({ ...manual, rarity: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={async () => {
+                    if (!manual.title.trim()) return;
+                    try {
+                      const created = await api.addCard({
+                        title: manual.title.trim(),
+                        set_name: manual.set_name.trim() || null,
+                        set_abbr: manual.set_abbr.trim() || null,
+                        card_number: manual.card_number.trim() || null,
+                        set_total: manual.set_total ? Number(manual.set_total) : null,
+                        rarity: manual.rarity.trim() || null,
+                        national_dex_no: manual.national_dex_no
+                          ? Number(manual.national_dex_no)
+                          : null,
+                      });
+                      // hand off to the normal own/want panel
+                      setResults([created]);
+                      setPicked(created);
+                      setManual(null);
+                      api.cardSets().then(setSets).catch(() => {});
+                    } catch (err) {
+                      alert(err.message);
+                    }
+                  }}
+                >
+                  <Icon id="check" />
+                  Create card
+                </button>
+                <button type="button" className="ghost" onClick={() => setManual(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
           {results && results.length > 0 && (
             <div className="grid pick-grid">
@@ -397,7 +534,7 @@ export default function CardsPage() {
 
       <div className="grid">
         {cards.map((c) => (
-          <CardTile key={c.id} card={c} onChange={patchCard} />
+          <CardTile key={c.id} card={c} onChange={patchCard} onReload={load} />
         ))}
       </div>
     </div>

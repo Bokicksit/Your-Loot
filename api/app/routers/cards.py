@@ -1,13 +1,14 @@
 import re
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.cards_util import classify_layer
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
-from app.schemas.cards import CardListOut, CardOut
+from app.schemas.cards import CardCreate, CardListOut, CardOut
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -19,6 +20,7 @@ def card_to_out(item: CollectionItem) -> CardOut:
         id=item.id,
         title=item.title,
         image_url=item.image_url,
+        source=item.source,
         attrs=item.card_attrs,
         owned=item.owned,
         wanted=item.wanted,
@@ -61,11 +63,13 @@ def search_cards(
         q = q.where(CardAttrs.set_total == total)
     if set:
         s = set.strip()
-        # match the set name OR the code printed on modern cards (MEW, JTG)
+        # match the set name, the code printed on modern cards (MEW, JTG),
+        # or the dump's internal set id (sv3pt5) as a last resort
         q = q.where(
             or_(
                 CardAttrs.set_name.ilike(f"%{s}%"),
                 func.upper(CardAttrs.set_abbr) == s.upper(),
+                func.lower(CardAttrs.set_code) == s.lower(),
             )
         )
 
@@ -75,6 +79,38 @@ def search_cards(
         .all()
     )
     return CardListOut(total=len(items), items=[card_to_out(i) for i in items])
+
+
+@router.get("/sets")
+def list_sets(db: Session = Depends(get_db), q: str | None = None):
+    """Every set in the card database, newest first — powers the set
+    autocomplete so the printed codes are discoverable, and makes a missing
+    reseed obvious (abbr shows null)."""
+    stmt = select(
+        CardAttrs.set_code,
+        CardAttrs.set_name,
+        CardAttrs.set_abbr,
+        CardAttrs.set_year,
+        func.max(CardAttrs.set_total),
+    ).group_by(
+        CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr, CardAttrs.set_year
+    )
+    if q:
+        s = q.strip()
+        stmt = stmt.where(
+            or_(
+                CardAttrs.set_name.ilike(f"%{s}%"),
+                CardAttrs.set_abbr.ilike(f"{s}%"),
+                CardAttrs.set_code.ilike(f"{s}%"),
+            )
+        )
+    rows = db.execute(
+        stmt.order_by(CardAttrs.set_year.desc().nulls_last(), CardAttrs.set_name)
+    ).all()
+    return [
+        {"code": c, "name": n, "abbr": a, "year": y, "total": t}
+        for c, n, a, y, t in rows
+    ]
 
 
 @router.get("/facets")
@@ -154,6 +190,48 @@ def list_cards(
         .all()
     )
     return CardListOut(total=total, items=[card_to_out(i) for i in items])
+
+
+@router.post("", response_model=CardOut, status_code=201)
+def create_card(body: CardCreate, db: Session = Depends(get_db)):
+    """Add a card the dump doesn't have yet. A later reseed can't clobber it:
+    upserts key on (source='ptcg', external_id) and these are source='manual'."""
+    item = CollectionItem(
+        module=Module.cards.value,
+        source="manual",
+        title=body.title.strip(),
+        image_url=body.image_url,
+        card_attrs=CardAttrs(
+            set_name=body.set_name,
+            set_abbr=body.set_abbr.upper() if body.set_abbr else None,
+            set_code=None,
+            card_number=body.card_number,
+            set_total=body.set_total,
+            set_year=body.set_year,
+            rarity=body.rarity,
+            national_dex_no=body.national_dex_no,
+            layer=classify_layer(body.rarity),
+        ),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return card_to_out(item)
+
+
+@router.delete("/{item_id}", status_code=204)
+def delete_card(item_id: int, db: Session = Depends(get_db)):
+    """Only manual entries can be deleted — dump-sourced catalog rows stay
+    (removing your copies is what takes a card out of the collection)."""
+    item = db.get(CollectionItem, item_id)
+    if not item or item.module != Module.cards.value:
+        raise HTTPException(404, "card not found")
+    if item.source != "manual":
+        raise HTTPException(
+            400, "only manually added cards can be deleted; remove your copies instead"
+        )
+    db.delete(item)
+    db.commit()
 
 
 class HappyUpdate(BaseModel):

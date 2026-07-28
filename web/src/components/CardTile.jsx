@@ -12,7 +12,7 @@ const VARIANT_SHORT = { "Reverse Holo": "RH", Holo: "Holo" };
 // A card in the collection grid. Copies are chips ("PSA 9" / "NM") —
 // tap a chip to edit in a modal (tiles are too narrow for an inline form),
 // + adds another copy. Graded chips are jade, binder chips carry a pokéball.
-export default function CardTile({ card, onChange }) {
+export default function CardTile({ card, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
   const [editing, setEditing] = useState(null); // owned id being edited
@@ -264,6 +264,27 @@ export default function CardTile({ card, onChange }) {
             </li>
           ))}
         </ul>
+        {card.source === "manual" && (
+          <div className="form-row">
+            <span className="expand-sub">Manually added card</span>
+            <button
+              className="ghost danger icon"
+              style={{ marginLeft: "auto" }}
+              title="Delete this manual card entry"
+              onClick={async () => {
+                if (!confirm(`Delete the manual card entry "${card.title}"?`)) return;
+                try {
+                  await api.deleteCard(card.id);
+                  onReload?.();
+                } catch (e) {
+                  alert(e.message);
+                }
+              }}
+            >
+              <Icon id="trash" />
+            </button>
+          </div>
+        )}
       </div>
     )}
     </>

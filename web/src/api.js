@@ -14,6 +14,10 @@ async function request(path, options = {}) {
 export const api = {
   cards: (params = {}) =>
     request(`/api/cards?${new URLSearchParams(params)}`),
+  cardSets: () => request("/api/cards/sets"),
+  addCard: (body) =>
+    request("/api/cards", { method: "POST", body: JSON.stringify(body) }),
+  deleteCard: (itemId) => request(`/api/cards/${itemId}`, { method: "DELETE" }),
   cardFacets: (params = {}) =>
     request(`/api/cards/facets?${new URLSearchParams(params)}`),
   cardsSearch: (params) =>

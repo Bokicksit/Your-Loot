@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.common import OwnedOut, WantedOut
 
@@ -24,6 +24,7 @@ class CardOut(BaseModel):
     id: int
     title: str
     image_url: str | None = None
+    source: str | None = None  # 'ptcg' (dump) or 'manual' — manual is deletable
     attrs: CardAttrsOut
     owned: list[OwnedOut] = []
     wanted: WantedOut | None = None
@@ -32,6 +33,21 @@ class CardOut(BaseModel):
 class CardListOut(BaseModel):
     total: int
     items: list[CardOut]
+
+
+class CardCreate(BaseModel):
+    """Manual catalog entry — for cards the offline dump doesn't carry yet
+    (brand-new promos, prereleases, Japanese exclusives)."""
+
+    title: str = Field(min_length=1, max_length=300)
+    set_name: str | None = Field(default=None, max_length=100)
+    set_abbr: str | None = Field(default=None, max_length=10)
+    card_number: str | None = Field(default=None, max_length=20)
+    set_total: int | None = None
+    set_year: int | None = None
+    rarity: str | None = Field(default=None, max_length=50)
+    national_dex_no: int | None = None
+    image_url: str | None = None
 
 
 class PokedexEntry(BaseModel):

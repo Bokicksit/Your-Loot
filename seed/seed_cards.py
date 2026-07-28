@@ -12,7 +12,6 @@ owned/wanted records are never touched.
 import argparse
 import io
 import json
-import re
 import sys
 import tarfile
 import tempfile
@@ -24,40 +23,12 @@ sys.path.insert(0, "/app")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
 
 from sqlalchemy import select  # noqa: E402
+from app.cards_util import classify_layer, derive_variant  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
 from app.models import CardAttrs, CollectionItem, Module  # noqa: E402
 
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample"
 DUMP_URL = "https://codeload.github.com/PokemonTCG/pokemon-tcg-data/tar.gz/refs/heads/master"
-
-
-def derive_variant(rarity: str | None) -> str:
-    r = (rarity or "").lower()
-    if "full art" in r or "ultra" in r:
-        return "full-art"
-    if "holo" in r:
-        return "holo"
-    return "normal"
-
-
-def classify_layer(rarity: str | None) -> int:
-    """Binder layer by card *style*, era-agnostic (per Bo's binder rules):
-    3 = IR / SIR / alt-illustration styles
-    2 = full-art (SV ex Ultra Rare, V/VMAX/VSTAR/GX/EX full arts, rainbows)
-    1 = everything else: commons/uncommons/holos, regular ex (Double Rare),
-        vintage cards, and gold Hyper Rares / Secrets (Bo files golds as basic)
-    """
-    r = (rarity or "").lower()
-    if "illustration" in r or "trainer gallery" in r:
-        return 3
-    if (
-        "ultra" in r
-        or "full art" in r
-        or "rainbow" in r
-        or re.search(r"holo (v|vmax|vstar|gx|ex|lv\.x)\b", r)
-    ):
-        return 2
-    return 1
 
 
 def seed_file(db, cards_path: Path, sets_by_id: dict):
