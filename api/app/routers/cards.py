@@ -285,11 +285,14 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.cards.value:
         raise HTTPException(404, "card not found")
-    # dump rows are read-only (a reseed would overwrite any edit); manual and
-    # TCGdex-imported rows are yours to correct
-    if item.source not in ("manual", "tcgdex"):
-        raise HTTPException(400, "cards from the offline dump can't be edited")
     data = body.model_dump(exclude_unset=True)
+    # dump rows get their fields rewritten by every reseed, so only the image
+    # may be overridden there — the seeder preserves locally-stored images.
+    # Manual and TCGdex rows are yours to correct entirely.
+    if item.source not in ("manual", "tcgdex") and set(data) - {"image_url"}:
+        raise HTTPException(
+            400, "only the image can be changed on cards from the card database"
+        )
     if "title" in data:
         item.title = data["title"].strip()
     if "image_url" in data:

@@ -59,7 +59,10 @@ def seed_file(db, cards_path: Path, sets_by_id: dict):
             updated += 1
 
         item.title = card["name"]
-        item.image_url = (card.get("images") or {}).get("small")
+        # never clobber an image the collector set themselves — those are
+        # stored on this server, so they start with /images/
+        if not (item.image_url or "").startswith("/images/"):
+            item.image_url = (card.get("images") or {}).get("small")
         a = item.card_attrs
         a.set_code = set_code
         a.set_name = set_name

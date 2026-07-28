@@ -265,26 +265,28 @@ export default function CardTile({ card, onChange, onReload }) {
             </li>
           ))}
         </ul>
-        {card.source === "manual" && (
-          <div className="form-row wrap">
-            <ImagePicker
-              value={card.image_url}
-              label="Add photo"
-              onChange={async (url) => {
-                try {
-                  await api.updateCard(card.id, { image_url: url });
-                  onReload?.();
-                } catch (e) {
-                  alert(e.message);
-                }
-              }}
-            />
+        <div className="form-row wrap">
+          {/* every card can get its own art — a photo of your actual copy, or
+              a pasted link when the catalog has none */}
+          <ImagePicker
+            value={card.image_url}
+            label={card.image_url ? "Photo" : "Add photo"}
+            onChange={async (url) => {
+              try {
+                await api.updateCard(card.id, { image_url: url });
+                onReload?.();
+              } catch (e) {
+                alert(e.message);
+              }
+            }}
+          />
+          {card.source !== "ptcg" && (
             <button
               className="ghost danger icon"
               style={{ marginLeft: "auto" }}
-              title="Delete this manual card entry"
+              title="Delete this card entry"
               onClick={async () => {
-                if (!confirm(`Delete the manual card entry "${card.title}"?`)) return;
+                if (!confirm(`Delete the card entry "${card.title}"?`)) return;
                 try {
                   await api.deleteCard(card.id);
                   onReload?.();
@@ -295,8 +297,8 @@ export default function CardTile({ card, onChange, onReload }) {
             >
               <Icon id="trash" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     )}
     </>
