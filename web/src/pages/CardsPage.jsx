@@ -376,8 +376,12 @@ export default function CardsPage() {
                 onClick={async () => {
                   setOnlineBusy(true);
                   try {
-                    const p = { name: form.name.trim() };
+                    // pass set + number too: a common name has hundreds of
+                    // prints online, and these are what pinpoint the card
+                    const p = {};
+                    if (form.name.trim()) p.name = form.name.trim();
                     if (form.set.trim()) p.set = form.set.trim();
+                    if (form.number.trim()) p.number = form.number.trim();
                     setOnline(await api.tcgdexSearch(p));
                   } catch (e) {
                     alert(e.message);

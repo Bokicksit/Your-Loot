@@ -15,27 +15,70 @@ API_URL = "https://api.tcgdex.net/v2/en"
 
 
 class TCGdexClient:
-    def search_cards(self, name: str, limit: int = 20) -> list[dict]:
-        """Brief search — id encodes set+number ("mep-009")."""
+    @staticmethod
+    def _brief(c: dict) -> dict:
+        return {
+            "tcgdex_id": c.get("id"),
+            "title": c.get("name"),
+            "card_number": c.get("localId"),
+            "set_id": (c.get("id") or "").rsplit("-", 1)[0],
+            # image is a base URL: append quality + extension
+            "image_url": f"{c['image']}/high.png" if c.get("image") else None,
+        }
+
+    @staticmethod
+    def _num_eq(a: str | None, b: str | None) -> bool:
+        """"173" == "173" == "0173"; keeps letter numbers (TG12) exact."""
+        if not a or not b:
+            return False
+        return a.strip().lstrip("0").upper() == b.strip().lstrip("0").upper()
+
+    def cards_in_set(self, set_id: str) -> list[dict]:
         resp = httpx.get(
-            f"{API_URL}/cards",
-            params={"name": name.strip()},
+            f"{API_URL}/sets/{set_id.strip().lower()}",
             timeout=20,
             follow_redirects=True,
         )
         resp.raise_for_status()
-        out = []
-        for c in resp.json()[:limit]:
-            set_id = (c.get("id") or "").rsplit("-", 1)[0]
-            out.append({
-                "tcgdex_id": c.get("id"),
-                "title": c.get("name"),
-                "card_number": c.get("localId"),
-                "set_id": set_id,
-                # image is a base URL: append quality + extension
-                "image_url": f"{c['image']}/high.png" if c.get("image") else None,
-            })
-        return out
+        return [self._brief(c) for c in resp.json().get("cards", [])]
+
+    def search_cards(
+        self,
+        name: str | None = None,
+        set_id: str | None = None,
+        number: str | None = None,
+        limit: int = 24,
+    ) -> list[dict]:
+        """Find cards by any combination of name, set and printed number.
+
+        Filtering happens across the WHOLE result list before truncating —
+        a common name like Eevee has hundreds of prints, so cutting first
+        would hide the very card being looked for.
+        """
+        if set_id and not (name or "").strip():
+            # know the set and number but not the name: read the set directly
+            results = self.cards_in_set(set_id)
+        else:
+            resp = httpx.get(
+                f"{API_URL}/cards",
+                params={"name": (name or "").strip()},
+                timeout=25,
+                follow_redirects=True,
+            )
+            resp.raise_for_status()
+            results = [self._brief(c) for c in resp.json()]
+
+        if set_id:
+            s = set_id.strip().lower()
+            results = [r for r in results if s == (r["set_id"] or "").lower()]
+        if number and number.strip():
+            num = number.strip().split("/")[0]
+            results = [r for r in results if self._num_eq(r["card_number"], num)]
+        if name and (name or "").strip() and set_id and not number:
+            n = name.strip().lower()
+            results = [r for r in results if n in (r["title"] or "").lower()]
+
+        return results[:limit]
 
     def get_card(self, card_id: str) -> dict:
         """Full detail for one card — set name, rarity, dex number, art."""

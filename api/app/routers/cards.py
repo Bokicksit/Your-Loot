@@ -196,16 +196,24 @@ def list_cards(
 
 
 @router.get("/tcgdex/search")
-def tcgdex_search(name: str = Query(min_length=2), set: str | None = None):
-    """Look the card up in TCGdex — the open catalog that carries sets our
-    offline dump hasn't picked up yet (new promo sets especially)."""
+def tcgdex_search(
+    name: str | None = None,
+    set: str | None = None,
+    number: str | None = None,
+):
+    """Look the card up in TCGdex — the open catalog that carries cards our
+    offline dump lacks (new promo sets, and later additions to ongoing promo
+    sets). Needs a name, or a set plus number."""
+    if not (name or "").strip() and not (set or "").strip():
+        raise HTTPException(400, "give a card name, or a set and number")
     try:
-        results = tcgdex_client.search_cards(name)
+        results = tcgdex_client.search_cards(name=name, set_id=set, number=number)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return []
+        raise HTTPException(502, f"TCGdex error: {e.response.status_code}")
     except httpx.HTTPError as e:
         raise HTTPException(502, f"TCGdex unreachable: {e}")
-    if set:
-        s = set.strip().lower()
-        results = [r for r in results if s in (r["set_id"] or "").lower()]
     return results
 
 
