@@ -163,9 +163,9 @@ def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
 
 @router.get("/pokedex")
 def pokedex(db: Session = Depends(get_db)):
-    """The binder: one entry per national dex number (1..MAX_DEX), each with
-    up to three layer occupants chosen from OWNED cards — the binder mirror."""
-    # binder membership is opt-in per copy: only in_binder copies occupy slots
+    """The binder: one entry per national dex number, ONE occupant each (the
+    copy flagged in_binder). `final` = this is the desired card for that
+    Pokémon; otherwise it's a placeholder awaiting an upgrade."""
     owned_cards = (
         db.scalars(
             _base_query().where(
@@ -179,22 +179,20 @@ def pokedex(db: Session = Depends(get_db)):
         .all()
     )
 
-    # best occupant per (dex, layer): SIR beats IR in layer 3, then newest
+    # normally one binder card per dex (enforced on write); for legacy
+    # multiples prefer the fancier card, then the newest
     def rank(item):
-        r = (item.card_attrs.rarity or "").lower()
-        return (1 if "special" in r else 0, item.id)
+        a = item.card_attrs
+        r = (a.rarity or "").lower()
+        return (a.layer or 1, 1 if "special" in r else 0, item.id)
 
-    slots: dict[int, dict[int, CollectionItem]] = {}
-    counts: dict[int, int] = {}
+    slots: dict[int, CollectionItem] = {}
     for it in owned_cards:
         dex = it.card_attrs.national_dex_no
         if dex is None or dex > MAX_DEX:
             continue
-        counts[dex] = counts.get(dex, 0) + sum(1 for o in it.owned if o.in_binder)
-        layer = it.card_attrs.layer or 1
-        cur = slots.setdefault(dex, {}).get(layer)
-        if cur is None or rank(it) > rank(cur):
-            slots[dex][layer] = it
+        if dex not in slots or rank(it) > rank(slots[dex]):
+            slots[dex] = it
 
     # display names for every dex number that exists in the catalog (shortest
     # title is a decent proxy for the plain species name)
@@ -207,36 +205,32 @@ def pokedex(db: Session = Depends(get_db)):
         if dex <= MAX_DEX and (dex not in names or len(title) < len(names[dex])):
             names[dex] = title
 
-    happy = {
+    final = {
         s.dex_no for s in db.scalars(select(DexSlot).where(DexSlot.happy)).all()
     }
 
-    def layer_out(item):
+    def card_out(item):
         if item is None:
             return None
+        a = item.card_attrs
         return {
             "id": item.id,
             # the binder copy itself, so the UI can pull it out of the binder
             "owned_id": next((o.id for o in item.owned if o.in_binder), None),
             "title": item.title,
             "image_url": item.image_url,
-            "set_name": item.card_attrs.set_name,
-            "card_number": item.card_attrs.card_number,
-            "rarity": item.card_attrs.rarity,
+            "set_name": a.set_name,
+            "card_number": a.card_number,
+            "rarity": a.rarity,
+            "layer": a.layer or 1,
         }
 
     entries = []
     for dex in range(1, MAX_DEX + 1):
-        s = slots.get(dex, {})
         entries.append({
             "dex_no": dex,
             "name": names.get(dex),
-            "layers": {
-                "1": layer_out(s.get(1)),
-                "2": layer_out(s.get(2)),
-                "3": layer_out(s.get(3)),
-            },
-            "copies": counts.get(dex, 0),
-            "happy": dex in happy,
+            "card": card_out(slots.get(dex)),
+            "final": dex in final,
         })
     return {"max_dex": MAX_DEX, "entries": entries}

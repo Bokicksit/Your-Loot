@@ -698,6 +698,21 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .pip-happy { color: var(--jade); display: inline-flex; }
 .pip-happy svg.i { width: 12px; height: 12px; stroke-width: 2.4; }
+.rarity-tag {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-3);
+  color: var(--text-dim);
+  font-family: var(--font-num);
+  font-size: 9.5px;
+  letter-spacing: .06em;
+}
+.dex-slot.owned .rarity-tag {
+  color: var(--gold-bright);
+  border-color: var(--gold-line);
+  background: var(--gold-wash);
+}
 .layer-tag {
   flex: none;
   width: 58px;

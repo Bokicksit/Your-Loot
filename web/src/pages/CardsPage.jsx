@@ -30,6 +30,7 @@ export default function CardsPage() {
     grader: "Raw",
     grade: "",
     binder: false, // opt-in: only flagged copies occupy Pokédex binder slots
+    keeper: false, // binder card is "the one" vs a placeholder to upgrade
   });
   const navigate = useNavigate();
 
@@ -81,12 +82,17 @@ export default function CardsPage() {
     try {
       if (addVals.own) {
         const graded = addVals.grader !== "Raw";
+        const toBinder = addVals.binder && !!picked.attrs.national_dex_no;
         await api.addOwned(picked.id, {
           condition: addVals.condition,
           grader: graded ? addVals.grader : null,
           grade: graded && addVals.grade ? addVals.grade : null,
-          in_binder: addVals.binder && !!picked.attrs.national_dex_no,
+          in_binder: toBinder,
         });
+        if (toBinder) {
+          // record whether this occupant is the desired card or a placeholder
+          await api.dexHappy(picked.attrs.national_dex_no, addVals.keeper);
+        }
       } else {
         await api.addWanted(picked.id);
       }
@@ -95,7 +101,14 @@ export default function CardsPage() {
       setForm((f) => ({ ...f, number: "" }));
       setResults(null);
       setPicked(null);
-      setAddVals({ own: true, condition: "NM", grader: "Raw", grade: "", binder: false });
+      setAddVals({
+        own: true,
+        condition: "NM",
+        grader: "Raw",
+        grade: "",
+        binder: false,
+        keeper: false,
+      });
       if (wantMode) {
         navigate("/wanted");
       } else {
@@ -248,10 +261,27 @@ export default function CardsPage() {
                   <button
                     type="button"
                     className={`toggle ${addVals.binder ? "on" : ""}`}
-                    onClick={() => setAddVals({ ...addVals, binder: !addVals.binder })}
+                    onClick={() =>
+                      setAddVals({
+                        ...addVals,
+                        binder: !addVals.binder,
+                        // IR/SIR pulls default to "the one"; else placeholder
+                        keeper: !addVals.binder ? picked.attrs.layer === 3 : false,
+                      })
+                    }
                     title="This copy goes in the Pokédex binder"
                   >
                     Binder
+                  </button>
+                )}
+                {addVals.own && addVals.binder && picked.attrs.national_dex_no && (
+                  <button
+                    type="button"
+                    className={`toggle ${addVals.keeper ? "on" : ""}`}
+                    onClick={() => setAddVals({ ...addVals, keeper: !addVals.keeper })}
+                    title="Is this the desired card, or a placeholder to upgrade later?"
+                  >
+                    {addVals.keeper ? "The one ✓" : "Will upgrade"}
                   </button>
                 )}
                 <select

@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
-from app.models import CollectionItem, GameAttrs, Module, Owned, Wanted
+from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, Wanted
 from app.schemas.collection import ItemStatusOut, WantedItemOut
 from app.schemas.common import OwnedCreate, WantedCreate
 
@@ -21,10 +21,36 @@ def _status(item: CollectionItem) -> ItemStatusOut:
     return ItemStatusOut(item_id=item.id, owned=item.owned, wanted=item.wanted)
 
 
+def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int):
+    """A binder holds ONE card per Pokémon: flagging a copy in_binder unflags
+    any other binder copy sharing the same dex number (the physical swap)."""
+    if item.module != Module.cards.value or not item.card_attrs:
+        return
+    dex = item.card_attrs.national_dex_no
+    if dex is None:
+        return
+    others = db.scalars(
+        select(Owned)
+        .join(CollectionItem, CollectionItem.id == Owned.item_id)
+        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+        .where(
+            Owned.in_binder,
+            Owned.id != keep_owned_id,
+            CardAttrs.national_dex_no == dex,
+        )
+    ).all()
+    for o in others:
+        o.in_binder = False
+
+
 @router.post("/items/{item_id}/owned", response_model=ItemStatusOut)
 def add_owned(item_id: int, body: OwnedCreate, db: Session = Depends(get_db)):
     item = _get_item(db, item_id)
-    db.add(Owned(item_id=item.id, **body.model_dump()))
+    owned = Owned(item_id=item.id, **body.model_dump())
+    db.add(owned)
+    if body.in_binder:
+        db.flush()
+        _enforce_single_binder(db, item, owned.id)
     db.commit()
     db.refresh(item)
     return _status(item)
@@ -40,8 +66,11 @@ def update_owned(
     owned = db.get(Owned, owned_id)
     if not owned or owned.item_id != item.id:
         raise HTTPException(404, "owned record not found")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    data = body.model_dump(exclude_unset=True)
+    for k, v in data.items():
         setattr(owned, k, v)
+    if data.get("in_binder"):
+        _enforce_single_binder(db, item, owned.id)
     db.commit()
     db.refresh(item)
     return _status(item)
