@@ -18,6 +18,19 @@ export const api = {
   addCard: (body) =>
     request("/api/cards", { method: "POST", body: JSON.stringify(body) }),
   deleteCard: (itemId) => request(`/api/cards/${itemId}`, { method: "DELETE" }),
+  updateCard: (itemId, body) =>
+    request(`/api/cards/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  uploadImage: async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    // no Content-Type header: the browser sets the multipart boundary
+    const res = await fetch("/api/images", { method: "POST", body: fd });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(b.detail || `${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  },
   cardFacets: (params = {}) =>
     request(`/api/cards/facets?${new URLSearchParams(params)}`),
   cardsSearch: (params) =>

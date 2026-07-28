@@ -715,6 +715,24 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .tile-owned .set-abbr { color: var(--gold-bright); border-color: var(--gold-line); }
 
+/* card photo picker */
+.img-picker-row { display: flex; align-items: center; gap: var(--s-2); }
+.img-thumb {
+  flex: none;
+  width: 44px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: var(--r-1);
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+}
+.img-thumb.empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-mute);
+  border-style: dashed;
+}
+
 /* card detail spans the whole grid row so a narrow tile never cramps it */
 .card-detail { grid-column: 1 / -1; }
 .card-detail li .layer-tag { width: 46px; }

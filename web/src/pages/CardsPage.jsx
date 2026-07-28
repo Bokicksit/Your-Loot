@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import CardTile from "../components/CardTile.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
+import ImagePicker from "../components/ImagePicker.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
@@ -270,6 +271,7 @@ export default function CardsPage() {
                       : "",
                     rarity: "Promo",
                     national_dex_no: "",
+                    image_url: null,
                   })
                 }
               >
@@ -341,6 +343,13 @@ export default function CardsPage() {
                 />
               </div>
               <div className="form-row">
+                <ImagePicker
+                  value={manual.image_url}
+                  onChange={(url) => setManual({ ...manual, image_url: url })}
+                  label="Photo of the card"
+                />
+              </div>
+              <div className="form-row">
                 <button
                   type="button"
                   className="primary"
@@ -357,6 +366,7 @@ export default function CardsPage() {
                         national_dex_no: manual.national_dex_no
                           ? Number(manual.national_dex_no)
                           : null,
+                        image_url: manual.image_url,
                       });
                       // hand off to the normal own/want panel
                       setResults([created]);

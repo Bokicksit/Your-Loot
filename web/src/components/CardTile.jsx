@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
+import ImagePicker from "./ImagePicker.jsx";
 import RarityMark from "./RarityMark.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
@@ -265,8 +266,19 @@ export default function CardTile({ card, onChange, onReload }) {
           ))}
         </ul>
         {card.source === "manual" && (
-          <div className="form-row">
-            <span className="expand-sub">Manually added card</span>
+          <div className="form-row wrap">
+            <ImagePicker
+              value={card.image_url}
+              label="Add photo"
+              onChange={async (url) => {
+                try {
+                  await api.updateCard(card.id, { image_url: url });
+                  onReload?.();
+                } catch (e) {
+                  alert(e.message);
+                }
+              }}
+            />
             <button
               className="ghost danger icon"
               style={{ marginLeft: "auto" }}

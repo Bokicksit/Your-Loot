@@ -50,6 +50,20 @@ class CardCreate(BaseModel):
     image_url: str | None = None
 
 
+class CardUpdate(BaseModel):
+    """PATCH body for manual cards — only fields present in the request change."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    set_name: str | None = Field(default=None, max_length=100)
+    set_abbr: str | None = Field(default=None, max_length=10)
+    card_number: str | None = Field(default=None, max_length=20)
+    set_total: int | None = None
+    set_year: int | None = None
+    rarity: str | None = Field(default=None, max_length=50)
+    national_dex_no: int | None = None
+    image_url: str | None = None
+
+
 class PokedexEntry(BaseModel):
     dex_no: int
     # first owned card's data (or first card if none owned) represents the slot

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.cards_util import classify_layer
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
-from app.schemas.cards import CardCreate, CardListOut, CardOut
+from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -214,6 +214,36 @@ def create_card(body: CardCreate, db: Session = Depends(get_db)):
         ),
     )
     db.add(item)
+    db.commit()
+    db.refresh(item)
+    return card_to_out(item)
+
+
+@router.patch("/{item_id}", response_model=CardOut)
+def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db)):
+    """Edit a manual card (including its photo). Dump-sourced rows are
+    read-only — a reseed would overwrite any edit anyway."""
+    item = db.get(CollectionItem, item_id)
+    if not item or item.module != Module.cards.value:
+        raise HTTPException(404, "card not found")
+    if item.source != "manual":
+        raise HTTPException(400, "only manually added cards can be edited")
+    data = body.model_dump(exclude_unset=True)
+    if "title" in data:
+        item.title = data["title"].strip()
+    if "image_url" in data:
+        item.image_url = data["image_url"]
+    for field in (
+        "set_name", "set_abbr", "card_number", "set_total", "set_year",
+        "rarity", "national_dex_no",
+    ):
+        if field in data:
+            val = data[field]
+            if field == "set_abbr" and val:
+                val = val.upper()
+            setattr(item.card_attrs, field, val)
+    if "rarity" in data:
+        item.card_attrs.layer = classify_layer(data["rarity"])
     db.commit()
     db.refresh(item)
     return card_to_out(item)
