@@ -617,8 +617,12 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border: 1px solid var(--line-soft);
   border-radius: var(--r-2);
   color: var(--text);
+  /* narrow columns: nothing may escape the slot */
+  min-width: 0;
+  overflow: hidden;
   transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease);
 }
+.dex-slot > * { min-width: 0; max-width: 100%; }
 .dex-slot img, .dex-slot .placeholder {
   width: 100%;
   aspect-ratio: 63 / 88;
@@ -630,6 +634,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   font-size: var(--f-2);
   font-weight: var(--w-med);
   line-height: 1.15;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -697,7 +703,23 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* binder layers: three pips per slot (Basic / Full Art / IR-SIR) */
 .dex-slot.partial { border-color: var(--line); }
 .dex-slot.partial img { filter: none; }
-.layer-pips { display: flex; align-items: center; gap: 4px; }
+.layer-pips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap; /* tags stack rather than spill at tight column counts */
+  min-width: 0;
+}
+.layer-pips > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* tag + label sizes scale with how many slots are packed per row */
+.dex-grid.cols-4 .set-abbr,
+.dex-grid.cols-4 .rarity-tag { font-size: 8.5px; padding: 1px 4px; letter-spacing: .03em; }
+.dex-grid.cols-5 .set-abbr,
+.dex-grid.cols-5 .rarity-tag { font-size: 8px; padding: 0 3px; letter-spacing: 0; }
+.dex-grid.cols-5 .dex-slot { padding: 5px; }
+.dex-grid.cols-5 .dex-slot .name { font-size: var(--f-1); }
+.dex-grid.cols-5 .dex-no { font-size: 9px; letter-spacing: .02em; }
 .pip {
   width: 11px; height: 11px;
   border-radius: 3px;

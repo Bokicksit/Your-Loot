@@ -138,7 +138,7 @@ export default function PokedexPage() {
       </div>
 
       <div
-        className="dex-grid"
+        className={`dex-grid cols-${cols}`}
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {shown.map((e) => (
