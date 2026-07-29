@@ -9,7 +9,12 @@
 #
 # Update flow: push to main -> Actions builds :latest -> update the app
 # (re-deploy) on TrueNAS to pull the new images. Pin a sha tag instead of
-# :latest if you want explicit upgrades.
+# :latest if you want explicit upgrades. To force it now:
+#   sudo midclt call -job app.pull_images yourloot '{"redeploy": true}'
+#
+# Card database refresh (weekly cron, System Settings -> Advanced -> Cron
+# Jobs, run as root):
+#   0 4 * * 0  docker exec getloot-api python /seed/seed_cards.py --download
 
 services:
   postgres:
@@ -48,6 +53,8 @@ services:
     image: ghcr.io/bokicksit/getloot-web:latest
     restart: unless-stopped
     ports:
-      - "8080:80" # the only published port; nginx proxies /api internally
+      # 30080, not 8080: TrueNAS apps commonly take 8080 already. This is the
+      # only published port; nginx proxies /api to the api container.
+      - "30080:80"
     depends_on:
       - api

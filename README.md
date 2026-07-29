@@ -61,26 +61,46 @@ Packages → package settings → Change visibility), or add GHCR login on TrueN
 
 1. Create two datasets, e.g. `tank/apps/getloot/postgres` and
    `tank/apps/getloot/images`.
-2. Open `deploy/compose.truenas.yaml`, replace `YOURUSER`, `CHANGE_ME`, and the
-   `/mnt/tank/...` paths.
+2. Open `deploy/compose.truenas.yaml`, replace `CHANGE_ME`, the `/mnt/tank/...`
+   paths, and paste the IGDB/TMDB keys.
 3. TrueNAS UI → **Apps → Discover Apps → ⋮ → Install via YAML**, paste the
    file, save. Migrations run automatically on api start.
-4. Seed the card data once:
-   `docker exec getloot-api python /seed/seed_cards.py` (from the TrueNAS shell).
-5. App is at `http://<nas-ip>:8080`.
+4. Seed the full card database once (~20k cards, a couple of minutes):
+   `sudo docker exec getloot-api python /seed/seed_cards.py --download`
+5. App is at `http://<nas-ip>:30080` (8080 is usually taken by another app).
 
-To update after a push to main: re-deploy the app so it pulls fresh `:latest`
-images (or pin a `sha-…` tag in the YAML for explicit upgrades).
+Private GHCR images: `sudo docker login ghcr.io -u <user>` once on the NAS
+with a classic token scoped `read:packages`.
+
+To update after a push to main, wait for the Actions build, then either use
+the app's Update button (TrueNAS checks daily) or force it:
+
+```bash
+sudo midclt call -job app.pull_images yourloot '{"redeploy": true}'
+```
+
+The version on the home screen tells you which build is actually running.
+
+### Scheduled jobs
+
+- **Card database refresh** — System Settings → Advanced → Cron Jobs, as root,
+  weekly: `docker exec getloot-api python /seed/seed_cards.py --download`.
+  Upserts only: owned copies, wanted flags, binder picks, grades and any images
+  you set yourself are never touched.
+- **Snapshots** — Data Protection → Periodic Snapshot Tasks on
+  `tank/apps/getloot` (recursive). The datasets hold the database and uploaded
+  images; nothing else backs them up.
 
 ### Remote access
 
-Don't port-forward 8080 raw. Two good options (not configured here):
+Don't port-forward 30080 raw — the app has no login of its own.
 
-- **Tailscale** — simplest: run the Tailscale app on TrueNAS, access
-  `http://<tailscale-ip>:8080` from your devices. Private by default.
-- **Cloudflare Tunnel** — public HTTPS URL without opening ports; run
-  `cloudflared` as another TrueNAS app pointing at the web service. Put
-  Cloudflare Access in front since the app has no auth yet.
+- **Cloudflare Tunnel** (in use here) — add a public hostname on an existing
+  tunnel pointing at `http://<nas-ip>:30080`, then put **Cloudflare Access** in
+  front of it so only your email can reach it. Gives a real HTTPS hostname,
+  which is also what unlocks the barcode scanner's camera.
+- **Tailscale** — alternative: run the Tailscale app on TrueNAS and reach
+  `http://<tailscale-ip>:30080` privately, no public exposure.
 
 ## Repo layout
 
