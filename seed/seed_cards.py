@@ -12,6 +12,7 @@ owned/wanted records are never touched.
 import argparse
 import io
 import json
+from collections import Counter, defaultdict
 import sys
 import tarfile
 import tempfile
@@ -31,7 +32,33 @@ SAMPLE_DIR = Path(__file__).resolve().parent / "sample"
 DUMP_URL = "https://codeload.github.com/PokemonTCG/pokemon-tcg-data/tar.gz/refs/heads/master"
 
 
-def seed_file(db, cards_path: Path, sets_by_id: dict):
+def build_dex_map(cards_dir: Path) -> dict[str, int]:
+    """name -> the dex number most of that Pokémon's cards agree on.
+
+    The upstream dump has occasional wrong dex numbers (e.g. Black Bolt's
+    Klinklang is tagged 599, which is Klink), which files a card under the
+    wrong binder slot. Ten other Klinklang cards say 601, so a majority vote
+    across the whole dump repairs the outliers without a hand-kept list.
+    """
+    tally: dict[str, Counter] = defaultdict(Counter)
+    for path in sorted(cards_dir.glob("*.json")):
+        try:
+            for card in json.loads(path.read_text(encoding="utf-8")):
+                nums = card.get("nationalPokedexNumbers") or []
+                if len(nums) == 1:  # unambiguous cards are the evidence
+                    tally[card["name"]][nums[0]] += 1
+        except (json.JSONDecodeError, OSError):
+            continue
+    # only trust a majority backed by more than one card
+    out = {}
+    for name, counts in tally.items():
+        (num, hits), = counts.most_common(1)
+        if hits > 1:
+            out[name] = num
+    return out
+
+
+def seed_file(db, cards_path: Path, sets_by_id: dict, dex_map: dict | None = None):
     set_code = cards_path.stem  # pokemon-tcg-data names files <set_id>.json
     set_meta = sets_by_id.get(set_code, {})
     set_name = set_meta.get("name", set_code)
@@ -41,9 +68,15 @@ def seed_file(db, cards_path: Path, sets_by_id: dict):
     set_abbr = set_meta.get("ptcgoCode")  # printed code on modern cards (MEW, JTG)
     cards = json.loads(cards_path.read_text(encoding="utf-8"))
 
-    created = updated = 0
+    created = updated = fixed = 0
     for card in cards:
         dex_nums = card.get("nationalPokedexNumbers") or []
+        dex = dex_nums[0] if dex_nums else None
+        # prefer what the rest of this Pokémon's cards agree on
+        consensus = (dex_map or {}).get(card["name"])
+        if consensus is not None and dex is not None and consensus != dex:
+            dex = consensus
+            fixed += 1
         item = db.scalar(
             select(CollectionItem).where(
                 CollectionItem.source == "ptcg",
@@ -71,12 +104,12 @@ def seed_file(db, cards_path: Path, sets_by_id: dict):
         a.set_abbr = set_abbr
         a.card_number = card.get("number")
         a.rarity = card.get("rarity")
-        a.national_dex_no = dex_nums[0] if dex_nums else None
+        a.national_dex_no = dex
         a.variant = derive_variant(card.get("rarity"))
         a.layer = classify_layer(card.get("rarity"))
 
     db.commit()
-    return created, updated
+    return created, updated, fixed
 
 
 def download_dump(dest: Path) -> tuple[Path, Path]:
@@ -109,19 +142,25 @@ def main():
         sets = json.loads(sets_file.read_text(encoding="utf-8"))
         sets_by_id = {s["id"]: s for s in sets}
 
+        dex_map = build_dex_map(cards_dir)
+
         db = SessionLocal()
-        total_c = total_u = 0
+        total_c = total_u = total_f = 0
         try:
             files = sorted(cards_dir.glob("*.json"))
             for i, cards_path in enumerate(files, 1):
-                c, u = seed_file(db, cards_path, sets_by_id)
+                c, u, f = seed_file(db, cards_path, sets_by_id, dex_map)
                 total_c += c
                 total_u += u
+                total_f += f
                 if args.download:  # progress for the big run
                     print(f"  [{i}/{len(files)}] {cards_path.stem}: +{c} ~{u}")
         finally:
             db.close()
-        print(f"Done: {total_c} created, {total_u} updated")
+        print(
+            f"Done: {total_c} created, {total_u} updated, "
+            f"{total_f} dex numbers corrected"
+        )
 
 
 if __name__ == "__main__":
