@@ -74,7 +74,9 @@ export default function SettingsPage() {
         <h3>Collections</h3>
         <p>
           Turn off what you don't collect. Nothing is deleted — a hidden
-          collection's items simply stop appearing.
+          collection's items stay in the database and stop appearing in the
+          menu, on Home, and in the wanted list. Turn it back on and
+          everything returns exactly as it was.
         </p>
         <div className="settings-modules">
           {MODULES.map((m) => {

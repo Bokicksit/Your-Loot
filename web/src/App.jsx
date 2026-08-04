@@ -95,6 +95,27 @@ function CollectionsSheet({ open, onClose }) {
   );
 }
 
+// A hidden collection's URL (bookmark, old link) shouldn't 404 or silently
+// show a page the user turned off — say so and offer the way back.
+function RequireModule({ moduleKey, children }) {
+  const enabled = useEnabledModules();
+  const { settings } = useSettings();
+  if (!settings) return null; // still loading
+  if (enabled.some((m) => m.key === moduleKey)) return children;
+  const label = MODULES.find((m) => m.key === moduleKey)?.label || moduleKey;
+  return (
+    <div className="empty">
+      <span className="glyph"><Icon id="sliders" /></span>
+      <strong>{label} is turned off</strong>
+      <p>
+        Nothing was deleted — your {label.toLowerCase()} are still stored. Turn
+        the collection back on to see them.
+      </p>
+      <Link to="/settings" className="primary">Open settings</Link>
+    </div>
+  );
+}
+
 function Shell() {
   const { settings } = useSettings();
   const [sheet, setSheet] = useState(false);
@@ -117,12 +138,31 @@ function Shell() {
       <main className="content">
         <Routes>
           <Route path="/" element={<HomePage onOpenCollections={() => setSheet(true)} />} />
-          <Route path="/cards" element={<CardsPage />} />
-          <Route path="/pokedex" element={<CardsPage initialView="binder" />} />
+          <Route
+            path="/cards"
+            element={<RequireModule moduleKey="cards"><CardsPage /></RequireModule>}
+          />
+          <Route
+            path="/pokedex"
+            element={
+              <RequireModule moduleKey="cards">
+                <CardsPage initialView="binder" />
+              </RequireModule>
+            }
+          />
           <Route path="/wanted" element={<WantedPage />} />
-          <Route path="/games" element={<GamesPage />} />
-          <Route path="/hardware" element={<HardwarePage />} />
-          <Route path="/movies" element={<MoviesPage />} />
+          <Route
+            path="/games"
+            element={<RequireModule moduleKey="games"><GamesPage /></RequireModule>}
+          />
+          <Route
+            path="/hardware"
+            element={<RequireModule moduleKey="hardware"><HardwarePage /></RequireModule>}
+          />
+          <Route
+            path="/movies"
+            element={<RequireModule moduleKey="movies"><MoviesPage /></RequireModule>}
+          />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>

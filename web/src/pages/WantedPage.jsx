@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import { useEnabledModules } from "../settings.jsx";
 
-const MODULE_ICONS = { cards: "card", games: "pad", movies: "disc" };
+const MODULE_ICONS = { cards: "card", games: "pad", hardware: "console", movies: "disc" };
 
 // Left-edge badge: system logo for games, media-format tag for movies,
 // module icon otherwise.
@@ -34,12 +35,7 @@ function RowBadge({ row }) {
     </span>
   );
 }
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "cards", label: "Cards", icon: "card" },
-  { key: "games", label: "Games", icon: "pad" },
-  { key: "movies", label: "Movies", icon: "disc" },
-];
+// filter chips are built from the collections you actually have enabled
 // condition vocabularies differ per module; completeness is games-only
 const CONDITIONS = {
   cards: ["NM", "LP", "MP", "HP", "DMG"],
@@ -50,6 +46,7 @@ const COMPLETENESS = ["loose", "CIB", "sealed"];
 
 // The unified wanted list — every module, one view.
 export default function WantedPage() {
+  const enabled = useEnabledModules();
   const [rows, setRows] = useState([]);
   const [filter, setFilter] = useState("all");
   const [facet, setFacet] = useState(""); // system (games) / genre (movies)
@@ -97,8 +94,12 @@ export default function WantedPage() {
     return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`;
   };
 
+  // items from collections you've turned off stay in the database but drop
+  // out of the hunt list, matching the rest of the app
+  const enabledKeys = enabled.map((m) => m.key);
+  const visible = rows.filter((r) => enabledKeys.includes(r.module));
   const moduleRows =
-    filter === "all" ? rows : rows.filter((r) => r.module === filter);
+    filter === "all" ? visible : visible.filter((r) => r.module === filter);
   // sub-filter values present among the current module's wanted rows
   const facets =
     filter === "games" || filter === "movies"
@@ -116,7 +117,7 @@ export default function WantedPage() {
   return (
     <div>
       <div className="chip-row">
-        {FILTERS.map((f) => (
+        {[{ key: "all", label: "All" }, ...enabled].map((f) => (
           <button
             key={f.key}
             className={`chip ${filter === f.key ? "active" : ""}`}

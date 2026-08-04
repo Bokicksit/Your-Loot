@@ -227,6 +227,13 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return item.movie_attrs.format
         return None
 
+    def _ui_module(item: CollectionItem) -> str:
+        """Hardware is stored in the games module but is its own collection in
+        the UI, so the wanted list can filter it separately."""
+        if item.module == Module.games.value and item.game_attrs and item.game_attrs.is_hardware:
+            return "hardware"
+        return item.module
+
     rows = db.scalars(q).unique().all()
     out = []
     for w in rows:
@@ -234,7 +241,7 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
         out.append(
             WantedItemOut(
                 item_id=w.item.id,
-                module=w.item.module,
+                module=_ui_module(w.item),
                 title=w.item.title,
                 image_url=w.item.image_url,
                 detail=_detail(w.item),
