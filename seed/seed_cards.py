@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, "/app")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import func, select  # noqa: E402
 from app.cards_util import classify_layer, derive_variant  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
 from app.models import CardAttrs, CollectionItem, Module  # noqa: E402
@@ -132,7 +132,22 @@ def main():
     p.add_argument("--cards-dir", type=Path, default=SAMPLE_DIR / "cards",
                    help="directory of <set_id>.json card files")
     p.add_argument("--sets-file", type=Path, default=SAMPLE_DIR / "sets.json")
+    p.add_argument("--check-empty", action="store_true",
+                   help="exit 0 if the card catalog is empty (for first-run seeding)")
     args = p.parse_args()
+
+    if args.check_empty:
+        db = SessionLocal()
+        try:
+            n = db.scalar(
+                select(func.count()).select_from(CollectionItem).where(
+                    CollectionItem.module == Module.cards.value
+                )
+            )
+        finally:
+            db.close()
+        print(f"cards in catalog: {n}")
+        sys.exit(0 if not n else 1)
 
     with tempfile.TemporaryDirectory() as tmp:
         cards_dir, sets_file = (

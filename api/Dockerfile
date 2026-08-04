@@ -10,8 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api/ /app/
 COPY seed/ /seed/
 COPY VERSION /app/VERSION
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
-# run migrations before serving; safe to re-run on every start
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# migrations + optional first-run seed + server; safe to re-run on every start
+CMD ["/app/entrypoint.sh"]

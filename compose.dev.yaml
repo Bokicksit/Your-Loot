@@ -1,0 +1,50 @@
+# Development: builds both images from source instead of pulling them.
+#   docker compose -f compose.dev.yaml up --build
+#
+# Seeding is off by default here so rebuilds stay fast; seed by hand once:
+#   docker compose -f compose.dev.yaml exec api python /seed/seed_cards.py --download
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-getloot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-getloot}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-getloot}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: . # repo root so the image can include /seed
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-getloot}
+      IMAGE_DIR: /data/images
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      SEED_ON_START: ${SEED_ON_START:-false}
+    volumes:
+      - ./data/images:/data/images
+      - ./seed:/seed # live-edit seed scripts without rebuilding
+    ports:
+      - "${API_PORT:-8000}:8000" # direct API access for curl / /docs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api

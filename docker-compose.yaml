@@ -1,16 +1,25 @@
-# Local dev: builds from source. Copy .env.example -> .env first.
-#   docker compose up --build
-# Deployment on TrueNAS uses deploy/compose.truenas.yaml (pulls GHCR images).
+# Your Loot — self-hosted. Pulls prebuilt images; nothing to compile.
+#
+#   cp .env.example .env      # set POSTGRES_PASSWORD at minimum
+#   docker compose up -d
+#
+# Then open http://localhost:8080. The card database seeds itself on first
+# start (~20k cards, a couple of minutes) — watch it with:
+#   docker compose logs -f api
+#
+# Developing on the code instead? Use compose.dev.yaml, which builds locally:
+#   docker compose -f compose.dev.yaml up --build
 
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-getloot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-getloot}
     volumes:
-      # bind mount (not a named volume) to mirror the TrueNAS dataset setup
+      # bind mounts, not named volumes: easy to snapshot/back up
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-getloot}"]
@@ -19,26 +28,33 @@ services:
       retries: 10
 
   api:
-    build:
-      context: . # repo root so the image can include /seed (see api/Dockerfile)
-      dockerfile: api/Dockerfile
+    image: ghcr.io/bokicksit/getloot-api:${TAG:-latest}
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-getloot}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-getloot}
       IMAGE_DIR: /data/images
+      # optional: without these, game/movie lookup returns a clear "not
+      # configured" message and manual entry still works
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
       TMDB_API_KEY: ${TMDB_API_KEY:-}
+      # seed the full card database on first start (set false to skip)
+      SEED_ON_START: ${SEED_ON_START:-true}
     volumes:
       - ./data/images:/data/images
-      - ./seed:/seed # live-edit seed scripts without rebuilding
-    ports:
-      - "${API_PORT:-8000}:8000" # direct API access for curl/docs during dev
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
 
   web:
-    build: ./web
+    image: ghcr.io/bokicksit/getloot-web:${TAG:-latest}
+    restart: unless-stopped
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:

@@ -5,7 +5,8 @@
 #   1. CHANGE_ME         -> a real Postgres password (both places)
 #   2. /mnt/tank/apps/…  -> your actual dataset paths (create them first:
 #                           one dataset for postgres, one for images)
-#   3. IGDB credentials  -> paste your client id/secret (games search)
+#   3. IGDB/TMDB keys    -> optional; without them those searches report
+#                           "not configured" and manual entry still works
 #
 # Update flow: push to main -> Actions builds :latest -> update the app
 # (re-deploy) on TrueNAS to pull the new images. Pin a sha tag instead of
@@ -43,6 +44,9 @@ services:
       IGDB_CLIENT_ID: ""
       IGDB_CLIENT_SECRET: ""
       TMDB_API_KEY: ""
+      # downloads the full card database on first start (safe to leave on;
+      # it only runs when the catalog is empty)
+      SEED_ON_START: "true"
     volumes:
       - /mnt/tank/apps/getloot/images:/data/images
     depends_on:
