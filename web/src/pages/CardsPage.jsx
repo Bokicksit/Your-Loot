@@ -5,6 +5,8 @@ import CardTile from "../components/CardTile.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
+import PokedexView from "./PokedexPage.jsx";
+import { useSettings } from "../settings.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
@@ -12,14 +14,16 @@ const VARIANTS = ["Non-Holo", "Reverse Holo", "Holo"];
 
 // Collection view + card-in-hand add flow: search by name + printed number
 // (both on the physical card), set optional to narrow.
-export default function CardsPage() {
+export default function CardsPage({ initialView = "collection" }) {
+  const { settings, save } = useSettings();
+  const [view, setView] = useState(initialView); // collection | binder
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
-  const [showBinder, setShowBinder] = useState(false); // binder cards hidden by default
+  const showBinder = !!settings?.show_binder_in_collection; // from Settings
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
   const [online, setOnline] = useState(null); // TCGdex results (null = not searched)
@@ -189,8 +193,35 @@ export default function CardsPage() {
         .filter((c) => c.owned.length > 0) // last copy removed -> out of collection
     );
 
+  const viewSwitch = (
+    <div className="chip-row view-switch">
+      {[
+        ["collection", "Collection"],
+        ["binder", "Pokédex binder"],
+      ].map(([k, label]) => (
+        <button
+          key={k}
+          className={`chip ${view === k ? "active" : ""}`}
+          onClick={() => setView(k)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (view === "binder") {
+    return (
+      <div>
+        {viewSwitch}
+        <PokedexView />
+      </div>
+    );
+  }
+
   return (
     <div>
+      {viewSwitch}
       <div className="toolbar">
         <input
           type="search"
@@ -213,8 +244,8 @@ export default function CardsPage() {
         <button
           type="button"
           className={`toggle ${showBinder ? "on" : ""}`}
-          onClick={() => setShowBinder(!showBinder)}
-          title="Binder cards live on the Pokédex tab — toggle to see them here too"
+          onClick={() => save({ show_binder_in_collection: !showBinder })}
+          title="Binder cards live in the binder view — toggle to list them here too"
         >
           Binder cards
         </button>

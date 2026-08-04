@@ -2,49 +2,65 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import { useEnabledModules, useSettings } from "../settings.jsx";
 
-// Splash: pick a collection. Tab bar still works everywhere; this is just the
-// front door instead of dumping straight into cards.
-export default function HomePage() {
+const PATHS = { cards: "/cards", games: "/games", hardware: "/hardware", movies: "/movies" };
+const UNIT = { cards: "card", games: "title", hardware: "item", movies: "disc" };
+
+export default function HomePage({ onOpenCollections }) {
+  const { settings } = useSettings();
+  const enabled = useEnabledModules();
   const [stats, setStats] = useState(null);
-  const [version, setVersion] = useState("");
 
   useEffect(() => {
     api.stats().then(setStats).catch(() => {});
-    api.health().then((h) => setVersion(h.version)).catch(() => {});
   }, []);
 
-  const totalWanted = stats
+  const favs = settings?.favorite_modules || [];
+  // favourites are the fast path; if none are starred, show everything so
+  // Home is never an empty screen
+  const shown = favs.length ? enabled.filter((m) => favs.includes(m.key)) : enabled;
+  const wanted = stats
     ? Object.values(stats).reduce((a, s) => a + s.wanted, 0)
     : 0;
+
+  const count = (key) => {
+    // hardware lives in the games module server-side
+    const s = stats?.[key === "hardware" ? "games" : key];
+    return s ? s.items : null;
+  };
 
   return (
     <div className="home">
       <h2>What are we opening?</h2>
+
       <div className="home-tiles">
-        <Link to="/cards" className="home-tile">
-          <Icon id="card" />
-          <strong>Cards</strong>
-        </Link>
-        <Link to="/games" className="home-tile">
-          <Icon id="pad" />
-          <strong>Games</strong>
-        </Link>
-        <Link to="/hardware" className="home-tile">
-          <Icon id="console" />
-          <strong>Hardware</strong>
-        </Link>
-        <Link to="/movies" className="home-tile">
-          <Icon id="disc" />
-          <strong>Movies</strong>
-        </Link>
+        {shown.map((m) => (
+          <Link key={m.key} to={PATHS[m.key]} className="home-tile">
+            <Icon id={m.icon} />
+            <strong>{m.label}</strong>
+            {count(m.key) != null && (
+              <small>
+                {count(m.key)} {UNIT[m.key]}
+                {count(m.key) === 1 ? "" : "s"}
+              </small>
+            )}
+          </Link>
+        ))}
+
         <Link to="/wanted" className="home-tile">
           <Icon id="star" />
           <strong>Wanted</strong>
-          {stats && totalWanted > 0 && <small>{totalWanted} on the hunt</small>}
+          {wanted > 0 && <small>{wanted} on the hunt</small>}
         </Link>
       </div>
-      {version && <p className="version-tag">v{version}</p>}
+
+      {favs.length > 0 && enabled.length > shown.length && (
+        <button className="ghost home-more" onClick={onOpenCollections}>
+          <Icon id="sliders" />
+          All collections
+        </button>
+      )}
     </div>
   );
 }

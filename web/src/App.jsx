@@ -1,98 +1,148 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
-import { api } from "./api.js";
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Link,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { Icon, IconDefs } from "./components/Icons.jsx";
+import Onboarding from "./components/Onboarding.jsx";
+import { MODULES, SettingsProvider, useEnabledModules, useSettings } from "./settings.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import CardsPage from "./pages/CardsPage.jsx";
-import PokedexPage from "./pages/PokedexPage.jsx";
 import WantedPage from "./pages/WantedPage.jsx";
 import GamesPage from "./pages/GamesPage.jsx";
 import HardwarePage from "./pages/HardwarePage.jsx";
 import MoviesPage from "./pages/MoviesPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 
-const TABS = [
-  { to: "/cards", icon: "card", label: "Cards" },
-  { to: "/pokedex", icon: "ball", label: "Pokédex" },
-  { to: "/wanted", icon: "star", label: "Wanted" },
-  { to: "/games", icon: "pad", label: "Games" },
-  { to: "/hardware", icon: "console", label: "Hardware" },
-  { to: "/movies", icon: "disc", label: "Movies" },
-];
+const PATHS = {
+  cards: "/cards",
+  games: "/games",
+  hardware: "/hardware",
+  movies: "/movies",
+};
 
-export default function App() {
-  // undefined = loading, null = never set (first run), "" = skipped, "Bo" = set
-  const [ownerName, setOwnerName] = useState(undefined);
-  const [nameDraft, setNameDraft] = useState("");
+// Bottom bar is deliberately three items — the individual collections live
+// behind the Collections sheet, with favourites surfaced on Home.
+function TabBar({ onOpenCollections }) {
+  const { pathname } = useLocation();
+  const inCollection = Object.values(PATHS).some((p) => pathname.startsWith(p));
+  return (
+    <nav className="tabbar">
+      <NavLink to="/" end>
+        <Icon id="coin" />
+        <span>Home</span>
+      </NavLink>
+      <button
+        className={inCollection ? "active" : ""}
+        onClick={onOpenCollections}
+        aria-haspopup="menu"
+      >
+        <Icon id="card" />
+        <span>Collections</span>
+      </button>
+      <NavLink to="/wanted">
+        <Icon id="star" />
+        <span>Wanted</span>
+      </NavLink>
+    </nav>
+  );
+}
 
-  useEffect(() => {
-    api.settings().then((s) => setOwnerName(s.owner_name)).catch(() => setOwnerName(""));
-  }, []);
+function CollectionsSheet({ open, onClose }) {
+  const enabled = useEnabledModules();
+  const navigate = useNavigate();
+  if (!open) return null;
+  return (
+    <div className="modal-scrim sheet-scrim" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <h2>Collections</h2>
+        {enabled.map((m) => (
+          <button
+            key={m.key}
+            className="sheet-row"
+            onClick={() => {
+              navigate(PATHS[m.key]);
+              onClose();
+            }}
+          >
+            <Icon id={m.icon} />
+            <span className="sheet-text">
+              <strong>{m.label}</strong>
+              <small>{m.blurb}</small>
+            </span>
+          </button>
+        ))}
+        <button
+          className="sheet-row muted"
+          onClick={() => {
+            navigate("/settings");
+            onClose();
+          }}
+        >
+          <Icon id="sliders" />
+          <span className="sheet-text">
+            <strong>Settings</strong>
+            <small>Name, collections, display</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
-  const saveName = async (name) => {
-    const saved = await api.saveSettings({ owner_name: name });
-    setOwnerName(saved.owner_name);
-  };
+function Shell() {
+  const { settings } = useSettings();
+  const [sheet, setSheet] = useState(false);
+  const name = settings?.owner_name;
 
   return (
-    <BrowserRouter>
-      <IconDefs />
+    <>
       <header className="topbar">
-        {/* brand doubles as the way home */}
         <Link to="/" className="brand-link">
           <h1 className="brand">
             <Icon id="coin" />
-            {ownerName ? `${ownerName}’s` : "Your"} <em>Loot</em>
+            {name ? `${name}’s` : "Your"} <em>Loot</em>
           </h1>
         </Link>
+        <Link to="/settings" className="ghost icon" title="Settings">
+          <Icon id="sliders" />
+        </Link>
       </header>
+
       <main className="content">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage onOpenCollections={() => setSheet(true)} />} />
           <Route path="/cards" element={<CardsPage />} />
-          <Route path="/pokedex" element={<PokedexPage />} />
+          <Route path="/pokedex" element={<CardsPage initialView="binder" />} />
           <Route path="/wanted" element={<WantedPage />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/hardware" element={<HardwarePage />} />
           <Route path="/movies" element={<MoviesPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
-      {/* bottom tab bar — thumb-reachable, floats as a pill on desktop */}
-      <nav className="tabbar">
-        {TABS.map((t) => (
-          <NavLink key={t.to} to={t.to}>
-            <Icon id={t.icon} />
-            <span>{t.label}</span>
-          </NavLink>
-        ))}
-      </nav>
 
-      {/* first run: personalize the vault */}
-      {ownerName === null && (
-        <div className="modal-scrim">
-          <form
-            className="modal"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveName(nameDraft.trim());
-            }}
-          >
-            <span className="glyph"><Icon id="coin" /></span>
-            <h2>Whose loot is this?</h2>
-            <p>Your name goes on the vault door. You can leave it blank.</p>
-            <input
-              type="text"
-              maxLength={50}
-              autoFocus
-              placeholder="Collector name"
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-            />
-            <button type="submit" className="primary">
-              {nameDraft.trim() ? `Make it ${nameDraft.trim()}’s Loot` : "Keep it “Your Loot”"}
-            </button>
-          </form>
-        </div>
-      )}
+      <TabBar onOpenCollections={() => setSheet(true)} />
+      <CollectionsSheet open={sheet} onClose={() => setSheet(false)} />
+      {settings?.needs_onboarding && <Onboarding />}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <IconDefs />
+      <SettingsProvider>
+        <Shell />
+      </SettingsProvider>
     </BrowserRouter>
   );
 }
+
+export { MODULES, PATHS };

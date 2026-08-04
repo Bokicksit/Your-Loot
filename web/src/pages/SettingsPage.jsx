@@ -1,0 +1,152 @@
+import { useEffect, useState } from "react";
+import { api } from "../api.js";
+import { Icon } from "../components/Icons.jsx";
+import { MODULES, useSettings } from "../settings.jsx";
+
+const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
+
+export default function SettingsPage() {
+  const { settings, save } = useSettings();
+  const [name, setName] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    if (settings) setName(settings.owner_name || "");
+  }, [settings?.owner_name]);
+
+  useEffect(() => {
+    api.health().then((h) => setVersion(h.version)).catch(() => {});
+  }, []);
+
+  if (!settings) return <p className="empty">Loading…</p>;
+
+  const flash = async (patch) => {
+    await save(patch);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1400);
+  };
+
+  const enabled = settings.enabled_modules || [];
+  const favs = settings.favorite_modules || [];
+
+  const toggleModule = (key) => {
+    const next = enabled.includes(key)
+      ? enabled.filter((k) => k !== key)
+      : [...enabled, key];
+    if (!next.length) return; // keep at least one collection
+    flash({
+      enabled_modules: next,
+      favorite_modules: favs.filter((f) => next.includes(f)),
+    });
+  };
+
+  const toggleFav = (key) => {
+    const next = favs.includes(key) ? favs.filter((k) => k !== key) : [...favs, key];
+    flash({ favorite_modules: next });
+  };
+
+  return (
+    <div className="settings">
+      <div className="toolbar">
+        <h2 style={{ margin: 0, fontSize: "var(--f-5)" }}>Settings</h2>
+        {saved && <span className="saved-flash">saved</span>}
+      </div>
+
+      <section className="settings-card">
+        <h3>Collector name</h3>
+        <p>Shown in the header — “{name.trim() || "Your"}’s Loot”.</p>
+        <div className="form-row">
+          <input
+            type="text"
+            className="grow"
+            maxLength={50}
+            placeholder="Leave blank for “Your Loot”"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => name !== (settings.owner_name || "") && flash({ owner_name: name.trim() })}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          />
+        </div>
+      </section>
+
+      <section className="settings-card">
+        <h3>Collections</h3>
+        <p>
+          Turn off what you don't collect. Nothing is deleted — a hidden
+          collection's items simply stop appearing.
+        </p>
+        <div className="settings-modules">
+          {MODULES.map((m) => {
+            const on = enabled.includes(m.key);
+            return (
+              <div key={m.key} className={`module-row ${on ? "" : "off"}`}>
+                <Icon id={m.icon} />
+                <span className="sheet-text">
+                  <strong>{m.label}</strong>
+                  <small>{m.blurb}</small>
+                </span>
+                <button
+                  className={`toggle ${favs.includes(m.key) ? "on" : ""}`}
+                  disabled={!on}
+                  onClick={() => toggleFav(m.key)}
+                  title="Show as a shortcut on Home"
+                >
+                  Favourite
+                </button>
+                <button
+                  className={`toggle ${on ? "on" : ""}`}
+                  onClick={() => toggleModule(m.key)}
+                >
+                  {on ? "On" : "Off"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="settings-card">
+        <h3>Display</h3>
+        <div className="form-row">
+          <span className="settings-label">Binder slots per row</span>
+          <span className="col-picker">
+            {[3, 4, 5].map((n) => (
+              <button
+                key={n}
+                className={`chip ${settings.dex_cols === n ? "active" : ""}`}
+                onClick={() => flash({ dex_cols: n })}
+              >
+                {n}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div className="form-row">
+          <span className="settings-label">Show binder cards in the card list</span>
+          <button
+            className={`toggle ${settings.show_binder_in_collection ? "on" : ""}`}
+            onClick={() =>
+              flash({ show_binder_in_collection: !settings.show_binder_in_collection })
+            }
+          >
+            {settings.show_binder_in_collection ? "Shown" : "Hidden"}
+          </button>
+        </div>
+        <div className="form-row">
+          <span className="settings-label">Default region for new items</span>
+          <select
+            value={settings.default_region}
+            onChange={(e) => flash({ default_region: e.target.value })}
+          >
+            {REGIONS.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+      </section>
+
+      {version && <p className="version-tag">Your Loot v{version}</p>}
+    </div>
+  );
+}

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import { useSettings } from "../settings.jsx";
 
 // One card per Pokémon — the binder mirror. A slot's occupant is either the
 // desired card ("the one") or a placeholder awaiting an upgrade; some basics
@@ -15,16 +16,12 @@ export default function PokedexPage() {
   const [rarityFilter, setRarityFilter] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
-  // binder density — remembered per device, since it's a screen-size taste
-  const [cols, setCols] = useState(
-    () => Number(localStorage.getItem("dexCols")) || 4
-  );
+  // binder density lives in Settings so it applies on every device
+  const { settings, save } = useSettings();
+  const cols = settings?.dex_cols || 4;
   const navigate = useNavigate();
 
-  const pickCols = (n) => {
-    setCols(n);
-    localStorage.setItem("dexCols", String(n));
-  };
+  const pickCols = (n) => save({ dex_cols: n });
 
   // jump straight to the Cards add flow, pre-searched for this Pokémon —
   // the usual next step when a slot is empty or wants an upgrade

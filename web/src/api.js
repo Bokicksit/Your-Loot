@@ -67,10 +67,10 @@ export const api = {
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
   settings: () => request("/api/settings"),
-  stats: () => request("/api/stats"),
-  health: () => request("/api/health"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
+  stats: () => request("/api/stats"),
+  health: () => request("/api/health"),
   addGame: (body) =>
     request("/api/games", { method: "POST", body: JSON.stringify(body) }),
   deleteGame: (itemId) =>
