@@ -1,13 +1,26 @@
-# Platform logo sources
+# Platform logos
 
-- Retro systems (NES, SNES, N64, GCN, Wii, GB, GBC, GBA, NDS, PS1, PS2, PSP,
-  GEN, DC, PC): RetroPie **es-theme-carbon** (github.com/RetroPie/es-theme-carbon),
-  CC BY-NC-SA — fine for this personal, self-hosted app. Recolored slightly for
-  a dark background.
-- PS3/PS4/PS5/Vita: **simple-icons** (github.com/simple-icons/simple-icons), CC0.
-- NSW, WiiU, 3DS, XBOX/X360/XONE/XSX: Wikimedia Commons wordmark SVGs
-  (PD-textlogo — below threshold of originality). X360 reuses the XBOX wordmark.
+All files here are **public domain or CC0** and therefore usable commercially.
 
-All console names and logos are trademarks of their respective owners; used here
-for personal collection labeling only. Files are keyed by platform abbreviation
-(`SNES.svg`) — drop in replacements anytime, the UI picks them up by filename.
+| Source | Files | Licence |
+| --- | --- | --- |
+| [Wikimedia Commons](https://commons.wikimedia.org) | NES, SNES, N64, GCN, Wii, WiiU, NSW, GB, GBC, GBA, NDS, 3DS, PS1, PS2, PSP, GEN, DC, PC, XBOX, XONE | Public domain (PD-textlogo / below the threshold of originality) |
+| [simple-icons](https://github.com/simple-icons/simple-icons) | PS3, PS4, PS5, Vita | CC0 |
+
+Colours were programmatically lightened where a logo failed a 3:1 contrast
+check against the app's panel background (`#131218`), preserving hue and
+saturation so brand colours survive.
+
+Platforms with no file here — X360, XSX and anything else — fall back to a
+text badge in the UI, which is deliberate: a generic Xbox wordmark can't tell
+Series X from Xbox One, whereas "XSX" can.
+
+> Console names and logos are trademarks of their respective owners. They are
+> used here nominatively, to identify the platform a collected item belongs to.
+> This project is not affiliated with or endorsed by any of them.
+
+## Replacing or adding logos
+
+Files are keyed by the platform abbreviation shown in the app (`SNES.svg`).
+Drop in a replacement with the same name and it is picked up automatically —
+no code change. Delete one and that platform shows its text badge instead.
