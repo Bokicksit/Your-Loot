@@ -69,10 +69,11 @@ that one copy. The trash icon deletes the whole entry and every copy under it,
 and always asks first.
 
 One exception: **cards from the offline database can't be deleted**, because
-they're catalog rows shared by everyone rather than something you created —
-there's no trash icon on them, and the API refuses it. Remove your copies
-instead; the card stays in the searchable catalog where it belongs. Cards you
-added by hand can be deleted normally.
+they're catalog rows shared by everyone rather than something you created.
+Remove your copies instead — the card leaves your collection but stays in the
+searchable catalog. Expanding such a card says so where the trash icon would
+otherwise be, so the absence isn't a mystery. Cards you added by hand can be
+deleted normally.
 
 ---
 

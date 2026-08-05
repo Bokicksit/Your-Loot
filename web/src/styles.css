@@ -460,6 +460,14 @@ button.ghost.icon svg.i, button.primary.icon svg.i, a.ghost.icon svg.i { width: 
 .chip.copy button:hover { color: var(--danger); background: var(--danger-wash); }
 .chip.copy button svg.i { width: 11px; height: 11px; stroke-width: 2.2; }
 
+/* Card tiles only. The ✕ sits inside a chip that is itself a button (tap to
+   edit), so at rest it read as part of the label rather than a control that
+   deletes. Tinting it before you touch it is what tells the two apart. The
+   list-based collections don't need this — their rows already show a named
+   trash button alongside. */
+.tile .chip.copy button { color: rgba(242, 104, 92, .7); }
+.tile .chip.copy button:hover { color: var(--danger); background: var(--danger-wash); }
+
 /* pill-shaped select that sits inside a .chip-row (system filter) */
 select.chip-select {
   flex: 0 1 auto;
@@ -1368,6 +1376,24 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border: 1px solid var(--line-soft);
   border-radius: var(--r-2);
 }
+/* why a catalog card has no delete — shown where the trash would have been */
+.catalog-note {
+  flex: 1 0 100%;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: var(--s-2);
+  align-items: start;
+  padding: var(--s-2) 10px;
+  background: var(--gold-wash);
+  border: 1px solid rgba(242, 183, 60, .28);
+  border-radius: var(--r-2);
+  color: var(--text-dim);
+  font-size: var(--f-2);
+  line-height: 1.45;
+}
+.catalog-note svg.i { width: 15px; height: 15px; color: var(--gold); margin-top: 1px; }
+.catalog-note strong { color: var(--text); font-weight: var(--w-med); }
+
 /* artwork candidates after a barcode scan: case photos + poster/cover */
 .art-options { display: grid; gap: var(--s-2); }
 .art-label { font-size: var(--f-2); color: var(--text-mute); }

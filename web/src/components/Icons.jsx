@@ -23,6 +23,7 @@ export function IconDefs() {
         <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6V4.5a1 1 0 011-1h3a1 1 0 011 1V6M7 6.5l.8 12a2 2 0 002 1.9h4.4a2 2 0 002-1.9l.8-12M10 10.5v5M14 10.5v5" /></symbol>
         <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.6 3.6 0 010-5l2.5-2.5a3.6 3.6 0 015 5L16 13" /><path d="M14 10a3.6 3.6 0 010 5L11.5 17.5a3.6 3.6 0 01-5-5L8 11" /></symbol>
         <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10v4M12 16.6v.1" /></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.7v.1" /></symbol>
         <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8.5V6a2 2 0 012-2h2.5M20 8.5V6a2 2 0 00-2-2h-2.5M4 15.5V18a2 2 0 002 2h2.5M20 15.5V18a2 2 0 01-2 2h-2.5M4 12h16" /></symbol>
         <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5" /><path d="M4.5 17v1.5a2 2 0 002 2h11a2 2 0 002-2V17" /></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9.5M7.5 13.5L12 9l4.5 4.5" /><path d="M4.5 7V5.5a2 2 0 012-2h11a2 2 0 012 2V7" /></symbol>

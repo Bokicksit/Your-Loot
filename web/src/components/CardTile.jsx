@@ -280,7 +280,19 @@ export default function CardTile({ card, onChange, onReload }) {
               }
             }}
           />
-          {card.source !== "ptcg" && (
+          {card.source === "ptcg" ? (
+            // No delete here, and the absence looked like a bug — say why. The
+            // dump's rows are shared reference data; the API refuses to remove
+            // them, so what the user actually wants is to drop their copies.
+            <span className="catalog-note">
+              <Icon id="info" />
+              <span>
+                This is a <strong>catalog card</strong>, shared by every collection —
+                it can't be deleted. Remove your copies above and it leaves your
+                collection but stays searchable.
+              </span>
+            </span>
+          ) : (
             <button
               className="ghost danger icon"
               style={{ marginLeft: "auto" }}
