@@ -179,9 +179,9 @@ Notes:
   before uploading.
 - Case photos from retailers are **copied to your own storage** when you save,
   because those links rot. Database covers stay linked to their source.
-- Changing a picture *after* adding is currently only possible for cards (open
-  the card and use the image picker there). For everything else, set the
-  picture when you add it.
+- Every collection has an **Edit entry** pencil on the row, which includes the
+  picture — so a cover pulled from a database can be swapped for a photo of
+  your own copy at any time.
 - Removing a picture asks first. On a card from the offline database there's no
   ✕ at all while it's showing the catalog art — that picture isn't yours to
   delete. Put your own photo on and the ✕ appears, and it takes yours off.

@@ -420,6 +420,45 @@ function BookRow({ book, onChange, onReload }) {
     onReload();
   };
 
+  const [entry, setEntry] = useState(null); // null = editor closed
+  const openEntry = () =>
+    setEntry({
+      title: book.title || "",
+      author: a.author || "",
+      publisher: a.publisher || "",
+      isbn: a.isbn || "",
+      format: a.format || "",
+      edition: a.edition || "",
+      series: a.series || "",
+      publish_year: a.publish_year ?? "",
+      image_url: book.image_url,
+    });
+
+  const saveEntry = async () => {
+    if (busy) return;
+    if (!entry.title.trim()) return alert("A book needs a title.");
+    setBusy(true);
+    try {
+      await api.updateBook(book.id, {
+        title: entry.title.trim(),
+        author: entry.author.trim() || null,
+        publisher: entry.publisher.trim() || null,
+        isbn: entry.isbn.trim() || null,
+        format: entry.format || null,
+        edition: entry.edition.trim() || null,
+        series: entry.series.trim() || null,
+        publish_year: entry.publish_year ? Number(entry.publish_year) : null,
+        image_url: entry.image_url,
+      });
+      setEntry(null);
+      onReload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className={`game-row ${book.owned.length ? "row-owned" : ""}`}>
       {book.image_url ? (
@@ -467,9 +506,113 @@ function BookRow({ book, onChange, onReload }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entry ? setEntry(null) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+
+      {entry && (
+        <span className="entry-edit">
+          <span className="game-info-line">Edition details</span>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Title"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Author"
+              value={entry.author}
+              onChange={(e) => setEntry({ ...entry, author: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <select
+              value={entry.format}
+              onChange={(e) => setEntry({ ...entry, format: e.target.value })}
+            >
+              <option value="">Format…</option>
+              {(FORMATS.includes(entry.format) || !entry.format
+                ? FORMATS
+                : [entry.format, ...FORMATS]
+              ).map((f) => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Year"
+              inputMode="numeric"
+              value={entry.publish_year}
+              onChange={(e) => setEntry({ ...entry, publish_year: e.target.value })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Edition (First, Folio…)"
+              value={entry.edition}
+              onChange={(e) => setEntry({ ...entry, edition: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Publisher"
+              value={entry.publisher}
+              onChange={(e) => setEntry({ ...entry, publisher: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "170px" }}
+              placeholder="ISBN"
+              value={entry.isbn}
+              onChange={(e) => setEntry({ ...entry, isbn: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Series (optional)"
+              value={entry.series}
+              onChange={(e) => setEntry({ ...entry, series: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <ImagePicker
+              value={entry.image_url}
+              label="Cover photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
+            <button
+              className="primary icon"
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+              style={{ marginLeft: "auto" }}
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntry(null)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
 
       {infoOpen && (
         <span className="entry-edit game-info">

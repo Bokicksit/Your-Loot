@@ -468,6 +468,45 @@ function ComicRow({ comic, onChange, onReload }) {
     onReload();
   };
 
+  const [entry, setEntry] = useState(null); // null = editor closed
+  const openEntry = () =>
+    setEntry({
+      title: comic.title || "",
+      series: a.series || "",
+      issue_number: a.issue_number || "",
+      volume_year: a.volume_year ?? "",
+      publisher: a.publisher || "",
+      cover_year: a.cover_year ?? "",
+      variant: a.variant || "",
+      creators: a.creators || "",
+      image_url: comic.image_url,
+    });
+
+  const saveEntry = async () => {
+    if (busy) return;
+    if (!entry.title.trim()) return alert("An issue needs a title.");
+    setBusy(true);
+    try {
+      await api.updateComic(comic.id, {
+        title: entry.title.trim(),
+        series: entry.series.trim() || null,
+        issue_number: entry.issue_number.trim() || null,
+        publisher: entry.publisher.trim() || null,
+        variant: entry.variant.trim() || null,
+        creators: entry.creators.trim() || null,
+        volume_year: entry.volume_year ? Number(entry.volume_year) : null,
+        cover_year: entry.cover_year ? Number(entry.cover_year) : null,
+        image_url: await api.localiseImage(entry.image_url),
+      });
+      setEntry(null);
+      onReload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className={`game-row ${comic.owned.length ? "row-owned" : ""}`}>
       {comic.image_url ? (
@@ -516,9 +555,109 @@ function ComicRow({ comic, onChange, onReload }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entry ? setEntry(null) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+
+      {entry && (
+        <span className="entry-edit">
+          <span className="game-info-line">Issue details</span>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Title as you want it filed"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Series"
+              value={entry.series}
+              onChange={(e) => setEntry({ ...entry, series: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "100px" }}
+              placeholder="Issue #"
+              value={entry.issue_number}
+              onChange={(e) => setEntry({ ...entry, issue_number: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Publisher"
+              value={entry.publisher}
+              onChange={(e) => setEntry({ ...entry, publisher: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Vol. year"
+              inputMode="numeric"
+              value={entry.volume_year}
+              onChange={(e) => setEntry({ ...entry, volume_year: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Cover year"
+              inputMode="numeric"
+              value={entry.cover_year}
+              onChange={(e) => setEntry({ ...entry, cover_year: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Variant cover"
+              value={entry.variant}
+              onChange={(e) => setEntry({ ...entry, variant: e.target.value })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Creators"
+              value={entry.creators}
+              onChange={(e) => setEntry({ ...entry, creators: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <ImagePicker
+              value={entry.image_url}
+              label="Cover photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
+            <button
+              className="primary icon"
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+              style={{ marginLeft: "auto" }}
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntry(null)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
 
       {infoOpen && (
         <span className="entry-edit game-info">

@@ -413,6 +413,43 @@ function LegoRow({ set, onChange, onReload }) {
     onReload();
   };
 
+  const [entry, setEntry] = useState(null); // null = editor closed
+  const openEntry = () =>
+    setEntry({
+      title: set.title || "",
+      set_number: a.set_number || "",
+      theme: a.theme || "",
+      subtheme: a.subtheme || "",
+      release_year: a.release_year ?? "",
+      piece_count: a.piece_count ?? "",
+      minifig_count: a.minifig_count ?? "",
+      image_url: set.image_url,
+    });
+
+  const saveEntry = async () => {
+    if (busy) return;
+    if (!entry.title.trim()) return alert("A set needs a name.");
+    setBusy(true);
+    try {
+      await api.updateLego(set.id, {
+        title: entry.title.trim(),
+        set_number: entry.set_number.trim() || null,
+        theme: entry.theme.trim() || null,
+        subtheme: entry.subtheme.trim() || null,
+        release_year: entry.release_year ? Number(entry.release_year) : null,
+        piece_count: entry.piece_count ? Number(entry.piece_count) : null,
+        minifig_count: entry.minifig_count ? Number(entry.minifig_count) : null,
+        image_url: await api.localiseImage(entry.image_url),
+      });
+      setEntry(null);
+      onReload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className={`game-row ${set.owned.length ? "row-owned" : ""}`}>
       {set.image_url ? (
@@ -460,9 +497,101 @@ function LegoRow({ set, onChange, onReload }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entry ? setEntry(null) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+
+      {entry && (
+        <span className="entry-edit">
+          <span className="game-info-line">Set details</span>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Set name"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "170px" }}
+              placeholder="Set number"
+              value={entry.set_number}
+              onChange={(e) => setEntry({ ...entry, set_number: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Theme"
+              value={entry.theme}
+              onChange={(e) => setEntry({ ...entry, theme: e.target.value })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Subtheme (optional)"
+              value={entry.subtheme}
+              onChange={(e) => setEntry({ ...entry, subtheme: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Year"
+              inputMode="numeric"
+              value={entry.release_year}
+              onChange={(e) => setEntry({ ...entry, release_year: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Pieces"
+              inputMode="numeric"
+              value={entry.piece_count}
+              onChange={(e) => setEntry({ ...entry, piece_count: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Minifigs"
+              inputMode="numeric"
+              value={entry.minifig_count}
+              onChange={(e) => setEntry({ ...entry, minifig_count: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <ImagePicker
+              value={entry.image_url}
+              label="Set photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
+            <button
+              className="primary icon"
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+              style={{ marginLeft: "auto" }}
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntry(null)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
 
       {infoOpen && (
         <span className="entry-edit game-info">

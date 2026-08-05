@@ -510,6 +510,48 @@ function RecordRow({ record, onChange, onReload }) {
     onReload();
   };
 
+  const [entry, setEntry] = useState(null); // null = editor closed
+  const openEntry = () =>
+    setEntry({
+      title: record.title || "",
+      artist: a.artist || "",
+      label: a.label || "",
+      catalog_number: a.catalog_number || "",
+      format: a.format || "",
+      speed: a.speed || "",
+      pressing: a.pressing || "",
+      release_year: a.release_year ?? "",
+      country: a.country || "",
+      image_url: record.image_url,
+    });
+
+  const saveEntry = async () => {
+    if (busy) return;
+    if (!entry.title.trim()) return alert("A record needs a title.");
+    setBusy(true);
+    try {
+      await api.updateRecord(record.id, {
+        title: entry.title.trim(),
+        artist: entry.artist.trim() || null,
+        label: entry.label.trim() || null,
+        catalog_number: entry.catalog_number.trim() || null,
+        format: entry.format || null,
+        speed: entry.speed || null,
+        pressing: entry.pressing.trim() || null,
+        country: entry.country.trim() || null,
+        // blank clears the year rather than storing 0
+        release_year: entry.release_year ? Number(entry.release_year) : null,
+        image_url: await api.localiseImage(entry.image_url),
+      });
+      setEntry(null);
+      onReload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
       {record.image_url ? (
@@ -557,9 +599,122 @@ function RecordRow({ record, onChange, onReload }) {
           </span>
         )}
       </span>
-      <button className="ghost icon danger" onClick={del} title="Delete entry">
-        <Icon id="trash" />
-      </button>
+      <span className="row-buttons">
+        <button
+          className="ghost icon"
+          onClick={() => (entry ? setEntry(null) : openEntry())}
+          title="Edit entry"
+        >
+          <Icon id="pencil" />
+        </button>
+        <button className="ghost icon danger" onClick={del} title="Delete entry">
+          <Icon id="trash" />
+        </button>
+      </span>
+
+      {entry && (
+        <span className="entry-edit">
+          <span className="game-info-line">Pressing details</span>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Album title"
+              value={entry.title}
+              onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Artist"
+              value={entry.artist}
+              onChange={(e) => setEntry({ ...entry, artist: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <select
+              value={entry.format}
+              onChange={(e) => setEntry({ ...entry, format: e.target.value })}
+            >
+              <option value="">Format…</option>
+              {withValue(FORMATS, entry.format).map((f) => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+            <select
+              title="Speed (RPM)"
+              value={entry.speed}
+              onChange={(e) => setEntry({ ...entry, speed: e.target.value })}
+            >
+              <option value="">Speed…</option>
+              {withValue(SPEEDS, entry.speed).map((s) => (
+                <option key={s} value={s}>
+                  {s} RPM
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              style={{ maxWidth: "110px" }}
+              placeholder="Year"
+              inputMode="numeric"
+              value={entry.release_year}
+              onChange={(e) => setEntry({ ...entry, release_year: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Label"
+              value={entry.label}
+              onChange={(e) => setEntry({ ...entry, label: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "170px" }}
+              placeholder="Catalogue no."
+              value={entry.catalog_number}
+              onChange={(e) => setEntry({ ...entry, catalog_number: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ maxWidth: "90px" }}
+              placeholder="Country"
+              value={entry.country}
+              onChange={(e) => setEntry({ ...entry, country: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Pressing (180g, clear vinyl, reissue…)"
+              value={entry.pressing}
+              onChange={(e) => setEntry({ ...entry, pressing: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <ImagePicker
+              value={entry.image_url}
+              label="Sleeve photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
+            <button
+              className="primary icon"
+              onClick={saveEntry}
+              disabled={busy}
+              title="Save"
+              style={{ marginLeft: "auto" }}
+            >
+              <Icon id="check" />
+            </button>
+            <button className="ghost icon" onClick={() => setEntry(null)} title="Cancel">
+              <Icon id="x" />
+            </button>
+          </div>
+        </span>
+      )}
 
       {infoOpen && (
         <span className="entry-edit game-info">
