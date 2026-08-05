@@ -6,7 +6,12 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 
-const FORMATS = ['12" Vinyl', '2x12" Vinyl', '10" Vinyl', '7" Vinyl', "Box set", "CD", "Cassette"];
+// "Vinyl box set", not "Box set": in a records collection a box set is almost
+// always wax, and saying so is what keeps a price check off the CD edition.
+const FORMATS = [
+  '12" Vinyl', '2x12" Vinyl', '10" Vinyl', '7" Vinyl',
+  "Vinyl box set", "CD", "Cassette",
+];
 const SPEEDS = ["33⅓", "45", "78"];
 
 const EMPTY_FORM = {

@@ -161,13 +161,16 @@ export default function WantedPage() {
         : null;
 
     // An artist and album alone pull up the CD, the cassette and the download.
-    // The pressing format is what makes it a record search — normalised to the
-    // word a seller actually writes, since nobody lists a `2x12" Vinyl`.
-    // (Movies already lead with their format; books don't get this because
+    // The pressing format is what makes it a record search.
+    //
+    // Only the sized formats are collapsed: nobody lists a `2x12" Vinyl`, they
+    // write "vinyl". Everything else is already what a seller would type, and
+    // "Vinyl box set" has to keep its second half or the search drops to loose
+    // LPs. (Movies already lead with their format; books don't get this because
     // paperback vs hardcover is an edition, not a different medium.)
     const media =
       r.module === "records" && r.badge
-        ? /vinyl/i.test(r.badge)
+        ? /^\d*x?\d+"\s*vinyl$/i.test(r.badge.trim())
           ? "vinyl"
           : r.badge
         : null;
