@@ -139,13 +139,28 @@ export default function WantedPage() {
   };
 
   // sold+completed eBay search for the item — best market-price proxy without
-  // a paid pricing API. Title + first detail segment (set / platform).
+  // a paid pricing API.
   const ebayUrl = (r) => {
     // strip our "(1995)" year suffix — it needlessly narrows eBay matches
-    const title = r.title.replace(/\s*\(\d{4}\)\s*$/, "");
-    const q = [title, (r.detail || "").split("·")[0].trim()]
-      .filter(Boolean)
-      .join(" ");
+    const title = r.title.replace(/\s*\(\d{4}\)\s*$/, "").trim();
+    const said = (s) => title.toLowerCase().includes(s.toLowerCase());
+    const parts = (r.detail || "").split("·").map((s) => s.trim()).filter(Boolean);
+
+    // The detail line leads with whatever narrows that collection — platform,
+    // artist, author, set number. Drop it when the title already says it
+    // rather than substituting the next segment, which is usually a region
+    // code no seller writes in a listing.
+    const lead = parts[0] && !said(parts[0]) ? parts[0] : null;
+
+    // Comics are the one collection whose title is assembled from the detail
+    // ("Amazing Spider-Man #300"), so the lead is always a duplicate. What
+    // actually separates two listings of one issue is the variant cover.
+    const variant =
+      r.module === "comics"
+        ? parts.slice(1).filter((p) => !p.startsWith("#") && !said(p)).pop()
+        : null;
+
+    const q = [title, lead, variant].filter(Boolean).join(" ");
     return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`;
   };
 
