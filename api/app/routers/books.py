@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.openlibrary import openlibrary_client
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted
+from app.search import contains
 from app.schemas.books import (
     BookAttrsOut,
     BookCreate,
@@ -112,8 +113,9 @@ def list_books(
     )
     filters = []
     if search:
-        term = f"%{search}%"
-        filters.append(CollectionItem.title.ilike(term) | BookAttrs.author.ilike(term))
+        filters.append(
+            contains(CollectionItem.title, search) | contains(BookAttrs.author, search)
+        )
     if author:
         filters.append(BookAttrs.author == author)
     if format:

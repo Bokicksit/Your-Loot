@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.comicvine import comicvine_client
 from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted
+from app.search import contains
 from app.schemas.comics import (
     ComicAttrsOut,
     ComicCreate,
@@ -109,11 +110,10 @@ def list_comics(
     )
     filters = []
     if search:
-        term = f"%{search}%"
         filters.append(
-            CollectionItem.title.ilike(term)
-            | ComicAttrs.series.ilike(term)
-            | ComicAttrs.creators.ilike(term)
+            contains(CollectionItem.title, search)
+            | contains(ComicAttrs.series, search)
+            | contains(ComicAttrs.creators, search)
         )
     if series:
         filters.append(ComicAttrs.series == series)

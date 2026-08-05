@@ -13,6 +13,7 @@ from app.schemas.movies import (
     MovieOut,
     MovieUpdate,
 )
+from app.search import contains
 
 router = APIRouter(prefix="/api/movies", tags=["movies"])
 
@@ -97,7 +98,7 @@ def list_movies(
     )
     filters = []
     if search:
-        filters.append(CollectionItem.title.ilike(f"%{search}%"))
+        filters.append(contains(CollectionItem.title, search))
     if format:
         filters.append(MovieAttrs.format == format)
 

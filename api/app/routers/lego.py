@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.rebrickable import rebrickable_client
 from app.models import CollectionItem, LegoAttrs, Module, Owned, Wanted
+from app.search import contains
 from app.schemas.lego import (
     LegoAttrsOut,
     LegoCreate,
@@ -110,11 +111,10 @@ def list_lego(
     )
     filters = []
     if search:
-        term = f"%{search}%"
         filters.append(
-            CollectionItem.title.ilike(term)
-            | LegoAttrs.set_number.ilike(term)
-            | LegoAttrs.theme.ilike(term)
+            contains(CollectionItem.title, search)
+            | contains(LegoAttrs.set_number, search)
+            | contains(LegoAttrs.theme, search)
         )
     if theme:
         filters.append(LegoAttrs.theme == theme)

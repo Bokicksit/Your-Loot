@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.integrations.musicbrainz import musicbrainz_client
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted
+from app.search import contains
 from app.schemas.records import (
     RecordAttrsOut,
     RecordCreate,
@@ -111,11 +112,10 @@ def list_records(
     )
     filters = []
     if search:
-        term = f"%{search}%"
         filters.append(
-            CollectionItem.title.ilike(term)
-            | RecordAttrs.artist.ilike(term)
-            | RecordAttrs.catalog_number.ilike(term)
+            contains(CollectionItem.title, search)
+            | contains(RecordAttrs.artist, search)
+            | contains(RecordAttrs.catalog_number, search)
         )
     if artist:
         filters.append(RecordAttrs.artist == artist)

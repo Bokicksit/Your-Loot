@@ -12,6 +12,7 @@ from app.db import get_db
 from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
+from app.search import contains, starts_with
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -53,7 +54,7 @@ def search_cards(
 ):
     """Find a physical card by name; the printed number ("91/108", which also
     matches the set size) and set name narrow it to the exact card."""
-    q = _base_query().where(CollectionItem.title.ilike(f"%{name.strip()}%"))
+    q = _base_query().where(contains(CollectionItem.title, name.strip()))
     total = None
     if number and number.strip():
         # Most cards print "91/108", but subset cards carry their prefix on
@@ -82,7 +83,7 @@ def search_cards(
         # or the dump's internal set id (sv3pt5) as a last resort
         q = q.where(
             or_(
-                CardAttrs.set_name.ilike(f"%{s}%"),
+                contains(CardAttrs.set_name, s),
                 func.upper(CardAttrs.set_abbr) == s.upper(),
                 func.lower(CardAttrs.set_code) == s.lower(),
             )
@@ -114,9 +115,9 @@ def list_sets(db: Session = Depends(get_db), q: str | None = None):
         s = q.strip()
         stmt = stmt.where(
             or_(
-                CardAttrs.set_name.ilike(f"%{s}%"),
-                CardAttrs.set_abbr.ilike(f"{s}%"),
-                CardAttrs.set_code.ilike(f"{s}%"),
+                contains(CardAttrs.set_name, s),
+                starts_with(CardAttrs.set_abbr, s),
+                starts_with(CardAttrs.set_code, s),
             )
         )
     rows = db.execute(
@@ -180,7 +181,7 @@ def list_cards(
     )
     filters = []
     if search:
-        filters.append(CollectionItem.title.ilike(f"%{search}%"))
+        filters.append(contains(CollectionItem.title, search))
     if set_code:
         filters.append(CardAttrs.set_code == set_code)
     if rarity:

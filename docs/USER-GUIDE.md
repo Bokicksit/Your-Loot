@@ -181,6 +181,11 @@ Search 20,000+ Pokémon cards by name, card number, or set — including printed
 set codes like `151`, `MEW`, `JTG`. The set box autocompletes after two
 characters, and there's a button to browse the full list.
 
+**Accents are optional.** `flabebe` finds Flabébé, `poke ball` finds Poké Ball,
+`pokemon catcher` finds Pokémon Catcher. Typing the accent works too — it's
+matched both ways, in every collection, so `sigur ros` finds Sigur Rós on your
+records shelf.
+
 **The number box takes exactly what's printed on the card**, letters and all.
 `58`, `58/102`, `TG03`, `GG07/GG70`, `RC1/RC25` all work, and case doesn't
 matter — `gg07` finds the same card as `GG07`. Leading zeros are ignored, so

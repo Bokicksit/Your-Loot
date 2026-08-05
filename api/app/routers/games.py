@@ -7,6 +7,7 @@ from app.db import get_db
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
+from app.search import contains
 
 router = APIRouter(prefix="/api/games", tags=["games"])
 
@@ -109,7 +110,7 @@ def list_games(
     )
     filters = []
     if search:
-        filters.append(CollectionItem.title.ilike(f"%{search}%"))
+        filters.append(contains(CollectionItem.title, search))
     if platform_id is not None:
         filters.append(GameAttrs.platform_id == platform_id)
     if is_hardware is not None:
