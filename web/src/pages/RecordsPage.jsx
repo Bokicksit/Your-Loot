@@ -4,7 +4,7 @@ import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../grades.js";
+import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 
 const FORMATS = ['12" Vinyl', '2x12" Vinyl', '10" Vinyl', '7" Vinyl', "Box set", "CD", "Cassette"];
 const SPEEDS = ["33⅓", "45", "78"];

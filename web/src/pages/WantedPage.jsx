@@ -1,7 +1,12 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../grades.js";
+import {
+  DEFAULT_VINYL_GRADE,
+  GAME_COMPLETENESS,
+  GAME_PARTS_ONLY,
+  VINYL_GRADES,
+} from "../vocab.js";
 import { useEnabledModules } from "../settings.jsx";
 
 const MODULE_ICONS = {
@@ -59,7 +64,7 @@ const BOX = ["loose", "CIB", "sealed"];
 // The optional second per-copy field, and which column it writes to. Cards
 // have none; records grade the sleeve separately rather than tracking a box.
 const SECOND_FIELD = {
-  games: { key: "completeness", options: BOX, def: "CIB" },
+  games: { key: "completeness", options: GAME_COMPLETENESS, def: "CIB" },
   hardware: { key: "completeness", options: BOX, def: "CIB" },
   movies: { key: "completeness", options: BOX, def: "CIB" },
   books: {
@@ -112,9 +117,13 @@ export default function WantedPage() {
     });
   };
 
+  // Buying the case or the manual isn't getting the game — record the piece
+  // you found, but keep hunting the thing you're actually after.
+  const keepsHunting = (vals) => GAME_PARTS_ONLY.has(vals.completeness);
+
   const confirmGotIt = async () => {
     await api.addOwned(acquiring, acqVals);
-    await api.removeWanted(acquiring);
+    if (!keepsHunting(acqVals)) await api.removeWanted(acquiring);
     setAcquiring(null);
     load();
   };
@@ -285,6 +294,11 @@ export default function WantedPage() {
                       </option>
                     ))}
                   </select>
+                )}
+                {keepsHunting(acqVals) && (
+                  <span className="acquire-note">
+                    Saved as a spare — “{r.title}” stays on your wanted list.
+                  </span>
                 )}
                 <button className="primary icon" onClick={confirmGotIt} title="Confirm">
                   <Icon id="check" />

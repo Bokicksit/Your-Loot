@@ -4,10 +4,10 @@ import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
+import { GAME_COMPLETENESS, labelFor, withUnknown } from "../vocab.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
-const COMPLETENESS = ["loose", "CIB", "sealed"];
 
 // NTSC-U default until there's a settings screen for it
 const EMPTY_FORM = {
@@ -348,13 +348,15 @@ export default function GamesPage() {
               {form.own ? "I own it" : "I want it"}
             </button>
             <select
-              title="Completeness"
+              title="What you have"
               disabled={!form.own}
               value={form.completeness}
               onChange={(e) => setForm({ ...form, completeness: e.target.value })}
             >
-              {COMPLETENESS.map((c) => (
-                <option key={c}>{c}</option>
+              {GAME_COMPLETENESS.map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
               ))}
             </select>
             <select
@@ -485,9 +487,13 @@ function GameRow({ game, platforms, onChange, onReload }) {
     }
   };
 
+  const copyLabel = (o) =>
+    [o.completeness && labelFor(GAME_COMPLETENESS, o.completeness), o.condition]
+      .filter(Boolean)
+      .join(" · ");
+
   const removeCopy = (o) => {
-    const label = [o.completeness, o.condition].filter(Boolean).join(" · ") || "copy";
-    if (!confirm(`Remove this copy of ${game.title} (${label})?`)) return;
+    if (!confirm(`Remove this copy of ${game.title} (${copyLabel(o) || "copy"})?`)) return;
     run(() => api.removeOwned(game.id, o.id));
   };
 
@@ -580,7 +586,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Edit this copy"
               >
-                {[o.completeness, o.condition].filter(Boolean).join(" · ") || "set condition…"}
+                {copyLabel(o) || "set condition…"}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -682,11 +688,14 @@ function GameRow({ game, platforms, onChange, onReload }) {
       {editing !== null && (
         <span className="copy-edit">
           <select
+            title="What you have"
             value={editVals.completeness}
             onChange={(e) => setEditVals({ ...editVals, completeness: e.target.value })}
           >
-            {COMPLETENESS.map((c) => (
-              <option key={c}>{c}</option>
+            {withUnknown(GAME_COMPLETENESS, editVals.completeness).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
             ))}
           </select>
           <select
