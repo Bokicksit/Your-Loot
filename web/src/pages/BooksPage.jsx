@@ -117,7 +117,9 @@ export default function BooksPage() {
         publish_year: form.publish_year ? Number(form.publish_year) : null,
         page_count: form.page_count ? Number(form.page_count) : null,
         series: form.series.trim() || null,
-        image_url: form.image_url,
+        // a jacket borrowed from a shop listing outlives the listing this way;
+        // Open Library's own covers are stable and stay linked
+        image_url: await api.localiseImage(form.image_url),
       });
       if (form.own) {
         await api.addOwned(created.id, {
@@ -448,7 +450,7 @@ function BookRow({ book, onChange, onReload }) {
         edition: entry.edition.trim() || null,
         series: entry.series.trim() || null,
         publish_year: entry.publish_year ? Number(entry.publish_year) : null,
-        image_url: entry.image_url,
+        image_url: await api.localiseImage(entry.image_url),
       });
       setEntry(null);
       onReload();

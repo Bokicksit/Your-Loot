@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
 from app.integrations.openlibrary import openlibrary_client
+from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted
 from app.search import contains
 from app.schemas.books import (
@@ -49,16 +50,54 @@ def _base_query():
     )
 
 
+def _jacket(isbn: str) -> str | None:
+    """A cover from the retail listing for this ISBN.
+
+    Open Library's bibliographic data is good but its cover coverage is thin —
+    plenty of editions carry a title, author and page count with no picture at
+    all. An ISBN-13 is a barcode, so the shops that stock the book usually have
+    a photograph of the jacket.
+    """
+    try:
+        products = upc_lookup(isbn)
+    except BarcodeError:
+        return None  # a missing cover shouldn't fail the whole lookup
+    for p in products:
+        if p.get("images"):
+            return p["images"][0]
+    return None
+
+
 @router.get("/search")
 def search_openlibrary(
     q: str | None = None, isbn: str | None = None
 ):
     """Look a book up in Open Library — by ISBN (the barcode on the back) or
-    by title/author text."""
+    by title/author text. An ISBN with no cover in Open Library borrows one
+    from the retail listing rather than showing a blank tile."""
     try:
         if isbn and isbn.strip():
             hit = openlibrary_client.by_isbn(isbn)
-            return [hit] if hit else []
+            if hit and hit.get("image_url"):
+                return [hit]
+            jacket = _jacket(isbn)
+            if hit:
+                hit["image_url"] = jacket
+                return [hit]
+            # nothing bibliographic, but the shops may still know the book
+            if jacket:
+                products = upc_lookup(isbn)
+                return [{
+                    "title": products[0]["title"],
+                    "author": None,
+                    "publisher": None,
+                    "isbn": "".join(ch for ch in isbn if ch.isalnum()),
+                    "publish_year": None,
+                    "page_count": None,
+                    "image_url": jacket,
+                    "olid": None,
+                }]
+            return []
         if not (q or "").strip():
             raise HTTPException(400, "give a search term or an ISBN")
         return openlibrary_client.search(q)

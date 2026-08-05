@@ -298,7 +298,9 @@ offers photos of the actual case.
 ### Books
 
 Open Library search, or scan the ISBN on the back — that resolves the exact
-edition in one call. Format (Hardcover, Paperback, Trade Paperback, Mass
+edition in one call. Its cover coverage is patchy, so an edition it has no
+picture for borrows the jacket from the shop listing for that ISBN rather than
+showing a blank tile. Format (Hardcover, Paperback, Trade Paperback, Mass
 Market, Leather, Audiobook), year, edition, series and ISBN. Page count comes
 from Open Library when a lookup finds it; there's no field to type it in.
 
