@@ -160,7 +160,19 @@ export default function WantedPage() {
         ? parts.slice(1).filter((p) => !p.startsWith("#") && !said(p)).pop()
         : null;
 
-    const q = [title, lead, variant].filter(Boolean).join(" ");
+    // An artist and album alone pull up the CD, the cassette and the download.
+    // The pressing format is what makes it a record search — normalised to the
+    // word a seller actually writes, since nobody lists a `2x12" Vinyl`.
+    // (Movies already lead with their format; books don't get this because
+    // paperback vs hardcover is an edition, not a different medium.)
+    const media =
+      r.module === "records" && r.badge
+        ? /vinyl/i.test(r.badge)
+          ? "vinyl"
+          : r.badge
+        : null;
+
+    const q = [title, lead, variant, media].filter(Boolean).join(" ");
     return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`;
   };
 
