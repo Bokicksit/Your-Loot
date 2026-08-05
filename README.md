@@ -40,7 +40,13 @@ actually is — media and sleeve independently, on the Goldmine scale (`VG+/VG`)
 
 **Wanted list** — everything you're hunting, across every module, with
 filters and a "check sold prices on eBay" shortcut. Mark something acquired and
-it moves into your collection with the condition you set.
+it moves into your collection with the condition you set. Find only the case or
+the manual and it records the spare while the game stays on the hunt.
+
+**Backup & restore** — Settings gives you a one-click zip of the whole
+install: every item, every copy, the wanted list, the binder, your settings,
+and your uploaded photos. Restoring replaces everything from that file. It's
+plain JSON inside, so it stays readable and portable across Postgres versions.
 
 ## Quick start
 

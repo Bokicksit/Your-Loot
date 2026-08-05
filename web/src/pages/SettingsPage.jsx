@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { MODULES, useSettings } from "../settings.jsx";
@@ -148,7 +148,102 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <BackupCard />
+
       {version && <p className="version-tag">Your Loot v{version}</p>}
     </div>
+  );
+}
+
+const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
+
+function BackupCard() {
+  const fileInput = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const pick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the same file be picked again after an error
+    if (!file) return;
+    if (
+      !confirm(
+        `Restore from ${file.name}?\n\n` +
+          "This REPLACES your whole collection — everything currently in Your " +
+          "Loot is deleted and rebuilt from the backup. Anything added since " +
+          "the backup was taken will be gone.\n\n" +
+          "Take a backup first if you're not sure."
+      )
+    )
+      return;
+    restore(file);
+  };
+
+  const restore = async (file) => {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      setResult(await api.restoreBackup(file));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="settings-card">
+      <h3>Backup &amp; restore</h3>
+      <p>
+        A backup is a single zip holding your whole collection — every item,
+        every copy with its condition, the wanted list, the binder, your
+        settings, and the photos you've uploaded. Keep one somewhere that isn't
+        this server.
+      </p>
+      <div className="form-row wrap">
+        <a className="primary" href={api.backupUrl} download>
+          <Icon id="save" />
+          Download backup
+        </a>
+        <button className="ghost" disabled={busy} onClick={() => fileInput.current?.click()}>
+          <Icon id="upload" />
+          {busy ? "Restoring…" : "Restore from a backup…"}
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".zip,application/zip"
+          style={{ display: "none" }}
+          onChange={pick}
+        />
+      </div>
+
+      {error && (
+        <p className="error">
+          <Icon id="alert" />
+          {error}
+        </p>
+      )}
+
+      {result && (
+        <div className="restore-result">
+          <strong>
+            <Icon id="check" />
+            Restored {TOTAL(result.restored).toLocaleString()} rows
+            {result.images ? ` and ${result.images} images` : ""}
+          </strong>
+          <small>
+            From a backup taken
+            {result.created_at ? ` ${result.created_at.replace("T", " ")}` : ""}
+            {result.from_version ? ` on v${result.from_version}` : ""}.
+          </small>
+          <button className="primary" onClick={() => window.location.reload()}>
+            Reload to see it
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

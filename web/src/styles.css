@@ -273,7 +273,7 @@ button {
   font: inherit;
   cursor: pointer;
 }
-button.primary, button.ghost, a.ghost {
+button.primary, button.ghost, a.ghost, a.primary {
   appearance: none;
   min-height: var(--tap);
   min-width: var(--tap);
@@ -288,16 +288,16 @@ button.primary, button.ghost, a.ghost {
   transition: transform .1s var(--ease), box-shadow .16s var(--ease),
               background .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease);
 }
-button.primary {
+button.primary, a.primary {
   color: var(--gold-ink);
   background: linear-gradient(180deg, var(--gold-bright), var(--gold) 55%, var(--gold-deep));
   border: 1px solid var(--gold-deep);
   box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 6px 18px -8px var(--gold-glow);
   font-weight: var(--w-bold);
 }
-button.primary:hover { filter: brightness(1.07); }
-button.primary svg.i { width: 18px; height: 18px; stroke-width: 2.3; }
-button.primary:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(255,255,255,.2) inset; }
+button.primary:hover, a.primary:hover { filter: brightness(1.07); text-decoration: none; }
+button.primary svg.i, a.primary svg.i { width: 18px; height: 18px; stroke-width: 2.3; }
+button.primary:active, a.primary:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(255,255,255,.2) inset; }
 button.ghost, a.ghost {
   color: var(--text-dim);
   background: var(--bg-3);
@@ -1369,6 +1369,19 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border: 1px solid var(--line-soft);
   border-radius: var(--r-2);
 }
+.restore-result {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--gold-wash);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+}
+.restore-result strong { display: flex; align-items: center; gap: var(--s-2); font-size: var(--f-3); }
+.restore-result strong svg.i { width: 18px; height: 18px; color: var(--gold); }
+.restore-result small { color: var(--text-mute); font-size: var(--f-2); }
+
 .module-row.off { opacity: .55; }
 .module-row svg.i { width: 18px; height: 18px; color: var(--gold); }
 .module-row.off svg.i { color: var(--text-mute); }

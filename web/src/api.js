@@ -84,6 +84,18 @@ export const api = {
   deleteRecord: (itemId) => request(`/api/records/${itemId}`, { method: "DELETE" }),
   musicBrainzSearch: (params) =>
     request(`/api/records/search?${new URLSearchParams(params)}`),
+  backupUrl: "/api/backup",
+  restoreBackup: async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    // no Content-Type header: the browser sets the multipart boundary
+    const res = await fetch("/api/backup/restore", { method: "POST", body: fd });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(b.detail || `${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  },
   settings: () => request("/api/settings"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
