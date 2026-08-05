@@ -907,6 +907,32 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   box-shadow: 0 0 0 2px var(--gold), 0 10px 26px -12px var(--gold-glow);
 }
 
+/* ×2 on a chip standing for several identical copies */
+.chip-mult {
+  margin-left: 3px;
+  font-style: normal;
+  font-size: 9.5px;
+  letter-spacing: .02em;
+  opacity: .8;
+}
+
+/* the modal's "you have N of these" note */
+.modal-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) 10px;
+  background: var(--gold-wash);
+  border: 1px solid rgba(242, 183, 60, .28);
+  border-radius: var(--r-2);
+  color: var(--text-dim);
+  font-size: var(--f-2);
+  line-height: 1.45;
+  text-align: left;
+}
+.modal-note svg.i { width: 15px; height: 15px; flex: none; color: var(--gold); margin-top: 1px; }
+
 /* − N + : the copy count, and the fastest way to log duplicates */
 .copy-step {
   display: inline-flex;

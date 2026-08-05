@@ -32,7 +32,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: appver
-        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+        # strip a byte-order mark and stray whitespace: either would land in the
+        # image tag, and a tag has to start with an alphanumeric
+        run: |
+          version=$(sed -e '1s/^\xEF\xBB\xBF//' VERSION | tr -d '[:space:]')
+          case "$version" in
+            [0-9]*) ;;
+            *) echo "VERSION is not a version number: '$version'" >&2; exit 1 ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - id: meta
         uses: docker/metadata-action@v5

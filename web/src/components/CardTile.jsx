@@ -80,6 +80,20 @@ export default function CardTile({ card, onChange, onReload }) {
     const last = card.owned[card.owned.length - 1];
     if (last) removeCopy(last);
   };
+
+  // Two copies with the same grade, print, stamp and slot are indistinguishable,
+  // so they read as one line with a count rather than a stack of identical
+  // chips. Anything that differs still gets its own chip — that's the whole
+  // point of tracking copies separately.
+  const copyGroups = card.owned.reduce((acc, o) => {
+    const key = [o.condition, o.variant, o.stamp, o.grader, o.grade, o.in_binder]
+      .map((v) => v ?? "")
+      .join("|");
+    const found = acc.find((g) => g.key === key);
+    if (found) found.copies.push(o);
+    else acc.push({ key, copies: [o] });
+    return acc;
+  }, []);
   const removeCopy = (o) => {
     const last = card.owned.length === 1;
     if (
@@ -173,6 +187,8 @@ export default function CardTile({ card, onChange, onReload }) {
   const numLine = `#${a.card_number}${a.set_total ? `/${a.set_total}` : ""}`;
   const setLine = `${a.set_name} ${numLine}`;
 
+  const editingGroup = copyGroups.find((g) => g.copies.some((c) => c.id === editing));
+
   const editorModal = (
     <div className="modal-scrim" onClick={() => setEditing(null)}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -180,6 +196,15 @@ export default function CardTile({ card, onChange, onReload }) {
         <p>
           {card.title} · {setLine}
         </p>
+        {/* the chip stands for several identical copies, so be explicit that
+            this changes one of them and splits it onto its own line */}
+        {editingGroup && editingGroup.copies.length > 1 && (
+          <p className="modal-note">
+            <Icon id="info" />
+            You have {editingGroup.copies.length} of these. This edits one; the
+            rest stay as they are.
+          </p>
+        )}
         <div className="form-row" style={{ width: "100%" }}>
           <select
             value={vals.condition}
@@ -280,26 +305,33 @@ export default function CardTile({ card, onChange, onReload }) {
           <span className="set-abbr">{shortSet}</span> {numLine}
         </small>
         <span className="copy-chips">
-          {card.owned.map((o) => (
-            <span
-              key={o.id}
-              className={`chip copy ${o.grader ? "graded" : ""}`}
-              onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
-              title="Edit this copy"
-            >
-              {o.in_binder && <Icon id="ball" />}
-              {chipLabel(o)}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeCopy(o);
-                }}
-                title="Remove this copy"
+          {copyGroups.map((g) => {
+            const o = g.copies[0];
+            const n = g.copies.length;
+            return (
+              <span
+                key={g.key}
+                className={`chip copy ${o.grader ? "graded" : ""}`}
+                onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
+                title={n > 1 ? `Edit one of these ${n}` : "Edit this copy"}
               >
-                <Icon id="x" />
-              </button>
-            </span>
-          ))}
+                {o.in_binder && <Icon id="ball" />}
+                {chipLabel(o)}
+                {n > 1 && <em className="chip-mult">×{n}</em>}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // take the newest of the identical ones — they're the same
+                    // object as far as the collection is concerned
+                    removeCopy(g.copies[n - 1]);
+                  }}
+                  title={n > 1 ? "Remove one of these" : "Remove this copy"}
+                >
+                  <Icon id="x" />
+                </button>
+              </span>
+            );
+          })}
           {/* how many of this card you have, and the quickest way to change it */}
           <span className="copy-step">
             <button

@@ -57,8 +57,13 @@ and you can delete one without touching the other.
 
 On cards this is a **− 2 +** counter on the tile. **+** adds another one just
 like your last — same condition and print, so pulling four of one common takes
-three taps — and **−** takes the newest back off. Tap a copy's chip to change
-that one on its own.
+three taps — and **−** takes the newest back off, asking first.
+
+Copies that are identical share a chip with a count (`NM · stamped ×2`);
+anything that differs gets its own. Tapping a shared chip edits **one** of
+them, which then splits onto its own line — the editor says so before you
+change anything. To reach a specific copy, expand the card: the panel lists
+every one separately.
 
 **You can own something *and* still want it.** Found the manual but not the
 cartridge? Record the manual as a copy, and the game stays on your wanted list.

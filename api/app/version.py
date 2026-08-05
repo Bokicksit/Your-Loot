@@ -7,7 +7,10 @@ def read_version() -> str:
     here = Path(__file__).resolve()
     for candidate in (here.parents[1] / "VERSION", here.parents[2] / "VERSION"):
         if candidate.is_file():
-            return candidate.read_text().strip()
+            # utf-8-sig drops a byte-order mark if an editor left one — it is
+            # invisible in the file but shows up in the version string and, far
+            # worse, in the image tag CI builds from it
+            return candidate.read_text(encoding="utf-8-sig").strip()
     return "dev"
 
 
