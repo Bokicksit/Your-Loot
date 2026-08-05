@@ -1,3 +1,5 @@
+import re
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
@@ -5,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
 from app.integrations.musicbrainz import musicbrainz_client
+from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted
 from app.search import contains
 from app.schemas.records import (
@@ -49,16 +52,83 @@ def _base_query():
     )
 
 
+# Words a retailer pads a listing with that are never part of an album title.
+_PRODUCT_NOISE = re.compile(
+    r"^(vinyl|lp|record|records|album|cd|cassette|music|performance|import|"
+    r"explicit|remastered|reissue|new|sealed|\d+\s*lp|\d+\s*disc)$",
+    re.I,
+)
+
+
+def _from_product(item: dict, barcode: str) -> dict:
+    """Turn a retailer listing into something the add form can use.
+
+    Listings read "Artist - Album - Genre - Vinyl", so the first two segments
+    are what matter and the rest is shelf-category padding.
+    """
+    parts = [p.strip() for p in (item.get("title") or "").split(" - ") if p.strip()]
+    meaningful = [p for p in parts if not _PRODUCT_NOISE.match(p)]
+    artist = meaningful[0] if len(meaningful) > 1 else None
+    title = meaningful[1] if len(meaningful) > 1 else (meaningful[0] if meaningful else None)
+    blob = " ".join(parts).lower()
+    fmt = None
+    if "cassette" in blob:
+        fmt = "Cassette"
+    elif re.search(r"\bcd\b", blob):
+        fmt = "CD"
+    elif "vinyl" in blob or re.search(r"\blp\b", blob):
+        fmt = '12" Vinyl'
+    return {
+        "mbid": None,
+        "title": title,
+        "artist": artist,
+        "label": item.get("brand"),
+        "catalog_number": None,
+        "format": fmt,
+        "release_year": None,
+        "country": None,
+        # the one thing this result is certain about
+        "barcode": "".join(ch for ch in barcode if ch.isdigit()),
+        "track_count": None,
+        "image_url": (item.get("images") or [None])[0],
+        "source": "barcode",
+    }
+
+
 @router.get("/search")
 def search_musicbrainz(
     q: str | None = None, artist: str | None = None, barcode: str | None = None
 ):
     """Look a pressing up in MusicBrainz — by barcode (the scan on the sleeve),
     or by album title and artist. `q` is the album title; passing `artist` too
-    scopes the query to that artist instead of matching title text alone."""
+    scopes the query to that artist instead of matching title text alone.
+
+    MusicBrainz records barcodes unevenly, especially on older pressings, so a
+    scan that finds nothing there falls back to the retailer database: it knows
+    the sleeve even when the music catalogue doesn't, and what it returns is
+    enough to search MusicBrainz by name instead of leaving you at a dead end.
+    """
     try:
         if barcode and barcode.strip():
-            return musicbrainz_client.search(barcode=barcode)
+            hits = musicbrainz_client.search(barcode=barcode)
+            if hits:
+                return hits
+            try:
+                products = upc_lookup(barcode)
+            except BarcodeError:
+                products = []  # the fallback failing shouldn't mask "not found"
+            if not products:
+                return []
+            found = _from_product(products[0], barcode)
+            # the retailer's own listing first — it matches the barcode exactly —
+            # then whatever MusicBrainz has under that name, for the pressing
+            # details a shop listing never carries
+            named = (
+                musicbrainz_client.search(query=found["title"], artist=found["artist"])
+                if found["title"]
+                else []
+            )
+            return [found, *named]
         if not (q or "").strip() and not (artist or "").strip():
             raise HTTPException(400, "give an album, an artist or a barcode")
         return musicbrainz_client.search(query=q, artist=artist)

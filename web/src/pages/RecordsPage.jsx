@@ -101,7 +101,12 @@ export default function RecordsPage() {
 
   // the barcode on the sleeve identifies the exact pressing, which is the
   // whole game with vinyl — a repress and an original share everything else
-  const onBarcode = (code) => lookup({ barcode: code });
+  // keep the scanned digits on the form regardless of what the lookup returns —
+  // it's the one fact about the pressing you know for certain
+  const onBarcode = (code) => {
+    setForm((f) => ({ ...f, barcode: code.replace(/\D/g, "") }));
+    lookup({ barcode: code });
+  };
 
   // title and artist go over as separate fields — MusicBrainz can scope the
   // query to the artist, which one blob of free text can't
@@ -147,7 +152,8 @@ export default function RecordsPage() {
         country: form.country.trim() || null,
         barcode: form.barcode.trim() || null,
         track_count: form.track_count ? Number(form.track_count) : null,
-        image_url: form.image_url,
+        // a sleeve photo from a shop listing outlives the listing this way
+        image_url: await api.localiseImage(form.image_url),
       });
       if (form.own) {
         await api.addOwned(created.id, {
@@ -282,7 +288,11 @@ export default function RecordsPage() {
           {results && (
             <>
               <span className="game-info-line">
-                MusicBrainz · {results.length} match{results.length === 1 ? "" : "es"}
+                {results.some((r) => r.source === "barcode")
+                  ? "Not in MusicBrainz — matched the barcode to a shop listing"
+                  : `MusicBrainz · ${results.length} match${
+                      results.length === 1 ? "" : "es"
+                    }`}
               </span>
               {results.length === 0 && (
                 <p className="empty" style={{ padding: "var(--s-3)" }}>
@@ -293,9 +303,13 @@ export default function RecordsPage() {
                 {results.map((r, i) => (
                   <div
                     key={r.mbid || i}
-                    className="tile pick"
+                    className={`tile pick ${r.source === "barcode" ? "sel" : ""}`}
                     onClick={() => pickResult(r)}
-                    title="Use this pressing"
+                    title={
+                      r.source === "barcode"
+                        ? "The listing your barcode matched — fewest details, but the right pressing"
+                        : "Use this pressing"
+                    }
                   >
                     {r.image_url ? (
                       <img src={r.image_url} alt={r.title} loading="lazy" />
@@ -306,7 +320,11 @@ export default function RecordsPage() {
                       <strong>{r.title}</strong>
                       <small>{r.artist || "—"}</small>
                       <small>
-                        {[r.format, r.release_year, r.country].filter(Boolean).join(" · ")}
+                        {r.source === "barcode"
+                          ? "matches your barcode"
+                          : [r.format, r.release_year, r.country]
+                              .filter(Boolean)
+                              .join(" · ")}
                       </small>
                     </div>
                   </div>

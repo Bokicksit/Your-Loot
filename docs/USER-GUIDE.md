@@ -308,6 +308,12 @@ Good, Fair, Poor** — collectors don't say "Mint"), plus jacket and provenance:
 
 ### Records
 
+MusicBrainz records barcodes unevenly, so a scan that finds nothing there falls
+back to the shop listing the barcode belongs to — that fills the artist, album,
+label and a photo of the sleeve, and puts any MusicBrainz releases of the same
+name underneath in case one is your pressing. The scanned digits are kept
+either way.
+
 MusicBrainz search, or scan the sleeve. The barcode identifies the **pressing**
 — so a 1980 Factory original and a 2011 repress stay separate entries, with
 their own label, catalogue number, country and year. That's the distinction
