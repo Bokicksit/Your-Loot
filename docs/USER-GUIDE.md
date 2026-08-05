@@ -269,6 +269,11 @@ Consoles and accessories. Name, system, region, **model number** (SNS-001),
 **serial number**, and **working status** (works / partial / broken /
 untested).
 
+Boxed hardware has a barcode like anything else — scan it and the name and
+photos of the box come along. Loose retro consoles have no barcode, so those
+stay typed in; the model number and serial always are, since no database knows
+which unit is yours.
+
 Accessories can be linked to a console with **Part of**, so a controller lives
 under the machine it belongs to rather than floating on its own.
 

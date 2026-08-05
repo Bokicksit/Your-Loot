@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import ArtOptions from "../components/ArtOptions.jsx";
+import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
+import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
+import { cleanGameTitle } from "../upc.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -17,6 +21,7 @@ const EMPTY_FORM = {
   serial_number: "",
   working: "works",
   parent_id: "",
+  image_url: null,
   own: true,
   completeness: "loose", // consoles are usually out of box
   condition: "Good",
@@ -39,7 +44,31 @@ export default function HardwarePage() {
     region: settings?.default_region || EMPTY_FORM.region,
   });
   const [form, setForm] = useState(blankForm);
+  const [art, setArt] = useState([]); // retailer photos from a scanned box
   const [error, setError] = useState(null);
+
+  // A boxed console or controller carries a UPC like any other product, so the
+  // same lookup games and movies use fills the name and offers photos of the
+  // actual box. Loose retro hardware has no barcode — that stays typed in.
+  const onBarcode = async (code) => {
+    try {
+      const res = await api.barcodeLookup(code);
+      if (!res.found) {
+        alert("No product match for that barcode — type the name instead.");
+        return;
+      }
+      const raw = res.titles[0].title;
+      const boxArt = (res.titles[0].images || []).map((url) => ({ url, kind: "box" }));
+      setArt(boxArt);
+      setForm((f) => ({
+        ...f,
+        title: cleanGameTitle(raw) || raw,
+        image_url: boxArt[0]?.url || f.image_url,
+      }));
+    } catch (e) {
+      alert(e.message);
+    }
+  };
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
 
@@ -79,6 +108,7 @@ export default function HardwarePage() {
         serial_number: form.serial_number.trim() || null,
         working: form.working,
         parent_id: form.parent_id ? Number(form.parent_id) : null,
+        image_url: await api.localiseImage(form.image_url),
       });
       if (form.own) {
         await api.addOwned(created.id, {
@@ -90,6 +120,7 @@ export default function HardwarePage() {
       }
       const wantMode = !form.own;
       setForm(blankForm());
+      setArt([]);
       setShowForm(false);
       if (wantMode) {
         navigate("/wanted");
@@ -171,6 +202,7 @@ export default function HardwarePage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
+            <BarcodeScan onCode={onBarcode} />
           </div>
           <div className="form-row">
             <select
@@ -230,6 +262,18 @@ export default function HardwarePage() {
                 </option>
               ))}
             </select>
+          </div>
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
+          <div className="form-row">
+            <ImagePicker
+              value={form.image_url}
+              label="Photo"
+              onChange={(url) => setForm({ ...form, image_url: url })}
+            />
           </div>
           <div className="form-row">
             <button
@@ -381,13 +425,24 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
 
   return (
     <div className={`game-row ${hw.owned.length ? "row-owned" : ""}`}>
-      <span
-        className="game-icon"
-        style={{ cursor: "pointer" }}
-        onClick={() => setInfoOpen(!infoOpen)}
-      >
-        <Icon id="console" />
-      </span>
+      {hw.image_url ? (
+        <img
+          className="game-cover"
+          src={hw.image_url}
+          alt=""
+          loading="lazy"
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
+        />
+      ) : (
+        <span
+          className="game-icon"
+          style={{ cursor: "pointer" }}
+          onClick={() => setInfoOpen(!infoOpen)}
+        >
+          <Icon id="console" />
+        </span>
+      )}
       <span
         className="game-text"
         style={{ cursor: "pointer" }}
