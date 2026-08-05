@@ -399,6 +399,156 @@ export default function CardsPage({ initialView = "collection" }) {
           {/* Shown whenever a search has run, not only on zero hits: a common
               name returns dozens of prints and yours may be none of them, and
               until now that dead end had no way out. */}
+          {results && results.length > 0 && (
+            <div className="grid pick-grid">
+              {results.map((c) => (
+                <div
+                  key={c.id}
+                  className={`tile pick ${picked?.id === c.id ? "sel" : ""}`}
+                  onClick={() => {
+                    const now = picked?.id === c.id ? null : c;
+                    setPicked(now);
+                    if (now) {
+                      // cards printed as holos default the copy variant
+                      setAddVals((v) => ({
+                        ...v,
+                        variant: /holo/i.test(now.attrs.rarity || "")
+                          ? "Holo"
+                          : "Non-Holo",
+                      }));
+                    }
+                  }}
+                >
+                  {c.image_url ? (
+                    <img src={c.image_url} alt={c.title} loading="lazy" />
+                  ) : (
+                    <div className="placeholder" data-label={c.title} />
+                  )}
+                  <div className="tile-info">
+                    <strong>{c.title}</strong>
+                    <small>
+                      {c.attrs.set_name} #{c.attrs.card_number}
+                      {c.attrs.set_total ? `/${c.attrs.set_total}` : ""}
+                    </small>
+                    <small>
+                      <RarityMark rarity={c.attrs.rarity} /> {c.attrs.rarity}
+                    </small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {picked && (
+            <>
+              {/* swap the art before adding — handy when the catalog has none
+                  (new promos) or the wrong print */}
+              <div className="form-row wrap">
+                <ImagePicker
+                  value={picked.image_url}
+                  label={picked.image_url ? "Photo" : "Add photo"}
+                  onChange={async (url) => {
+                    try {
+                      const updated = await api.updateCard(picked.id, {
+                        image_url: url,
+                      });
+                      setPicked(updated);
+                      setResults((rs) =>
+                        rs.map((c) => (c.id === updated.id ? updated : c))
+                      );
+                    } catch (e) {
+                      alert(e.message);
+                    }
+                  }}
+                />
+              </div>
+              <div className="form-row wrap">
+                <button
+                  type="button"
+                  className={`toggle ${addVals.own ? "on" : ""}`}
+                  onClick={() => setAddVals({ ...addVals, own: !addVals.own })}
+                >
+                  {addVals.own ? "I own it" : "I want it"}
+                </button>
+                {addVals.own && picked.attrs.national_dex_no && (
+                  <button
+                    type="button"
+                    className={`toggle ${addVals.binder ? "on" : ""}`}
+                    onClick={() =>
+                      setAddVals({
+                        ...addVals,
+                        binder: !addVals.binder,
+                        // IR/SIR pulls default to "the one"; else placeholder
+                        keeper: !addVals.binder ? picked.attrs.layer === 3 : false,
+                      })
+                    }
+                    title="This copy goes in the Pokédex"
+                  >
+                    Pokédex
+                  </button>
+                )}
+                {addVals.own && addVals.binder && picked.attrs.national_dex_no && (
+                  <button
+                    type="button"
+                    className={`toggle ${addVals.keeper ? "on" : ""}`}
+                    onClick={() => setAddVals({ ...addVals, keeper: !addVals.keeper })}
+                    title="Is this the desired card, or a placeholder to upgrade later?"
+                  >
+                    {addVals.keeper ? "The one ✓" : "Will upgrade"}
+                  </button>
+                )}
+                <select
+                  disabled={!addVals.own}
+                  value={addVals.condition}
+                  onChange={(e) => setAddVals({ ...addVals, condition: e.target.value })}
+                >
+                  {CONDITIONS.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  disabled={!addVals.own}
+                  title="Print style of your copy"
+                  value={addVals.variant}
+                  onChange={(e) => setAddVals({ ...addVals, variant: e.target.value })}
+                >
+                  {VARIANTS.map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  style={{ maxWidth: "150px" }}
+                  placeholder="Stamp (opt.)"
+                  disabled={!addVals.own}
+                  value={addVals.stamp}
+                  onChange={(e) => setAddVals({ ...addVals, stamp: e.target.value })}
+                />
+                <select
+                  disabled={!addVals.own}
+                  value={addVals.grader}
+                  onChange={(e) => setAddVals({ ...addVals, grader: e.target.value })}
+                >
+                  {GRADERS.map((g) => (
+                    <option key={g}>{g}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  style={{ maxWidth: "70px" }}
+                  placeholder="9.5"
+                  disabled={!addVals.own || addVals.grader === "Raw"}
+                  value={addVals.grade}
+                  onChange={(e) => setAddVals({ ...addVals, grade: e.target.value })}
+                />
+                <button className="primary" onClick={confirmAdd}>
+                  <Icon id="plus" />
+                  Add
+                </button>
+              </div>
+            </>
+          )}
           {results && !manual && (
             <div className="form-row wrap">
               {results.length === 0 ? (
@@ -615,156 +765,6 @@ export default function CardsPage({ initialView = "collection" }) {
                 </button>
               </div>
             </div>
-          )}
-          {results && results.length > 0 && (
-            <div className="grid pick-grid">
-              {results.map((c) => (
-                <div
-                  key={c.id}
-                  className={`tile pick ${picked?.id === c.id ? "sel" : ""}`}
-                  onClick={() => {
-                    const now = picked?.id === c.id ? null : c;
-                    setPicked(now);
-                    if (now) {
-                      // cards printed as holos default the copy variant
-                      setAddVals((v) => ({
-                        ...v,
-                        variant: /holo/i.test(now.attrs.rarity || "")
-                          ? "Holo"
-                          : "Non-Holo",
-                      }));
-                    }
-                  }}
-                >
-                  {c.image_url ? (
-                    <img src={c.image_url} alt={c.title} loading="lazy" />
-                  ) : (
-                    <div className="placeholder" data-label={c.title} />
-                  )}
-                  <div className="tile-info">
-                    <strong>{c.title}</strong>
-                    <small>
-                      {c.attrs.set_name} #{c.attrs.card_number}
-                      {c.attrs.set_total ? `/${c.attrs.set_total}` : ""}
-                    </small>
-                    <small>
-                      <RarityMark rarity={c.attrs.rarity} /> {c.attrs.rarity}
-                    </small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {picked && (
-            <>
-              {/* swap the art before adding — handy when the catalog has none
-                  (new promos) or the wrong print */}
-              <div className="form-row wrap">
-                <ImagePicker
-                  value={picked.image_url}
-                  label={picked.image_url ? "Photo" : "Add photo"}
-                  onChange={async (url) => {
-                    try {
-                      const updated = await api.updateCard(picked.id, {
-                        image_url: url,
-                      });
-                      setPicked(updated);
-                      setResults((rs) =>
-                        rs.map((c) => (c.id === updated.id ? updated : c))
-                      );
-                    } catch (e) {
-                      alert(e.message);
-                    }
-                  }}
-                />
-              </div>
-              <div className="form-row wrap">
-                <button
-                  type="button"
-                  className={`toggle ${addVals.own ? "on" : ""}`}
-                  onClick={() => setAddVals({ ...addVals, own: !addVals.own })}
-                >
-                  {addVals.own ? "I own it" : "I want it"}
-                </button>
-                {addVals.own && picked.attrs.national_dex_no && (
-                  <button
-                    type="button"
-                    className={`toggle ${addVals.binder ? "on" : ""}`}
-                    onClick={() =>
-                      setAddVals({
-                        ...addVals,
-                        binder: !addVals.binder,
-                        // IR/SIR pulls default to "the one"; else placeholder
-                        keeper: !addVals.binder ? picked.attrs.layer === 3 : false,
-                      })
-                    }
-                    title="This copy goes in the Pokédex"
-                  >
-                    Pokédex
-                  </button>
-                )}
-                {addVals.own && addVals.binder && picked.attrs.national_dex_no && (
-                  <button
-                    type="button"
-                    className={`toggle ${addVals.keeper ? "on" : ""}`}
-                    onClick={() => setAddVals({ ...addVals, keeper: !addVals.keeper })}
-                    title="Is this the desired card, or a placeholder to upgrade later?"
-                  >
-                    {addVals.keeper ? "The one ✓" : "Will upgrade"}
-                  </button>
-                )}
-                <select
-                  disabled={!addVals.own}
-                  value={addVals.condition}
-                  onChange={(e) => setAddVals({ ...addVals, condition: e.target.value })}
-                >
-                  {CONDITIONS.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-                <select
-                  disabled={!addVals.own}
-                  title="Print style of your copy"
-                  value={addVals.variant}
-                  onChange={(e) => setAddVals({ ...addVals, variant: e.target.value })}
-                >
-                  {VARIANTS.map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  style={{ maxWidth: "150px" }}
-                  placeholder="Stamp (opt.)"
-                  disabled={!addVals.own}
-                  value={addVals.stamp}
-                  onChange={(e) => setAddVals({ ...addVals, stamp: e.target.value })}
-                />
-                <select
-                  disabled={!addVals.own}
-                  value={addVals.grader}
-                  onChange={(e) => setAddVals({ ...addVals, grader: e.target.value })}
-                >
-                  {GRADERS.map((g) => (
-                    <option key={g}>{g}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  style={{ maxWidth: "70px" }}
-                  placeholder="9.5"
-                  disabled={!addVals.own || addVals.grader === "Raw"}
-                  value={addVals.grade}
-                  onChange={(e) => setAddVals({ ...addVals, grade: e.target.value })}
-                />
-                <button className="primary" onClick={confirmAdd}>
-                  <Icon id="plus" />
-                  Add
-                </button>
-              </div>
-            </>
           )}
         </div>
       )}
