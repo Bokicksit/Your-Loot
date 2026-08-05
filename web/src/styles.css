@@ -858,6 +858,36 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* card search-result picker tiles */
 .pick-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 
+/* Pokédex slot: choosing another copy you own to occupy the slot */
+.replace-panel {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  padding: var(--s-3);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+}
+.replace-panel .pick-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+
+/* what happened to the card the swap pushed out, and the one open question */
+.replace-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  padding: var(--s-2) 10px;
+  background: var(--gold-wash);
+  border: 1px solid rgba(242, 183, 60, .28);
+  border-radius: var(--r-2);
+  color: var(--text-dim);
+  font-size: var(--f-2);
+}
+.replace-note > span { flex: 1 1 220px; }
+.replace-note svg.i { width: 15px; height: 15px; flex: none; color: var(--gold); }
+.replace-note strong { color: var(--text); font-weight: var(--w-med); }
+
 /* the add controls, dropped into the grid under the row that was clicked so
    they sit beside the card rather than below every result */
 .pick-detail {

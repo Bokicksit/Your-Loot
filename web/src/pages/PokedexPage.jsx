@@ -53,6 +53,70 @@ export default function PokedexPage() {
     load();
   };
 
+  const [replacing, setReplacing] = useState(null); // dex_no showing candidates
+  const [candidates, setCandidates] = useState(null); // null = still loading
+  const [displaced, setDisplaced] = useState(null); // the card the swap evicted
+  const [busy, setBusy] = useState(false);
+
+  // Every other copy of this Pokémon you own — one entry per copy, since two
+  // of the same card in different grades are genuinely different choices.
+  const openReplace = async (e) => {
+    if (replacing === e.dex_no) return setReplacing(null);
+    setReplacing(e.dex_no);
+    setCandidates(null);
+    setDisplaced(null);
+    try {
+      const d = await api.cards({ dex_no: e.dex_no, include_binder: true, limit: 300 });
+      setCandidates(
+        d.items.flatMap((c) =>
+          c.owned
+            .filter((o) => o.id !== e.card?.owned_id)
+            .map((o) => ({ card: c, owned: o }))
+        )
+      );
+    } catch (err) {
+      alert(err.message);
+      setCandidates([]);
+    }
+  };
+
+  // Flagging the new copy is the whole swap — the server turns the old one off,
+  // one card per slot. It lands back in the collection, so the only open
+  // question is whether you still want it.
+  const swapIn = async (e, opt) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await api.updateOwned(opt.card.id, opt.owned.id, { in_binder: true });
+      setReplacing(null);
+      setCandidates(null);
+      setDisplaced(
+        e.card
+          ? { dex_no: e.dex_no, cardId: e.card.id, ownedId: e.card.owned_id, title: e.card.title }
+          : null
+      );
+      load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const dropDisplaced = async () => {
+    if (!displaced || busy) return;
+    setBusy(true);
+    try {
+      await api.removeOwned(displaced.cardId, displaced.ownedId);
+      setDisplaced(null);
+      load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const q = query.trim().toLowerCase();
   const shown = entries.filter((e) => {
     if (filter !== "all" && status(e) !== filter) return false;
@@ -240,6 +304,15 @@ export default function PokedexPage() {
                       </button>
                       <button
                         type="button"
+                        className="ghost"
+                        onClick={() => openReplace(e)}
+                        title="Swap in another copy you own"
+                      >
+                        <Icon id="pencil" />
+                        {replacing === e.dex_no ? "Cancel" : "Replace"}
+                      </button>
+                      <button
+                        type="button"
                         className="ghost danger icon"
                         style={{ marginLeft: "auto" }}
                         onClick={() => removeFromBinder(e)}
@@ -248,6 +321,94 @@ export default function PokedexPage() {
                         <Icon id="x" />
                       </button>
                     </div>
+
+                    {replacing === e.dex_no && (
+                      <div className="replace-panel">
+                        {candidates === null ? (
+                          <span className="game-info-line">Looking…</span>
+                        ) : candidates.length === 0 ? (
+                          <>
+                            <span className="game-info-line">
+                              This is the only {e.name} you own.
+                            </span>
+                            <button
+                              type="button"
+                              className="ghost"
+                              onClick={(ev) => findCards(ev, e.name)}
+                            >
+                              Find {e.name} cards
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="game-info-line">
+                              Swap in another {e.name} you own
+                            </span>
+                            <div className="grid pick-grid">
+                              {candidates.map((opt) => (
+                                <div
+                                  key={opt.owned.id}
+                                  className="tile pick"
+                                  title="Put this one in the Pokédex"
+                                  onClick={() => swapIn(e, opt)}
+                                >
+                                  {opt.card.image_url ? (
+                                    <img src={opt.card.image_url} alt="" loading="lazy" />
+                                  ) : (
+                                    <div className="placeholder" data-label={opt.card.title} />
+                                  )}
+                                  <div className="tile-info">
+                                    <strong>{opt.card.title}</strong>
+                                    <small>
+                                      {opt.card.attrs.set_abbr || opt.card.attrs.set_name} #
+                                      {opt.card.attrs.card_number}
+                                    </small>
+                                    <small>
+                                      {[
+                                        opt.owned.variant,
+                                        opt.owned.grader
+                                          ? `${opt.owned.grader} ${opt.owned.grade || "?"}`
+                                          : opt.owned.condition,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                    </small>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {displaced?.dex_no === e.dex_no && (
+                      <div className="replace-note">
+                        <Icon id="info" />
+                        <span>
+                          <strong>{displaced.title}</strong> came out of the Pokédex and
+                          is back in your collection.
+                        </span>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={busy}
+                          onClick={() => setDisplaced(null)}
+                        >
+                          Keep it
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost danger"
+                          disabled={busy}
+                          onClick={dropDisplaced}
+                          title="Delete that copy from your collection"
+                        >
+                          <Icon id="trash" />
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <p className="game-summary">

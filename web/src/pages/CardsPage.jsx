@@ -123,11 +123,19 @@ export default function CardsPage({ initialView = "collection" }) {
     return () => window.removeEventListener("resize", measureCols);
   }, [results]);
 
+  // /cards and /pokedex render this same component, so React keeps its state
+  // across the two routes and `view` would otherwise stay on whichever tab you
+  // were last on — navigating to the other URL appeared to do nothing.
+  useEffect(() => {
+    setView(initialView);
+  }, [initialView]);
+
   // arriving from the Pokédex ("Find Alakazam cards"): open the add flow
   // pre-filled and run the search straight away
   useEffect(() => {
     const name = searchParams.get("add");
     if (!name) return;
+    setView("collection"); // the results are on the collection tab
     setShowForm(true);
     setForm((f) => ({ ...f, name, number: "", set: "" }));
     setSearchParams({}, { replace: true });

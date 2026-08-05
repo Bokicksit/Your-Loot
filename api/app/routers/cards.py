@@ -164,6 +164,7 @@ def list_cards(
     search: str | None = None,
     set_code: str | None = None,
     rarity: str | None = None,
+    dex_no: int | None = None,
     collection: bool = True,
     include_binder: bool = False,
     limit: int = Query(120, le=300),
@@ -186,6 +187,9 @@ def list_cards(
         filters.append(CardAttrs.set_code == set_code)
     if rarity:
         filters.append(CardAttrs.rarity == rarity)
+    if dex_no is not None:
+        # every card of one Pokémon — what the Pokédex offers as replacements
+        filters.append(CardAttrs.national_dex_no == dex_no)
     if collection:
         owned_q = select(Owned.id).where(Owned.item_id == CollectionItem.id)
         if not include_binder:

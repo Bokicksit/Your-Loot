@@ -230,6 +230,12 @@ Because a slot holds one card, putting a new card in a slot automatically takes
 the old one out — the same swap you'd do with the physical binder. The old card
 stays in your collection.
 
+**Replace** on an occupied slot shows every other copy of that Pokémon you
+already own, so you can swap without going hunting. Pick one and it takes the
+slot; the card it displaced goes back to your collection, and you're asked
+whether to keep it or remove that copy. If it's the only one you own, the
+button offers to go find more instead.
+
 Choose **3, 4, or 5 slots per row** in Settings.
 
 ### Games
