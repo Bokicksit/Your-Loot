@@ -295,8 +295,11 @@ export default function CardsPage({ initialView = "collection" }) {
             />
             <input
               type="text"
-              style={{ maxWidth: "130px" }}
-              placeholder="91/108 (opt.)"
+              style={{ maxWidth: "150px" }}
+              // subset cards print letters ("GG07/GG70"), so say so — the
+              // digits-only placeholder read like a digits-only field
+              placeholder="91/108 or GG07"
+              title="The number printed on the card — letters included (TG03, GG07, RC12)"
               value={form.number}
               onChange={(e) => setForm({ ...form, number: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}

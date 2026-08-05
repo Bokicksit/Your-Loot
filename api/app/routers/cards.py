@@ -56,12 +56,24 @@ def search_cards(
     q = _base_query().where(CollectionItem.title.ilike(f"%{name.strip()}%"))
     total = None
     if number and number.strip():
-        m = re.match(r"^\s*(\w+)\s*(?:/\s*(\d+))?\s*$", number)
+        # Most cards print "91/108", but subset cards carry their prefix on
+        # BOTH halves — "GG07/GG70", "TG03/TG30" — so neither side is reliably
+        # digits and the denominator can't be parsed as a plain int.
+        m = re.match(r"^\s*([\w-]+)\s*(?:/\s*([\w-]+))?\s*$", number)
         num = (m.group(1) if m else number).strip()
-        total = int(m.group(2)) if m and m.group(2) else None
-        # numbers are strings ("4", "091", "TG12") — match ignoring leading zeros
+        denominator = (m.group(2) or "") if m else ""
+        # Only a plain-digit denominator is the set size. A prefixed one is the
+        # SUBSET size, which the dump records inconsistently — Galarian Gallery
+        # stores 70 to match "GG70", but Radiant Collection stores its parent
+        # set's 113 while the card prints "RC25". Filtering on that would hide
+        # the card, and the prefixed numerator is specific enough without it.
+        total = int(denominator) if denominator.isdigit() else None
+        # numbers are strings ("4", "091", "TG12") — match ignoring leading
+        # zeros, and case-insensitively so "gg07" finds "GG07"
         stripped = num.lstrip("0") or num
-        q = q.where(func.ltrim(CardAttrs.card_number, "0") == stripped)
+        q = q.where(
+            func.upper(func.ltrim(CardAttrs.card_number, "0")) == stripped.upper()
+        )
     if total:
         q = q.where(CardAttrs.set_total == total)
     if set:
