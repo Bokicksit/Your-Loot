@@ -20,23 +20,27 @@ export const VINYL_GRADES = [
 // most second-hand vinyl lands here; nobody's shelf is all mint
 export const DEFAULT_VINYL_GRADE = "VG";
 
-// Every combination of the three pieces a boxed game comes in, ordered most to
-// least complete. "loose", "CIB" and "sealed" keep their original stored values
-// so copies recorded before the list grew still read back correctly.
+// What you have of a boxed game, ordered most to least complete. Everything
+// down to "Loose" includes the game itself; the last two are spare pieces
+// without it. "loose", "CIB" and "sealed" keep their original stored values so
+// copies recorded before the list grew still read back correctly.
+//
+// There's deliberately no "case & manual": having both of those plus the game
+// is just CIB, and having both without the game is rare enough to record as
+// two spares.
 export const GAME_COMPLETENESS = [
   ["sealed", "Sealed"],
   ["CIB", "CIB"],
   ["game+case", "Game & case"],
   ["game+manual", "Game & manual"],
   ["loose", "Loose"],
-  ["case+manual", "Case & manual"],
   ["case only", "Case only"],
   ["manual only", "Manual only"],
 ];
 
 // Spare pieces — you have part of the release but not the game itself, which
 // is why buying one doesn't take the game off your wanted list.
-export const GAME_PARTS_ONLY = new Set(["case+manual", "case only", "manual only"]);
+export const GAME_PARTS_ONLY = new Set(["case only", "manual only"]);
 
 /** Display label for a stored value; unrecognised values show as themselves. */
 export const labelFor = (pairs, value) =>
