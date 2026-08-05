@@ -396,16 +396,28 @@ export default function CardsPage({ initialView = "collection" }) {
             </div>
           )}
 
-          {results && results.length === 0 && !manual && (
+          {/* Shown whenever a search has run, not only on zero hits: a common
+              name returns dozens of prints and yours may be none of them, and
+              until now that dead end had no way out. */}
+          {results && !manual && (
             <div className="form-row wrap">
-              <p className="error" style={{ flex: 1 }}>
-                <Icon id="alert" />
-                Not in the offline card database — try the online catalog,
-                which carries brand-new promo sets.
-              </p>
+              {results.length === 0 ? (
+                <p className="error" style={{ flex: 1 }}>
+                  <Icon id="alert" />
+                  Not in the offline card database — try the online catalog,
+                  which carries brand-new promo sets.
+                </p>
+              ) : (
+                <p className="game-info-line" style={{ flex: 1 }}>
+                  Not the one you're holding? The online catalog carries
+                  brand-new promo sets, or enter it yourself.
+                </p>
+              )}
               <button
                 type="button"
-                className="primary"
+                /* the loud action only when there's nothing else to click —
+                   with results on screen it shouldn't outrank them */
+                className={results.length === 0 ? "primary" : "ghost"}
                 disabled={onlineBusy}
                 onClick={async () => {
                   setOnlineBusy(true);

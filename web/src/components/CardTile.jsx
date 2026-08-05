@@ -13,9 +13,19 @@ const VARIANT_SHORT = { "Reverse Holo": "RH", Holo: "Holo" };
 // A card in the collection grid. Copies are chips ("PSA 9" / "NM") —
 // tap a chip to edit in a modal (tiles are too narrow for an inline form),
 // + adds another copy. Graded chips are jade, binder chips carry a pokéball.
+// Cards you added yourself can be corrected; catalog rows can't, because a
+// reseed would overwrite the edit. Same rule the API enforces.
+const isYours = (card) => card.source === "manual" || card.source === "tcgdex";
+
+const ENTRY_FIELDS = [
+  "title", "national_dex_no", "set_name", "set_abbr",
+  "card_number", "set_total", "rarity",
+];
+
 export default function CardTile({ card, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
+  const [entry, setEntry] = useState(null); // card-detail draft, null = closed
   const [editing, setEditing] = useState(null); // owned id being edited
   const [vals, setVals] = useState({
     condition: "NM",
@@ -50,6 +60,46 @@ export default function CardTile({ card, onChange, onReload }) {
     )
       return;
     run(() => api.removeOwned(card.id, o.id));
+  };
+
+  const openEntry = () => {
+    const a = card.attrs;
+    setEntry({
+      title: card.title || "",
+      national_dex_no: a.national_dex_no ?? "",
+      set_name: a.set_name || "",
+      set_abbr: a.set_abbr || "",
+      card_number: a.card_number || "",
+      set_total: a.set_total ?? "",
+      rarity: a.rarity || "",
+    });
+  };
+
+  const saveEntry = async () => {
+    if (busy) return;
+    if (!entry.title.trim()) {
+      alert("A card needs a name.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.updateCard(card.id, {
+        title: entry.title.trim(),
+        set_name: entry.set_name.trim() || null,
+        set_abbr: entry.set_abbr.trim() || null,
+        card_number: entry.card_number.trim() || null,
+        rarity: entry.rarity.trim() || null,
+        // numeric fields: blank clears them rather than storing 0
+        national_dex_no: entry.national_dex_no ? Number(entry.national_dex_no) : null,
+        set_total: entry.set_total ? Number(entry.set_total) : null,
+      });
+      setEntry(null);
+      onReload?.();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const openEdit = (o) => {
@@ -280,37 +330,119 @@ export default function CardTile({ card, onChange, onReload }) {
               }
             }}
           />
-          {card.source === "ptcg" ? (
-            // No delete here, and the absence looked like a bug — say why. The
-            // dump's rows are shared reference data; the API refuses to remove
-            // them, so what the user actually wants is to drop their copies.
+          {isYours(card) ? (
+            <>
+              <button
+                className="ghost"
+                style={{ marginLeft: "auto" }}
+                title="Correct this card's details"
+                onClick={() => (entry ? setEntry(null) : openEntry())}
+              >
+                <Icon id="pencil" />
+                Edit card
+              </button>
+              <button
+                className="ghost danger icon"
+                title="Delete this card entry"
+                onClick={async () => {
+                  if (!confirm(`Delete the card entry "${card.title}"?`)) return;
+                  try {
+                    await api.deleteCard(card.id);
+                    onReload?.();
+                  } catch (e) {
+                    alert(e.message);
+                  }
+                }}
+              >
+                <Icon id="trash" />
+              </button>
+            </>
+          ) : (
+            // No delete or edit here, and the absence looked like a bug — say
+            // why. Dump rows are shared reference data that a reseed rewrites,
+            // so what the user actually wants is to drop their copies.
             <span className="catalog-note">
               <Icon id="info" />
               <span>
                 This is a <strong>catalog card</strong>, shared by every collection —
-                it can't be deleted. Remove your copies above and it leaves your
-                collection but stays searchable.
+                its details can't be edited and it can't be deleted. Remove your
+                copies above and it leaves your collection but stays searchable.
               </span>
             </span>
-          ) : (
-            <button
-              className="ghost danger icon"
-              style={{ marginLeft: "auto" }}
-              title="Delete this card entry"
-              onClick={async () => {
-                if (!confirm(`Delete the card entry "${card.title}"?`)) return;
-                try {
-                  await api.deleteCard(card.id);
-                  onReload?.();
-                } catch (e) {
-                  alert(e.message);
-                }
-              }}
-            >
-              <Icon id="trash" />
-            </button>
           )}
         </div>
+
+        {entry && (
+          <div className="entry-edit">
+            <span className="game-info-line">Card details</span>
+            <div className="form-row">
+              <input
+                type="text"
+                className="grow"
+                placeholder="Card name"
+                value={entry.title}
+                onChange={(e) => setEntry({ ...entry, title: e.target.value })}
+              />
+              <input
+                type="text"
+                style={{ maxWidth: "110px" }}
+                placeholder="Dex #"
+                inputMode="numeric"
+                value={entry.national_dex_no}
+                onChange={(e) => setEntry({ ...entry, national_dex_no: e.target.value })}
+              />
+            </div>
+            <div className="form-row">
+              <input
+                type="text"
+                className="grow"
+                placeholder="Set name"
+                value={entry.set_name}
+                onChange={(e) => setEntry({ ...entry, set_name: e.target.value })}
+              />
+              <input
+                type="text"
+                style={{ maxWidth: "90px" }}
+                placeholder="Code"
+                value={entry.set_abbr}
+                onChange={(e) => setEntry({ ...entry, set_abbr: e.target.value })}
+              />
+            </div>
+            <div className="form-row">
+              <input
+                type="text"
+                style={{ maxWidth: "110px" }}
+                placeholder="Number"
+                value={entry.card_number}
+                onChange={(e) => setEntry({ ...entry, card_number: e.target.value })}
+              />
+              <input
+                type="text"
+                style={{ maxWidth: "100px" }}
+                placeholder="of total"
+                inputMode="numeric"
+                value={entry.set_total}
+                onChange={(e) => setEntry({ ...entry, set_total: e.target.value })}
+              />
+              <input
+                type="text"
+                className="grow"
+                placeholder="Rarity"
+                value={entry.rarity}
+                onChange={(e) => setEntry({ ...entry, rarity: e.target.value })}
+              />
+            </div>
+            <div className="form-row">
+              <button className="primary" onClick={saveEntry} disabled={busy}>
+                <Icon id="check" />
+                {busy ? "Saving…" : "Save"}
+              </button>
+              <button className="ghost" onClick={() => setEntry(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )}
     </>

@@ -201,9 +201,15 @@ Each copy records:
 - **Stamp** — promo stamps, free text
 - **Pokédex** — whether this copy occupies a Pokédex slot
 
-**Card not in the database?** Two fallbacks. *Search online* queries a live
-catalog for cards too new for the offline dump. Or add it by hand — name, dex
-number, set, number, rarity — and paste an image link.
+**Card not in the results?** Both fallbacks sit under every search, whether it
+found nothing or found forty prints that aren't yours. *Search online catalog*
+queries a live source for cards too new for the offline dump. *Add it manually*
+takes name, dex number, set, number and rarity, and you can photograph the card
+or paste an image link.
+
+**Fixing a card you added.** Expand it and hit **Edit card** to correct the
+name, dex number, set, number, total or rarity. Catalog cards don't offer this —
+a database refresh would overwrite the change, so the panel says so instead.
 
 ### Pokédex
 
