@@ -428,11 +428,15 @@ button.ghost.icon svg.i, button.primary.icon svg.i, a.ghost.icon svg.i { width: 
   display: grid;
   gap: var(--s-2);
   padding: var(--s-2);
+  min-width: 0;
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-left: 3px solid var(--gold);
   border-radius: var(--r-2);
 }
+/* an editor holds three or four fields per line — on a phone they wrap rather
+   than forcing the page to scroll sideways */
+.entry-edit .form-row { flex-wrap: wrap; }
 
 /* inline per-copy editor, opened by tapping a copy chip */
 .copy-edit {
@@ -801,7 +805,10 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 
 /* card photo picker */
 .img-picker { display: grid; gap: var(--s-2); flex: 1 1 260px; min-width: 0; }
-.img-picker-row { display: flex; align-items: center; gap: var(--s-2); }
+/* four controls (upload, camera, link, remove) don't fit a phone on one line,
+   and buttons can't shrink below their label — so let them stack instead of
+   pushing the whole page sideways */
+.img-picker-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
 .img-thumb {
   flex: none;
   width: 44px;
@@ -950,6 +957,24 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .crop-handle.sw { left: -13px; bottom: -13px; cursor: nesw-resize; }
 .crop-handle.se { right: -13px; bottom: -13px; cursor: nwse-resize; }
 .crop-note { margin: 0; font-size: var(--f-2); color: var(--text-mute); }
+
+.crop-rotate {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+}
+.crop-rotate input[type="range"] { flex: 1; min-width: 0; accent-color: var(--gold); }
+.crop-rotate button { flex: none; font-size: 17px; line-height: 1; }
+.crop-rotate b {
+  flex: none;
+  min-width: 42px;
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: var(--f-2);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ×2 on a chip standing for several identical copies */
 .chip-mult {

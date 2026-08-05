@@ -12,18 +12,73 @@ import { Icon } from "./Icons.jsx";
 const MIN = 0.06; // a crop can't be smaller than this fraction, or it vanishes
 
 export default function PhotoCrop({ file, onDone, onCancel }) {
-  const [src, setSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0, w: 1, h: 1 });
+  const [angle, setAngle] = useState(0); // degrees; straightens a tilted shot
+  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [autoNote, setAutoNote] = useState(null);
-  const imgRef = useRef(null);
+  const imgRef = useRef(null); // the decoded photo, never rendered directly
+  const canvasRef = useRef(null); // what's on screen — drawn, so it can rotate
   const dragRef = useRef(null);
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
-    setSrc(url);
+    const img = new Image();
+    img.onload = () => {
+      imgRef.current = img;
+      setReady(true);
+    };
+    img.src = url;
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  /** Size of the photo's bounding box once rotated — a tilted rectangle needs
+   *  more room than it started with. */
+  const rotatedSize = () => {
+    const img = imgRef.current;
+    const r = (angle * Math.PI) / 180;
+    const c = Math.abs(Math.cos(r));
+    const s = Math.abs(Math.sin(r));
+    return {
+      w: img.naturalWidth * c + img.naturalHeight * s,
+      h: img.naturalWidth * s + img.naturalHeight * c,
+    };
+  };
+
+  /** Draw the rotated photo into `canvas` at the given output width/height.
+   *  Preview and export both go through here, so they can't drift apart. */
+  const paint = (canvas, outW, outH, fill = "#0b0a0e") => {
+    const img = imgRef.current;
+    canvas.width = Math.max(1, Math.round(outW));
+    canvas.height = Math.max(1, Math.round(outH));
+    const { w } = rotatedSize();
+    const scale = canvas.width / w;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = fill; // the corners a rotation exposes
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((angle * Math.PI) / 180);
+    ctx.drawImage(
+      img,
+      (-img.naturalWidth * scale) / 2,
+      (-img.naturalHeight * scale) / 2,
+      img.naturalWidth * scale,
+      img.naturalHeight * scale
+    );
+    ctx.restore();
+  };
+
+  // repaint the preview whenever the photo or its angle changes
+  useEffect(() => {
+    if (!ready || !canvasRef.current) return;
+    const { w, h } = rotatedSize();
+    const box = canvasRef.current.parentElement.getBoundingClientRect();
+    const maxW = box.width || 480;
+    const maxH = Math.min(window.innerHeight * 0.5, 460);
+    const fit = Math.min(maxW / w, maxH / h, 1);
+    paint(canvasRef.current, w * fit, h * fit);
+  }, [ready, angle]);
 
   /** Best-effort "snap to the item". Reads the border colour as the background
    *  and walks in from each edge until a row or column stops looking like it.
@@ -32,30 +87,46 @@ export default function PhotoCrop({ file, onDone, onCancel }) {
   const autoCrop = () => {
     const img = imgRef.current;
     if (!img) return;
-    const S = 260; // work on a thumbnail — full resolution buys nothing here
-    const scale = Math.min(S / img.naturalWidth, S / img.naturalHeight, 1);
-    const w = Math.max(1, Math.round(img.naturalWidth * scale));
-    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+    // The background is sampled from the UNROTATED photo. Rotating exposes
+    // corners that aren't part of the picture, and if those were sampled they'd
+    // read as "the item" and drag the box back out to the full frame.
+    const probe = document.createElement("canvas");
+    const ps = Math.min(120 / img.naturalWidth, 120 / img.naturalHeight, 1);
+    probe.width = Math.max(1, Math.round(img.naturalWidth * ps));
+    probe.height = Math.max(1, Math.round(img.naturalHeight * ps));
+    const pctx = probe.getContext("2d", { willReadFrequently: true });
+    pctx.drawImage(img, 0, 0, probe.width, probe.height);
+    const pd = pctx.getImageData(0, 0, probe.width, probe.height).data;
+    const ppx = (x, y) => {
+      const i = (y * probe.width + x) * 4;
+      return [pd[i], pd[i + 1], pd[i + 2]];
+    };
+    const edge = [];
+    for (let x = 0; x < probe.width; x++) edge.push(ppx(x, 0), ppx(x, probe.height - 1));
+    for (let y = 0; y < probe.height; y++) edge.push(ppx(0, y), ppx(probe.width - 1, y));
+    // median, not mean — a corner of the item poking into the frame shifts an
+    // average but barely moves a median
+    const bg = [0, 1, 2].map((k) => {
+      const vals = edge.map((p) => p[k]).sort((a, b) => a - b);
+      return vals[Math.floor(vals.length / 2)];
+    });
+
+    // now measure against the rotated view, filling the exposed corners with
+    // that same background so they read as empty space
+    const { w: rw, h: rh } = rotatedSize();
+    const S = 260; // a thumbnail — full resolution buys nothing here
+    const scale = Math.min(S / rw, S / rh, 1);
+    const w = Math.max(1, Math.round(rw * scale));
+    const h = Math.max(1, Math.round(rh * scale));
     const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
+    paint(canvas, w, h, `rgb(${bg[0]},${bg[1]},${bg[2]})`);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
     const { data } = ctx.getImageData(0, 0, w, h);
     const px = (x, y) => {
       const i = (y * w + x) * 4;
       return [data[i], data[i + 1], data[i + 2]];
     };
-
-    // median of the frame's pixels — a median ignores the corner of the item
-    // poking into the border better than an average would
-    const edge = [];
-    for (let x = 0; x < w; x++) edge.push(px(x, 0), px(x, h - 1));
-    for (let y = 0; y < h; y++) edge.push(px(0, y), px(w - 1, y));
-    const bg = [0, 1, 2].map((k) => {
-      const vals = edge.map((p) => p[k]).sort((a, b) => a - b);
-      return vals[Math.floor(vals.length / 2)];
-    });
 
     const differs = (x, y) => {
       const p = px(x, y);
@@ -97,10 +168,16 @@ export default function PhotoCrop({ file, onDone, onCancel }) {
     setAutoNote(null);
   };
 
+  // offer a crop as soon as the photo is decoded; straightening afterwards
+  // leaves the box where it is rather than yanking it about
+  useEffect(() => {
+    if (ready) autoCrop();
+  }, [ready]);
+
   const startDrag = (mode) => (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const box = imgRef.current.getBoundingClientRect();
+    const box = canvasRef.current.getBoundingClientRect();
     dragRef.current = { mode, box, startX: e.clientX, startY: e.clientY, crop };
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
@@ -143,17 +220,21 @@ export default function PhotoCrop({ file, onDone, onCancel }) {
   };
 
   const confirm = () => {
-    const img = imgRef.current;
-    if (!img || busy) return;
+    if (!imgRef.current || busy) return;
     setBusy(true);
-    const sx = Math.round(crop.x * img.naturalWidth);
-    const sy = Math.round(crop.y * img.naturalHeight);
-    const sw = Math.max(1, Math.round(crop.w * img.naturalWidth));
-    const sh = Math.max(1, Math.round(crop.h * img.naturalHeight));
+    // rotate at full resolution first, then take the crop out of that — so a
+    // straightened photo loses nothing a straight one wouldn't
+    const { w: rw, h: rh } = rotatedSize();
+    const rotated = document.createElement("canvas");
+    paint(rotated, rw, rh);
+    const sx = Math.round(crop.x * rw);
+    const sy = Math.round(crop.y * rh);
+    const sw = Math.max(1, Math.round(crop.w * rw));
+    const sh = Math.max(1, Math.round(crop.h * rh));
     const canvas = document.createElement("canvas");
     canvas.width = sw;
     canvas.height = sh;
-    canvas.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    canvas.getContext("2d").drawImage(rotated, sx, sy, sw, sh, 0, 0, sw, sh);
     canvas.toBlob(
       (blob) => {
         setBusy(false);
@@ -177,16 +258,7 @@ export default function PhotoCrop({ file, onDone, onCancel }) {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          {src && (
-            <img
-              ref={imgRef}
-              src={src}
-              alt=""
-              className="crop-img"
-              onLoad={autoCrop}
-              draggable="false"
-            />
-          )}
+          <canvas ref={canvasRef} className="crop-img" />
           <div
             className="crop-box"
             style={{ left: pct(crop.x), top: pct(crop.y), width: pct(crop.w), height: pct(crop.h) }}
@@ -202,6 +274,41 @@ export default function PhotoCrop({ file, onDone, onCancel }) {
           </div>
         </div>
         {autoNote && <p className="crop-note">{autoNote}</p>}
+
+        {/* straighten a shot taken at an angle. The crop stays square to the
+            screen — rotating the photo under it is how every photo editor does
+            this, and it keeps the exported image un-skewed. */}
+        <div className="crop-rotate">
+          <button
+            type="button"
+            className="ghost icon"
+            title="Rotate a quarter turn left"
+            onClick={() => setAngle((a) => ((a - 90 + 360) % 360) - (((a - 90 + 360) % 360) > 180 ? 360 : 0))}
+          >
+            ⟲
+          </button>
+          <input
+            type="range"
+            min="-45"
+            max="45"
+            step="0.5"
+            value={((angle + 180) % 360) - 180 >= -45 && ((angle + 180) % 360) - 180 <= 45
+              ? ((angle + 180) % 360) - 180
+              : 0}
+            onChange={(e) => setAngle(Number(e.target.value))}
+            aria-label="Straighten"
+          />
+          <button
+            type="button"
+            className="ghost icon"
+            title="Rotate a quarter turn right"
+            onClick={() => setAngle((a) => ((a + 90 + 360) % 360) - (((a + 90 + 360) % 360) > 180 ? 360 : 0))}
+          >
+            ⟳
+          </button>
+          <b>{Math.round(angle)}°</b>
+        </div>
+
         <div className="form-row wrap" style={{ width: "100%" }}>
           <button type="button" className="ghost" onClick={autoCrop}>
             <Icon id="scan" />

@@ -180,6 +180,11 @@ locked to a ratio. **Snap to edges** tries to find the item for you and works
 well on a plain surface; on a busy background it says so and leaves the corners
 to you. **Whole photo** undoes it.
 
+Shot at an angle? The slider straightens the photo, and the quarter-turn
+buttons handle one that came in sideways. Straighten first, then hit *Snap to
+edges* — it reads the picture as it stands, so a level shot is much easier for
+it to find.
+
 Notes:
 
 - Photos are capped at **15 MB**. Oversized ones are rejected instantly,
