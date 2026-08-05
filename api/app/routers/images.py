@@ -20,18 +20,40 @@ EXT_BY_TYPE = {
     "image/gif": ".gif",
 }
 MAX_BYTES = 15 * 1024 * 1024
+MAX_LABEL = f"{MAX_BYTES // (1024 * 1024)} MB"
+TOO_LARGE = f"image is too large ({MAX_LABEL} max)"
+CHUNK = 1024 * 1024
 
 
 @router.post("")
 async def upload_image(file: UploadFile):
     """Store an upload in IMAGE_DIR (bind-mounted to a TrueNAS dataset) and
-    return the /images/ URL to save on an item."""
+    return the /images/ URL to save on an item.
+
+    Streamed a chunk at a time rather than read() into one buffer: a phone
+    photo is a few MB, but nothing stops a 20 MB original, and the size has to
+    be known before it lands on the dataset anyway."""
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED:
         raise HTTPException(400, f"unsupported file type {ext!r}")
+
     name = f"{uuid.uuid4().hex}{ext}"
     dest = Path(settings.image_dir) / name
-    dest.write_bytes(await file.read())
+    written = 0
+    try:
+        with dest.open("wb") as out:
+            while chunk := await file.read(CHUNK):
+                written += len(chunk)
+                if written > MAX_BYTES:
+                    raise HTTPException(400, TOO_LARGE)
+                out.write(chunk)
+    except Exception:
+        # never leave a half-written or oversized file behind
+        dest.unlink(missing_ok=True)
+        raise
+    if not written:
+        dest.unlink(missing_ok=True)
+        raise HTTPException(400, "that file is empty")
     return {"url": f"/images/{name}"}
 
 
@@ -79,7 +101,7 @@ def fetch_image(body: FetchBody):
     if not ext:
         raise HTTPException(400, f"that URL isn't an image (got {ctype or 'unknown'})")
     if len(resp.content) > MAX_BYTES:
-        raise HTTPException(400, "image is too large (15 MB max)")
+        raise HTTPException(400, TOO_LARGE)
 
     name = f"{uuid.uuid4().hex}{ext}"
     (Path(settings.image_dir) / name).write_bytes(resp.content)

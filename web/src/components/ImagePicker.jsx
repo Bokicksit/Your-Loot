@@ -2,6 +2,11 @@ import { useRef, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
 
+// Mirrors MAX_BYTES in api/app/routers/images.py. Checked here too so an
+// oversized photo fails at once instead of after pushing 20 MB over the wire —
+// the server still enforces it, this is only about the wait.
+const MAX_MB = 15;
+
 // Give a card a picture two ways: photograph it (phone camera) or paste an
 // image link (e.g. right-click → copy image address on pokemon.com). Pasted
 // links are copied to the NAS so they keep working if the source moves.
@@ -13,6 +18,15 @@ export default function ImagePicker({ value, onChange, label = "Photo" }) {
 
   const upload = async (file) => {
     if (!file) return;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      alert(
+        `That photo is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is ` +
+          `${MAX_MB} MB.\n\nShrink it, or use your phone's camera setting for a ` +
+          `smaller picture.`
+      );
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     setBusy(true);
     try {
       const { url } = await api.uploadImage(file);
