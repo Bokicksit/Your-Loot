@@ -1,8 +1,8 @@
 # 💰 Your Loot
 
-Self-hosted collection tracker for **Pokémon cards, video games, hardware, and
-physical movies** — one app, one database, one wanted list that spans all of
-them.
+Self-hosted collection tracker for **Pokémon cards, video games, hardware,
+physical movies, books, and records** — one app, one database, one wanted list
+that spans all of them.
 
 Most trackers do a single category. This one is built for people whose shelf
 isn't that tidy: the Charizard you're hunting and the SNES console you're
@@ -30,7 +30,15 @@ status, and accessory→console links.
 **Movies** — TMDB-backed, with the physical details that matter: format
 (4K/Blu-ray/DVD/VHS), edition, region code.
 
-**Wanted list** — everything you're hunting, across all four modules, with
+**Books** — Open Library search, or scan the ISBN barcode on the back. Format,
+edition, series, and per-copy jacket/provenance.
+
+**Records** — MusicBrainz search, or scan the barcode on the sleeve, which
+identifies the *pressing*: label, catalogue number, country, and year, so a
+1980 original and a 2011 repress stay separate entries. Graded the way vinyl
+actually is — media and sleeve independently, on the Goldmine scale (`VG+/VG`).
+
+**Wanted list** — everything you're hunting, across every module, with
 filters and a "check sold prices on eBay" shortcut. Mark something acquired and
 it moves into your collection with the condition you set.
 
@@ -111,11 +119,11 @@ work: `cd web && npm install && npm run dev`.
 **Stack:** FastAPI + SQLAlchemy + Alembic + Postgres, React + Vite, nginx.
 One `collection_item` table shared by every module, with per-module attribute
 tables and separate `owned`/`wanted` records — which is why the wanted list can
-span all four categories with a single query. Adding a fifth module is a new
+span every category with a single query. Adding another module is a new
 attributes table plus a router; nothing existing changes.
 
 ```
-api/     FastAPI app, models, migrations, integrations (IGDB/TMDB/TCGdex)
+api/     FastAPI app, models, migrations, integrations (IGDB/TMDB/TCGdex/…)
 web/     React SPA + nginx
 seed/    offline card-database seeder
 deploy/  TrueNAS compose
@@ -127,6 +135,9 @@ deploy/  TrueNAS compose
   and [TCGdex](https://tcgdex.dev)
 - Games: [IGDB](https://www.igdb.com) · Movies: [TMDB](https://www.themoviedb.org)
   (this product uses the TMDB API but is not endorsed or certified by TMDB)
+- Books: [Open Library](https://openlibrary.org)
+- Records: [MusicBrainz](https://musicbrainz.org) and the
+  [Cover Art Archive](https://coverartarchive.org)
 - Barcodes: [UPCitemdb](https://www.upcitemdb.com)
 - Console logos: see [`web/public/platforms/ATTRIBUTION.md`](web/public/platforms/ATTRIBUTION.md)
 

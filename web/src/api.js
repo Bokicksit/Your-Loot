@@ -75,6 +75,15 @@ export const api = {
   deleteBook: (itemId) => request(`/api/books/${itemId}`, { method: "DELETE" }),
   openLibrarySearch: (params) =>
     request(`/api/books/search?${new URLSearchParams(params)}`),
+  records: (params = {}) => request(`/api/records?${new URLSearchParams(params)}`),
+  recordFacets: () => request("/api/records/facets"),
+  addRecord: (body) =>
+    request("/api/records", { method: "POST", body: JSON.stringify(body) }),
+  updateRecord: (itemId, body) =>
+    request(`/api/records/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteRecord: (itemId) => request(`/api/records/${itemId}`, { method: "DELETE" }),
+  musicBrainzSearch: (params) =>
+    request(`/api/records/search?${new URLSearchParams(params)}`),
   settings: () => request("/api/settings"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

@@ -14,6 +14,7 @@ class Module(str, enum.Enum):
     games = "games"
     movies = "movies"
     books = "books"
+    records = "records"
 
 
 class CollectionItem(TimestampMixin, Base):
@@ -39,6 +40,7 @@ class CollectionItem(TimestampMixin, Base):
     )
     movie_attrs = relationship("MovieAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     book_attrs = relationship("BookAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
+    record_attrs = relationship("RecordAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     owned = relationship("Owned", back_populates="item", cascade="all, delete-orphan")
     wanted = relationship("Wanted", back_populates="item", uselist=False, cascade="all, delete-orphan")
 

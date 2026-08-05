@@ -7,7 +7,7 @@ from app.models import Setting
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-MODULES = ["cards", "games", "hardware", "movies", "books"]
+MODULES = ["cards", "games", "hardware", "movies", "books", "records"]
 # stored as comma-separated strings in the key/value settings table
 DEFAULTS = {
     "owner_name": None,          # None = never set, drives first-run onboarding

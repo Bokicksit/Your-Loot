@@ -6,6 +6,7 @@ class OwnedOut(BaseModel):
 
     id: int
     condition: str | None = None
+    sleeve_condition: str | None = None  # records: sleeve grade
     completeness: str | None = None
     grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
     grade: str | None = None
@@ -17,6 +18,7 @@ class OwnedOut(BaseModel):
 
 class OwnedCreate(BaseModel):
     condition: str | None = None
+    sleeve_condition: str | None = None  # records only
     completeness: str | None = None  # games only
     grader: str | None = None  # cards only
     grade: str | None = None

@@ -11,6 +11,7 @@ export const MODULES = [
   { key: "hardware", label: "Hardware", icon: "console", blurb: "Consoles & gear" },
   { key: "movies", label: "Movies", icon: "disc", blurb: "Physical media" },
   { key: "books", label: "Books", icon: "book", blurb: "Shelves & spines" },
+  { key: "records", label: "Records", icon: "vinyl", blurb: "Vinyl & crates" },
 ];
 
 export function SettingsProvider({ children }) {

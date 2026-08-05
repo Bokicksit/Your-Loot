@@ -13,6 +13,7 @@ export function IconDefs() {
         <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5h5.5A2.5 2.5 0 0112 7v12a2 2 0 00-2-2H4z" /><path d="M20 4.5h-5.5A2.5 2.5 0 0012 7v12a2 2 0 012-2h6z" /></symbol>
         <symbol id="i-console" viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="8" rx="1.8" /><path d="M6.5 12.5h5M15.5 6v2.5M15.5 6h4M6 19v1.2M18 19v1.2" /><circle cx="17.2" cy="12.5" r="1" /></symbol>
         <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.4" /></symbol>
+        <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="12" cy="12" r="1" /></symbol>
         <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="5" /></symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h9.5M4.5 17h5.5" /><circle cx="17" cy="12" r="2" /><circle cx="13.5" cy="17" r="2" /></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>

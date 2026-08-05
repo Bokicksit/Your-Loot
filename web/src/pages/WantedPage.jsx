@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../grades.js";
 import { useEnabledModules } from "../settings.jsx";
 
 const MODULE_ICONS = {
   cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
+  records: "vinyl",
 };
 
 // Left-edge badge: system logo for games, media-format tag for movies,
@@ -38,13 +40,46 @@ function RowBadge({ row }) {
   );
 }
 // filter chips are built from the collections you actually have enabled
-// condition vocabularies differ per module; completeness is games-only
+// Each collection grades on its own scale — a book is "Near Fine", never "NM".
+// An option is either a plain value or a [value, label] pair.
 const CONDITIONS = {
   cards: ["NM", "LP", "MP", "HP", "DMG"],
   games: ["Mint", "Good", "Fair", "Poor"],
+  hardware: ["Mint", "Good", "Fair", "Poor"],
   movies: ["Mint", "Good", "Fair", "Poor"],
+  books: ["Fine", "Near Fine", "Very Good", "Good", "Fair", "Poor"],
+  records: VINYL_GRADES,
 };
-const COMPLETENESS = ["loose", "CIB", "sealed"];
+// most acquisitions aren't mint, so default to the sensible middle of each scale
+const DEFAULT_CONDITION = {
+  cards: "NM", games: "Good", hardware: "Good", movies: "Good",
+  books: "Very Good", records: DEFAULT_VINYL_GRADE,
+};
+const BOX = ["loose", "CIB", "sealed"];
+// The optional second per-copy field, and which column it writes to. Cards
+// have none; records grade the sleeve separately rather than tracking a box.
+const SECOND_FIELD = {
+  games: { key: "completeness", options: BOX, def: "CIB" },
+  hardware: { key: "completeness", options: BOX, def: "CIB" },
+  movies: { key: "completeness", options: BOX, def: "CIB" },
+  books: {
+    key: "completeness",
+    options: ["With jacket", "No jacket", "Ex-library", "Signed"],
+    def: "With jacket",
+  },
+  records: {
+    key: "sleeve_condition",
+    options: VINYL_GRADES,
+    def: DEFAULT_VINYL_GRADE,
+  },
+};
+
+// Records grade two things on the same scale, so the two selects have to say
+// which is which — everywhere else the vocabularies already differ.
+const GRADE_PREFIX = { records: ["Media", "Sleeve"] };
+
+const pair = (o) => (Array.isArray(o) ? o : [o, o]);
+const label = (text, prefix) => (prefix ? `${prefix}: ${text}` : text);
 
 // The unified wanted list — every module, one view.
 export default function WantedPage() {
@@ -70,12 +105,11 @@ export default function WantedPage() {
   // condition/completeness instead of a blank record
   const startGotIt = (r) => {
     setAcquiring(r.item_id);
-    // games & movies track completeness; cards are condition-only
-    setAcqVals(
-      r.module === "cards"
-        ? { condition: CONDITIONS.cards[0] }
-        : { completeness: "CIB", condition: "Good" }
-    );
+    const second = SECOND_FIELD[r.module];
+    setAcqVals({
+      condition: DEFAULT_CONDITION[r.module] || "Good",
+      ...(second ? { [second.key]: second.def } : {}),
+    });
   };
 
   const confirmGotIt = async () => {
@@ -225,26 +259,33 @@ export default function WantedPage() {
             {acquiring === r.item_id && (
               <li className="acquire-edit">
                 <span className="acquire-label">Got it as:</span>
-                {r.module !== "cards" && (
-                  <select
-                    value={acqVals.completeness}
-                    onChange={(e) =>
-                      setAcqVals({ ...acqVals, completeness: e.target.value })
-                    }
-                  >
-                    {COMPLETENESS.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                )}
                 <select
                   value={acqVals.condition || ""}
                   onChange={(e) => setAcqVals({ ...acqVals, condition: e.target.value })}
                 >
-                  {(CONDITIONS[r.module] || CONDITIONS.games).map((c) => (
-                    <option key={c}>{c}</option>
+                  {(CONDITIONS[r.module] || CONDITIONS.games).map(pair).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {label(l, (GRADE_PREFIX[r.module] || [])[0])}
+                    </option>
                   ))}
                 </select>
+                {SECOND_FIELD[r.module] && (
+                  <select
+                    value={acqVals[SECOND_FIELD[r.module].key] || ""}
+                    onChange={(e) =>
+                      setAcqVals({
+                        ...acqVals,
+                        [SECOND_FIELD[r.module].key]: e.target.value,
+                      })
+                    }
+                  >
+                    {SECOND_FIELD[r.module].options.map(pair).map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {label(l, (GRADE_PREFIX[r.module] || [])[1])}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button className="primary icon" onClick={confirmGotIt} title="Confirm">
                   <Icon id="check" />
                 </button>

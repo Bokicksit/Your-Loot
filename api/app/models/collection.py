@@ -14,6 +14,9 @@ class Owned(TimestampMixin, Base):
         ForeignKey("collection_item.id", ondelete="CASCADE"), index=True
     )
     condition: Mapped[str | None] = mapped_column(String(20))  # NM/LP/MP/HP/DMG or free-form
+    # records only: vinyl is graded twice — `condition` is the media grade and
+    # this is the sleeve, written together as "VG+/VG"
+    sleeve_condition: Mapped[str | None] = mapped_column(String(20))
     # games only: loose/CIB/sealed — per copy, since you can own a loose one
     # and later add a CIB one
     completeness: Mapped[str | None] = mapped_column(String(20))

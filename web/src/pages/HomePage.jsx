@@ -6,10 +6,11 @@ import { useEnabledModules, useSettings } from "../settings.jsx";
 
 const PATHS = {
   cards: "/cards", games: "/games", hardware: "/hardware",
-  movies: "/movies", books: "/books",
+  movies: "/movies", books: "/books", records: "/records",
 };
 const UNIT = {
   cards: "card", games: "title", hardware: "item", movies: "disc", books: "book",
+  records: "record",
 };
 
 export default function HomePage({ onOpenCollections }) {
