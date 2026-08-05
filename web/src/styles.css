@@ -1369,6 +1369,42 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border: 1px solid var(--line-soft);
   border-radius: var(--r-2);
 }
+/* artwork candidates after a barcode scan: case photos + poster/cover */
+.art-options { display: grid; gap: var(--s-2); }
+.art-label { font-size: var(--f-2); color: var(--text-mute); }
+.art-strip {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding-bottom: var(--s-1);
+  scrollbar-width: thin;
+}
+.art-thumb {
+  flex: none;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: var(--s-1);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  cursor: pointer;
+}
+.art-thumb img {
+  width: 64px;
+  height: 84px;
+  object-fit: contain;
+  background: var(--bg-0);
+  border-radius: var(--r-1);
+}
+.art-thumb small { font-size: 10px; color: var(--text-mute); }
+.art-thumb:hover { border-color: var(--gold-line); }
+.art-thumb.on {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+.art-thumb.on small { color: var(--gold); }
+
 .restore-result {
   display: grid;
   justify-items: start;

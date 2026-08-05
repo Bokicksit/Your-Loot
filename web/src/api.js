@@ -66,6 +66,20 @@ export const api = {
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
+  // Retailer image hosts rot and some block hotlinking, so a chosen box-art
+  // photo is copied to our own storage. TMDB/IGDB CDNs are stable and stay
+  // hotlinked. Falls back to the original URL if the copy fails — a picture
+  // that might break later beats no picture.
+  localiseImage: async (url) => {
+    const stable = /image\.tmdb\.org|igdb\.com/i;
+    if (!url || !/^https?:/i.test(url) || stable.test(url)) return url;
+    try {
+      const { url: local } = await api.fetchImage(url);
+      return local;
+    } catch {
+      return url;
+    }
+  },
   books: (params = {}) => request(`/api/books?${new URLSearchParams(params)}`),
   bookFacets: () => request("/api/books/facets"),
   addBook: (body) =>

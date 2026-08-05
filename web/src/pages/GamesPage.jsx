@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
+import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, withUnknown } from "../vocab.js";
 
@@ -77,11 +79,19 @@ export default function GamesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null); // null = no search yet
+  const [art, setArt] = useState([]); // artwork candidates: box photos + cover
   const [allowedPlatforms, setAllowedPlatforms] = useState([]); // from IGDB pick
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
+
+  // keep one entry per url, box photos first — they're the copy you own
+  const mergeArt = (extra) =>
+    setArt((prev) => {
+      const seen = new Set(prev.map((a) => a.url));
+      return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
+    });
 
   useEffect(() => {
     api.platforms().then(setPlatforms);
@@ -137,7 +147,17 @@ export default function GamesPage() {
       }
       const raw = res.titles[0].title;
       const title = cleanGameTitle(raw) || raw;
-      setForm((f) => ({ ...f, title, igdb_id: null, image_url: null }));
+      // retailer photos of the actual box — IGDB's cover is the game's key
+      // art, which doesn't distinguish a Player's Choice reprint from the
+      // original release
+      const boxArt = (res.titles[0].images || []).map((url) => ({ url, kind: "box" }));
+      setArt(boxArt);
+      setForm((f) => ({
+        ...f,
+        title,
+        igdb_id: null,
+        image_url: boxArt[0]?.url || null,
+      }));
       setSearching(true);
       try {
         // fallback ladder: full title first (protects titles that genuinely
@@ -169,11 +189,14 @@ export default function GamesPage() {
     // restrict the platform dropdown to systems this game shipped on
     const allowed = matchAllPlatforms(r.platforms, platforms);
     setAllowedPlatforms(allowed);
+    if (r.cover_url) mergeArt([{ url: r.cover_url, kind: "poster" }]);
     setForm({
       ...form,
       title: r.year ? `${r.title} (${r.year})` : r.title,
       igdb_id: r.igdb_id,
-      image_url: r.cover_url, // IGDB cover = box art
+      // a box photo from the barcode is the copy you own; IGDB's cover only
+      // fills in when there isn't one
+      image_url: form.image_url || r.cover_url,
       platform_id: matchPlatform(r.platforms, platforms) || "",
       summary: r.summary || null,
       release_year: r.year ? Number(r.year) : null,
@@ -193,7 +216,7 @@ export default function GamesPage() {
         region: form.region || null,
         is_hardware: form.is_hardware,
         igdb_id: form.igdb_id,
-        image_url: form.image_url,
+        image_url: await api.localiseImage(form.image_url),
         summary: form.summary,
         release_year: form.release_year,
         genres: form.genres,
@@ -214,6 +237,7 @@ export default function GamesPage() {
       const wantMode = !form.own;
       setForm(EMPTY_FORM);
       setResults(null);
+      setArt([]);
       setAllowedPlatforms([]);
       setShowForm(false);
       if (wantMode) {
@@ -338,6 +362,18 @@ export default function GamesPage() {
                 <option key={r}>{r}</option>
               ))}
             </select>
+          </div>
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
+          <div className="form-row">
+            <ImagePicker
+              value={form.image_url}
+              label="Box photo"
+              onChange={(url) => setForm({ ...form, image_url: url })}
+            />
           </div>
           <div className="form-row">
             <button

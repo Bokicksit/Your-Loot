@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
+import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat } from "../upc.js";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
@@ -39,10 +41,18 @@ export default function MoviesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
+  const [art, setArt] = useState([]); // artwork candidates: case photos + poster
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
+
+  // keep one entry per url, case photos first — they're the edition you own
+  const mergeArt = (extra) =>
+    setArt((prev) => {
+      const seen = new Set(prev.map((a) => a.url));
+      return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
+    });
 
   const load = () => {
     const params = { sort };
@@ -93,13 +103,17 @@ export default function MoviesPage() {
       }
       const raw = res.titles[0].title;
       const title = cleanTitle(raw) || raw;
+      // retailer photos of the actual case — better than a poster for a
+      // physical shelf, so the sharpest one is selected up front
+      const boxArt = (res.titles[0].images || []).map((url) => ({ url, kind: "box" }));
+      setArt(boxArt);
       setForm((f) => ({
         ...f,
         title,
         format: detectFormat(raw) || f.format,
         edition: detectEdition(raw) || f.edition,
         tmdb_id: null,
-        image_url: null,
+        image_url: boxArt[0]?.url || null,
       }));
       setSearching(true);
       try {
@@ -113,11 +127,14 @@ export default function MoviesPage() {
   };
 
   const pickResult = (r) => {
+    if (r.poster_url) mergeArt([{ url: r.poster_url, kind: "poster" }]);
     setForm({
       ...form,
       title: r.year ? `${r.title} (${r.year})` : r.title,
       tmdb_id: r.tmdb_id,
-      image_url: r.poster_url,
+      // a case photo from the barcode already shows the edition you own, so
+      // the poster only fills in when there's nothing better
+      image_url: form.image_url || r.poster_url,
       genre: r.genre || form.genre,
       overview: r.overview || null,
     });
@@ -134,7 +151,7 @@ export default function MoviesPage() {
         region_code: form.region_code || null,
         genre: form.genre || null,
         overview: form.overview,
-        image_url: form.image_url,
+        image_url: await api.localiseImage(form.image_url),
         tmdb_id: form.tmdb_id,
       });
       if (form.own) {
@@ -148,6 +165,7 @@ export default function MoviesPage() {
       const wantMode = !form.own;
       setForm(EMPTY_FORM);
       setResults(null);
+      setArt([]);
       setShowForm(false);
       if (wantMode) {
         navigate("/wanted");
@@ -285,6 +303,18 @@ export default function MoviesPage() {
                 <option key={g}>{g}</option>
               ))}
             </select>
+          </div>
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
+          <div className="form-row">
+            <ImagePicker
+              value={form.image_url}
+              label="Cover photo"
+              onChange={(url) => setForm({ ...form, image_url: url })}
+            />
           </div>
           <div className="form-row">
             <button

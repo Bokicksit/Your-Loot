@@ -28,7 +28,9 @@ Filter by what's missing, what wants upgrading, and by rarity.
 status, and accessory→console links.
 
 **Movies** — TMDB-backed, with the physical details that matter: format
-(4K/Blu-ray/DVD/VHS), edition, region code.
+(4K/Blu-ray/DVD/VHS), edition, region code. Scanning the barcode also pulls
+photographs of the actual case, so a steelbook looks like your steelbook
+instead of the theatrical poster.
 
 **Books** — Open Library search, or scan the ISBN barcode on the back. Format,
 edition, series, and per-copy jacket/provenance.
