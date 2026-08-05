@@ -1,10 +1,9 @@
 /* ============================================================
-   GET LOOT — collector's display case theme
-   Imported from claude.ai/design "Get Loot UI Theme".
+   YOUR LOOT — collector's display case theme
    Dark-first, gold = loot. Plain CSS, one stylesheet.
-   Adaptation notes: .tabbar selectors extended to <a> (react-router
-   NavLink renders anchors); container-query/.app-shell variant unused —
-   the @media fallback drives the desktop layout.
+   Notes: .tabbar selectors extend to <a> (react-router NavLink renders
+   anchors); the container-query/.app-shell variant is unused — the
+   @media fallback drives the desktop layout.
    ============================================================ */
 
 :root {

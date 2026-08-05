@@ -1,5 +1,4 @@
-// SVG sprite from the design project ("Get Loot UI Theme") + two app
-// additions (trash, minus) drawn in the same 1.75-stroke style.
+// SVG sprite for the whole app — one 1.75-stroke style throughout.
 // Mount <IconDefs/> once in App; use <Icon id="star"/> anywhere.
 
 export function IconDefs() {
