@@ -150,7 +150,7 @@ export default function CardTile({ card, onChange, onReload }) {
             className={`toggle ${vals.in_binder ? "on" : ""}`}
             onClick={() => setVals({ ...vals, in_binder: !vals.in_binder })}
           >
-            In the Pokédex binder
+            In the Pokédex
           </button>
         )}
         <div className="form-row" style={{ width: "100%" }}>
@@ -254,7 +254,7 @@ export default function CardTile({ card, onChange, onReload }) {
         <ul>
           {card.owned.map((o) => (
             <li key={o.id}>
-              <span className="layer-tag">{o.in_binder ? "Binder" : "Box"}</span>
+              <span className="layer-tag">{o.in_binder ? "Pokédex" : "Box"}</span>
               <span className="game-text">
                 <strong>{chipLabel(o)}</strong>
                 {o.stamp && <small>{o.stamp} stamp</small>}

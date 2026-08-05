@@ -111,7 +111,7 @@ export default function SettingsPage() {
       <section className="settings-card">
         <h3>Display</h3>
         <div className="form-row">
-          <span className="settings-label">Binder slots per row</span>
+          <span className="settings-label">Pokédex slots per row</span>
           <span className="col-picker">
             {[3, 4, 5].map((n) => (
               <button
@@ -125,7 +125,7 @@ export default function SettingsPage() {
           </span>
         </div>
         <div className="form-row">
-          <span className="settings-label">Show binder cards in the card list</span>
+          <span className="settings-label">Show Pokédex cards in the card list</span>
           <button
             className={`toggle ${settings.show_binder_in_collection ? "on" : ""}`}
             onClick={() =>
@@ -200,7 +200,7 @@ function BackupCard() {
       <h3>Backup &amp; restore</h3>
       <p>
         A backup is a single zip holding your whole collection — every item,
-        every copy with its condition, the wanted list, the binder, your
+        every copy with its condition, the wanted list, the Pokédex, your
         settings, and the photos you've uploaded. Keep one somewhere that isn't
         this server.
       </p>

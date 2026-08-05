@@ -108,7 +108,7 @@ export default function PokedexPage() {
         {rarities.length > 0 && (
           <select
             className="chip-select"
-            title="Filter by binder-card rarity"
+            title="Filter by Pokédex-card rarity"
             value={rarityFilter}
             onChange={(e) => setRarityFilter(e.target.value)}
           >
@@ -243,7 +243,7 @@ export default function PokedexPage() {
                         className="ghost danger icon"
                         style={{ marginLeft: "auto" }}
                         onClick={() => removeFromBinder(e)}
-                        title="Remove from binder (stays in collection)"
+                        title="Remove from the Pokédex (stays in collection)"
                       >
                         <Icon id="x" />
                       </button>
@@ -252,7 +252,7 @@ export default function PokedexPage() {
                 ) : (
                   <p className="game-summary">
                     Empty slot — add a card on the Cards tab and mark it
-                    "Binder".
+                    "Pokédex".
                   </p>
                 )}
               </div>

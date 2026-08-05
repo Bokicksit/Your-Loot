@@ -197,7 +197,7 @@ export default function CardsPage({ initialView = "collection" }) {
     <div className="chip-row view-switch">
       {[
         ["collection", "Collection"],
-        ["binder", "Pokédex binder"],
+        ["binder", "Pokédex"],
       ].map(([k, label]) => (
         <button
           key={k}
@@ -245,9 +245,9 @@ export default function CardsPage({ initialView = "collection" }) {
           type="button"
           className={`toggle ${showBinder ? "on" : ""}`}
           onClick={() => save({ show_binder_in_collection: !showBinder })}
-          title="Binder cards live in the binder view — toggle to list them here too"
+          title="Pokédex cards live in the Pokédex view — toggle to list them here too"
         >
-          Binder cards
+          Pokédex cards
         </button>
         {(facets.sets.length > 0 || facets.rarities.length > 0) && (
           <>
@@ -684,9 +684,9 @@ export default function CardsPage({ initialView = "collection" }) {
                         keeper: !addVals.binder ? picked.attrs.layer === 3 : false,
                       })
                     }
-                    title="This copy goes in the Pokédex binder"
+                    title="This copy goes in the Pokédex"
                   >
-                    Binder
+                    Pokédex
                   </button>
                 )}
                 {addVals.own && addVals.binder && picked.attrs.national_dex_no && (

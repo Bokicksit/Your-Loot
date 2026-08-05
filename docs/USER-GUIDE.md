@@ -10,7 +10,7 @@ version.
 - [Adding things](#adding-things)
 - [Pictures](#pictures)
 - [The collections](#the-collections)
-  — [cards](#cards) · [binder](#pokédex-binder) · [games](#games) ·
+  — [cards](#cards) · [Pokédex](#pokédex) · [games](#games) ·
   [hardware](#hardware) · [movies](#movies) · [books](#books) ·
   [records](#records) · [LEGO](#lego) · [comics](#comics)
 - [The wanted list](#the-wanted-list)
@@ -188,16 +188,17 @@ Each copy records:
 - **Variant** — Non-Holo, Reverse Holo, Holo (your copy's print, not the
   catalog's)
 - **Stamp** — promo stamps, free text
-- **In binder** — whether this copy sits in your Pokédex binder
+- **Pokédex** — whether this copy occupies a Pokédex slot
 
 **Card not in the database?** Two fallbacks. *Search online* queries a live
 catalog for cards too new for the offline dump. Or add it by hand — name, dex
 number, set, number, rarity — and paste an image link.
 
-### Pokédex binder
+### Pokédex
 
 A slot per national dex number, mirroring a physical binder: **one card per
-Pokémon**, not one of every card.
+Pokémon**, not one of every card. It's the second tab at the top of the Cards
+page.
 
 Mark each slot's occupant as either:
 
@@ -368,10 +369,11 @@ entry is removed entirely rather than becoming an orphan in your library.
 
 **Display**
 
-- *Binder slots per row* — 3, 4 or 5
-- *Show binder cards in the card list* — by default cards assigned to a binder
-  slot are hidden from the main card list, so it shows your duplicates and
-  spares. Turn this on to see everything.
+- *Pokédex slots per row* — 3, 4 or 5
+- *Show Pokédex cards in the card list* — by default, cards assigned to a
+  Pokédex slot are hidden from the main card list, so it shows your duplicates
+  and spares. Turn this on to see everything. The same toggle sits at the top
+  of the Cards tab as **Pokédex cards**.
 - *Default region for new games & hardware* — NTSC-U, PAL, NTSC-J or
   Region-free. Movies use disc region codes (A/B/C, 1–4) and aren't affected.
 
@@ -384,7 +386,7 @@ Settings are stored on the server, so they're the same on every device.
 ## Backup and restore
 
 **Download backup** gives you a single `.zip` containing everything: every
-item, every copy with its condition, the wanted list, the binder, your
+item, every copy with its condition, the wanted list, the Pokédex, your
 settings, and every photo you've uploaded. It's plain JSON inside, so it stays
 readable and portable.
 
@@ -419,7 +421,7 @@ docker compose exec api python /seed/seed_cards.py --download
 ```
 
 This only ever adds and updates catalog entries. Your owned copies, wanted
-list, binder picks, grades and photos are never touched.
+list, Pokédex picks, grades and photos are never touched.
 
 **Update the app:**
 
