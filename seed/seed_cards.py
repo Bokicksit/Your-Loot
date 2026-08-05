@@ -32,13 +32,20 @@ SAMPLE_DIR = Path(__file__).resolve().parent / "sample"
 DUMP_URL = "https://codeload.github.com/PokemonTCG/pokemon-tcg-data/tar.gz/refs/heads/master"
 
 
-def build_dex_map(cards_dir: Path) -> dict[str, int]:
-    """name -> the dex number most of that Pokémon's cards agree on.
+def build_dex_map(cards_dir: Path) -> dict[str, tuple[int, int]]:
+    """name -> (dex number its printings agree on, how many back it).
 
-    The upstream dump has occasional wrong dex numbers (e.g. Black Bolt's
-    Klinklang is tagged 599, which is Klink), which files a card under the
-    wrong binder slot. Ten other Klinklang cards say 601, so a majority vote
-    across the whole dump repairs the outliers without a hand-kept list.
+    The upstream dump gets dex numbers wrong two ways, and a vote across every
+    printing repairs both without a hand-kept list:
+
+    * wrong — Black Bolt's Klinklang is tagged 599, which is Klink, filing it
+      under the wrong Pokédex slot;
+    * missing — Prismatic Evolutions ships Scream Tail and Flutter Mane with
+      no number at all, which keeps them out of the Pokédex entirely. Their
+      other printings carry one.
+
+    The hit count comes back with the number because how much evidence is
+    needed depends on which of the two is being fixed — see seed_file.
     """
     tally: dict[str, Counter] = defaultdict(Counter)
     for path in sorted(cards_dir.glob("*.json")):
@@ -49,13 +56,7 @@ def build_dex_map(cards_dir: Path) -> dict[str, int]:
                     tally[card["name"]][nums[0]] += 1
         except (json.JSONDecodeError, OSError):
             continue
-    # only trust a majority backed by more than one card
-    out = {}
-    for name, counts in tally.items():
-        (num, hits), = counts.most_common(1)
-        if hits > 1:
-            out[name] = num
-    return out
+    return {name: counts.most_common(1)[0] for name, counts in tally.items()}
 
 
 def seed_file(db, cards_path: Path, sets_by_id: dict, dex_map: dict | None = None):
@@ -68,15 +69,24 @@ def seed_file(db, cards_path: Path, sets_by_id: dict, dex_map: dict | None = Non
     set_abbr = set_meta.get("ptcgoCode")  # printed code on modern cards (MEW, JTG)
     cards = json.loads(cards_path.read_text(encoding="utf-8"))
 
-    created = updated = fixed = 0
+    created = updated = fixed = filled = 0
     for card in cards:
         dex_nums = card.get("nationalPokedexNumbers") or []
         dex = dex_nums[0] if dex_nums else None
-        # prefer what the rest of this Pokémon's cards agree on
-        consensus = (dex_map or {}).get(card["name"])
-        if consensus is not None and dex is not None and consensus != dex:
-            dex = consensus
-            fixed += 1
+        # Defer to what this Pokémon's other printings say, but demand more
+        # evidence to overturn a number than to supply a missing one. Rewriting
+        # a stated number on one card's say-so could move a correctly-filed
+        # card into the wrong slot; filling a blank can only improve on a card
+        # the Pokédex can't accept at all. New species are exactly the case
+        # with a single printing to go on.
+        agreed, backers = (dex_map or {}).get(card["name"], (None, 0))
+        if agreed is not None and agreed != dex:
+            if dex is None:
+                dex = agreed
+                filled += 1
+            elif backers > 1:
+                dex = agreed
+                fixed += 1
         item = db.scalar(
             select(CollectionItem).where(
                 CollectionItem.source == "ptcg",
@@ -109,7 +119,7 @@ def seed_file(db, cards_path: Path, sets_by_id: dict, dex_map: dict | None = Non
         a.layer = classify_layer(card.get("rarity"))
 
     db.commit()
-    return created, updated, fixed
+    return created, updated, fixed, filled
 
 
 def download_dump(dest: Path) -> tuple[Path, Path]:
@@ -160,21 +170,22 @@ def main():
         dex_map = build_dex_map(cards_dir)
 
         db = SessionLocal()
-        total_c = total_u = total_f = 0
+        total_c = total_u = total_f = total_n = 0
         try:
             files = sorted(cards_dir.glob("*.json"))
             for i, cards_path in enumerate(files, 1):
-                c, u, f = seed_file(db, cards_path, sets_by_id, dex_map)
+                c, u, f, n = seed_file(db, cards_path, sets_by_id, dex_map)
                 total_c += c
                 total_u += u
                 total_f += f
+                total_n += n
                 if args.download:  # progress for the big run
                     print(f"  [{i}/{len(files)}] {cards_path.stem}: +{c} ~{u}")
         finally:
             db.close()
         print(
             f"Done: {total_c} created, {total_u} updated, "
-            f"{total_f} dex numbers corrected"
+            f"{total_f} dex numbers corrected, {total_n} filled in"
         )
 
 
