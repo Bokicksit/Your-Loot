@@ -857,6 +857,20 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 
 /* card search-result picker tiles */
 .pick-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+
+/* the add controls, dropped into the grid under the row that was clicked so
+   they sit beside the card rather than below every result */
+.pick-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-2);
+}
+
 .tile.pick { cursor: pointer; }
 .tile.pick.sel {
   border-color: var(--gold);
