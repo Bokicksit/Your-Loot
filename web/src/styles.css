@@ -1324,8 +1324,14 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .sheet-scrim { align-items: end; }
 .sheet {
   width: min(520px, 100%);
+  /* every enabled collection plus Settings — that outgrew a short phone, and
+     without a scroller the last row sat below the fold with no way to reach it */
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain; /* don't drag the page behind the sheet */
   display: grid;
   gap: var(--s-2);
+  align-content: start;
   padding: var(--s-4);
   padding-bottom: calc(var(--bar-h) + var(--s-4) + env(safe-area-inset-bottom));
   background: var(--bg-2);
@@ -1334,12 +1340,20 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   box-shadow: var(--shadow-2);
 }
 .sheet h2 {
+  /* stays put while the list scrolls under it */
+  position: sticky;
+  top: calc(var(--s-4) * -1);
+  z-index: 1;
   margin: 0 0 var(--s-1);
+  padding: var(--s-4) 0 var(--s-2);
+  margin-top: calc(var(--s-4) * -1);
+  background: var(--bg-2);
   font-size: var(--f-2);
   letter-spacing: .09em;
   text-transform: uppercase;
   color: var(--text-mute);
 }
+.sheet .sheet-row { flex: none; }
 .sheet-row {
   display: flex;
   align-items: center;
