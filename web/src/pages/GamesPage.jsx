@@ -5,13 +5,14 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
+import { useSettings } from "../settings.jsx";
 import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, withUnknown } from "../vocab.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
 
-// NTSC-U default until there's a settings screen for it
+// `region` is overwritten from Settings → default region on every fresh form
 const EMPTY_FORM = {
   title: "",
   platform_id: "",
@@ -77,7 +78,13 @@ export default function GamesPage() {
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
   const [sort, setSort] = useState("title"); // title | platform | added
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const { settings } = useSettings();
+  // a blank form starts at whatever region you told Settings you mostly buy
+  const blankForm = () => ({
+    ...EMPTY_FORM,
+    region: settings?.default_region || EMPTY_FORM.region,
+  });
+  const [form, setForm] = useState(blankForm);
   const [results, setResults] = useState(null); // null = no search yet
   const [art, setArt] = useState([]); // artwork candidates: box photos + cover
   const [allowedPlatforms, setAllowedPlatforms] = useState([]); // from IGDB pick
@@ -235,7 +242,7 @@ export default function GamesPage() {
         await api.addWanted(created.id);
       }
       const wantMode = !form.own;
-      setForm(EMPTY_FORM);
+      setForm(blankForm());
       setResults(null);
       setArt([]);
       setAllowedPlatforms([]);
@@ -269,7 +276,11 @@ export default function GamesPage() {
         <span className="count">{total}</span>
         <button
           className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            // settings arrive after mount, so pick the region up on open
+            if (!showForm) setForm((f) => ({ ...f, region: blankForm().region }));
+            setShowForm(!showForm);
+          }}
           title={showForm ? "Close" : "Add to library"}
         >
           <Icon id={showForm ? "x" : "plus"} />

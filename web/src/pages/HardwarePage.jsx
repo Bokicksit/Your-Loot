@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import { useSettings } from "../settings.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -31,7 +32,13 @@ export default function HardwarePage() {
   const [platformFilter, setPlatformFilter] = useState("");
   const [sort, setSort] = useState("title");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const { settings } = useSettings();
+  // a blank form starts at whatever region you told Settings you mostly buy
+  const blankForm = () => ({
+    ...EMPTY_FORM,
+    region: settings?.default_region || EMPTY_FORM.region,
+  });
+  const [form, setForm] = useState(blankForm);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
@@ -82,7 +89,7 @@ export default function HardwarePage() {
         await api.addWanted(created.id);
       }
       const wantMode = !form.own;
-      setForm(EMPTY_FORM);
+      setForm(blankForm());
       setShowForm(false);
       if (wantMode) {
         navigate("/wanted");
@@ -113,7 +120,11 @@ export default function HardwarePage() {
         <span className="count">{total}</span>
         <button
           className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            // settings arrive after mount, so pick the region up on open
+            if (!showForm) setForm((f) => ({ ...f, region: blankForm().region }));
+            setShowForm(!showForm);
+          }}
           title={showForm ? "Close" : "Add hardware"}
         >
           <Icon id={showForm ? "x" : "plus"} />

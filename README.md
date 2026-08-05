@@ -10,6 +10,9 @@ hunting live on the same list.
 
 *(screenshots go here)*
 
+📖 **[User Guide](docs/USER-GUIDE.md)** — how everything works, in depth:
+adding items, barcode scanning, the binder, grading, backups, troubleshooting.
+
 ## What it does
 
 **Cards** — search 20,000+ Pokémon cards by name, number, or set code (`151`,
@@ -80,13 +83,16 @@ docker compose logs -f api
 
 ### Optional API keys
 
-Everything works without these; the affected search just says it isn't
-configured, and manual entry still works.
+All free, all optional. Without one, that collection's online search says which
+key is missing and manual entry still works. Cards, books and records need no
+key at all.
 
 | Key | For | Where |
 | --- | --- | --- |
-| `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | game search | [Twitch dev console](https://api-docs.igdb.com/#account-creation) (free) |
-| `TMDB_API_KEY` | movie search | [themoviedb.org](https://www.themoviedb.org/settings/api) (free) |
+| `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | game search | [Twitch dev console](https://api-docs.igdb.com/#account-creation) |
+| `TMDB_API_KEY` | movie search | [themoviedb.org](https://www.themoviedb.org/settings/api) |
+| `REBRICKABLE_API_KEY` | LEGO set search | [rebrickable.com](https://rebrickable.com/users/_/settings/#api) → Account → Settings → API |
+| `COMICVINE_API_KEY` | comic search | [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) |
 
 Add them to `.env` and `docker compose up -d` again.
 
@@ -106,8 +112,10 @@ docker compose exec api python /seed/seed_cards.py --download
 This only ever adds and updates catalog entries. Your owned copies, wanted
 list, binder picks, grades, and any photos you added are never touched.
 
-**Back up** the `data/` directory — that's the Postgres database and your
-uploaded images. Nothing else holds state.
+**Back up** from **Settings → Backup & restore** — one zip with every item,
+copy, wanted entry and photo. Keep it somewhere that isn't this server. At the
+filesystem level the `data/` directory holds the Postgres database and your
+uploaded images; nothing else holds state.
 
 ## Remote access
 
@@ -159,12 +167,10 @@ deploy/  TrueNAS compose
 - LEGO: [Rebrickable](https://rebrickable.com) · Comics:
   [Comic Vine](https://comicvine.gamespot.com)
 - Barcodes: [UPCitemdb](https://www.upcitemdb.com)
-
-Every integration is optional and free. Cards, books and records need no key at
-all; games, movies, LEGO and comics take one from `.env` (see `.env.example`
-for where to get each). Without a key that collection's online search says
-which one is missing, and manual entry still works.
 - Console logos: see [`web/public/platforms/ATTRIBUTION.md`](web/public/platforms/ATTRIBUTION.md)
+
+Every integration is optional and free — see
+[Optional API keys](#optional-api-keys).
 
 Pokémon and all card imagery are property of Nintendo / Creatures Inc. /
 GAME FREAK inc. and The Pokémon Company. This project is a personal collection

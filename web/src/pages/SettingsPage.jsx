@@ -136,7 +136,9 @@ export default function SettingsPage() {
           </button>
         </div>
         <div className="form-row">
-          <span className="settings-label">Default region for new items</span>
+          <span className="settings-label">
+            Default region for new games &amp; hardware
+          </span>
           <select
             value={settings.default_region}
             onChange={(e) => flash({ default_region: e.target.value })}
