@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
+import PhotoCrop from "./PhotoCrop.jsx";
 
 // Mirrors MAX_BYTES in api/app/routers/images.py. Checked here too so an
 // oversized photo fails at once instead of after pushing 20 MB over the wire —
@@ -23,6 +24,7 @@ export default function ImagePicker({
   const [linkOpen, setLinkOpen] = useState(false);
   const [link, setLink] = useState("");
   const inputRef = useRef(null);
+  const cameraRef = useRef(null);
 
   // The ✕ sits next to buttons that only add things, and it takes the picture
   // with one tap and no undo. Ask first.
@@ -33,7 +35,11 @@ export default function ImagePicker({
     onChange(null);
   };
 
-  const upload = async (file) => {
+  // Chosen but not sent yet — it goes through the cropper first.
+  const [pending, setPending] = useState(null);
+
+  const choose = (file, input) => {
+    if (input) input.value = ""; // so the same file can be picked twice
     if (!file) return;
     if (file.size > MAX_MB * 1024 * 1024) {
       alert(
@@ -41,9 +47,13 @@ export default function ImagePicker({
           `${MAX_MB} MB.\n\nShrink it, or use your phone's camera setting for a ` +
           `smaller picture.`
       );
-      if (inputRef.current) inputRef.current.value = "";
       return;
     }
+    setPending(file);
+  };
+
+  const upload = async (file) => {
+    if (!file) return;
     setBusy(true);
     try {
       const { url } = await api.uploadImage(file);
@@ -52,7 +62,6 @@ export default function ImagePicker({
       alert(e.message);
     } finally {
       setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
@@ -81,21 +90,42 @@ export default function ImagePicker({
             <Icon id="card" />
           </span>
         )}
+        {/* no `capture` here — that attribute sends phones straight to the
+            camera and takes the photo library away entirely */}
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => choose(e.target.files?.[0], e.target)}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
           capture="environment"
           style={{ display: "none" }}
-          onChange={(e) => upload(e.target.files?.[0])}
+          onChange={(e) => choose(e.target.files?.[0], e.target)}
         />
         <button
           type="button"
           className="ghost"
           disabled={busy}
+          title={`Upload a ${label.toLowerCase()} from this device`}
           onClick={() => inputRef.current?.click()}
         >
-          {busy ? "Working…" : value ? `Replace ${label.toLowerCase()}` : label}
+          <Icon id="upload" />
+          {busy ? "Working…" : "Upload photo"}
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          disabled={busy}
+          title={`Take a ${label.toLowerCase()} now`}
+          onClick={() => cameraRef.current?.click()}
+        >
+          <Icon id="camera" />
+          Take photo
         </button>
         <button
           type="button"
@@ -135,6 +165,16 @@ export default function ImagePicker({
             <Icon id="check" />
           </button>
         </div>
+      )}
+      {pending && (
+        <PhotoCrop
+          file={pending}
+          onCancel={() => setPending(null)}
+          onDone={(cropped) => {
+            setPending(null);
+            upload(cropped);
+          }}
+        />
       )}
     </div>
   );

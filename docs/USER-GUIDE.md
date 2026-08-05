@@ -169,9 +169,16 @@ sharpest one is picked for you; tap another to change it.
 to the same strip, labelled *poster*. If you already scanned a barcode the case
 photo stays selected — the poster is there as an alternative, one tap away.
 
-**Your own photo.** The **Photo** button opens your camera or file picker.
-This is the most accurate option, because it's *your* copy — your slipcover,
-your creases, your shelf. There's also a link icon for pasting an image URL.
+**Your own photo.** Two buttons: **Upload photo** takes one already on the
+device, **Take photo** opens the camera. This is the most accurate option,
+because it's *your* copy — your slipcover, your creases, your shelf. There's
+also a link icon for pasting an image URL.
+
+Either way the photo opens in a trimmer first. Drag the corners to any shape —
+a card, a sleeve and a console box aren't the same proportions, so nothing is
+locked to a ratio. **Snap to edges** tries to find the item for you and works
+well on a plain surface; on a busy background it says so and leaves the corners
+to you. **Whole photo** undoes it.
 
 Notes:
 

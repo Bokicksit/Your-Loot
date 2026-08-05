@@ -907,6 +907,50 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   box-shadow: 0 0 0 2px var(--gold), 0 10px 26px -12px var(--gold-glow);
 }
 
+/* ============================ photo cropper ============================ */
+
+.crop-modal { width: min(560px, 100%); }
+.crop-stage {
+  position: relative;
+  width: 100%;
+  max-height: 58dvh;
+  display: grid;
+  place-items: center;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  touch-action: none; /* dragging a handle must not scroll the sheet */
+  user-select: none;
+}
+.crop-img {
+  display: block;
+  max-width: 100%;
+  max-height: 58dvh;
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+.crop-box {
+  position: absolute;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); /* everything outside dims */
+  outline: 1px solid var(--gold);
+  cursor: move;
+}
+.crop-handle {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  background: var(--gold);
+  border: 2px solid var(--gold-ink);
+  border-radius: 50%;
+  touch-action: none;
+}
+.crop-handle.nw { left: -13px; top: -13px; cursor: nwse-resize; }
+.crop-handle.ne { right: -13px; top: -13px; cursor: nesw-resize; }
+.crop-handle.sw { left: -13px; bottom: -13px; cursor: nesw-resize; }
+.crop-handle.se { right: -13px; bottom: -13px; cursor: nwse-resize; }
+.crop-note { margin: 0; font-size: var(--f-2); color: var(--text-mute); }
+
 /* ×2 on a chip standing for several identical copies */
 .chip-mult {
   margin-left: 3px;
