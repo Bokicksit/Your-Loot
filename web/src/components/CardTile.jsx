@@ -17,6 +17,11 @@ const VARIANT_SHORT = { "Reverse Holo": "RH", Holo: "Holo" };
 // reseed would overwrite the edit. Same rule the API enforces.
 const isYours = (card) => card.source === "manual" || card.source === "tcgdex";
 
+/** The picture currently shown is the card database's own art — nothing the
+ *  collector supplied. Photos they upload live on this server under /images/. */
+export const isCatalogArt = (card) =>
+  card.source === "ptcg" && !(card.image_url || "").startsWith("/images/");
+
 const ENTRY_FIELDS = [
   "title", "national_dex_no", "set_name", "set_abbr",
   "card_number", "set_total", "rarity",
@@ -321,6 +326,15 @@ export default function CardTile({ card, onChange, onReload }) {
           <ImagePicker
             value={card.image_url}
             label={card.image_url ? "Photo" : "Add photo"}
+            // On a catalog card the picture is the reference art, not
+            // something you added — offering to delete it only invites the
+            // accident. Once you've put your own photo on, ✕ takes yours off.
+            removable={!isCatalogArt(card)}
+            removeHint={
+              card.source === "ptcg"
+                ? "The catalog picture returns the next time the card database refreshes."
+                : undefined
+            }
             onChange={async (url) => {
               try {
                 await api.updateCard(card.id, { image_url: url });

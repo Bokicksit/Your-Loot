@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
-import CardTile from "../components/CardTile.jsx";
+import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -235,6 +235,14 @@ export default function CardsPage({ initialView = "collection" }) {
                 <ImagePicker
                   value={picked.image_url}
                   label={picked.image_url ? "Photo" : "Add photo"}
+                  // the ✕ sat right beside the add buttons here, one tap from
+                  // wiping the catalog art of a card you were only browsing
+                  removable={!isCatalogArt(picked)}
+                  removeHint={
+                    picked.source === "ptcg"
+                      ? "The catalog picture returns the next time the card database refreshes."
+                      : undefined
+                  }
                   onChange={async (url) => {
                     try {
                       const updated = await api.updateCard(picked.id, {

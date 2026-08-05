@@ -10,11 +10,28 @@ const MAX_MB = 15;
 // Give a card a picture two ways: photograph it (phone camera) or paste an
 // image link (e.g. right-click → copy image address on pokemon.com). Pasted
 // links are copied to the NAS so they keep working if the source moves.
-export default function ImagePicker({ value, onChange, label = "Photo" }) {
+export default function ImagePicker({
+  value,
+  onChange,
+  label = "Photo",
+  // some pictures aren't the collector's to delete — a catalog card's art is
+  // reference data, and blanking it just leaves a hole
+  removable = true,
+  removeHint,
+}) {
   const [busy, setBusy] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [link, setLink] = useState("");
   const inputRef = useRef(null);
+
+  // The ✕ sits next to buttons that only add things, and it takes the picture
+  // with one tap and no undo. Ask first.
+  const removeImage = () => {
+    const what = label.toLowerCase();
+    if (!confirm(`Remove this ${what}?` + (removeHint ? `\n\n${removeHint}` : "")))
+      return;
+    onChange(null);
+  };
 
   const upload = async (file) => {
     if (!file) return;
@@ -88,12 +105,12 @@ export default function ImagePicker({ value, onChange, label = "Photo" }) {
         >
           <Icon id="link" />
         </button>
-        {value && (
+        {value && removable && (
           <button
             type="button"
             className="ghost icon danger"
-            title="Remove image"
-            onClick={() => onChange(null)}
+            title={`Remove this ${label.toLowerCase()}`}
+            onClick={removeImage}
           >
             <Icon id="x" />
           </button>

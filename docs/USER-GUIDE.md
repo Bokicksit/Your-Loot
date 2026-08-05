@@ -171,6 +171,11 @@ Notes:
 - Changing a picture *after* adding is currently only possible for cards (open
   the card and use the image picker there). For everything else, set the
   picture when you add it.
+- Removing a picture asks first. On a card from the offline database there's no
+  ✕ at all while it's showing the catalog art — that picture isn't yours to
+  delete. Put your own photo on and the ✕ appears, and it takes yours off.
+  Should a catalog picture ever go missing, the next card-database refresh
+  brings it back.
 
 ---
 
