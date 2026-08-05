@@ -19,6 +19,8 @@ export default function ImagePicker({
   // reference data, and blanking it just leaves a hole
   removable = true,
   removeHint,
+  // sleeves are square; cards, books and cases are portrait
+  square = false,
 }) {
   const [busy, setBusy] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -84,10 +86,10 @@ export default function ImagePicker({
     <div className="img-picker">
       <div className="img-picker-row">
         {value ? (
-          <img className="img-thumb" src={value} alt="" />
+          <img className={`img-thumb ${square ? "square" : ""}`} src={value} alt="" />
         ) : (
-          <span className="img-thumb empty">
-            <Icon id="card" />
+          <span className={`img-thumb blank ${square ? "square" : ""}`}>
+            <Icon id={square ? "vinyl" : "card"} />
           </span>
         )}
         {/* no `capture` here — that attribute sends phones straight to the

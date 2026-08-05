@@ -530,6 +530,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border-radius: var(--r-2);
   background: var(--bg-0);
 }
+.tile.square > img,
+.tile.square > .placeholder { aspect-ratio: 1; }
 
 .tile-owned {
   background:
@@ -811,14 +813,20 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .img-picker-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
 .img-thumb {
   flex: none;
+  /* an explicit height, not aspect-ratio: once the buttons beside it wrap to a
+     second line the flex line grows and an auto-height thumb stretches with it */
+  align-self: center;
   width: 44px;
-  aspect-ratio: 63 / 88;
+  height: 62px;
   object-fit: cover;
   border-radius: var(--r-1);
   background: var(--bg-0);
   border: 1px solid var(--line);
 }
-.img-thumb.empty {
+.img-thumb.square { height: 44px; }
+/* "blank", not "empty": .empty is the full-width empty-state block, and its
+   32px padding was silently inflating this 44px thumbnail */
+.img-thumb.blank {
   display: grid;
   place-items: center;
   color: var(--text-mute);
@@ -1071,6 +1079,7 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border-radius: var(--r-2);
   background: var(--bg-0);
 }
+.expand-cover.square { max-height: 96px; }
 .expand-body { display: grid; gap: 4px; min-width: 0; }
 .expand-title {
   font-size: var(--f-4);
@@ -1181,6 +1190,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   background: var(--bg-0);
   object-fit: cover;
 }
+/* a sleeve is square — cropping one into a card's portrait shape cuts the
+   artwork off at top and bottom */
+.game-cover.square, .game-icon.square { height: 44px; }
 .game-icon {
   display: grid;
   place-items: center;

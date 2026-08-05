@@ -303,7 +303,7 @@ export default function RecordsPage() {
                 {results.map((r, i) => (
                   <div
                     key={r.mbid || i}
-                    className={`tile pick ${r.source === "barcode" ? "sel" : ""}`}
+                    className={`tile pick square ${r.source === "barcode" ? "sel" : ""}`}
                     onClick={() => pickResult(r)}
                     title={
                       r.source === "barcode"
@@ -398,6 +398,7 @@ export default function RecordsPage() {
             <ImagePicker
               value={form.image_url}
               label="Sleeve photo"
+              square
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
@@ -556,7 +557,7 @@ function RecordRow({ record, onChange, onReload }) {
     <div className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
       {record.image_url ? (
         <img
-          className="game-cover"
+          className="game-cover square"
           src={record.image_url}
           alt=""
           loading="lazy"
@@ -564,7 +565,7 @@ function RecordRow({ record, onChange, onReload }) {
           onClick={() => setInfoOpen(!infoOpen)}
         />
       ) : (
-        <span className="game-icon" style={{ cursor: "pointer" }} onClick={() => setInfoOpen(!infoOpen)}>
+        <span className="game-icon square" style={{ cursor: "pointer" }} onClick={() => setInfoOpen(!infoOpen)}>
           <Icon id="vinyl" />
         </span>
       )}
@@ -698,6 +699,7 @@ function RecordRow({ record, onChange, onReload }) {
             <ImagePicker
               value={entry.image_url}
               label="Sleeve photo"
+              square
               onChange={(url) => setEntry({ ...entry, image_url: url })}
             />
             <button
@@ -720,7 +722,7 @@ function RecordRow({ record, onChange, onReload }) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {record.image_url && (
-              <img className="expand-cover" src={record.image_url} alt="" loading="lazy" />
+              <img className="expand-cover square" src={record.image_url} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{record.title}</span>
