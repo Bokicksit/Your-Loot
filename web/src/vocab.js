@@ -40,6 +40,54 @@ export const GAME_COMPLETENESS = [
 // is why buying one doesn't take the game off your wanted list.
 export const GAME_PARTS_ONLY = new Set(["case+manual", "case only", "manual only"]);
 
+// A LEGO set is bought sealed and then usually stops being sealed, so what a
+// copy is worth turns on how much of it survived: box, instructions, and
+// whether the bricks are all there.
+export const LEGO_COMPLETENESS = [
+  ["sealed", "Sealed (MISB)"],
+  ["complete+box", "Complete, box & instructions"],
+  ["complete+instructions", "Complete with instructions, no box"],
+  ["complete", "Complete, bricks only"],
+  ["incomplete", "Missing pieces"],
+  ["parts", "Parts only"],
+  ["instructions", "Instructions only"],
+  ["box", "Box only"],
+];
+
+// Same idea as GAME_PARTS_ONLY: an empty box or a spare instruction booklet
+// isn't the set, so it doesn't end the hunt.
+export const LEGO_PARTS_ONLY = new Set(["parts", "instructions", "box"]);
+
+export const LEGO_CONDITION = [
+  ["new", "New"],
+  ["like-new", "Like new"],
+  ["used", "Used"],
+  ["worn", "Worn"],
+  ["damaged", "Damaged"],
+];
+
+// Raw comics are graded on this scale; a slabbed one carries the grader's
+// number instead (CGC 9.8), which reuses the same grader/grade columns cards
+// already have.
+export const COMIC_GRADES = [
+  ["MT", "Mint"],
+  ["NM", "Near Mint"],
+  ["VF", "Very Fine"],
+  ["FN", "Fine"],
+  ["VG", "Very Good"],
+  ["GD", "Good"],
+  ["FR", "Fair"],
+  ["PR", "Poor"],
+];
+
+export const COMIC_GRADERS = ["CGC", "CBCS", "PGX", "EGS"];
+// the 10-point scale a slab is labelled with
+export const COMIC_SLAB_GRADES = [
+  "10.0", "9.9", "9.8", "9.6", "9.4", "9.2", "9.0", "8.5", "8.0", "7.5",
+  "7.0", "6.5", "6.0", "5.5", "5.0", "4.5", "4.0", "3.5", "3.0", "2.5",
+  "2.0", "1.8", "1.5", "1.0", "0.5",
+];
+
 /** Display label for a stored value; unrecognised values show as themselves. */
 export const labelFor = (pairs, value) =>
   pairs.find(([v]) => v === value)?.[1] ?? value;

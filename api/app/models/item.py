@@ -15,6 +15,8 @@ class Module(str, enum.Enum):
     movies = "movies"
     books = "books"
     records = "records"
+    lego = "lego"
+    comics = "comics"
 
 
 class CollectionItem(TimestampMixin, Base):
@@ -41,6 +43,8 @@ class CollectionItem(TimestampMixin, Base):
     movie_attrs = relationship("MovieAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     book_attrs = relationship("BookAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     record_attrs = relationship("RecordAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
+    lego_attrs = relationship("LegoAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
+    comic_attrs = relationship("ComicAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     owned = relationship("Owned", back_populates="item", cascade="all, delete-orphan")
     wanted = relationship("Wanted", back_populates="item", uselist=False, cascade="all, delete-orphan")
 

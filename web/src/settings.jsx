@@ -12,6 +12,8 @@ export const MODULES = [
   { key: "movies", label: "Movies", icon: "disc", blurb: "Physical media" },
   { key: "books", label: "Books", icon: "book", blurb: "Shelves & spines" },
   { key: "records", label: "Records", icon: "vinyl", blurb: "Vinyl & crates" },
+  { key: "lego", label: "LEGO", icon: "brick", blurb: "Sets & minifigs" },
+  { key: "comics", label: "Comics", icon: "comic", blurb: "Issues & runs" },
 ];
 
 export function SettingsProvider({ children }) {

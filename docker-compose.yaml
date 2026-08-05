@@ -38,6 +38,8 @@ services:
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
       TMDB_API_KEY: ${TMDB_API_KEY:-}
+      REBRICKABLE_API_KEY: ${REBRICKABLE_API_KEY:-}
+      COMICVINE_API_KEY: ${COMICVINE_API_KEY:-}
       # seed the full card database on first start (set false to skip)
       SEED_ON_START: ${SEED_ON_START:-true}
     volumes:

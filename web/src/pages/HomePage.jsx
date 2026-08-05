@@ -7,10 +7,11 @@ import { useEnabledModules, useSettings } from "../settings.jsx";
 const PATHS = {
   cards: "/cards", games: "/games", hardware: "/hardware",
   movies: "/movies", books: "/books", records: "/records",
+  lego: "/lego", comics: "/comics",
 };
 const UNIT = {
   cards: "card", games: "title", hardware: "item", movies: "disc", books: "book",
-  records: "record",
+  records: "record", lego: "set", comics: "issue",
 };
 
 export default function HomePage({ onOpenCollections }) {

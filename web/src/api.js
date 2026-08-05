@@ -84,6 +84,24 @@ export const api = {
   deleteRecord: (itemId) => request(`/api/records/${itemId}`, { method: "DELETE" }),
   musicBrainzSearch: (params) =>
     request(`/api/records/search?${new URLSearchParams(params)}`),
+  lego: (params = {}) => request(`/api/lego?${new URLSearchParams(params)}`),
+  legoFacets: () => request("/api/lego/facets"),
+  addLego: (body) =>
+    request("/api/lego", { method: "POST", body: JSON.stringify(body) }),
+  updateLego: (itemId, body) =>
+    request(`/api/lego/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteLego: (itemId) => request(`/api/lego/${itemId}`, { method: "DELETE" }),
+  rebrickableSearch: (params) =>
+    request(`/api/lego/search?${new URLSearchParams(params)}`),
+  comics: (params = {}) => request(`/api/comics?${new URLSearchParams(params)}`),
+  comicFacets: () => request("/api/comics/facets"),
+  addComic: (body) =>
+    request("/api/comics", { method: "POST", body: JSON.stringify(body) }),
+  updateComic: (itemId, body) =>
+    request(`/api/comics/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteComic: (itemId) => request(`/api/comics/${itemId}`, { method: "DELETE" }),
+  comicVineSearch: (params) =>
+    request(`/api/comics/search?${new URLSearchParams(params)}`),
   backupUrl: "/api/backup",
   restoreBackup: async (file) => {
     const fd = new FormData();

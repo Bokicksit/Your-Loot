@@ -19,6 +19,8 @@ import HardwarePage from "./pages/HardwarePage.jsx";
 import MoviesPage from "./pages/MoviesPage.jsx";
 import BooksPage from "./pages/BooksPage.jsx";
 import RecordsPage from "./pages/RecordsPage.jsx";
+import LegoPage from "./pages/LegoPage.jsx";
+import ComicsPage from "./pages/ComicsPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 
 const PATHS = {
@@ -28,6 +30,8 @@ const PATHS = {
   movies: "/movies",
   books: "/books",
   records: "/records",
+  lego: "/lego",
+  comics: "/comics",
 };
 
 // Bottom bar is deliberately three items — the individual collections live
@@ -174,6 +178,14 @@ function Shell() {
           <Route
             path="/records"
             element={<RequireModule moduleKey="records"><RecordsPage /></RequireModule>}
+          />
+          <Route
+            path="/lego"
+            element={<RequireModule moduleKey="lego"><LegoPage /></RequireModule>}
+          />
+          <Route
+            path="/comics"
+            element={<RequireModule moduleKey="comics"><ComicsPage /></RequireModule>}
           />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>

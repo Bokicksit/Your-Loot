@@ -133,6 +133,12 @@ def _detail(item: CollectionItem) -> str:
     elif item.module == Module.records.value and item.record_attrs:
         a = item.record_attrs
         parts = [a.artist, a.format, a.release_year]
+    elif item.module == Module.lego.value and item.lego_attrs:
+        a = item.lego_attrs
+        parts = [a.set_number, a.theme, a.release_year]
+    elif item.module == Module.comics.value and item.comic_attrs:
+        a = item.comic_attrs
+        parts = [a.series, f"#{a.issue_number}" if a.issue_number else None, a.variant]
     else:
         parts = []
     return " · ".join(str(p) for p in parts if p)
@@ -189,6 +195,8 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             joinedload(Wanted.item).joinedload(CollectionItem.movie_attrs),
             joinedload(Wanted.item).joinedload(CollectionItem.book_attrs),
             joinedload(Wanted.item).joinedload(CollectionItem.record_attrs),
+            joinedload(Wanted.item).joinedload(CollectionItem.lego_attrs),
+            joinedload(Wanted.item).joinedload(CollectionItem.comic_attrs),
         )
         .order_by(Wanted.priority.asc().nulls_last(), Wanted.created_at)
     )
@@ -205,6 +213,10 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return item.book_attrs.author
         if item.module == Module.records.value and item.record_attrs:
             return item.record_attrs.artist
+        if item.module == Module.lego.value and item.lego_attrs:
+            return item.lego_attrs.theme
+        if item.module == Module.comics.value and item.comic_attrs:
+            return item.comic_attrs.series
         return None
 
     def _info(item: CollectionItem) -> tuple[str, str | None]:
@@ -245,6 +257,24 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
                 a.country,
                 a.track_count and f"{a.track_count} tracks",
             ]
+        elif item.module == Module.lego.value and item.lego_attrs:
+            a = item.lego_attrs
+            parts = [
+                a.set_number,
+                a.release_year,
+                a.piece_count and f"{a.piece_count} pieces",
+                a.minifig_count and f"{a.minifig_count} minifigs",
+                a.subtheme,
+            ]
+        elif item.module == Module.comics.value and item.comic_attrs:
+            a = item.comic_attrs
+            parts = [
+                a.publisher,
+                a.volume_year and f"vol. {a.volume_year}",
+                a.cover_year,
+                a.creators,
+            ]
+            text = a.blurb
         line = "  ·  ".join(str(p) for p in parts if p)
         return line, text
 
@@ -259,6 +289,10 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return item.book_attrs.format
         if item.module == Module.records.value and item.record_attrs:
             return item.record_attrs.format
+        if item.module == Module.lego.value and item.lego_attrs:
+            return item.lego_attrs.set_number
+        if item.module == Module.comics.value and item.comic_attrs:
+            return f"#{item.comic_attrs.issue_number}" if item.comic_attrs.issue_number else None
         return None
 
     def _ui_module(item: CollectionItem) -> str:

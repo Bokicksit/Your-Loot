@@ -2,16 +2,20 @@ import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import {
+  COMIC_GRADES,
   DEFAULT_VINYL_GRADE,
   GAME_COMPLETENESS,
   GAME_PARTS_ONLY,
+  LEGO_COMPLETENESS,
+  LEGO_CONDITION,
+  LEGO_PARTS_ONLY,
   VINYL_GRADES,
 } from "../vocab.js";
 import { useEnabledModules } from "../settings.jsx";
 
 const MODULE_ICONS = {
   cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
-  records: "vinyl",
+  records: "vinyl", lego: "brick", comics: "comic",
 };
 
 // Left-edge badge: system logo for games, media-format tag for movies,
@@ -54,11 +58,13 @@ const CONDITIONS = {
   movies: ["Mint", "Good", "Fair", "Poor"],
   books: ["Fine", "Near Fine", "Very Good", "Good", "Fair", "Poor"],
   records: VINYL_GRADES,
+  lego: LEGO_CONDITION,
+  comics: COMIC_GRADES,
 };
 // most acquisitions aren't mint, so default to the sensible middle of each scale
 const DEFAULT_CONDITION = {
   cards: "NM", games: "Good", hardware: "Good", movies: "Good",
-  books: "Very Good", records: DEFAULT_VINYL_GRADE,
+  books: "Very Good", records: DEFAULT_VINYL_GRADE, lego: "used", comics: "VF",
 };
 const BOX = ["loose", "CIB", "sealed"];
 // The optional second per-copy field, and which column it writes to. Cards
@@ -77,6 +83,9 @@ const SECOND_FIELD = {
     options: VINYL_GRADES,
     def: DEFAULT_VINYL_GRADE,
   },
+  lego: { key: "completeness", options: LEGO_COMPLETENESS, def: "complete+box" },
+  // comics have no second field: a slab's grade goes on grader/grade, edited
+  // on the comics page, exactly like a graded card
 };
 
 // Records grade two things on the same scale, so the two selects have to say
@@ -117,9 +126,10 @@ export default function WantedPage() {
     });
   };
 
-  // Buying the case or the manual isn't getting the game — record the piece
-  // you found, but keep hunting the thing you're actually after.
-  const keepsHunting = (vals) => GAME_PARTS_ONLY.has(vals.completeness);
+  // Buying the case, the manual or an empty LEGO box isn't getting the thing —
+  // record the piece you found, but keep hunting what you're actually after.
+  const keepsHunting = (vals) =>
+    GAME_PARTS_ONLY.has(vals.completeness) || LEGO_PARTS_ONLY.has(vals.completeness);
 
   const confirmGotIt = async () => {
     await api.addOwned(acquiring, acqVals);

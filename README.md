@@ -1,8 +1,8 @@
 # 💰 Your Loot
 
 Self-hosted collection tracker for **Pokémon cards, video games, hardware,
-physical movies, books, and records** — one app, one database, one wanted list
-that spans all of them.
+physical movies, books, records, LEGO, and comics** — one app, one database,
+one wanted list that spans all of them.
 
 Most trackers do a single category. This one is built for people whose shelf
 isn't that tidy: the Charizard you're hunting and the SNES console you're
@@ -37,6 +37,16 @@ edition, series, and per-copy jacket/provenance.
 identifies the *pressing*: label, catalogue number, country, and year, so a
 1980 original and a 2011 repress stay separate entries. Graded the way vinyl
 actually is — media and sleeve independently, on the Goldmine scale (`VG+/VG`).
+
+**LEGO** — Rebrickable-backed set search by number or name, with theme, year,
+piece and minifig counts. Each copy records how much of it survived: sealed,
+complete with box and instructions, bricks only, missing pieces, or just the
+spare instructions.
+
+**Comics** — Comic Vine search by series and issue. Tracks the run
+(`volume_year`) and the variant cover, because Amazing Spider-Man #1 exists in
+half a dozen volumes. A raw copy carries a grade; a slabbed one carries its
+CGC/CBCS number instead.
 
 **Wanted list** — everything you're hunting, across every module, with
 filters and a "check sold prices on eBay" shortcut. Mark something acquired and
@@ -144,7 +154,14 @@ deploy/  TrueNAS compose
 - Books: [Open Library](https://openlibrary.org)
 - Records: [MusicBrainz](https://musicbrainz.org) and the
   [Cover Art Archive](https://coverartarchive.org)
+- LEGO: [Rebrickable](https://rebrickable.com) · Comics:
+  [Comic Vine](https://comicvine.gamespot.com)
 - Barcodes: [UPCitemdb](https://www.upcitemdb.com)
+
+Every integration is optional and free. Cards, books and records need no key at
+all; games, movies, LEGO and comics take one from `.env` (see `.env.example`
+for where to get each). Without a key that collection's online search says
+which one is missing, and manual entry still works.
 - Console logos: see [`web/public/platforms/ATTRIBUTION.md`](web/public/platforms/ATTRIBUTION.md)
 
 Pokémon and all card imagery are property of Nintendo / Creatures Inc. /

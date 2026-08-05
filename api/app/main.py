@@ -10,8 +10,10 @@ from app.routers import (
     books,
     cards,
     collection,
+    comics,
     games,
     images,
+    lego,
     lookup,
     movies,
     records,
@@ -35,6 +37,8 @@ app.include_router(games.router)
 app.include_router(movies.router)
 app.include_router(books.router)
 app.include_router(records.router)
+app.include_router(lego.router)
+app.include_router(comics.router)
 app.include_router(images.router)
 app.include_router(backup.router)
 app.include_router(settings_router.router)

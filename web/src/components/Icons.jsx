@@ -27,6 +27,8 @@ export function IconDefs() {
         <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8.5V6a2 2 0 012-2h2.5M20 8.5V6a2 2 0 00-2-2h-2.5M4 15.5V18a2 2 0 002 2h2.5M20 15.5V18a2 2 0 01-2 2h-2.5M4 12h16" /></symbol>
         <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5" /><path d="M4.5 17v1.5a2 2 0 002 2h11a2 2 0 002-2V17" /></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9.5M7.5 13.5L12 9l4.5 4.5" /><path d="M4.5 7V5.5a2 2 0 012-2h11a2 2 0 012 2V7" /></symbol>
+        <symbol id="i-brick" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="10.5" rx="1.5" /><path d="M8 9V7.2a1.6 1.6 0 013.2 0V9M12.8 9V7.2a1.6 1.6 0 013.2 0V9" /></symbol>
+        <symbol id="i-comic" viewBox="0 0 24 24"><path d="M4 5.5h11.5a2 2 0 012 2v11H6a2 2 0 01-2-2z" /><path d="M17.5 8.5H20v10a2 2 0 01-2 2H6" /><path d="M7 9h6M7 12.5h4" /></symbol>
       </defs>
     </svg>
   );

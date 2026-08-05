@@ -40,10 +40,14 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://getloot:CHANGE_ME@postgres:5432/getloot
       IMAGE_DIR: /data/images
-      # IGDB (Twitch dev app) — fill in to enable game search
+      # Optional, all free. Fill one in to enable that collection's online
+      # search; leave it blank and manual entry still works.
+      # IGDB (Twitch dev app) — game search
       IGDB_CLIENT_ID: ""
       IGDB_CLIENT_SECRET: ""
-      TMDB_API_KEY: ""
+      TMDB_API_KEY: ""       # movies
+      REBRICKABLE_API_KEY: "" # LEGO
+      COMICVINE_API_KEY: ""   # comics
       # downloads the full card database on first start (safe to leave on;
       # it only runs when the catalog is empty)
       SEED_ON_START: "true"
