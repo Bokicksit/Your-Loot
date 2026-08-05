@@ -907,9 +907,40 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   box-shadow: 0 0 0 2px var(--gold), 0 10px 26px -12px var(--gold-glow);
 }
 
-/* "+" chip to add a copy */
-.chip.copy.add { cursor: pointer; padding: 0 8px; }
-.chip.copy.add svg.i { width: 12px; height: 12px; }
+/* − N + : the copy count, and the fastest way to log duplicates */
+.copy-step {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.copy-step button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color .14s var(--ease), background .14s var(--ease);
+}
+.copy-step button:hover:not(:disabled) { color: var(--gold); background: var(--gold-wash); }
+.copy-step button:disabled { opacity: .35; cursor: default; }
+.copy-step button svg.i { width: 12px; height: 12px; stroke-width: 2.4; }
+.copy-step b {
+  min-width: 18px;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: var(--f-2);
+  font-weight: var(--w-bold);
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
 
 /* graded copies read as slabs: jade instead of gold */
 .chip.copy.graded {
@@ -1378,7 +1409,6 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* tab bar hosts a button (Collections) alongside the links */
 .tabbar button { appearance: none; border: 0; background: none; }
 
-.home-more { margin: var(--s-3) auto 0; }
 
 /* onboarding: name + what you collect */
 .onboarding { width: min(420px, 100%); }

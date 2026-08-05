@@ -54,7 +54,32 @@ export default function CardTile({ card, onChange, onReload }) {
     }
   };
 
-  const addCopy = () => run(() => api.addOwned(card.id, { condition: "NM" }));
+  // "+" means another one of these, so it copies the last one's condition and
+  // print rather than resetting to NM — pulling four of the same common is the
+  // case this exists for. Never into the Pokédex though: one card per slot.
+  const addCopy = () => {
+    const last = card.owned[card.owned.length - 1];
+    return run(() =>
+      api.addOwned(
+        card.id,
+        last
+          ? {
+              condition: last.condition || "NM",
+              variant: last.variant,
+              stamp: last.stamp,
+              grader: last.grader,
+              grade: last.grade,
+              in_binder: false,
+            }
+          : { condition: "NM" }
+      )
+    );
+  };
+
+  const removeLastCopy = () => {
+    const last = card.owned[card.owned.length - 1];
+    if (last) removeCopy(last);
+  };
   const removeCopy = (o) => {
     const last = card.owned.length === 1;
     if (
@@ -275,14 +300,20 @@ export default function CardTile({ card, onChange, onReload }) {
               </button>
             </span>
           ))}
-          <button
-            className="chip copy add"
-            onClick={addCopy}
-            disabled={busy}
-            title="Add another copy"
-          >
-            <Icon id="plus" />
-          </button>
+          {/* how many of this card you have, and the quickest way to change it */}
+          <span className="copy-step">
+            <button
+              onClick={removeLastCopy}
+              disabled={busy || !card.owned.length}
+              title="Remove a copy"
+            >
+              <Icon id="minus" />
+            </button>
+            <b>{card.owned.length}</b>
+            <button onClick={addCopy} disabled={busy} title="Add another copy">
+              <Icon id="plus" />
+            </button>
+          </span>
         </span>
       </div>
       {editing !== null && createPortal(editorModal, document.body)}

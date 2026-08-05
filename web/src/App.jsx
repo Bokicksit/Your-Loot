@@ -34,17 +34,14 @@ const PATHS = {
   comics: "/comics",
 };
 
-// Bottom bar is deliberately three items — the individual collections live
-// behind the Collections sheet, with favourites surfaced on Home.
+// Collections opens the full list, Wanted is the hunt, Favourites is the
+// shortcut to the ones you starred. Wanted gives up the star to Favourites,
+// since a star means "starred" everywhere else in the app.
 function TabBar({ onOpenCollections }) {
   const { pathname } = useLocation();
   const inCollection = Object.values(PATHS).some((p) => pathname.startsWith(p));
   return (
     <nav className="tabbar">
-      <NavLink to="/" end>
-        <Icon id="coin" />
-        <span>Home</span>
-      </NavLink>
       <button
         className={inCollection ? "active" : ""}
         onClick={onOpenCollections}
@@ -54,8 +51,12 @@ function TabBar({ onOpenCollections }) {
         <span>Collections</span>
       </button>
       <NavLink to="/wanted">
-        <Icon id="star" />
+        <Icon id="target" />
         <span>Wanted</span>
+      </NavLink>
+      <NavLink to="/" end>
+        <Icon id="star" />
+        <span>Favourites</span>
       </NavLink>
     </nav>
   );

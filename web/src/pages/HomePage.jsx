@@ -24,9 +24,9 @@ export default function HomePage({ onOpenCollections }) {
   }, []);
 
   const favs = settings?.favorite_modules || [];
-  // favourites are the fast path; if none are starred, show everything so
-  // Home is never an empty screen
-  const shown = favs.length ? enabled.filter((m) => favs.includes(m.key)) : enabled;
+  // this tab is the starred shortcuts and nothing else — the full list is one
+  // tap away on Collections, so there's no "see all" to duplicate it
+  const shown = enabled.filter((m) => favs.includes(m.key));
   const wanted = stats
     ? Object.values(stats).reduce((a, s) => a + s.wanted, 0)
     : 0;
@@ -56,17 +56,26 @@ export default function HomePage({ onOpenCollections }) {
         ))}
 
         <Link to="/wanted" className="home-tile">
-          <Icon id="star" />
+          <Icon id="target" />
           <strong>Wanted</strong>
           {wanted > 0 && <small>{wanted} on the hunt</small>}
         </Link>
       </div>
 
-      {favs.length > 0 && enabled.length > shown.length && (
-        <button className="ghost home-more" onClick={onOpenCollections}>
-          <Icon id="sliders" />
-          All collections
-        </button>
+      {/* nothing starred yet — say what this tab is for rather than sit empty */}
+      {shown.length === 0 && (
+        <div className="empty">
+          <span className="glyph"><Icon id="star" /></span>
+          <strong>No favourites yet</strong>
+          <p>
+            Star the collections you reach for most and they'll live here. Everything
+            else stays one tap away under Collections.
+          </p>
+          <button className="ghost" onClick={onOpenCollections}>
+            <Icon id="card" />
+            Browse collections
+          </button>
+        </div>
       )}
     </div>
   );

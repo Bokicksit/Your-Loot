@@ -55,6 +55,11 @@ That split is why a few things behave the way they do:
 sealed copy are two owned records under one entry. Each has its own condition,
 and you can delete one without touching the other.
 
+On cards this is a **− 2 +** counter on the tile. **+** adds another one just
+like your last — same condition and print, so pulling four of one common takes
+three taps — and **−** takes the newest back off. Tap a copy's chip to change
+that one on its own.
+
 **You can own something *and* still want it.** Found the manual but not the
 cartridge? Record the manual as a copy, and the game stays on your wanted list.
 The app does this automatically — see [spare parts](#spare-parts).
@@ -83,12 +88,13 @@ Three tabs along the bottom:
 
 | Tab | What's there |
 | --- | --- |
-| **Home** | Counts per collection, and shortcuts to your favourites |
-| **Collections** | The full list of collections — tap one to open it |
+| **Collections** | The full list — tap one to open it |
 | **Wanted** | Everything you're hunting, all categories in one list |
+| **Favourites** | Just the collections you've starred, with their counts |
 
-Home shows your **favourites** as large tiles if you've starred any, otherwise
-everything you have enabled. Star a collection in Settings.
+Favourites is the fast path to the two or three you actually open daily;
+Collections always has the rest, so there's no "see all" duplicating it. Star a
+collection in Settings.
 
 **Settings** is the gear in the top-right.
 
