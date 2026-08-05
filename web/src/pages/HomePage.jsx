@@ -4,8 +4,13 @@ import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { useEnabledModules, useSettings } from "../settings.jsx";
 
-const PATHS = { cards: "/cards", games: "/games", hardware: "/hardware", movies: "/movies" };
-const UNIT = { cards: "card", games: "title", hardware: "item", movies: "disc" };
+const PATHS = {
+  cards: "/cards", games: "/games", hardware: "/hardware",
+  movies: "/movies", books: "/books",
+};
+const UNIT = {
+  cards: "card", games: "title", hardware: "item", movies: "disc", books: "book",
+};
 
 export default function HomePage({ onOpenCollections }) {
   const { settings } = useSettings();

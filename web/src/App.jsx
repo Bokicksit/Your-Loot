@@ -17,6 +17,7 @@ import WantedPage from "./pages/WantedPage.jsx";
 import GamesPage from "./pages/GamesPage.jsx";
 import HardwarePage from "./pages/HardwarePage.jsx";
 import MoviesPage from "./pages/MoviesPage.jsx";
+import BooksPage from "./pages/BooksPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 
 const PATHS = {
@@ -24,6 +25,7 @@ const PATHS = {
   games: "/games",
   hardware: "/hardware",
   movies: "/movies",
+  books: "/books",
 };
 
 // Bottom bar is deliberately three items — the individual collections live
@@ -162,6 +164,10 @@ function Shell() {
           <Route
             path="/movies"
             element={<RequireModule moduleKey="movies"><MoviesPage /></RequireModule>}
+          />
+          <Route
+            path="/books"
+            element={<RequireModule moduleKey="books"><BooksPage /></RequireModule>}
           />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>

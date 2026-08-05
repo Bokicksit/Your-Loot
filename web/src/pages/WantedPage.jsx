@@ -3,7 +3,9 @@ import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { useEnabledModules } from "../settings.jsx";
 
-const MODULE_ICONS = { cards: "card", games: "pad", hardware: "console", movies: "disc" };
+const MODULE_ICONS = {
+  cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
+};
 
 // Left-edge badge: system logo for games, media-format tag for movies,
 // module icon otherwise.

@@ -66,6 +66,15 @@ export const api = {
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
+  books: (params = {}) => request(`/api/books?${new URLSearchParams(params)}`),
+  bookFacets: () => request("/api/books/facets"),
+  addBook: (body) =>
+    request("/api/books", { method: "POST", body: JSON.stringify(body) }),
+  updateBook: (itemId, body) =>
+    request(`/api/books/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteBook: (itemId) => request(`/api/books/${itemId}`, { method: "DELETE" }),
+  openLibrarySearch: (params) =>
+    request(`/api/books/search?${new URLSearchParams(params)}`),
   settings: () => request("/api/settings"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

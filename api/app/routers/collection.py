@@ -127,9 +127,12 @@ def _detail(item: CollectionItem) -> str:
     elif item.module == Module.movies.value and item.movie_attrs:
         a = item.movie_attrs
         parts = [a.format, a.edition, a.region_code]
+    elif item.module == Module.books.value and item.book_attrs:
+        a = item.book_attrs
+        parts = [a.author, a.format, a.publish_year]
     else:
         parts = []
-    return " · ".join(p for p in parts if p)
+    return " · ".join(str(p) for p in parts if p)
 
 
 @router.get("/stats")
@@ -181,6 +184,7 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             .joinedload(CollectionItem.game_attrs)
             .joinedload(GameAttrs.platform),
             joinedload(Wanted.item).joinedload(CollectionItem.movie_attrs),
+            joinedload(Wanted.item).joinedload(CollectionItem.book_attrs),
         )
         .order_by(Wanted.priority.asc().nulls_last(), Wanted.created_at)
     )
@@ -193,6 +197,8 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return p.abbreviation or p.name
         if item.module == Module.movies.value and item.movie_attrs:
             return item.movie_attrs.genre
+        if item.module == Module.books.value and item.book_attrs:
+            return item.book_attrs.author
         return None
 
     def _info(item: CollectionItem) -> tuple[str, str | None]:
@@ -215,6 +221,15 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             a = item.movie_attrs
             parts = [a.genre]
             text = a.overview
+        elif item.module == Module.books.value and item.book_attrs:
+            a = item.book_attrs
+            parts = [
+                a.publish_year,
+                a.publisher,
+                a.page_count and f"{a.page_count} pages",
+                a.series,
+            ]
+            text = a.blurb
         line = "  ·  ".join(str(p) for p in parts if p)
         return line, text
 
@@ -225,6 +240,8 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             return p.abbreviation or p.name
         if item.module == Module.movies.value and item.movie_attrs:
             return item.movie_attrs.format
+        if item.module == Module.books.value and item.book_attrs:
+            return item.book_attrs.format
         return None
 
     def _ui_module(item: CollectionItem) -> str:

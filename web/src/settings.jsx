@@ -10,6 +10,7 @@ export const MODULES = [
   { key: "games", label: "Games", icon: "pad", blurb: "Cartridges & discs" },
   { key: "hardware", label: "Hardware", icon: "console", blurb: "Consoles & gear" },
   { key: "movies", label: "Movies", icon: "disc", blurb: "Physical media" },
+  { key: "books", label: "Books", icon: "book", blurb: "Shelves & spines" },
 ];
 
 export function SettingsProvider({ children }) {

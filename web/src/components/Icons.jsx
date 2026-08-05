@@ -10,6 +10,7 @@ export function IconDefs() {
         <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h5M15.5 12h5" /><circle cx="12" cy="12" r="2.8" /></symbol>
         <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.72 5.62 6.18.86-4.47 4.31 1.08 6.11L12 17.6l-5.51 2.9 1.08-6.11L3.1 10.08l6.18-.86z" /></symbol>
         <symbol id="i-pad" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="4.5" /><path d="M8 10.8v3.4M6.3 12.5h3.4" /><circle cx="15.8" cy="11.6" r="1.15" /><circle cx="18.4" cy="14.2" r="1.15" /></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5h5.5A2.5 2.5 0 0112 7v12a2 2 0 00-2-2H4z" /><path d="M20 4.5h-5.5A2.5 2.5 0 0012 7v12a2 2 0 012-2h6z" /></symbol>
         <symbol id="i-console" viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="8" rx="1.8" /><path d="M6.5 12.5h5M15.5 6v2.5M15.5 6h4M6 19v1.2M18 19v1.2" /><circle cx="17.2" cy="12.5" r="1" /></symbol>
         <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.4" /></symbol>
         <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="5" /></symbol>

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import cards, collection, games, images, lookup, movies
+from app.routers import books, cards, collection, games, images, lookup, movies
 from app.routers import settings as settings_router
 
 
@@ -35,6 +35,7 @@ app.include_router(cards.router)
 app.include_router(collection.router)
 app.include_router(games.router)
 app.include_router(movies.router)
+app.include_router(books.router)
 app.include_router(images.router)
 app.include_router(settings_router.router)
 app.include_router(lookup.router)
