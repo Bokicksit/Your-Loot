@@ -104,6 +104,22 @@ export default function ComicsPage() {
   // The digits are kept either way; they're worth having on the entry even
   // when nothing recognises them.
   const onBarcode = async (code) => {
+    // The small five-digit symbol beside the main barcode. First three digits
+    // are the issue, then the cover and the printing: 00111 is issue 1, cover
+    // 1, first print. This is the *only* place a comic's barcode says which
+    // issue you're holding.
+    if (/^\d{5}$/.test(code)) {
+      const issue = String(Number(code.slice(0, 3)));
+      setForm((f) => ({ ...f, issue_number: issue }));
+      if (form.series.trim()) {
+        lookup({
+          series: form.series.trim(),
+          issue,
+          ...(form.volume_year ? { year: form.volume_year } : {}),
+        });
+      }
+      return;
+    }
     setForm((f) => ({ ...f, barcode: code }));
     let raw = null;
     try {
@@ -128,23 +144,20 @@ export default function ComicsPage() {
       alert(`That barcode is "${raw}" — fill the series and issue in by hand.`);
       return;
     }
-    // The issue number is only ever a guess from the product title; the real
-    // one is in the five-digit add-on beside the barcode, which is a separate
-    // symbol the camera doesn't read. So search the run either way and leave
-    // the issue box alone when there's nothing trustworthy to put in it.
+    // Every issue of a run carries the SAME main barcode — the issue is only
+    // in the five-digit symbol beside it. So whatever issue the shop's listing
+    // happens to name is the issue that shop stocked, not the one in your
+    // hand, and it must not be filled in. The series is real; take that, and
+    // the on-sale date as the cover year, and ask for the issue.
     setForm((f) => ({
       ...f,
       series: guess.series,
-      ...(guess.issue ? { issue_number: guess.issue } : {}),
       ...(guess.coverYear ? { cover_year: guess.coverYear } : {}),
     }));
-    lookup({ series: guess.series, ...(guess.issue ? { issue: guess.issue } : {}) });
-    if (!guess.issue) {
-      alert(
-        `Scanned "${guess.series}". A comic's barcode names the title, not the ` +
-          "issue — that's the small five-digit code beside it (00111 = issue 1). " +
-          "Type the issue number to narrow this down."
-      );
+    if (form.issue_number.trim()) {
+      lookup({ series: guess.series, issue: form.issue_number.trim() });
+    } else {
+      lookup({ series: guess.series });
     }
   };
 
@@ -326,8 +339,16 @@ export default function ComicsPage() {
               onChange={(e) => setForm({ ...form, volume_year: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
             />
-            <BarcodeScan onCode={onBarcode} />
+            {/* supplement mode: the small five-digit symbol beside the main
+                barcode is the only thing that names the issue */}
+            <BarcodeScan onCode={onBarcode} supplement />
           </div>
+          <p className="modal-note">
+            <Icon id="info" />
+            Scanning the big barcode names the series — every issue of a run
+            shares it. Scan the <strong>small five-digit code</strong> beside it
+            for the issue number, or just type it.
+          </p>
           <div className="form-row">
             <input
               type="text"

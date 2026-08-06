@@ -24,6 +24,15 @@ const ZXING_FORMATS = [
 const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "itf"];
 const HINTS = new Map([[DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS]]);
 
+// Opt-in, for comics. A comic's main barcode is the same on every issue of a
+// run — the issue lives in a separate five-digit symbol printed beside it. It
+// isn't an inline add-on, so it has to be read as a barcode in its own right,
+// and it is only offered where it means something: on a DVD or a game a stray
+// five-digit read would just break the lookup.
+const SUPPLEMENT_HINTS = new Map([
+  [DecodeHintType.POSSIBLE_FORMATS, [...ZXING_FORMATS, BarcodeFormat.EAN_5]],
+]);
+
 // Cameras hand out 640x480 unless asked otherwise, and an EAN-13 printed down
 // the spine of a DVD case simply isn't there at that resolution.
 const CAMERA = {
@@ -66,7 +75,7 @@ async function nativeFormats() {
   }
 }
 
-export default function BarcodeScan({ onCode }) {
+export default function BarcodeScan({ onCode, supplement = false }) {
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState("");
   const [camError, setCamError] = useState(null);
@@ -184,7 +193,9 @@ export default function BarcodeScan({ onCode }) {
       if (dead) return;
       setReady(true);
 
-      const supported = await nativeFormats();
+      // the platform decoder has no EAN-5 at all, so supplement mode has to
+      // go the long way round through zxing
+      const supported = supplement ? [] : await nativeFormats();
       if (supported.length) {
         // the platform's own decoder, hardware-backed on phones
         const det = new window.BarcodeDetector({ formats: supported });
@@ -193,7 +204,7 @@ export default function BarcodeScan({ onCode }) {
           return found ? { text: found.rawValue, upce: found.format === "upc_e" } : null;
         };
       } else {
-        const reader = new BrowserMultiFormatReader(HINTS);
+        const reader = new BrowserMultiFormatReader(supplement ? SUPPLEMENT_HINTS : HINTS);
         detect = async (c) => {
           try {
             const r = reader.decodeFromCanvas(c);
@@ -232,7 +243,7 @@ export default function BarcodeScan({ onCode }) {
 
   const submitManual = () => {
     const digits = manual.replace(/\D/g, "");
-    if (digits.length < 8) return;
+    if (digits.length < (supplement ? 5 : 8)) return;
     setOpen(false);
     setManual("");
     onCode(digits);

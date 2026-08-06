@@ -207,13 +207,16 @@ What a scan gets you depends on the collection:
   Blu-ray steelbook fills in "Blu-ray" and "Steelbook" for you.
 - **Books** — the ISBN resolves to the exact edition in one step.
 - **Records** — the barcode identifies the *pressing*, not just the album.
-- **Comics** — Comic Vine has no barcode endpoint, so the scan goes the long
-  way round: the retail database says what the barcode is, and the series and
-  issue number are read out of that product title and searched on Comic Vine.
-  Coverage is thin — single issues are poorly listed by shops — so expect to
-  fall back to typing the series and issue. The digits are saved on the entry
-  either way. **No API key changes this**; `COMICVINE_API_KEY` only powers the
-  series-and-issue search.
+- **Comics — two barcodes, and they say different things.** The big one is the
+  same on *every issue of a run*: it names the series and nothing more.
+  Scanning it fills the series and searches the run. The **small five-digit
+  code** printed beside it is the one that says which issue you're holding —
+  `00111` is issue 1, cover 1, first printing — so scan that second and the
+  issue number fills itself in. Type it instead if you'd rather; it's the
+  first three digits.
+
+  Comic Vine has no barcode endpoint at all and no API key changes that;
+  `COMICVINE_API_KEY` only powers the series-and-issue search.
 - **LEGO** — the barcode is stored on the entry for your records, but
   Rebrickable doesn't index barcodes, so search by set number.
 
