@@ -515,7 +515,12 @@ it to narrow the search also fills it in on the entry.
 
 If the year turns out to be wrong, the search doesn't come back empty — it
 falls back to every run of that name so you can pick the right one and see what
-year it actually started.
+year it actually started. Every result is labelled with its run year either
+way, which is the only thing that tells six identically titled #1s apart.
+
+Series names are matched loosely enough not to care about capitals, hyphens or
+a leading "The", so *Amazing Spider-Man* finds the run Comic Vine files as
+*The Amazing Spider-Man*.
 
 Comics track the **run**, not just the series — Amazing Spider-Man #1 exists in
 half a dozen volumes, so *volume year* keeps them apart — and the **variant
