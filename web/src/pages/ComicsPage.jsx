@@ -6,6 +6,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
+import { comicQuery } from "../upc.js";
 import {
   COMIC_GRADERS,
   COMIC_GRADES,
@@ -94,9 +95,40 @@ export default function ComicsPage() {
     }
   };
 
-  // Comic Vine doesn't index UPCs, so a scan fills the barcode field for your
-  // own records — the search itself goes by series and issue.
-  const onBarcode = (code) => setForm((f) => ({ ...f, barcode: code }));
+  // Comic Vine has no barcode endpoint at all — it indexes issues, and no key
+  // changes that. So the scan takes the long way round: the retail database
+  // knows what the barcode is, and its product title usually carries the
+  // series and issue number, which is exactly what Comic Vine can search on.
+  // The digits are kept either way; they're worth having on the entry even
+  // when nothing recognises them.
+  const onBarcode = async (code) => {
+    setForm((f) => ({ ...f, barcode: code }));
+    let raw = null;
+    try {
+      const res = await api.barcodeLookup(code);
+      raw = res.found ? res.titles[0].title : null;
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+    if (!raw) {
+      alert(
+        "No product match for that barcode — comics databases don't index " +
+          "them. The digits are saved; search by series and issue."
+      );
+      return;
+    }
+    const guess = comicQuery(raw);
+    if (!guess) {
+      // something came back, just not an issue we can parse — better to hand
+      // over what the shop said than to pretend the scan found nothing
+      setForm((f) => ({ ...f, title: f.title || raw }));
+      alert(`That barcode is "${raw}" — no issue number in it, so fill the series and issue in by hand.`);
+      return;
+    }
+    setForm((f) => ({ ...f, series: guess.series, issue_number: guess.issue }));
+    lookup(guess.q);
+  };
 
   const textSearch = () => {
     const q = [form.series.trim() || form.title.trim(), form.issue_number.trim()]

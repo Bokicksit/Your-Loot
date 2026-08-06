@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
 import { useSettings } from "../settings.jsx";
 
@@ -16,6 +17,13 @@ export default function PokedexPage() {
   const [rarityFilter, setRarityFilter] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+  // the slot and its detail panel are siblings, and which is open lives on
+  // the page rather than in a row, so they carry their dex number instead
+  useDismiss(
+    open !== null,
+    () => setOpen(null),
+    (t) => t.closest?.("[data-slot]")?.dataset.slot === String(open),
+  );
   // binder density lives in Settings so it applies on every device
   const { settings, save } = useSettings();
   const cols = settings?.dex_cols || 4;
@@ -213,6 +221,7 @@ export default function PokedexPage() {
                   : "unowned"
               }`}
               aria-expanded={open === e.dex_no}
+              data-slot={e.dex_no}
               onClick={() => setOpen(open === e.dex_no ? null : e.dex_no)}
             >
               <span className="dex-no">#{String(e.dex_no).padStart(4, "0")}</span>
@@ -247,7 +256,7 @@ export default function PokedexPage() {
               </span>
             </button>
             {open === e.dex_no && (
-              <div className="dex-detail">
+              <div className="dex-detail" data-slot={e.dex_no}>
                 <h3>
                   #{String(e.dex_no).padStart(4, "0")} {e.name || ""}
                   <button

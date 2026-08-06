@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
+import useDismiss from "../useDismiss.js";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import {
@@ -105,6 +106,20 @@ export default function WantedPage() {
   const [acquiring, setAcquiring] = useState(null); // item_id being acquired
   const [acqVals, setAcqVals] = useState({});
   const [openInfo, setOpenInfo] = useState(null); // item_id with info expanded
+  // a row is two sibling <li>s, and which one is open lives here rather than in
+  // the row, so there's nothing to hang a ref on — the rows are tagged instead
+  const stillInside = (t) => {
+    const id = t.closest?.("[data-row]")?.dataset.row;
+    return id === String(openInfo) || id === String(acquiring);
+  };
+  useDismiss(
+    openInfo !== null || acquiring !== null,
+    () => {
+      setOpenInfo(null);
+      setAcquiring(null);
+    },
+    stillInside,
+  );
 
   const load = () => api.wanted().then(setRows);
   useEffect(() => {
@@ -234,7 +249,7 @@ export default function WantedPage() {
       <ul className="wanted-list">
         {shown.map((r) => (
           <Fragment key={r.item_id}>
-            <li>
+            <li data-row={r.item_id}>
               <RowBadge row={r} />
               {r.image_url ? (
                 <img src={r.image_url} alt="" loading="lazy" />
@@ -274,7 +289,7 @@ export default function WantedPage() {
               </button>
             </li>
             {openInfo === r.item_id && (
-              <li className="acquire-edit wanted-info">
+              <li className="acquire-edit wanted-info" data-row={r.item_id}>
                 <div className="expand-card">
                   {r.image_url && (
                     <img className="expand-cover" src={r.image_url} alt="" loading="lazy" />
@@ -291,7 +306,7 @@ export default function WantedPage() {
               </li>
             )}
             {acquiring === r.item_id && (
-              <li className="acquire-edit">
+              <li className="acquire-edit" data-row={r.item_id}>
                 <span className="acquire-label">Got it as:</span>
                 <select
                   value={acqVals.condition || ""}

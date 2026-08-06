@@ -113,6 +113,9 @@ Only one stays open at a time, since opening a second item counts as tapping
 outside the first. You'll never end up scrolling past a column of panels you
 forgot you opened.
 
+This works the same everywhere — all eight collections, the Pokédex slots, and
+the wanted list, including its **Got it** editor.
+
 The one exception is an **entry editor you've typed in**. Tapping off it asks
 whether to discard the changes first, because losing a screen of typing to a
 mis-tap on a phone is a miserable way to lose it. An editor you opened but
@@ -192,8 +195,15 @@ What a scan gets you depends on the collection:
   Blu-ray steelbook fills in "Blu-ray" and "Steelbook" for you.
 - **Books** — the ISBN resolves to the exact edition in one step.
 - **Records** — the barcode identifies the *pressing*, not just the album.
-- **LEGO and comics** — the barcode is stored on the entry for your records,
-  but neither database indexes barcodes, so search by set number or series.
+- **Comics** — Comic Vine has no barcode endpoint, so the scan goes the long
+  way round: the retail database says what the barcode is, and the series and
+  issue number are read out of that product title and searched on Comic Vine.
+  Coverage is thin — single issues are poorly listed by shops — so expect to
+  fall back to typing the series and issue. The digits are saved on the entry
+  either way. **No API key changes this**; `COMICVINE_API_KEY` only powers the
+  series-and-issue search.
+- **LEGO** — the barcode is stored on the entry for your records, but
+  Rebrickable doesn't index barcodes, so search by set number.
 
 ### 2. Search the online database
 

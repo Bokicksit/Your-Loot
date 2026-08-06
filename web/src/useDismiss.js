@@ -1,16 +1,6 @@
 import { useEffect } from "react";
 
 /**
- * Put a row's open panels away when the next press lands outside them.
- *
- * Opening a second row counts as pressing outside the first, so rows close
- * themselves and only one stays open — without the page having to track which
- * one that is, and without every row re-rendering when it changes.
- *
- * `guard` gets a veto, and is how a half-typed editor avoids evaporating
- * under a mis-tap.
- */
-/**
  * The standard veto: an editor with changes in it asks before it goes.
  *
  * Tapping slightly off is easy on a phone, and the entry editors hold a screen
@@ -23,14 +13,32 @@ export function keepOpen(vals, initial, open, label) {
   return !confirm(`Discard your changes to ${label}?`);
 }
 
-export default function useDismiss(open, close, refs, guard) {
+/**
+ * Put an open panel away when the next press lands outside it.
+ *
+ * Opening a second item counts as pressing outside the first, so only one is
+ * ever open — and where each row owns its own state, the rows sort that out
+ * between themselves with no page-level bookkeeping and no re-render of the
+ * whole list when the open one changes.
+ *
+ * `inside` is either an array of refs, or a predicate on the pressed element.
+ * Lists that track which row is open on the page rather than in the row have
+ * nothing to hang a ref on, so they answer the question directly instead.
+ *
+ * `guard` gets a veto — see keepOpen.
+ */
+export default function useDismiss(open, close, inside, guard) {
   useEffect(() => {
     if (!open) return undefined;
     const onPress = (e) => {
       // Modals and the photo cropper render through a portal, so they sit
-      // outside this row in the DOM while being very much inside it on screen.
+      // outside the row in the DOM while being very much inside it on screen.
       if (e.target.closest?.(".modal-scrim")) return;
-      if (refs.some((r) => r.current?.contains(e.target))) return;
+      const within =
+        typeof inside === "function"
+          ? inside(e.target)
+          : inside.some((r) => r.current?.contains(e.target));
+      if (within) return;
       if (guard?.()) return;
       close();
     };

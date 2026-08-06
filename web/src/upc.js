@@ -58,6 +58,40 @@ export function cleanGameTitle(title) {
   return cut.replace(/[\s\-–—:,]+$/g, "").trim();
 }
 
+// Comic publishers, which share nothing with the games list above. The
+// house-name suffix is optional and matched separately, so "Marvel", "Marvel
+// Comics" and "IDW Publishing" all come off without needing an entry each —
+// and without the alternation being able to match "Marvel" out of "Marvel
+// Comics" and leave "Comics" behind.
+const COMIC_PUBLISHERS =
+  "marvel|dc|image|dark\\s*horse|idw|boom!?|dynamite|valiant|vertigo|archie|titan|oni|fantagraphics|wildstorm|malibu|aftershock|vault|black\\s*mask";
+const COMIC_PREFIX = new RegExp(
+  `^\\s*(${COMIC_PUBLISHERS})(\\s+(comics?|publishing|entertainment|studios?|press|books))?[\\s\\-–—:,/]+`,
+  "i"
+);
+
+// A retail listing for a single issue reads like "Marvel Comics Amazing
+// Spider-Man #300 VF/NM" or "Saga Vol 1 #7 (Image)". Comic Vine wants the
+// series and the issue number and nothing else, so pull those two out.
+// Returns null when there's no issue number to find, which is the honest
+// answer for a barcode that turned out to be a boxed set or a magazine.
+export function comicQuery(title) {
+  const t = title.replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/\s{2,}/g, " ").trim();
+  // "Vol 1" is the run, not the issue, so it goes before anything looks for a
+  // bare number — otherwise half the scans come back as issue 1
+  const noVol = t.replace(/\bvol(ume)?\.?\s*\d+\b/gi, " ");
+  const m = noVol.match(/#\s*(\d+)/) || noVol.match(/\s(\d{1,4})\b(?!.*\d)/);
+  if (!m) return null;
+  let series = noVol.slice(0, m.index).replace(/[\s\-–—:,#]+$/g, "").trim();
+  // "Marvel Comics Amazing Spider-Man" -> "Amazing Spider-Man". Never strip
+  // all the way to nothing, though: Archie and Vertigo put out series named
+  // after themselves, and there the publisher is the whole title.
+  const trimmed = series.replace(COMIC_PREFIX, "").trim();
+  if (trimmed) series = trimmed;
+  if (!series) return null;
+  return { series, issue: m[1], q: `${series} ${m[1]}` };
+}
+
 // Strip bracketed segments and format/edition noise so the remaining string
 // works as a TMDB/IGDB query.
 export function cleanTitle(title) {
