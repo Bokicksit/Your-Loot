@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
+from app.integrations import libretro
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
@@ -52,6 +53,28 @@ def _base_query():
             joinedload(CollectionItem.wanted),
         )
     )
+
+
+@router.get("/boxart")
+def game_boxart(
+    title: str,
+    platform_id: int | None = None,
+    region: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """A scan of the actual box, from libretro-thumbnails.
+
+    Needs no key and covers NES through Xbox 360. Returns `{"url": null}`
+    rather than a 404 when there's no scan, because "we looked and there
+    isn't one" is a normal answer here, not a failure.
+    """
+    abbr = None
+    if platform_id is not None:
+        platform = db.get(Platform, platform_id)
+        abbr = platform.abbreviation if platform else None
+    if not libretro.supported(abbr):
+        return {"url": None, "supported": False}
+    return {"url": libretro.boxart(title, abbr, region), "supported": True}
 
 
 @router.get("/platforms")

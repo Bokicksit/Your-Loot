@@ -194,11 +194,31 @@ export default function GamesPage() {
     }
   };
 
+  // A scan of the actual box, which IGDB's key art isn't. Needs the platform,
+  // so it runs once one is settled on rather than at pick time; it's offered
+  // alongside the other art instead of replacing whatever you already chose.
+  const findBoxart = async (title, platformId, region) => {
+    if (!title || !platformId) return;
+    try {
+      const { url } = await api.gameBoxart({
+        title,
+        platform_id: platformId,
+        ...(region ? { region } : {}),
+      });
+      if (url) mergeArt([{ url, kind: "box" }]);
+    } catch {
+      /* box art is a bonus; never let it break the add flow */
+    }
+  };
+
   const pickResult = (r) => {
     // restrict the platform dropdown to systems this game shipped on
     const allowed = matchAllPlatforms(r.platforms, platforms);
     setAllowedPlatforms(allowed);
     if (r.cover_url) mergeArt([{ url: r.cover_url, kind: "poster" }]);
+    const picked = matchPlatform(r.platforms, platforms) || "";
+    const rawTitle = r.year ? `${r.title} (${r.year})` : r.title;
+    findBoxart(rawTitle, picked, form.region);
     setForm({
       ...form,
       title: r.year ? `${r.title} (${r.year})` : r.title,
@@ -206,7 +226,7 @@ export default function GamesPage() {
       // a box photo from the barcode is the copy you own; IGDB's cover only
       // fills in when there isn't one
       image_url: form.image_url || r.cover_url,
-      platform_id: matchPlatform(r.platforms, platforms) || "",
+      platform_id: picked,
       summary: r.summary || null,
       release_year: r.year ? Number(r.year) : null,
       genres: r.genres?.length ? r.genres.join(", ") : null,
@@ -358,7 +378,12 @@ export default function GamesPage() {
           <div className="form-row">
             <select
               value={form.platform_id}
-              onChange={(e) => setForm({ ...form, platform_id: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, platform_id: e.target.value });
+                // the box scan is per-system, so naming the system is exactly
+                // when it becomes findable
+                findBoxart(form.title, e.target.value, form.region);
+              }}
             >
               <option value="">Platform…</option>
               {(form.igdb_id && allowedPlatforms.length > 0

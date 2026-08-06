@@ -25,7 +25,10 @@ binder: one card per Pokémon, marked either *the one* or *will upgrade*.
 Filter by what's missing, what wants upgrading, and by rarity.
 
 **Games** — IGDB-backed search, platform/region, and per-copy completeness
-(loose/CIB/sealed) and condition. Barcode scanning for boxed games.
+(loose/CIB/sealed) and condition. Barcode scanning for boxed games. For
+consoles up to the Xbox 360 era it also offers a **scan of the actual box**
+from libretro-thumbnails — no key needed — instead of IGDB's key art, which
+looks the same whether you own the original or a download.
 
 **Hardware** — consoles and accessories with model number, serial, working
 status, and accessory→console links.
@@ -169,7 +172,9 @@ deploy/  TrueNAS compose
 
 - Card data: [pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data)
   and [TCGdex](https://tcgdex.dev)
-- Games: [IGDB](https://www.igdb.com) · Movies: [TMDB](https://www.themoviedb.org)
+- Games: [IGDB](https://www.igdb.com), box scans from
+  [libretro-thumbnails](https://github.com/libretro-thumbnails) ·
+  Movies: [TMDB](https://www.themoviedb.org)
   (this product uses the TMDB API but is not endorsed or certified by TMDB)
 - Books: [Open Library](https://openlibrary.org)
 - Records: [MusicBrainz](https://musicbrainz.org) and the

@@ -373,6 +373,18 @@ Choose **3, 4, or 5 slots per row** in Settings.
 IGDB-backed search, with the platform list narrowed to systems the game
 actually shipped on once you pick a result.
 
+**Box scans.** IGDB's cover is a game's key art — the same image whether you
+own the original, the Player's Choice reprint, or a download. So once a system
+is set, a scan of the *actual box front* is fetched from libretro-thumbnails
+and added to the artwork strip for you to pick. It needs **no API key**, and it
+follows your region: a PAL copy gets the European box where one exists.
+
+Coverage runs from the NES to roughly the Xbox 360 — the eras that have been
+archived. Newer systems, and PC, just keep the IGDB art. Changing the system
+dropdown looks again, so if the first guess was wrong the right box is one
+change away. Whichever image you pick is copied into your own library on save,
+so it keeps working even if the source moves.
+
 Per copy: **condition** (Mint / Good / Fair / Poor) and **what you have** —
 
 | | |

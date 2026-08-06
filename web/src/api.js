@@ -114,6 +114,8 @@ export const api = {
   updateComic: (itemId, body) =>
     request(`/api/comics/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteComic: (itemId) => request(`/api/comics/${itemId}`, { method: "DELETE" }),
+  gameBoxart: (params) =>
+    request(`/api/games/boxart?${new URLSearchParams(params)}`),
   comicVineSearch: (params) =>
     request(`/api/comics/search?${new URLSearchParams(params)}`),
   backupUrl: "/api/backup",
