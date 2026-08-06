@@ -294,6 +294,15 @@ export default function LegoPage() {
             <input
               type="text"
               className="grow"
+              placeholder="Set number"
+              value={form.set_number}
+              onChange={(e) => setForm({ ...form, set_number: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
               placeholder="Theme (Star Wars, Modular…)"
               value={form.theme}
               onChange={(e) => setForm({ ...form, theme: e.target.value })}

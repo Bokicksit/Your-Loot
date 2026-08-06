@@ -122,14 +122,30 @@ export default function ComicsPage() {
     }
     const guess = comicQuery(raw);
     if (!guess) {
-      // something came back, just not an issue we can parse — better to hand
-      // over what the shop said than to pretend the scan found nothing
+      // something came back, just not a series we can pick out — better to
+      // hand over what the shop said than to pretend the scan found nothing
       setForm((f) => ({ ...f, title: f.title || raw }));
-      alert(`That barcode is "${raw}" — no issue number in it, so fill the series and issue in by hand.`);
+      alert(`That barcode is "${raw}" — fill the series and issue in by hand.`);
       return;
     }
-    setForm((f) => ({ ...f, series: guess.series, issue_number: guess.issue }));
-    lookup({ series: guess.series, issue: guess.issue });
+    // The issue number is only ever a guess from the product title; the real
+    // one is in the five-digit add-on beside the barcode, which is a separate
+    // symbol the camera doesn't read. So search the run either way and leave
+    // the issue box alone when there's nothing trustworthy to put in it.
+    setForm((f) => ({
+      ...f,
+      series: guess.series,
+      ...(guess.issue ? { issue_number: guess.issue } : {}),
+      ...(guess.coverYear ? { cover_year: guess.coverYear } : {}),
+    }));
+    lookup({ series: guess.series, ...(guess.issue ? { issue: guess.issue } : {}) });
+    if (!guess.issue) {
+      alert(
+        `Scanned "${guess.series}". A comic's barcode names the title, not the ` +
+          "issue — that's the small five-digit code beside it (00111 = issue 1). " +
+          "Type the issue number to narrow this down."
+      );
+    }
   };
 
   // Series and issue go over as separate fields so the API can search the run
@@ -381,6 +397,22 @@ export default function ComicsPage() {
               placeholder="Title as you want it filed"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Series"
+              value={form.series}
+              onChange={(e) => setForm({ ...form, series: e.target.value })}
+            />
+            <input
+              type="text"
+              style={{ flex: "0 0 84px" }}
+              placeholder="Issue #"
+              value={form.issue_number}
+              onChange={(e) => setForm({ ...form, issue_number: e.target.value })}
             />
           </div>
           <div className="form-row">

@@ -75,21 +75,88 @@ const COMIC_PREFIX = new RegExp(
 // series and the issue number and nothing else, so pull those two out.
 // Returns null when there's no issue number to find, which is the honest
 // answer for a barcode that turned out to be a boxed set or a magazine.
+// A comic's main barcode identifies the *title*, not the issue — the issue
+// lives in the separate five-digit add-on printed beside it ("00111" = issue
+// 001, cover 1, first printing). So the issue number here is only ever a guess
+// read out of the shop's product title, and it is better to return none than
+// to invent one.
+// Shop listings for comics come out as delimited fields whose delimiter has
+// usually been mangled into "?" somewhere along the way:
+//   "Comic Book?Guardians of The Galaxy?Issue 7?Marvel: Nov 26, 2008?Sleeved"
+const FIELD_SEP = /[?|•·¦•�]+/g;
+// fields that describe the listing rather than the comic
+const NOISE =
+  /^(comic books?|comics?|sleeved|bagged( and boarded)?|boarded|new|used|key issue|direct edition|newsstand|(near )?mint|nm(\/m)?|vf(\/nm)?|fn|vg|raw|ungraded)$/i;
+// a whole field that is nothing but the issue number
+const ISSUE_FIELD = /^(?:issue|iss\.?|no\.?|number|#)\s*#?\s*(\d+)\s*$/i;
+// a field that is the publisher and a date, not a title
+const PUBLISHER_DATE = /^[^:]{2,24}:\s*\w/;
+
 export function comicQuery(title) {
-  const t = title.replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/\s{2,}/g, " ").trim();
+  const cleaned = String(title || "")
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, " ")
+    .replace(FIELD_SEP, " | ");
+  const parts = cleaned
+    .split("|")
+    .map((s) => s.replace(/\s{2,}/g, " ").trim())
+    .filter(Boolean)
+    .filter((p) => !NOISE.test(p));
+  if (!parts.length) return null;
+
+  // Structured listing: an "Issue 7" field of its own, with the title in the
+  // field before it. This is the common shape and the only one that gives an
+  // issue number worth trusting.
+  for (let i = 1; i < parts.length; i++) {
+    const m = parts[i].match(ISSUE_FIELD);
+    if (m) {
+      const series = tidySeries(parts[i - 1]);
+      if (series) return { series, issue: m[1], coverYear: coverYear(cleaned) };
+    }
+  }
+
+  // Otherwise work inside the most title-like field.
+  const head = parts.find((p) => !PUBLISHER_DATE.test(p) && !ISSUE_FIELD.test(p)) || parts[0];
   // "Vol 1" is the run, not the issue, so it goes before anything looks for a
   // bare number — otherwise half the scans come back as issue 1
-  const noVol = t.replace(/\bvol(ume)?\.?\s*\d+\b/gi, " ");
-  const m = noVol.match(/#\s*(\d+)/) || noVol.match(/\s(\d{1,4})\b(?!.*\d)/);
-  if (!m) return null;
-  let series = noVol.slice(0, m.index).replace(/[\s\-–—:,#]+$/g, "").trim();
+  const noVol = head.replace(/\bvol(ume)?\.?\s*\d+\b/gi, " ");
+  // A number after a # or the word "issue" is an issue and nothing else. A
+  // bare trailing number is a guess, and one that reads like a year is almost
+  // always the year — no comic has reached issue 1900, and the longest-running
+  // title is only in the 1000s, so the range is free to reject.
+  let m = noVol.match(/(?:#|\bissue\s*#?)\s*(\d+)/i);
+  if (!m) {
+    const bare = noVol.match(/\s(\d{1,4})\b(?!.*\d)/);
+    if (bare && !(Number(bare[1]) >= 1900 && Number(bare[1]) <= 2099)) m = bare;
+  }
+  // No issue number to be had: still worth handing back the series, because
+  // searching the run and picking the issue beats being told nothing was found.
+  const series = tidySeries(m ? noVol.slice(0, m.index) : noVol);
+  if (!series) return null;
+  return { series, issue: m ? m[1] : null, coverYear: coverYear(cleaned) };
+}
+
+// The listing usually carries the on-sale date ("Marvel: Nov 26, 2008"). That
+// is the cover year, not the year the run started — an issue from deep in a
+// long run has a cover year nothing like its volume year — so it fills the
+// cover year box and nothing else.
+function coverYear(text) {
+  const years = [...String(text).matchAll(/\b(19\d{2}|20\d{2})\b/g)].map((m) => Number(m[1]));
+  return years.length ? String(Math.max(...years)) : null;
+}
+
+function tidySeries(raw) {
+  let series = String(raw || "")
+    // a year hanging off the end is the run's date, not part of its name, and
+    // leaving it on stops Comic Vine matching the series at all
+    .replace(/[\s(,-]+(19\d{2}|20\d{2})\s*$/, "")
+    .replace(/[\s\-–—:,#]+$/g, "")
+    .trim();
   // "Marvel Comics Amazing Spider-Man" -> "Amazing Spider-Man". Never strip
   // all the way to nothing, though: Archie and Vertigo put out series named
   // after themselves, and there the publisher is the whole title.
   const trimmed = series.replace(COMIC_PREFIX, "").trim();
   if (trimmed) series = trimmed;
-  if (!series) return null;
-  return { series, issue: m[1], q: `${series} ${m[1]}` };
+  return series;
 }
 
 // Strip bracketed segments and format/edition noise so the remaining string

@@ -371,6 +371,15 @@ export default function RecordsPage() {
             />
           </div>
           <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Artist"
+              value={form.artist}
+              onChange={(e) => setForm({ ...form, artist: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
             <select
               value={form.format}
               onChange={(e) => setForm({ ...form, format: e.target.value })}
