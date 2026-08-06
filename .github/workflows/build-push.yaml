@@ -3,6 +3,11 @@ name: build-and-push
 on:
   push:
     branches: [main]
+  # Startable by hand from the Actions tab. Push events go through webhooks,
+  # which GitHub throttles during an Actions incident — a push then triggers
+  # nothing at all, silently, and without this there is no run to re-run and
+  # no way to ask for one short of another commit.
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
