@@ -119,6 +119,17 @@ Tap the scan icon. If your browser can use the camera you'll get a live
 viewfinder; otherwise **type the digits under the barcode** into the box — it
 runs exactly the same lookup.
 
+**Line the barcode up inside the gold frame.** Only what's inside that window
+is read, which is deliberate: it's a fraction of the picture so it's read far
+more often per second, and a DVD case with two barcodes on the back can't hand
+you the wrong one. Fill the width of the frame if you can — a barcode that only
+spans a third of it is the usual reason a scan hangs. Your phone buzzes the
+moment it catches one.
+
+If a **lightning bolt** appears in the corner, your phone's torch can be
+switched on from there — worth it for a dark shelf, and for the glossy shrink
+wrap on a sealed box.
+
 > **Camera needs HTTPS.** Browsers only allow camera access on secure origins.
 > Over plain `http://` you'll see a note saying so, and the manual digit entry
 > is right there. See [Remote access](../README.md#remote-access) for how to
@@ -513,6 +524,14 @@ deliberately turned off. Enable it in Settings when you want it.
 Browsers only allow camera access over HTTPS (or on `localhost`). Type the
 digits under the barcode instead — same lookup, same result. For proper camera
 access from your phone, put the app behind HTTPS.
+
+**The camera opens but never catches the barcode.**
+Get the barcode filling the width of the gold frame — too small and there
+aren't enough pixels per bar to read. Then check the glare: a shrink-wrapped
+box under a ceiling light reflects straight back into the lens, so tilt it a
+few degrees rather than holding it square on. The torch button helps in dim
+rooms and hurts on gloss. Failing all that, the digits printed under the bars
+go straight into the box below and run the identical lookup.
 
 **"Barcode lookups exhausted for today."**
 The free barcode service allows about 100 lookups per day per network. It
