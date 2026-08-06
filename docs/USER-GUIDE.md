@@ -488,9 +488,23 @@ Condition is separate: New, Like new, Used, Worn, Damaged.
 
 ### Comics
 
-Comic Vine search by series and issue number. **Single issues only** —
-graphic novels, collected editions and manga go in [Books](#books), because
-they carry an ISBN and Comic Vine indexes issues and no barcodes at all.
+Comic Vine search by series, issue number and **volume year**. **Single issues
+only** — graphic novels, collected editions and manga go in [Books](#books),
+because they carry an ISBN and Comic Vine indexes issues and no barcodes at
+all.
+
+**Fill in the volume year.** It's the year the *run* started, not the cover
+date — 2008 for that Guardians of the Galaxy, 1990 for the one before it. With
+it, the search looks up the run first and then the one issue inside it, so you
+get a handful of exact answers. Without it you get a full-text search across
+every issue Comic Vine knows, which for a long-running character is hundreds of
+issues cut off at the first page — the 2008 #1 you wanted may simply never
+appear. The year is the same field as the one further down the form, so filling
+it to narrow the search also fills it in on the entry.
+
+If the year turns out to be wrong, the search doesn't come back empty — it
+falls back to every run of that name so you can pick the right one and see what
+year it actually started.
 
 Comics track the **run**, not just the series — Amazing Spider-Man #1 exists in
 half a dozen volumes, so *volume year* keeps them apart — and the **variant

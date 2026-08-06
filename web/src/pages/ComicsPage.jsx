@@ -84,10 +84,10 @@ export default function ComicsPage() {
     return () => clearTimeout(t);
   }, [search, seriesFilter, publisherFilter, sort]);
 
-  const lookup = async (q) => {
+  const lookup = async (params) => {
     setSearching(true);
     try {
-      setResults(await api.comicVineSearch({ q }));
+      setResults(await api.comicVineSearch(params));
     } catch (e) {
       alert(e.message);
     } finally {
@@ -127,15 +127,21 @@ export default function ComicsPage() {
       return;
     }
     setForm((f) => ({ ...f, series: guess.series, issue_number: guess.issue }));
-    lookup(guess.q);
+    lookup({ series: guess.series, issue: guess.issue });
   };
 
+  // Series and issue go over as separate fields so the API can search the run
+  // rather than the whole database — the only way to say which Guardians of
+  // the Galaxy #1 you mean. The year narrows it further when you know it.
   const textSearch = () => {
-    const q = [form.series.trim() || form.title.trim(), form.issue_number.trim()]
-      .filter(Boolean)
-      .join(" ");
-    if (q.length < 2) return;
-    lookup(q);
+    const series = form.series.trim() || form.title.trim();
+    const issue = form.issue_number.trim();
+    if (series.length < 2 && issue.length < 1) return;
+    const params = {};
+    if (series) params.series = series;
+    if (issue) params.issue = issue;
+    if (form.volume_year) params.year = form.volume_year;
+    lookup(params);
   };
 
   const pickResult = (r) => {
@@ -261,10 +267,14 @@ export default function ComicsPage() {
       {showForm && (
         <form className="add-form" onSubmit={submit}>
           <h2>Add an issue</h2>
-          <div className="form-row">
+          {/* three fields plus the scan button is too much for a phone on one
+              line, so this row is allowed to wrap rather than crush the series
+              name down to the width of an issue number */}
+          <div className="form-row wrap">
             <input
               type="text"
               className="grow"
+              style={{ flexBasis: "160px" }}
               placeholder="Series (Saga, Amazing Spider-Man…)"
               value={form.series}
               onChange={(e) => setForm({ ...form, series: e.target.value })}
@@ -272,10 +282,23 @@ export default function ComicsPage() {
             />
             <input
               type="text"
-              style={{ maxWidth: "100px" }}
+              style={{ flex: "0 0 66px" }}
               placeholder="Issue #"
               value={form.issue_number}
               onChange={(e) => setForm({ ...form, issue_number: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
+            />
+            {/* the run's start year, not the cover year — it's what tells six
+                different Guardians of the Galaxy #1s apart. Same field as the
+                one in the details below, so filling either fills both. */}
+            <input
+              type="text"
+              inputMode="numeric"
+              style={{ flex: "0 0 92px" }}
+              placeholder="Vol. year"
+              title="The year the run started — 2008 for that Guardians of the Galaxy"
+              value={form.volume_year}
+              onChange={(e) => setForm({ ...form, volume_year: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
             />
             <BarcodeScan onCode={onBarcode} />

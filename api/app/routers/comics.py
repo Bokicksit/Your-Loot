@@ -51,14 +51,37 @@ def _base_query():
 
 
 @router.get("/search")
-def search_comicvine(q: str | None = None):
-    """Look an issue up on Comic Vine, e.g. 'Saga 1' or 'Amazing Spider-Man 300'."""
+def search_comicvine(
+    q: str | None = None,
+    series: str | None = None,
+    issue: str | None = None,
+    year: int | None = None,
+):
+    """Look an issue up on Comic Vine.
+
+    Given a series and an issue number it goes via the run, which is the only
+    way to say *which* Guardians of the Galaxy #1 you mean. `year` is the run's
+    start year, not the cover year. Anything less specific falls back to the
+    full-text search, sorted so the year asked for comes first.
+    """
     if not comicvine_client.configured:
         raise HTTPException(503, "Comic Vine not configured — set COMICVINE_API_KEY")
-    if not (q or "").strip():
+    series = (series or "").strip()
+    issue = (issue or "").strip()
+    broad = (q or "").strip() or " ".join(p for p in (series, issue) if p)
+    if not broad:
         raise HTTPException(400, "give a series and issue number to search for")
+    if series and issue:
+        try:
+            hits = comicvine_client.find(series, issue, year)
+            if hits:
+                return hits
+        except httpx.HTTPError:
+            # the precise route is an optimisation; if Comic Vine doesn't like
+            # the filter, the broad search below still answers the question
+            pass
     try:
-        return comicvine_client.search(q)
+        return comicvine_client.search(broad, volume_year=year)
     except httpx.HTTPStatusError as e:
         if e.response.status_code in (401, 403):
             raise HTTPException(502, "Comic Vine rejected the API key")

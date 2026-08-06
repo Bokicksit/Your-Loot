@@ -1055,6 +1055,12 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* rows that should reflow instead of squeeze at phone width */
 .form-row.wrap { flex-wrap: wrap; }
 
+/* "this is the main field in the row" — it was on 56 inputs and defined
+   nowhere, so every row shrank its fields to equal widths and a series name
+   got the same space as an issue number. min-width:0 because a flex item
+   won't shrink past its content otherwise. */
+.grow { flex: 1 1 auto; min-width: 0; }
+
 /* hardware working-status pill */
 .hw-status {
   padding: 1px 7px;
