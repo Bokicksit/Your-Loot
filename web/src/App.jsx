@@ -125,6 +125,34 @@ function RequireModule({ moduleKey, children }) {
   );
 }
 
+// Which collection you're looking at wasn't obvious — every page opens on a
+// search box and an Add button that look the same everywhere. Named here rather
+// than in eight page components, so it stays consistent and a new collection
+// gets its heading from the registry for free.
+function PageTitle() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/wanted")) {
+    return (
+      <h2 className="page-title">
+        <Icon id="target" />
+        Wanted
+      </h2>
+    );
+  }
+  // the Pokédex is a view of Cards, not a collection in its own right
+  const key = pathname.startsWith("/pokedex")
+    ? "cards"
+    : Object.keys(PATHS).find((k) => pathname.startsWith(PATHS[k]));
+  const module = MODULES.find((m) => m.key === key);
+  if (!module) return null; // Favourites and Settings write their own
+  return (
+    <h2 className="page-title">
+      <Icon id={module.icon} />
+      {module.label}
+    </h2>
+  );
+}
+
 function Shell() {
   const { settings } = useSettings();
   const [sheet, setSheet] = useState(false);
@@ -145,6 +173,7 @@ function Shell() {
       </header>
 
       <main className="content">
+        <PageTitle />
         <Routes>
           <Route path="/" element={<HomePage onOpenCollections={() => setSheet(true)} />} />
           <Route

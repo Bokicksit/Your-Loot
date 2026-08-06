@@ -1404,6 +1404,18 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* ============================ home / splash ============================ */
 
 .home { display: grid; gap: var(--s-4); padding-top: var(--s-5); }
+/* names the collection you're in, above its toolbar */
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-3);
+  font-size: var(--f-6);
+  font-weight: var(--w-bold);
+  letter-spacing: -.02em;
+}
+.page-title svg.i { width: 22px; height: 22px; color: var(--gold); }
+
 .home h2 {
   margin: 0;
   text-align: center;
