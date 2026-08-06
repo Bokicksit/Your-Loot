@@ -6,7 +6,21 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 
-const FORMATS = ["Hardcover", "Paperback", "Trade Paperback", "Mass Market", "Leather", "Audiobook"];
+// Graphic Novel and Omnibus sit here rather than in Comics because that's
+// where the barcode puts them: a collected edition carries an ISBN, which Open
+// Library resolves, while Comic Vine indexes single issues and no barcodes at
+// all. Filter Books by one of these and sort By series and you have the
+// graphic-novel shelf, in reading order. Manga volumes land the same way.
+const FORMATS = [
+  "Hardcover",
+  "Paperback",
+  "Trade Paperback",
+  "Mass Market",
+  "Graphic Novel",
+  "Omnibus",
+  "Leather",
+  "Audiobook",
+];
 // book grading is its own vocabulary — collectors don't say "Mint"
 const CONDITIONS = ["Fine", "Near Fine", "Very Good", "Good", "Fair", "Poor"];
 // on a book, "completeness" is really about the jacket and provenance

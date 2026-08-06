@@ -391,12 +391,26 @@ Open Library search, or scan the ISBN on the back — that resolves the exact
 edition in one call. Its cover coverage is patchy, so an edition it has no
 picture for borrows the jacket from the shop listing for that ISBN rather than
 showing a blank tile. Format (Hardcover, Paperback, Trade Paperback, Mass
-Market, Leather, Audiobook), year, edition, series and ISBN. Page count comes
-from Open Library when a lookup finds it; there's no field to type it in.
+Market, Graphic Novel, Omnibus, Leather, Audiobook), year, edition, series and
+ISBN. Page count comes from Open Library when a lookup finds it; there's no
+field to type it in.
 
 Per copy: condition on the book trade's scale (**Fine, Near Fine, Very Good,
 Good, Fair, Poor** — collectors don't say "Mint"), plus jacket and provenance:
 *With jacket, No jacket, Ex-library, Signed*.
+
+**Graphic novels, collected editions and manga go here, not in Comics.** The
+barcode decides it: a collected edition carries an **ISBN**, which Open Library
+resolves, while a single issue carries a **UPC** and Comic Vine indexes no
+barcodes at all. Set the format to *Graphic Novel* or *Omnibus*, then filter
+Books to that format and sort **By series** — that's your graphic-novel shelf,
+in reading order rather than alphabetical.
+
+The rule of thumb: **an issue number means Comics, an ISBN means Books.** A
+graphic novel has a publisher, an ISBN and a spine, and lives on a bookshelf;
+what makes Comics its own collection is the things only a single issue has —
+issue number, volume year, variant cover, slabbing. Author is one field, so a
+writer-and-artist pair goes in as "Vaughan & Staples".
 
 ### Records
 
@@ -449,7 +463,9 @@ Condition is separate: New, Like new, Used, Worn, Damaged.
 
 ### Comics
 
-Comic Vine search by series and issue number.
+Comic Vine search by series and issue number. **Single issues only** —
+graphic novels, collected editions and manga go in [Books](#books), because
+they carry an ISBN and Comic Vine indexes issues and no barcodes at all.
 
 Comics track the **run**, not just the series — Amazing Spider-Man #1 exists in
 half a dozen volumes, so *volume year* keeps them apart — and the **variant

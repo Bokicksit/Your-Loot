@@ -36,7 +36,10 @@ photographs of the actual case, so a steelbook looks like your steelbook
 instead of the theatrical poster.
 
 **Books** — Open Library search, or scan the ISBN barcode on the back. Format,
-edition, series, and per-copy jacket/provenance.
+edition, series, and per-copy jacket/provenance. Graphic novels, collected
+editions and manga live here rather than in Comics — they carry an ISBN, and
+filtering to *Graphic Novel* sorted by series gives you that shelf in reading
+order.
 
 **Records** — MusicBrainz search, or scan the barcode on the sleeve, which
 identifies the *pressing*: label, catalogue number, country, and year, so a
@@ -51,7 +54,7 @@ spare instructions.
 **Comics** — Comic Vine search by series and issue. Tracks the run
 (`volume_year`) and the variant cover, because Amazing Spider-Man #1 exists in
 half a dozen volumes. A raw copy carries a grade; a slabbed one carries its
-CGC/CBCS number instead.
+CGC/CBCS number instead. Single issues — collected editions are books.
 
 **Sold prices** — every item, owned or wanted, has a coin in its details panel
 that opens an eBay search filtered to *sold and completed* listings. The query
