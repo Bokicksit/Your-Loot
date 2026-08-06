@@ -23,6 +23,7 @@ export default function CardsPage({ initialView = "collection" }) {
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
+  const [sort, setSort] = useState("dex");
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
@@ -74,7 +75,7 @@ export default function CardsPage({ initialView = "collection" }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const load = () => {
-    const params = { include_binder: showBinder };
+    const params = { include_binder: showBinder, sort };
     if (search) params.search = search;
     if (setFilter) params.set_code = setFilter;
     if (rarityFilter) params.rarity = rarityFilter;
@@ -98,7 +99,7 @@ export default function CardsPage({ initialView = "collection" }) {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, setFilter, rarityFilter, showBinder]);
+  }, [search, setFilter, rarityFilter, showBinder, sort]);
 
   useEffect(() => {
     api.cardSets().then(setSets).catch(() => {});
@@ -436,6 +437,22 @@ export default function CardsPage({ initialView = "collection" }) {
             </select>
           </>
         )}
+        {/* outside the facet guard: sorting is worth having even on a
+            collection too small to have anything to filter by */}
+        <select
+          className="chip-select"
+          title="Sort"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="dex">By Pokédex no.</option>
+          <option value="title">A–Z</option>
+          <option value="set">By set</option>
+          <option value="number">By card number</option>
+          <option value="rarity">By rarity</option>
+          <option value="added">Last added</option>
+          <option value="oldest">First added</option>
+        </select>
       </div>
 
       {showForm && (

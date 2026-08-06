@@ -14,6 +14,7 @@ from app.schemas.movies import (
     MovieUpdate,
 )
 from app.search import contains
+from app.sorting import year_from_title
 
 router = APIRouter(prefix="/api/movies", tags=["movies"])
 
@@ -84,7 +85,7 @@ def list_movies(
     db: Session = Depends(get_db),
     search: str | None = None,
     format: str | None = None,
-    sort: str = Query("title", pattern="^(title|format|added)$"),
+    sort: str = Query("title", pattern="^(title|format|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -114,8 +115,17 @@ def list_movies(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "format":
         order = [MovieAttrs.format.asc().nulls_last(), CollectionItem.title]
+    elif sort == "year":
+        # films have no year column: the "(2017)" TMDB search appends to the
+        # title is the only copy of it we hold
+        order = [
+            year_from_title(CollectionItem.title).desc().nulls_last(),
+            CollectionItem.title,
+        ]
     else:
         order = [CollectionItem.title]
 

@@ -7,6 +7,7 @@ from app.db import get_db
 from app.integrations.comicvine import comicvine_client
 from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted
 from app.search import contains
+from app.sorting import leading_number
 from app.schemas.comics import (
     ComicAttrsOut,
     ComicCreate,
@@ -96,7 +97,7 @@ def list_comics(
     search: str | None = None,
     series: str | None = None,
     publisher: str | None = None,
-    sort: str = Query("series", pattern="^(series|title|added|year)$"),
+    sort: str = Query("series", pattern="^(series|title|publisher|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -130,18 +131,29 @@ def list_comics(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "title":
         order = [CollectionItem.title]
+    elif sort == "publisher":
+        order = [
+            ComicAttrs.publisher.asc().nulls_last(),
+            ComicAttrs.series.asc().nulls_last(),
+            leading_number(ComicAttrs.issue_number).asc().nulls_last(),
+            CollectionItem.title,
+        ]
     elif sort == "year":
         order = [ComicAttrs.cover_year.desc().nulls_last(), CollectionItem.title]
     else:
-        # a long box is filed by series then issue; issue_number is text
-        # ("1A", "½") so it can't sort numerically without a cast that would
-        # break on those
+        # a long box is filed by series then issue. issue_number is text
+        # because plenty of issues aren't numbers ("1A", "½", "Annual"), so
+        # sort on the number it starts with and let the text break ties —
+        # that puts #9 before #10, which plain text ordering does not. The
+        # ones with no number at all trail their series.
         order = [
             ComicAttrs.series.asc().nulls_last(),
             ComicAttrs.volume_year.asc().nulls_last(),
-            func.length(ComicAttrs.issue_number),
+            leading_number(ComicAttrs.issue_number).asc().nulls_last(),
             ComicAttrs.issue_number,
         ]
 

@@ -188,6 +188,7 @@ export default function HardwarePage() {
           <option value="title">A–Z</option>
           <option value="platform">By system</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

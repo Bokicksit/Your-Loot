@@ -103,6 +103,41 @@ collection in Settings.
 
 **Settings** is the gear in the top-right.
 
+### Sorting
+
+Every collection has a **sort** dropdown next to its filters. The options
+differ per collection, because what you file a shelf by isn't what you file a
+long box by:
+
+| Collection | Sorts | Opens on |
+| --- | --- | --- |
+| Cards | Pokédex no. · A–Z · set · card number · rarity | Pokédex no. |
+| Games | A–Z · system · year | A–Z |
+| Hardware | A–Z · system | A–Z |
+| Movies | A–Z · format · year | A–Z |
+| Books | A–Z · author · series · year | A–Z |
+| Records | artist · A–Z · label · year | artist |
+| LEGO | A–Z · theme · set number · year · piece count | A–Z |
+| Comics | series & issue · A–Z · publisher · cover year | series & issue |
+
+**Last added** and **First added** are on all eight.
+
+A few of these do more than they say:
+
+- **Numbers sort as numbers**, so card #9 comes before #10 and LEGO 4002
+  before 10179. Sorted as plain text — which is how they're stored, since
+  plenty of them aren't numbers — 10179 would come first.
+- **By series** puts a run in reading order, not alphabetical order: *Book
+  One, Book Two, Book Three*, using publication year. Standalones trail.
+- **Comics by series & issue** files the way a long box does — series, then
+  volume, then issue. Issues with no number at all (*Annual*, *½*) sit at the
+  end of their series.
+- **By rarity** on cards uses the rarity ladder printed on the card, commons
+  through secret rares, not the alphabet — which would file Common between
+  Rainbow and Ultra.
+- **By label** on records sorts by catalogue number inside each label, which
+  is roughly the order that label released them.
+
 ---
 
 ## Adding things

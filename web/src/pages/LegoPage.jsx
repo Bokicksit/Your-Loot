@@ -186,9 +186,11 @@ export default function LegoPage() {
         >
           <option value="title">A–Z</option>
           <option value="theme">By theme</option>
+          <option value="number">By set number</option>
           <option value="year">By year</option>
           <option value="pieces">By piece count</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

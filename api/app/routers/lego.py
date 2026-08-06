@@ -7,6 +7,7 @@ from app.db import get_db
 from app.integrations.rebrickable import rebrickable_client
 from app.models import CollectionItem, LegoAttrs, Module, Owned, Wanted
 from app.search import contains
+from app.sorting import leading_number
 from app.schemas.lego import (
     LegoAttrsOut,
     LegoCreate,
@@ -97,7 +98,7 @@ def list_lego(
     db: Session = Depends(get_db),
     search: str | None = None,
     theme: str | None = None,
-    sort: str = Query("title", pattern="^(title|theme|added|year|pieces)$"),
+    sort: str = Query("title", pattern="^(title|theme|number|year|pieces|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -129,8 +130,18 @@ def list_lego(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "theme":
         order = [LegoAttrs.theme.asc().nulls_last(), CollectionItem.title]
+    elif sort == "number":
+        # numerically, so 4002 files before 10179 — and roughly chronologically
+        # as a side effect, since LEGO hands set numbers out as it goes
+        order = [
+            leading_number(LegoAttrs.set_number).asc().nulls_last(),
+            LegoAttrs.set_number.asc().nulls_last(),
+            CollectionItem.title,
+        ]
     elif sort == "year":
         order = [LegoAttrs.release_year.desc().nulls_last(), CollectionItem.title]
     elif sort == "pieces":

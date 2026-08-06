@@ -204,8 +204,10 @@ export default function BooksPage() {
         >
           <option value="title">A–Z</option>
           <option value="author">By author</option>
+          <option value="series">By series</option>
           <option value="year">By year</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

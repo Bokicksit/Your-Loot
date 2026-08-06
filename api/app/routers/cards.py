@@ -13,6 +13,7 @@ from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
+from app.sorting import leading_number, rarity_rank
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -167,6 +168,7 @@ def list_cards(
     dex_no: int | None = None,
     collection: bool = True,
     include_binder: bool = False,
+    sort: str = Query("dex", pattern="^(dex|title|set|number|rarity|added|oldest)$"),
     limit: int = Query(120, le=300),
     offset: int = 0,
 ):
@@ -199,15 +201,47 @@ def list_cards(
         q = q.where(*filters)
         count_q = count_q.where(*filters)
 
+    # card_number is text: promos run "SWSH284", secrets run past the set
+    # total, and plenty carry a letter. Sort on the number it starts with so
+    # #9 files before #10, and let the text settle the ties.
+    by_number = [
+        leading_number(CardAttrs.card_number).asc().nulls_last(),
+        CardAttrs.card_number.asc().nulls_last(),
+    ]
+    # Cards are the one collection with a pre-seeded catalog, so
+    # CollectionItem.created_at is when the dump was loaded — the same instant
+    # for 20,000 rows, and nothing to do with you. When you got the card is on
+    # the copy.
+    def acquired(agg):
+        return (
+            select(agg(Owned.created_at))
+            .where(Owned.item_id == CollectionItem.id)
+            .correlate(CollectionItem)
+            .scalar_subquery()
+        )
+
+    if sort == "added":
+        order = [acquired(func.max).desc().nulls_last(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        # the first copy you got, not the most recent — otherwise a second copy
+        # of an old card would drag it to the end of "first added"
+        order = [acquired(func.min).asc().nulls_last(), CollectionItem.id.asc()]
+    elif sort == "title":
+        order = [CollectionItem.title, *by_number]
+    elif sort == "set":
+        # newest set first, and in card order within it — the way a set binder
+        # is laid out
+        order = [CardAttrs.set_year.desc().nulls_last(), CardAttrs.set_name, *by_number]
+    elif sort == "number":
+        order = [*by_number, CollectionItem.title]
+    elif sort == "rarity":
+        order = [rarity_rank(CardAttrs.rarity).desc(), CollectionItem.title]
+    else:
+        order = [CardAttrs.national_dex_no.asc().nulls_last(), CollectionItem.title]
+
     total = db.scalar(count_q) or 0
     items = (
-        db.scalars(
-            q.order_by(CardAttrs.national_dex_no.asc().nulls_last(), CollectionItem.title)
-            .limit(limit)
-            .offset(offset)
-        )
-        .unique()
-        .all()
+        db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
     return CardListOut(total=total, items=[card_to_out(i) for i in items])
 

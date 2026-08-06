@@ -179,7 +179,7 @@ def list_records(
     artist: str | None = None,
     label: str | None = None,
     format: str | None = None,
-    sort: str = Query("artist", pattern="^(title|artist|added|year)$"),
+    sort: str = Query("artist", pattern="^(artist|title|label|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -215,8 +215,18 @@ def list_records(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "title":
         order = [CollectionItem.title]
+    elif sort == "label":
+        # a label run files by catalogue number, which is how the label
+        # numbered them and therefore roughly the order they came out
+        order = [
+            RecordAttrs.label.asc().nulls_last(),
+            RecordAttrs.catalog_number.asc().nulls_last(),
+            CollectionItem.title,
+        ]
     elif sort == "year":
         order = [RecordAttrs.release_year.desc().nulls_last(), CollectionItem.title]
     else:

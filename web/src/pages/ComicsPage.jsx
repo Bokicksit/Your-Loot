@@ -216,10 +216,12 @@ export default function ComicsPage() {
           onChange={(e) => setSort(e.target.value)}
           style={{ marginLeft: "auto" }}
         >
-          <option value="series">By series</option>
+          <option value="series">By series &amp; issue</option>
           <option value="title">A–Z</option>
+          <option value="publisher">By publisher</option>
           <option value="year">By cover year</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

@@ -255,8 +255,10 @@ export default function RecordsPage() {
         >
           <option value="artist">By artist</option>
           <option value="title">A–Z</option>
+          <option value="label">By label</option>
           <option value="year">By year</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

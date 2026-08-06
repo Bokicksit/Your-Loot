@@ -230,7 +230,9 @@ export default function MoviesPage() {
         >
           <option value="title">A–Z</option>
           <option value="format">By format</option>
+          <option value="year">By year</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

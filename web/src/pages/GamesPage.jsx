@@ -311,7 +311,9 @@ export default function GamesPage() {
         >
           <option value="title">A–Z</option>
           <option value="platform">By system</option>
+          <option value="year">By year</option>
           <option value="added">Last added</option>
+          <option value="oldest">First added</option>
         </select>
       </div>
 

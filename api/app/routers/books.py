@@ -138,7 +138,7 @@ def list_books(
     search: str | None = None,
     author: str | None = None,
     format: str | None = None,
-    sort: str = Query("title", pattern="^(title|author|added|year)$"),
+    sort: str = Query("title", pattern="^(title|author|series|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -170,8 +170,18 @@ def list_books(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "author":
         order = [BookAttrs.author.asc().nulls_last(), CollectionItem.title]
+    elif sort == "series":
+        # a series reads in order, so date beats alphabet within one; the
+        # standalones fall to the end rather than jumbling into the runs
+        order = [
+            BookAttrs.series.asc().nulls_last(),
+            BookAttrs.publish_year.asc().nulls_last(),
+            CollectionItem.title,
+        ]
     elif sort == "year":
         order = [BookAttrs.publish_year.desc().nulls_last(), CollectionItem.title]
     else:

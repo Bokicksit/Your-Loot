@@ -8,6 +8,7 @@ from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
 from app.search import contains
+from app.sorting import year_from_title
 
 router = APIRouter(prefix="/api/games", tags=["games"])
 
@@ -96,7 +97,7 @@ def list_games(
     search: str | None = None,
     platform_id: int | None = None,
     is_hardware: bool | None = None,
-    sort: str = Query("title", pattern="^(title|platform|added)$"),
+    sort: str = Query("title", pattern="^(title|platform|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
     offset: int = 0,
@@ -127,9 +128,16 @@ def list_games(
 
     if sort == "added":
         order = [CollectionItem.created_at.desc(), CollectionItem.id.desc()]
+    elif sort == "oldest":
+        order = [CollectionItem.created_at.asc(), CollectionItem.id.asc()]
     elif sort == "platform":
         q = q.outerjoin(Platform, GameAttrs.platform_id == Platform.id)
         order = [Platform.name.asc().nulls_last(), CollectionItem.title]
+    elif sort == "year":
+        # IGDB rarely fills release_year, but the title it hands back carries
+        # the year in brackets, so fall through to that before giving up
+        year = func.coalesce(GameAttrs.release_year, year_from_title(CollectionItem.title))
+        order = [year.desc().nulls_last(), CollectionItem.title]
     else:
         order = [CollectionItem.title]
 
