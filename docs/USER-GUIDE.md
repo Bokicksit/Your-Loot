@@ -105,13 +105,12 @@ collection in Settings.
 
 ### Opening and closing an item
 
-Tap an item's picture or its name to expand it. Tap **anywhere outside** to put
-it away again — the background, another part of the page, anything that isn't
-the item.
+Tap an item's picture or its name to expand it. Tap it again to close it.
 
-Only one stays open at a time, since opening a second item counts as tapping
-outside the first. You'll never end up scrolling past a column of panels you
-forgot you opened.
+**Opening another item closes the one before it**, so only one is ever open and
+you never scroll past a column of panels you forgot about. Nothing else closes
+it: the background, the toolbar, the search box, the filters and the sort menu
+all leave it exactly where it is.
 
 This works the same everywhere — all eight collections, the Pokédex slots, and
 the wanted list, including its **Got it** editor.

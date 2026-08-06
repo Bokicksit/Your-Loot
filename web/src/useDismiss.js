@@ -13,13 +13,21 @@ export function keepOpen(vals, initial, open, label) {
   return !confirm(`Discard your changes to ${label}?`);
 }
 
+// Everything that counts as "an item" across the app: a collection row, a card
+// and its detail strip, a Pokédex slot and its panel, a wanted-list row.
+const ITEM = ".game-row, .tile, .card-detail, .dex-slot, .dex-detail, [data-row]";
+
 /**
- * Put an open panel away when the next press lands outside it.
+ * Close an open panel when you open a different item.
  *
- * Opening a second item counts as pressing outside the first, so only one is
- * ever open — and where each row owns its own state, the rows sort that out
- * between themselves with no page-level bookkeeping and no re-render of the
- * whole list when the open one changes.
+ * Only another item does it. Pressing the background, the toolbar, a filter or
+ * a sort menu leaves the panel exactly where it is — closing on any stray tap
+ * turned out to be far too eager to live with, and a panel you opened on
+ * purpose should not vanish because you reached for the scrollbar.
+ *
+ * Where each row owns its own state the rows sort this out between
+ * themselves, with no page-level bookkeeping and no re-render of the whole
+ * list when the open one changes.
  *
  * `inside` is either an array of refs, or a predicate on the pressed element.
  * Lists that track which row is open on the page rather than in the row have
@@ -39,6 +47,8 @@ export default function useDismiss(open, close, inside, guard) {
           ? inside(e.target)
           : inside.some((r) => r.current?.contains(e.target));
       if (within) return;
+      // the press has to land on some *other* item; anything else is scenery
+      if (!e.target.closest?.(ITEM)) return;
       if (guard?.()) return;
       close();
     };
