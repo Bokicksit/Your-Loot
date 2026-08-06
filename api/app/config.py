@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     tmdb_api_key: str = ""
     rebrickable_api_key: str = ""
     comicvine_api_key: str = ""
+    discogs_token: str = ""
 
 
 settings = Settings()

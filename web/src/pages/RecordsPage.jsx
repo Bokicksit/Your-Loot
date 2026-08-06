@@ -127,7 +127,10 @@ export default function RecordsPage() {
       catalog_number: r.catalog_number || "",
       format: r.format || f.format,
       // 7" singles spin at 45; everything else is an LP until told otherwise
-      speed: /7"/.test(r.format || "") ? "45" : f.speed,
+      speed: r.speed || (/7"/.test(r.format || "") ? "45" : f.speed),
+      // "Limited Edition, Reissue, Kith" — what separates this copy from the
+      // ordinary pressing, and only Discogs tends to record it
+      pressing: r.pressing || f.pressing,
       release_year: r.release_year || "",
       country: r.country || "",
       barcode: r.barcode || f.barcode,
@@ -289,10 +292,12 @@ export default function RecordsPage() {
             <>
               <span className="game-info-line">
                 {results.some((r) => r.source === "barcode")
-                  ? "Not in MusicBrainz — matched the barcode to a shop listing"
-                  : `MusicBrainz · ${results.length} match${
-                      results.length === 1 ? "" : "es"
-                    }`}
+                  ? "Not in the music databases — matched the barcode to a shop listing"
+                  : `${
+                      results.some((r) => r.source === "discogs")
+                        ? "Discogs"
+                        : "MusicBrainz"
+                    } · ${results.length} match${results.length === 1 ? "" : "es"}`}
               </span>
               {results.length === 0 && (
                 <p className="empty" style={{ padding: "var(--s-3)" }}>

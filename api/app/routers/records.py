@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
+from app.integrations.discogs import discogs_client
 from app.integrations.musicbrainz import musicbrainz_client
 from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted
@@ -110,6 +111,16 @@ def search_musicbrainz(
     """
     try:
         if barcode and barcode.strip():
+            # Discogs leads: it's catalogued by people describing the record in
+            # their hands, so it carries pressings the others have never heard
+            # of. A dead token shouldn't take the whole scan down with it.
+            if discogs_client.configured:
+                try:
+                    hits = discogs_client.by_barcode(barcode)
+                    if hits:
+                        return hits
+                except httpx.HTTPError:
+                    pass
             hits = musicbrainz_client.search(barcode=barcode)
             if hits:
                 return hits

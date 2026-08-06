@@ -322,6 +322,12 @@ Good, Fair, Poor** — collectors don't say "Mint"), plus jacket and provenance:
 
 ### Records
 
+A scan tries three sources in turn. **Discogs** first if you've set a token —
+it's catalogued by collectors describing the record in their hands, so it knows
+far more pressings by barcode than anything else, and brings back the catalogue
+number and the pressing notes ("Limited Edition, Reissue") that tell one copy
+from another. Then MusicBrainz. Then, failing both, the shop listing.
+
 MusicBrainz records barcodes unevenly, so a scan that finds nothing there falls
 back to the shop listing the barcode belongs to — that fills the artist, album,
 label and a photo of the sleeve, and puts any MusicBrainz releases of the same
@@ -546,6 +552,7 @@ a message naming the missing variable; everything else keeps working.
 | Cards | pokemon-tcg-data + TCGdex | **No** |
 | Books | Open Library | **No** |
 | Records | MusicBrainz | **No** |
+| Records (barcodes) | Discogs | `DISCOGS_TOKEN` — optional, but much better coverage |
 | Games | IGDB | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
 | Movies | TMDB | `TMDB_API_KEY` |
 | LEGO | Rebrickable | `REBRICKABLE_API_KEY` |
