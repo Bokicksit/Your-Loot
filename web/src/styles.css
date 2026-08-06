@@ -1737,6 +1737,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .sheet-head h2 { margin: 0; font-size: var(--f-4); }
 .sheet .add-form { display: contents; } /* the sheet already lays this out */
 
+/* Results belong in the flow here, directly under the box you typed in.
+   Everywhere else .igdb-results is an absolutely-positioned dropdown hung off
+   `top: 100%` of the form; inside a sheet that anchors to the bottom of the
+   whole sheet, which on a phone is off the end of the screen. */
+.sheet .igdb-results {
+  position: static;
+  max-height: 46vh;
+  margin: 0;
+}
+
 /* the escape hatch out of searching, for what no database has heard of */
 .by-hand {
   justify-self: start;
