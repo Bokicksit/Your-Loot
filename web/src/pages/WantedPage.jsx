@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api.js";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import {
   COMIC_GRADES,
@@ -138,10 +139,10 @@ export default function WantedPage() {
     load();
   };
 
-  // sold+completed eBay search for the item — best market-price proxy without
-  // a paid pricing API.
-  const ebayUrl = (r) => {
-    // strip our "(1995)" year suffix — it needlessly narrows eBay matches
+  // The wanted list only has the flattened one-line summary the API builds, so
+  // unlike the collection pages it has to pick its qualifiers back out of that
+  // string. Everything after the picking is shared — see ebay.js.
+  const ebayTerms = (r) => {
     const title = r.title.replace(/\s*\(\d{4}\)\s*$/, "").trim();
     const said = (s) => title.toLowerCase().includes(s.toLowerCase());
     const parts = (r.detail || "").split("·").map((s) => s.trim()).filter(Boolean);
@@ -160,23 +161,11 @@ export default function WantedPage() {
         ? parts.slice(1).filter((p) => !p.startsWith("#") && !said(p)).pop()
         : null;
 
-    // An artist and album alone pull up the CD, the cassette and the download.
-    // The pressing format is what makes it a record search.
-    //
-    // Only the sized formats are collapsed: nobody lists a `2x12" Vinyl`, they
-    // write "vinyl". Everything else is already what a seller would type, and
-    // "Vinyl box set" has to keep its second half or the search drops to loose
-    // LPs. (Movies already lead with their format; books don't get this because
-    // paperback vs hardcover is an edition, not a different medium.)
-    const media =
-      r.module === "records" && r.badge
-        ? /^\d*x?\d+"\s*vinyl$/i.test(r.badge.trim())
-          ? "vinyl"
-          : r.badge
-        : null;
+    // Movies already lead with their format, and books don't get one because
+    // paperback vs hardcover is an edition, not a different medium.
+    const media = r.module === "records" ? r.badge : null;
 
-    const q = [title, lead, variant, media].filter(Boolean).join(" ");
-    return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`;
+    return [lead, variant, media].filter(Boolean);
   };
 
   // items from collections you've turned off stay in the database but drop
@@ -262,15 +251,11 @@ export default function WantedPage() {
                 <strong>{r.title}</strong>
                 <small>{r.detail}</small>
               </span>
-              <a
+              <EbayLink
                 className="ghost icon"
-                href={ebayUrl(r)}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Check sold prices on eBay"
-              >
-                <Icon id="coin" />
-              </a>
+                title={r.title}
+                terms={ebayTerms(r)}
+              />
               <button
                 className="primary icon"
                 onClick={() =>

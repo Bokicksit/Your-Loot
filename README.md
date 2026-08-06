@@ -53,8 +53,14 @@ spare instructions.
 half a dozen volumes. A raw copy carries a grade; a slabbed one carries its
 CGC/CBCS number instead.
 
+**Sold prices** — every item, owned or wanted, has a coin in its details panel
+that opens an eBay search filtered to *sold and completed* listings. The query
+is built from whatever separates two listings in that collection: the set and
+number for a card, the model number for a console, the pressing format for a
+record.
+
 **Wanted list** — everything you're hunting, across every module, with
-filters and a "check sold prices on eBay" shortcut. Mark something acquired and
+filters and the same sold-price shortcut. Mark something acquired and
 it moves into your collection with the condition you set. Find only the case or
 the manual and it records the spare while the game stays on the hunt.
 

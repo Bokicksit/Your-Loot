@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
@@ -512,6 +513,9 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
                   .join("  ·  ")}
               </span>
             </div>
+            {/* the model number is what separates an original from a revision,
+                and it's the one thing hardware sellers do write down */}
+            <EbayLink title={hw.title} terms={[a.model_number, a.platform_name]} />
           </div>
           {children.length > 0 && (
             <p className="game-summary">

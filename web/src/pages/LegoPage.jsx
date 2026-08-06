@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, withUnknown } from "../vocab.js";
@@ -615,6 +616,8 @@ function LegoRow({ set, onChange, onReload }) {
                   .join("  ·  ")}
               </span>
             </div>
+            {/* the set number is how LEGO is bought and sold, full stop */}
+            <EbayLink title={set.title} terms={[a.set_number]} />
           </div>
         </span>
       )}

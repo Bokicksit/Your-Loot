@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
@@ -747,6 +748,9 @@ function RecordRow({ record, onChange, onReload }) {
               </span>
               {a.pressing && <span className="game-info-line">{a.pressing}</span>}
             </div>
+            {/* an artist and album alone pull up the CD, the cassette and the
+                download — the pressing format is what makes it a record */}
+            <EbayLink title={record.title} terms={[a.artist, a.format]} />
           </div>
         </span>
       )}

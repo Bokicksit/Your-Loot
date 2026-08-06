@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -640,6 +641,9 @@ function BookRow({ book, onChange, onReload }) {
                   .join("  ·  ")}
               </span>
             </div>
+            {/* the author, not the format: paperback vs hardcover is an
+                edition, not a different medium, and sellers list both ways */}
+            <EbayLink title={book.title} terms={[a.author]} />
           </div>
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>

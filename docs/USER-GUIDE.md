@@ -213,6 +213,38 @@ Notes:
 
 ---
 
+## What it's worth
+
+Tap any item to open its details and there's a **coin** in the top-right
+corner. It opens an eBay search filtered to *sold and completed* listings —
+what people actually paid, not what sellers are asking. It's the same coin
+from the wanted list, and the closest thing to a valuation without paying for
+a pricing service.
+
+Nothing is stored for this, so **everything already in your collection has one
+now** — no re-adding, no refresh, no migration. Edit an item and the search
+follows the edit.
+
+The search is built from the entry, using whatever separates two listings in
+that collection:
+
+| Collection | What it searches for |
+| --- | --- |
+| Cards | name, card number, set — `Charizard ex 105/112 FireRed & LeafGreen` |
+| Games | title and system, with our `(1996)` suffix dropped |
+| Hardware | title and model number — an original and a revision aren't the same item |
+| Movies | title, format, edition — a steelbook isn't a plain case |
+| Books | title and author |
+| Records | artist and pressing format, so you don't price the CD |
+| LEGO | title and set number |
+| Comics | title and variant cover |
+
+Anything the title already says is left out rather than repeated. It's a
+starting point, not an appraisal — condition, completeness and grading move
+prices far more than the search can know, so read the actual sold listings.
+
+---
+
 ## The collections
 
 ### Cards
@@ -404,7 +436,9 @@ genre. Other collections don't have that sub-filter yet.
 
 Each row expands for details. **Check sold prices on eBay** opens a
 sold-and-completed search for that item — the closest thing to a market price
-without a paid pricing service.
+without a paid pricing service. The same coin sits in the corner of the details
+panel on everything you already own; see [What it's
+worth](#what-its-worth).
 
 ### Getting something
 

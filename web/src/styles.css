@@ -1081,6 +1081,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .expand-cover.square { max-height: 96px; }
 .expand-body { display: grid; gap: 4px; min-width: 0; }
+/* sold prices, parked in the corner of the panel so it never competes with
+   the title for the eye */
+.expand-ebay { flex: none; margin-left: auto; align-self: flex-start; }
 .expand-title {
   font-size: var(--f-4);
   font-weight: var(--w-bold);

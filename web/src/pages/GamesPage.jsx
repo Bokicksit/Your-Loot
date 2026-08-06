@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
@@ -675,6 +676,9 @@ function GameRow({ game, platforms, onChange, onReload }) {
               </span>
               {infoLine && <span className="game-info-line">{infoLine}</span>}
             </div>
+            {/* the system, not the region: a region code is something almost
+                no seller writes into a listing title */}
+            <EbayLink title={game.title} terms={[a.platform_name]} />
           </div>
           {a.summary && <p className="game-summary">{a.summary}</p>}
         </span>

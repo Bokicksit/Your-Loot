@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat } from "../upc.js";
@@ -573,6 +574,12 @@ function MovieRow({ movie, onChange, onReload }) {
                 <span className="game-info-line">{movie.attrs.genre}</span>
               )}
             </div>
+            {/* a steelbook and a plain case of the same film are different
+                items at very different prices */}
+            <EbayLink
+              title={movie.title}
+              terms={[movie.attrs.format, movie.attrs.edition]}
+            />
           </div>
           {movie.attrs.overview && (
             <p className="game-summary">{movie.attrs.overview}</p>

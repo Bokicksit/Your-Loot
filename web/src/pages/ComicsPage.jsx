@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import {
@@ -684,6 +685,9 @@ function ComicRow({ comic, onChange, onReload }) {
                   .join("  ·  ")}
               </span>
             </div>
+            {/* the title already carries series and issue, so the variant
+                cover is the only thing left that separates two listings */}
+            <EbayLink title={comic.title} terms={[a.variant]} />
           </div>
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>

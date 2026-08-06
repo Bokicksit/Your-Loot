@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
+import EbayLink from "./EbayLink.jsx";
 import { Icon } from "./Icons.jsx";
 import ImagePicker from "./ImagePicker.jsx";
 import RarityMark from "./RarityMark.jsx";
@@ -368,6 +369,14 @@ export default function CardTile({ card, onChange, onReload }) {
               {a.national_dex_no ? ` · Dex #${a.national_dex_no}` : ""}
             </span>
           </div>
+          {/* sellers title a card by its number and set, never by its rarity */}
+          <EbayLink
+            title={card.title}
+            terms={[
+              `${a.card_number}${a.set_total ? `/${a.set_total}` : ""}`,
+              a.set_name,
+            ]}
+          />
         </div>
         <ul>
           {card.owned.map((o) => (
