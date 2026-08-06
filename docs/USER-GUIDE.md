@@ -159,8 +159,21 @@ A few of these do more than they say:
 
 ## Adding things
 
-Every collection has an **Add** button in the top-right of its page. The form
-that opens works the same way everywhere, with three routes in.
+Every collection has an **Add** button in the top-right of its page. It opens
+in two steps, so the box you type a search into is never on screen next to the
+boxes that describe your copy:
+
+1. **Find it** — search the online database, or scan a barcode. Pick a result
+   and you move straight to step 2 with everything it knew already filled in.
+   Nothing to find? **Enter it by hand** goes to step 2 blank.
+2. **Describe your copy** — format, condition, what you have, your own photo.
+   The **←** in the corner goes back to the search if you picked the wrong
+   thing.
+
+Two collections skip step 1, for good reasons. **Hardware** has no online
+catalogue worth searching, so it opens straight to the details. **Cards** show
+each result's add panel directly under the card you picked, which already
+separates finding from describing.
 
 ### 1. Scan a barcode
 

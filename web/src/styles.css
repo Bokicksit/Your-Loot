@@ -1705,6 +1705,47 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .modal button { width: 100%; }
 .modal .form-row button { width: auto; }
 
+/* ===================== add sheet (search / details) ===================== */
+
+/* A working surface, not a confirmation box — deliberately not .modal, whose
+   centred text, 360px cap and full-width buttons are all wrong for a form. */
+.sheet {
+  display: grid;
+  gap: var(--s-3);
+  width: min(560px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s-5);
+  background: var(--bg-2);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-2), 0 0 40px -10px var(--gold-glow);
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  position: sticky;
+  top: calc(var(--s-5) * -1);
+  margin: calc(var(--s-5) * -1) calc(var(--s-5) * -1) 0;
+  padding: var(--s-3) var(--s-5);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  z-index: 1;
+}
+.sheet-head h2 { margin: 0; font-size: var(--f-4); }
+.sheet .add-form { display: contents; } /* the sheet already lays this out */
+
+/* the escape hatch out of searching, for what no database has heard of */
+.by-hand {
+  justify-self: start;
+  gap: var(--s-2);
+  color: var(--text-dim);
+  font-size: var(--f-2);
+}
+.by-hand svg.i { width: 15px; height: 15px; }
+
 .scan-stage {
   position: relative;
   width: 100%;

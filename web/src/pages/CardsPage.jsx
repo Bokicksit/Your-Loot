@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
+import AddSheet from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -73,6 +74,12 @@ export default function CardsPage({ initialView = "collection" }) {
   });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
+    setManual(null);
+  };
 
   const load = () => {
     const params = { include_binder: showBinder, sort };
@@ -388,13 +395,9 @@ export default function CardsPage({ initialView = "collection" }) {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          title={showForm ? "Close" : "Add a card"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={() => setShowForm(true)} title="Add a card">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -455,9 +458,11 @@ export default function CardsPage({ initialView = "collection" }) {
         </select>
       </div>
 
-      {showForm && (
+      {/* Cards keep one step on purpose: picking a result opens its own
+          panel directly under that card, so the search and the details are
+          already separated by position rather than by screen. */}
+      <AddSheet open={showForm} title="Add a card" onClose={closeForm}>
         <div className="add-form">
-          <h2>Add a card</h2>
           <div className="form-row">
             <input
               type="text"
@@ -837,7 +842,7 @@ export default function CardsPage({ initialView = "collection" }) {
             </div>
           )}
         </div>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

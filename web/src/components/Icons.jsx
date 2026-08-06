@@ -30,6 +30,7 @@ export function IconDefs() {
         <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5" /><path d="M4.5 17v1.5a2 2 0 002 2h11a2 2 0 002-2V17" /></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9.5M7.5 13.5L12 9l4.5 4.5" /><path d="M4.5 7V5.5a2 2 0 012-2h11a2 2 0 012 2V7" /></symbol>
         <symbol id="i-brick" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="10.5" rx="1.5" /><path d="M8 9V7.2a1.6 1.6 0 013.2 0V9M12.8 9V7.2a1.6 1.6 0 013.2 0V9" /></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5.5M11 5.5L4.5 12l6.5 6.5" /></symbol>
         <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 3.5L5.5 13.4h5.4l-.9 7.1 7.7-9.9h-5.4z" /></symbol>
         <symbol id="i-comic" viewBox="0 0 24 24"><path d="M4 5.5h11.5a2 2 0 012 2v11H6a2 2 0 01-2-2z" /><path d="M17.5 8.5H20v10a2 2 0 01-2 2H6" /><path d="M7 9h6M7 12.5h4" /></symbol>
       </defs>

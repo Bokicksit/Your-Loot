@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
+import AddSheet from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -98,6 +99,15 @@ export default function HardwarePage() {
     return () => clearTimeout(t);
   }, [search, platformFilter, sort]);
 
+  // settings arrive after mount, so the default region is picked up on open
+  const openForm = () => {
+    setForm(blankForm());
+    setArt([]);
+    setShowForm(true);
+  };
+
+  const closeForm = () => setShowForm(false);
+
   const submit = async (e) => {
     e.preventDefault();
     try {
@@ -151,17 +161,9 @@ export default function HardwarePage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => {
-            // settings arrive after mount, so pick the region up on open
-            if (!showForm) setForm((f) => ({ ...f, region: blankForm().region }));
-            setShowForm(!showForm);
-          }}
-          title={showForm ? "Close" : "Add hardware"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add hardware">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -193,9 +195,10 @@ export default function HardwarePage() {
         </select>
       </div>
 
-      {showForm && (
+      {/* no online catalogue knows retro hardware, so there is nothing to
+          search and no reason to make you step through a search first */}
+      <AddSheet open={showForm} title="Add hardware" onClose={closeForm}>
         <form className="add-form" onSubmit={submit}>
-          <h2>Add hardware</h2>
           <div className="form-row">
             <input
               type="text"
@@ -310,7 +313,7 @@ export default function HardwarePage() {
             </button>
           </div>
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

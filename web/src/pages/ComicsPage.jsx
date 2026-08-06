@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
+import AddSheet, { ByHand } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -50,6 +51,7 @@ export default function ComicsPage() {
   const [publisherFilter, setPublisherFilter] = useState("");
   const [sort, setSort] = useState("series");
   const [showForm, setShowForm] = useState(false);
+  const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -156,6 +158,19 @@ export default function ComicsPage() {
       image_url: r.image_url || null,
     }));
     setResults(null);
+    setStep("details");
+  };
+
+  const openForm = () => {
+    setForm(EMPTY_FORM);
+    setResults(null);
+    setStep("search");
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
   };
 
   const submit = async (e) => {
@@ -209,13 +224,9 @@ export default function ComicsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          title={showForm ? "Close" : "Add an issue"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add an issue">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -264,9 +275,7 @@ export default function ComicsPage() {
         </select>
       </div>
 
-      {showForm && (
-        <form className="add-form" onSubmit={submit}>
-          <h2>Add an issue</h2>
+      <AddSheet open={showForm && step === "search"} title="Find an issue" onClose={closeForm}>
           {/* three fields plus the scan button is too much for a phone on one
               line, so this row is allowed to wrap rather than crush the series
               name down to the width of an issue number */}
@@ -354,7 +363,26 @@ export default function ComicsPage() {
               </div>
             </>
           )}
+        <ByHand onClick={() => setStep("details")} />
+      </AddSheet>
 
+      <AddSheet
+        open={showForm && step === "details"}
+        title="Add an issue"
+        onClose={closeForm}
+        onBack={() => setStep("search")}
+      >
+        <form className="add-form" onSubmit={submit}>
+          <div className="form-row">
+            <input
+              type="text"
+              required
+              className="grow"
+              placeholder="Title as you want it filed"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
           <div className="form-row">
             <input
               type="text"
@@ -454,7 +482,7 @@ export default function ComicsPage() {
             </button>
           </div>
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

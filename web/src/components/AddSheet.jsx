@@ -1,0 +1,51 @@
+import { createPortal } from "react-dom";
+import { Icon } from "./Icons.jsx";
+
+// The shell both halves of adding an item share.
+//
+// Searching and describing used to happen in one long form, where the top box
+// looked for a title online and the boxes under it described the copy in your
+// hand — two different jobs wearing the same clothes. They're two steps now,
+// and only one is ever on screen.
+//
+// Rendered through a portal: the page's add button lives inside the toolbar,
+// and a modal nested in there inherits its layout.
+export default function AddSheet({ open, title, onClose, onBack, children }) {
+  if (!open) return null;
+  return createPortal(
+    <div className="modal-scrim" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          {onBack && (
+            <button type="button" className="ghost icon" title="Back to search" onClick={onBack}>
+              <Icon id="back" />
+            </button>
+          )}
+          <h2>{title}</h2>
+          <button
+            type="button"
+            className="ghost icon"
+            title="Close"
+            onClick={onClose}
+            style={{ marginLeft: "auto" }}
+          >
+            <Icon id="x" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// The line at the bottom of the search step: the way through to typing it in
+// yourself, for everything the databases have never heard of.
+export function ByHand({ onClick, children = "Enter it by hand" }) {
+  return (
+    <button type="button" className="ghost by-hand" onClick={onClick}>
+      {children}
+      <Icon id="pencil" />
+    </button>
+  );
+}

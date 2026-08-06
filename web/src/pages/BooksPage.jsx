@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
+import AddSheet, { ByHand } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -53,6 +54,7 @@ export default function BooksPage() {
   const [formatFilter, setFormatFilter] = useState("");
   const [sort, setSort] = useState("title");
   const [showForm, setShowForm] = useState(false);
+  const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -118,6 +120,19 @@ export default function BooksPage() {
       image_url: r.image_url || null,
     }));
     setResults(null);
+    setStep("details"); // picked an edition — on to describing your copy
+  };
+
+  const openForm = () => {
+    setForm(EMPTY_FORM);
+    setResults(null);
+    setStep("search");
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
   };
 
   const submit = async (e) => {
@@ -171,13 +186,9 @@ export default function BooksPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          title={showForm ? "Close" : "Add a book"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add a book">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -226,36 +237,33 @@ export default function BooksPage() {
         </select>
       </div>
 
-      {showForm && (
-        <form className="add-form" onSubmit={submit}>
-          <h2>Add a book</h2>
-          <div className="form-row">
-            <input
-              type="text"
-              required
-              className="grow"
-              placeholder="Title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
-            />
-            <BarcodeScan onCode={onBarcode} />
-          </div>
-          <div className="form-row">
-            <input
-              type="text"
-              className="grow"
-              placeholder="Author"
-              value={form.author}
-              onChange={(e) => setForm({ ...form, author: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
-            />
-            <button type="button" className="ghost" onClick={textSearch} disabled={searching}>
-              {searching ? "…" : "Look up"}
-            </button>
-          </div>
-
-          {results && (
+      <AddSheet open={showForm && step === "search"} title="Find a book" onClose={closeForm}>
+        <div className="form-row">
+          <input
+            type="text"
+            className="grow"
+            autoFocus
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
+          />
+          <BarcodeScan onCode={onBarcode} />
+        </div>
+        <div className="form-row">
+          <input
+            type="text"
+            className="grow"
+            placeholder="Author"
+            value={form.author}
+            onChange={(e) => setForm({ ...form, author: e.target.value })}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
+          />
+          <button type="button" className="ghost" onClick={textSearch} disabled={searching}>
+            {searching ? "…" : "Look up"}
+          </button>
+        </div>
+        {results && (
             <>
               <span className="game-info-line">
                 Open Library · {results.length} match{results.length === 1 ? "" : "es"}
@@ -286,9 +294,37 @@ export default function BooksPage() {
                   </div>
                 ))}
               </div>
-            </>
-          )}
+          </>
+        )}
+        <ByHand onClick={() => setStep("details")} />
+      </AddSheet>
 
+      <AddSheet
+        open={showForm && step === "details"}
+        title="Add a book"
+        onClose={closeForm}
+        onBack={() => setStep("search")}
+      >
+        <form className="add-form" onSubmit={submit}>
+          <div className="form-row">
+            <input
+              type="text"
+              required
+              className="grow"
+              placeholder="Title as you want it filed"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Author"
+              value={form.author}
+              onChange={(e) => setForm({ ...form, author: e.target.value })}
+            />
+          </div>
           <div className="form-row">
             <select
               value={form.format}
@@ -371,7 +407,7 @@ export default function BooksPage() {
             </button>
           </div>
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

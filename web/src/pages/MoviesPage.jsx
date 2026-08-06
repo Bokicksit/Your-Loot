@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
+import AddSheet, { ByHand } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -41,6 +42,7 @@ export default function MoviesPage() {
   const [formatFilter, setFormatFilter] = useState("");
   const [sort, setSort] = useState("title"); // title | format | added
   const [showForm, setShowForm] = useState(false);
+  const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
   const [art, setArt] = useState([]); // artwork candidates: case photos + poster
@@ -141,6 +143,20 @@ export default function MoviesPage() {
       overview: r.overview || null,
     });
     setResults(null);
+    setStep("details"); // picked a film — on to describing your copy
+  };
+
+  const openForm = () => {
+    setForm(EMPTY_FORM);
+    setArt([]);
+    setResults(null);
+    setStep("search");
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
   };
 
   const submit = async (e) => {
@@ -186,6 +202,27 @@ export default function MoviesPage() {
       )
     );
 
+  const resultsList = results && (
+    <ul className="igdb-results">
+      {results.length === 0 && (
+        <li style={{ cursor: "default", color: "var(--text-mute)" }}>No TMDB matches.</li>
+      )}
+      {results.map((r) => (
+        <li key={r.tmdb_id} onClick={() => pickResult(r)}>
+          {r.poster_url ? (
+            <img src={r.poster_url} alt="" loading="lazy" />
+          ) : (
+            <span className="placeholder" data-label="" />
+          )}
+          <span className="game-text">
+            <strong>{r.title}</strong>
+          </span>
+          <span className="year">{r.year || ""}</span>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <div>
       <div className="toolbar">
@@ -196,13 +233,9 @@ export default function MoviesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          title={showForm ? "Close" : "Add to shelf"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add to shelf">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -237,10 +270,8 @@ export default function MoviesPage() {
         </select>
       </div>
 
-      {showForm && (
-        <form className="add-form" onSubmit={submit}>
-          <h2>Add to shelf</h2>
-          <div className="form-row">
+      <AddSheet open={showForm && step === "search"} title="Find a film" onClose={closeForm}>
+        <div className="form-row">
             <input
               type="text"
               required
@@ -269,6 +300,27 @@ export default function MoviesPage() {
               {searching ? "…" : "Search TMDB"}
             </button>
             <BarcodeScan onCode={onBarcode} />
+        </div>
+        {resultsList}
+        <ByHand onClick={() => setStep("details")} />
+      </AddSheet>
+
+      <AddSheet
+        open={showForm && step === "details"}
+        title="Add to shelf"
+        onClose={closeForm}
+        onBack={() => setStep("search")}
+      >
+        <form className="add-form" onSubmit={submit}>
+          <div className="form-row">
+            <input
+              type="text"
+              required
+              className="grow"
+              placeholder="Title as you want it filed"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div className="form-row">
             <select
@@ -361,30 +413,8 @@ export default function MoviesPage() {
               Add
             </button>
           </div>
-          {results && (
-            <ul className="igdb-results">
-              {results.length === 0 && (
-                <li style={{ cursor: "default", color: "var(--text-mute)" }}>
-                  No TMDB matches.
-                </li>
-              )}
-              {results.map((r) => (
-                <li key={r.tmdb_id} onClick={() => pickResult(r)}>
-                  {r.poster_url ? (
-                    <img src={r.poster_url} alt="" loading="lazy" />
-                  ) : (
-                    <span className="placeholder" data-label="" />
-                  )}
-                  <span className="game-text">
-                    <strong>{r.title}</strong>
-                  </span>
-                  <span className="year">{r.year || ""}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

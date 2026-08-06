@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
+import AddSheet, { ByHand } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -54,6 +55,7 @@ export default function RecordsPage() {
   const [formatFilter, setFormatFilter] = useState("");
   const [sort, setSort] = useState("artist");
   const [showForm, setShowForm] = useState(false);
+  const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -140,6 +142,19 @@ export default function RecordsPage() {
       image_url: r.image_url || null,
     }));
     setResults(null);
+    setStep("details");
+  };
+
+  const openForm = () => {
+    setForm(EMPTY_FORM);
+    setResults(null);
+    setStep("search");
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
   };
 
   const submit = async (e) => {
@@ -194,13 +209,9 @@ export default function RecordsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          title={showForm ? "Close" : "Add a record"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add a record">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -263,9 +274,7 @@ export default function RecordsPage() {
         </select>
       </div>
 
-      {showForm && (
-        <form className="add-form" onSubmit={submit}>
-          <h2>Add a record</h2>
+      <AddSheet open={showForm && step === "search"} title="Find a record" onClose={closeForm}>
           <div className="form-row">
             <input
               type="text"
@@ -341,7 +350,26 @@ export default function RecordsPage() {
               </div>
             </>
           )}
+        <ByHand onClick={() => setStep("details")} />
+      </AddSheet>
 
+      <AddSheet
+        open={showForm && step === "details"}
+        title="Add a record"
+        onClose={closeForm}
+        onBack={() => setStep("search")}
+      >
+        <form className="add-form" onSubmit={submit}>
+          <div className="form-row">
+            <input
+              type="text"
+              required
+              className="grow"
+              placeholder="Title as you want it filed"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
           <div className="form-row">
             <select
               value={form.format}
@@ -449,7 +477,7 @@ export default function RecordsPage() {
             </button>
           </div>
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">

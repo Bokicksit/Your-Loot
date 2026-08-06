@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
+import AddSheet, { ByHand } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -80,6 +81,7 @@ export default function GamesPage() {
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
   const [sort, setSort] = useState("title"); // title | platform | added
   const [showForm, setShowForm] = useState(false);
+  const [step, setStep] = useState("search"); // search -> details
   const { settings } = useSettings();
   // a blank form starts at whatever region you told Settings you mostly buy
   const blankForm = () => ({
@@ -234,6 +236,22 @@ export default function GamesPage() {
       publisher: r.publisher || null,
     });
     setResults(null);
+    setStep("details"); // picked something — on to describing your copy
+  };
+
+  // settings arrive after mount, so the default region is picked up on open
+  const openForm = () => {
+    setForm(blankForm());
+    setArt([]);
+    setResults(null);
+    setAllowedPlatforms([]);
+    setStep("search");
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setResults(null);
   };
 
   const submit = async (e) => {
@@ -296,17 +314,9 @@ export default function GamesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="count">{total}</span>
-        <button
-          className={showForm ? "ghost icon" : "primary"}
-          onClick={() => {
-            // settings arrive after mount, so pick the region up on open
-            if (!showForm) setForm((f) => ({ ...f, region: blankForm().region }));
-            setShowForm(!showForm);
-          }}
-          title={showForm ? "Close" : "Add to library"}
-        >
-          <Icon id={showForm ? "x" : "plus"} />
-          {!showForm && "Add"}
+        <button className="primary" onClick={openForm} title="Add to library">
+          <Icon id="plus" />
+          Add
         </button>
       </div>
 
@@ -338,42 +348,87 @@ export default function GamesPage() {
         </select>
       </div>
 
-      {showForm && (
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find a game"
+        onClose={closeForm}
+      >
+        <div className="form-row">
+          <input
+            type="text"
+            className="grow"
+            autoFocus
+            placeholder="Title to search for"
+            value={form.title}
+            onChange={(e) => {
+              // manual edits detach the IGDB link/cover/metadata
+              setForm({
+                ...form,
+                title: e.target.value,
+                igdb_id: null,
+                image_url: null,
+                summary: null,
+                release_year: null,
+                genres: null,
+                developer: null,
+                publisher: null,
+              });
+              setAllowedPlatforms([]);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                igdbSearch();
+              }
+            }}
+          />
+          <button type="button" className="ghost" onClick={igdbSearch} disabled={searching}>
+            {searching ? "…" : "Search"}
+          </button>
+          <BarcodeScan onCode={onBarcode} />
+        </div>
+        {results && (
+          <ul className="igdb-results">
+            {results.length === 0 && (
+              <li style={{ cursor: "default", color: "var(--text-mute)" }}>
+                No IGDB matches.
+              </li>
+            )}
+            {results.map((r) => (
+              <li key={r.igdb_id} onClick={() => pickResult(r)}>
+                {r.cover_url ? (
+                  <img src={r.cover_url} alt="" loading="lazy" />
+                ) : (
+                  <span className="placeholder" data-label="" />
+                )}
+                <span className="game-text">
+                  <strong>{r.title}</strong>
+                  <small>{r.platforms.slice(0, 4).join(", ")}</small>
+                </span>
+                <span className="year">{r.year || ""}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <ByHand onClick={() => setStep("details")} />
+      </AddSheet>
+
+      <AddSheet
+        open={showForm && step === "details"}
+        title="Add to library"
+        onClose={closeForm}
+        onBack={() => setStep("search")}
+      >
         <form className="add-form" onSubmit={submit}>
-          <h2>Add to library</h2>
           <div className="form-row">
             <input
               type="text"
               required
-              placeholder="Title — then search IGDB"
+              className="grow"
+              placeholder="Title as you want it filed"
               value={form.title}
-              onChange={(e) => {
-                // manual edits detach the IGDB link/cover/metadata
-                setForm({
-                  ...form,
-                  title: e.target.value,
-                  igdb_id: null,
-                  image_url: null,
-                  summary: null,
-                  release_year: null,
-                  genres: null,
-                  developer: null,
-                  publisher: null,
-                });
-                setAllowedPlatforms([]);
-              }}
-              onKeyDown={(e) => {
-                // Enter always searches IGDB — the form only submits via Add
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  igdbSearch();
-                }
-              }}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-            <button type="button" className="ghost" onClick={igdbSearch} disabled={searching}>
-              {searching ? "…" : "Search IGDB"}
-            </button>
-            <BarcodeScan onCode={onBarcode} />
           </div>
           <div className="form-row">
             <select
@@ -458,31 +513,8 @@ export default function GamesPage() {
               Add
             </button>
           </div>
-          {results && (
-            <ul className="igdb-results">
-              {results.length === 0 && (
-                <li style={{ cursor: "default", color: "var(--text-mute)" }}>
-                  No IGDB matches.
-                </li>
-              )}
-              {results.map((r) => (
-                <li key={r.igdb_id} onClick={() => pickResult(r)}>
-                  {r.cover_url ? (
-                    <img src={r.cover_url} alt="" loading="lazy" />
-                  ) : (
-                    <span className="placeholder" data-label="" />
-                  )}
-                  <span className="game-text">
-                    <strong>{r.title}</strong>
-                    <small>{r.platforms.slice(0, 4).join(", ")}</small>
-                  </span>
-                  <span className="year">{r.year || ""}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </form>
-      )}
+      </AddSheet>
 
       {error && (
         <p className="error">
