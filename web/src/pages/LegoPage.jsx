@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -417,8 +418,20 @@ function LegoRow({ set, onChange, onReload }) {
   };
 
   const [entry, setEntry] = useState(null); // null = editor closed
-  const openEntry = () =>
-    setEntry({
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entry !== null || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntry(null);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entry !== null, set.title),
+  );
+  const openEntry = () => {
+    const vals = {
       title: set.title || "",
       set_number: a.set_number || "",
       theme: a.theme || "",
@@ -427,7 +440,10 @@ function LegoRow({ set, onChange, onReload }) {
       piece_count: a.piece_count ?? "",
       minifig_count: a.minifig_count ?? "",
       image_url: set.image_url,
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
+  };
 
   const saveEntry = async () => {
     if (busy) return;
@@ -454,7 +470,7 @@ function LegoRow({ set, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${set.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${set.owned.length ? "row-owned" : ""}`}>
       {set.image_url ? (
         <img
           className="game-cover"

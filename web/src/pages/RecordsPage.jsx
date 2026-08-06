@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -520,8 +521,20 @@ function RecordRow({ record, onChange, onReload }) {
   };
 
   const [entry, setEntry] = useState(null); // null = editor closed
-  const openEntry = () =>
-    setEntry({
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entry !== null || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntry(null);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entry !== null, record.title),
+  );
+  const openEntry = () => {
+    const vals = {
       title: record.title || "",
       artist: a.artist || "",
       label: a.label || "",
@@ -532,7 +545,10 @@ function RecordRow({ record, onChange, onReload }) {
       release_year: a.release_year ?? "",
       country: a.country || "",
       image_url: record.image_url,
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
+  };
 
   const saveEntry = async () => {
     if (busy) return;
@@ -562,7 +578,7 @@ function RecordRow({ record, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
       {record.image_url ? (
         <img
           className="game-cover square"

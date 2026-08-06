@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
@@ -415,6 +416,18 @@ function MovieRow({ movie, onChange, onReload }) {
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
   const [infoOpen, setInfoOpen] = useState(false); // expandable detail card
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entryOpen || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntryOpen(false);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entryOpen, movie.title),
+  );
 
   const run = async (fn) => {
     if (busy) return;
@@ -450,13 +463,15 @@ function MovieRow({ movie, onChange, onReload }) {
     });
 
   const openEntry = () => {
-    setEntry({
+    const vals = {
       title: movie.title,
       format: movie.attrs.format || "Blu-ray",
       edition: movie.attrs.edition || "",
       region_code: movie.attrs.region_code || "",
       genre: movie.attrs.genre || "",
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
     setEntryOpen(true);
   };
 
@@ -487,7 +502,7 @@ function MovieRow({ movie, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${movie.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${movie.owned.length ? "row-owned" : ""}`}>
       {movie.image_url ? (
         <img
           className="game-cover"

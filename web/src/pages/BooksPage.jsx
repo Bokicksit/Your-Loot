@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -440,8 +441,20 @@ function BookRow({ book, onChange, onReload }) {
   };
 
   const [entry, setEntry] = useState(null); // null = editor closed
-  const openEntry = () =>
-    setEntry({
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entry !== null || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntry(null);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entry !== null, book.title),
+  );
+  const openEntry = () => {
+    const vals = {
       title: book.title || "",
       author: a.author || "",
       publisher: a.publisher || "",
@@ -451,7 +464,10 @@ function BookRow({ book, onChange, onReload }) {
       series: a.series || "",
       publish_year: a.publish_year ?? "",
       image_url: book.image_url,
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
+  };
 
   const saveEntry = async () => {
     if (busy) return;
@@ -479,7 +495,7 @@ function BookRow({ book, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${book.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${book.owned.length ? "row-owned" : ""}`}>
       {book.image_url ? (
         <img
           className="game-cover"

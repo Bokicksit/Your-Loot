@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
+import useDismiss from "../useDismiss.js";
 import EbayLink from "./EbayLink.jsx";
 import { Icon } from "./Icons.jsx";
 import ImagePicker from "./ImagePicker.jsx";
@@ -31,6 +32,11 @@ const ENTRY_FIELDS = [
 export default function CardTile({ card, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
+  // a card is a tile plus a detail panel below its whole row, not one box, so
+  // both count as "inside" — pressing either must not put the panel away
+  const tileRef = useRef(null);
+  const detailRef = useRef(null);
+  useDismiss(detailOpen, () => setDetailOpen(false), [tileRef, detailRef]);
   const [entry, setEntry] = useState(null); // card-detail draft, null = closed
   const [editing, setEditing] = useState(null); // owned id being edited
   const [vals, setVals] = useState({
@@ -279,7 +285,7 @@ export default function CardTile({ card, onChange, onReload }) {
 
   return (
     <>
-    <div className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
+    <div ref={tileRef} className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
       {card.owned.length > 0 && <span className="owned-badge">×{card.owned.length}</span>}
       {card.image_url ? (
         <img
@@ -352,7 +358,7 @@ export default function CardTile({ card, onChange, onReload }) {
       {editing !== null && createPortal(editorModal, document.body)}
     </div>
     {detailOpen && (
-      <div className="dex-detail card-detail">
+      <div ref={detailRef} className="dex-detail card-detail">
         <div className="expand-card">
           {card.image_url && (
             <img className="expand-cover" src={card.image_url} alt="" loading="lazy" />

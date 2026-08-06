@@ -103,6 +103,21 @@ collection in Settings.
 
 **Settings** is the gear in the top-right.
 
+### Opening and closing an item
+
+Tap an item's picture or its name to expand it. Tap **anywhere outside** to put
+it away again — the background, another part of the page, anything that isn't
+the item.
+
+Only one stays open at a time, since opening a second item counts as tapping
+outside the first. You'll never end up scrolling past a column of panels you
+forgot you opened.
+
+The one exception is an **entry editor you've typed in**. Tapping off it asks
+whether to discard the changes first, because losing a screen of typing to a
+mis-tap on a phone is a miserable way to lose it. An editor you opened but
+didn't change closes silently like anything else.
+
 ### Sorting
 
 Every collection has a **sort** dropdown next to its filters. The options

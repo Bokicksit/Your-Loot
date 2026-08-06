@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
@@ -513,6 +514,18 @@ function GameRow({ game, platforms, onChange, onReload }) {
   const [entryOpen, setEntryOpen] = useState(false); // entry (catalog) editor
   const [entry, setEntry] = useState({});
   const [infoOpen, setInfoOpen] = useState(false); // expandable detail card
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entryOpen || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntryOpen(false);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entryOpen, game.title),
+  );
 
   const a = game.attrs;
   const infoLine = [
@@ -561,12 +574,14 @@ function GameRow({ game, platforms, onChange, onReload }) {
       return status;
     });
   const openEntry = () => {
-    setEntry({
+    const vals = {
       title: game.title,
       platform_id: game.attrs.platform_id ? String(game.attrs.platform_id) : "",
       region: game.attrs.region || "",
       is_hardware: game.attrs.is_hardware,
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
     setEntryOpen(true);
   };
 
@@ -598,7 +613,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${game.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${game.owned.length ? "row-owned" : ""}`}>
       {game.image_url ? (
         <img
           className="game-cover"

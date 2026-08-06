@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
@@ -348,6 +349,18 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
   const [entryOpen, setEntryOpen] = useState(false);
   const [entry, setEntry] = useState({});
   const [infoOpen, setInfoOpen] = useState(false);
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entryOpen || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntryOpen(false);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entryOpen, hw.title),
+  );
 
   const a = hw.attrs;
   const parent = a.parent_id ? all.find((x) => x.id === a.parent_id) : null;
@@ -386,7 +399,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
     });
 
   const openEntry = () => {
-    setEntry({
+    const vals = {
       title: hw.title,
       platform_id: a.platform_id ? String(a.platform_id) : "",
       region: a.region || "",
@@ -394,7 +407,9 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
       serial_number: a.serial_number || "",
       working: a.working || "works",
       parent_id: a.parent_id ? String(a.parent_id) : "",
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
     setEntryOpen(true);
   };
   const saveEntry = async () => {
@@ -426,7 +441,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${hw.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${hw.owned.length ? "row-owned" : ""}`}>
       {hw.image_url ? (
         <img
           className="game-cover"

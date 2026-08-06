@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
+import useDismiss, { keepOpen } from "../useDismiss.js";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -472,8 +473,20 @@ function ComicRow({ comic, onChange, onReload }) {
   };
 
   const [entry, setEntry] = useState(null); // null = editor closed
-  const openEntry = () =>
-    setEntry({
+  const rowRef = useRef(null);
+  const entryInit = useRef(null); // what the editor opened with, to spot edits
+  useDismiss(
+    infoOpen || entry !== null || editing !== null,
+    () => {
+      setInfoOpen(false);
+      setEntry(null);
+      setEditing(null);
+    },
+    [rowRef],
+    () => keepOpen(entry, entryInit.current, entry !== null, comic.title),
+  );
+  const openEntry = () => {
+    const vals = {
       title: comic.title || "",
       series: a.series || "",
       issue_number: a.issue_number || "",
@@ -483,7 +496,10 @@ function ComicRow({ comic, onChange, onReload }) {
       variant: a.variant || "",
       creators: a.creators || "",
       image_url: comic.image_url,
-    });
+    };
+    entryInit.current = vals;
+    setEntry(vals);
+  };
 
   const saveEntry = async () => {
     if (busy) return;
@@ -511,7 +527,7 @@ function ComicRow({ comic, onChange, onReload }) {
   };
 
   return (
-    <div className={`game-row ${comic.owned.length ? "row-owned" : ""}`}>
+    <div ref={rowRef} className={`game-row ${comic.owned.length ? "row-owned" : ""}`}>
       {comic.image_url ? (
         <img
           className="game-cover"
