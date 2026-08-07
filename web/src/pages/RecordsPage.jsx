@@ -620,7 +620,10 @@ function RecordRow({ record, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${record.owned.length ? "row-owned" : ""} ${infoOpen || entry ? "open" : ""}`}
+    >
       {record.image_url ? (
         <img
           className="game-cover"

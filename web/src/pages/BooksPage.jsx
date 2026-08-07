@@ -551,7 +551,10 @@ function BookRow({ book, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${book.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${book.owned.length ? "row-owned" : ""} ${infoOpen || entry ? "open" : ""}`}
+    >
       {book.image_url ? (
         <img
           className="game-cover"

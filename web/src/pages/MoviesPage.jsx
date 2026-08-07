@@ -566,7 +566,10 @@ function MovieRow({ movie, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${movie.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${movie.owned.length ? "row-owned" : ""} ${infoOpen || entryOpen ? "open" : ""}`}
+    >
       {movie.image_url ? (
         <img
           className="game-cover"

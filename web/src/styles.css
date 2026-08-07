@@ -2022,18 +2022,17 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .game-list.as-tiles .game-meta { gap: 4px; }
 .game-list.as-tiles .game-meta .chip { padding: 1px 5px; font-size: 9px; }
 .game-list.as-tiles .copy-chips { padding-top: 5px; gap: 4px; }
-/* The delete button had a full 40px row of its own — an eighth of the tile
-   spent on a control you use once. It moves onto the artwork, the way the
-   copy count already sits on a card. */
+/* Edit and delete had a full 40px row of their own, which is an eighth of a
+   tile spent on controls you use once — and putting them on the artwork
+   instead only moved the problem onto the one thing this view exists to show.
+   So they wait: tap the tile, the details come up, and the controls come up
+   with them. That is the bargain the card grid already makes with its copy
+   chips, and it costs the closed tile nothing. */
 .game-list.as-tiles .game-row { position: relative; }
-.game-list.as-tiles .row-buttons {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-  background: rgba(8, 8, 10, .62);
-  border-radius: var(--r-1);
-  backdrop-filter: blur(3px);
+.game-list.as-tiles .row-buttons { display: none; }
+.game-list.as-tiles .game-row.open .row-buttons {
+  display: flex;
+  justify-self: end;
 }
 /* the owned marker is a left edge stripe on a row, which reads as nothing at
    all on a tile — give it the frame instead, the way an owned card tile has */

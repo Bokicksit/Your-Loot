@@ -723,7 +723,10 @@ function GameRow({ game, platforms, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${game.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${game.owned.length ? "row-owned" : ""} ${infoOpen || entryOpen ? "open" : ""}`}
+    >
       {game.image_url ? (
         <img
           className="game-cover"

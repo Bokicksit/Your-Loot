@@ -14,7 +14,9 @@ Full detail is in the commit log, where every change has its own note.
   picture-first tiles; Cards, which was always tiles, can draw a detail-first
   list with the thumbnail on the left. Saved per collection, so Movies can be
   tiles while Books stays a list. Defaults reproduce the old layouts exactly.
-  The Pokédex is unchanged — it's a picture of a binder.
+  The Pokédex is unchanged — it's a picture of a binder. A tile's edit and
+  delete controls stay out of the way until you tap it, then appear under the
+  picture with the rest of the detail.
 
 ### Fixed
 - **A manual crop kept the whole photo.** The crop box was positioned in

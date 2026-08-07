@@ -552,7 +552,10 @@ function LegoRow({ set, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${set.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${set.owned.length ? "row-owned" : ""} ${infoOpen || entry ? "open" : ""}`}
+    >
       {set.image_url ? (
         <img
           className="game-cover"

@@ -668,7 +668,10 @@ function ComicRow({ comic, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${comic.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${comic.owned.length ? "row-owned" : ""} ${infoOpen || entry ? "open" : ""}`}
+    >
       {comic.image_url ? (
         <img
           className="game-cover"

@@ -449,7 +449,10 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
   };
 
   return (
-    <div ref={rowRef} className={`game-row ${hw.owned.length ? "row-owned" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`game-row ${hw.owned.length ? "row-owned" : ""} ${infoOpen || entryOpen ? "open" : ""}`}
+    >
       {hw.image_url ? (
         <img
           className="game-cover"
