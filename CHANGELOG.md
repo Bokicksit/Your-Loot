@@ -16,6 +16,17 @@ Full detail is in the commit log, where every change has its own note.
   tiles while Books stays a list. Defaults reproduce the old layouts exactly.
   The Pokédex is unchanged — it's a picture of a binder.
 
+### Fixed
+- **A manual crop kept the whole photo.** The crop box was positioned in
+  percentages of its container, which is full width, while the photo inside it
+  is centred and usually narrower — so the rectangle you drew and the pixels
+  that got exported were different regions. Measured on a portrait photo: 160px
+  of the box covered nothing at all.
+
+### Removed
+- **Snap to edges**, which guessed at the item's borders and rarely landed on
+  them, and **Whole photo**, which is now simply where the crop box starts.
+
 ## [2.02] — 2026-08-07
 
 The first tagged release. Everything before this was development against a

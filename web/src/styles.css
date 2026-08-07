@@ -993,6 +993,14 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   object-fit: contain;
   -webkit-user-drag: none;
 }
+/* Shrink-wraps the canvas so the crop box is positioned against the photo
+   rather than against the stage it is centred in. */
+.crop-frame {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  line-height: 0;
+}
 .crop-box {
   position: absolute;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); /* everything outside dims */
@@ -1012,7 +1020,6 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .crop-handle.ne { right: -13px; top: -13px; cursor: nesw-resize; }
 .crop-handle.sw { left: -13px; bottom: -13px; cursor: nesw-resize; }
 .crop-handle.se { right: -13px; bottom: -13px; cursor: nwse-resize; }
-.crop-note { margin: 0; font-size: var(--f-2); color: var(--text-mute); }
 
 .crop-rotate {
   display: flex;
