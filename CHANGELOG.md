@@ -36,7 +36,12 @@ Full detail is in the commit log, where every change has its own note.
   the server rather than in the browser, so a phone and a desk agree.
 
 ### Fixed
-- **The wanted list put new items at the bottom.** It ordered by
+- **A typed movie search always looked for the Blu-ray case.** Case art is
+  fetched when you pick a film, but the format dropdown comes on the *next*
+  step — so the lookup ran against the default and never ran again. Naming the
+  format now re-runs it, the way naming a system already does for games. Both
+  also stop a previously auto-picked cover from outliving the lookup that
+  chose it; a cover you picked yourself is still never replaced. It ordered by
   `wanted.priority`, which nothing has ever set, so every row sat in one NULL
   bucket and fell through to oldest-first. It now defaults to newest-first.
 - **The expanded panel was crushed inside a tile.** Opening an item in tile

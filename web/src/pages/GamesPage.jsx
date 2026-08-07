@@ -210,6 +210,12 @@ export default function GamesPage() {
   // A scan of the actual box, which IGDB's key art isn't. Needs the platform,
   // so it runs once one is settled on rather than at pick time; it's offered
   // alongside the other art instead of replacing whatever you already chose.
+  // The artwork these lookups pick is a suggestion, and a suggestion should
+  // stand aside for a better one. Tracking what we chose last lets a second
+  // lookup replace it, while anything picked off the strip by hand is left
+  // exactly where it is.
+  const autoArt = useRef(null);
+
   const findBoxart = async (title, platformId, region) => {
     if (!title || !platformId) return;
     try {
@@ -231,11 +237,13 @@ export default function GamesPage() {
       // original, the reprint and the download. Offering the scan but leaving
       // the key art selected meant everything still looked like key art unless
       // you noticed the strip. Anything you chose yourself is left alone.
-      setForm((f) => ({
-        ...f,
-        image_url:
-          !f.image_url || /igdb\.com/i.test(f.image_url) ? url : f.image_url,
-      }));
+      setForm((f) => {
+        const ours =
+          !f.image_url || /igdb\.com/i.test(f.image_url) || f.image_url === autoArt.current;
+        if (!ours) return f;
+        autoArt.current = url;
+        return { ...f, image_url: url };
+      });
     } catch {
       /* box art is a bonus; never let it break the add flow */
     }

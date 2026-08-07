@@ -141,20 +141,35 @@ export default function MoviesPage() {
   // theatrical poster — so the picture of the thing on your shelf has to come
   // from a shop listing. Runs on an explicit pick, never on a keystroke: it
   // shares the barcode service's daily budget.
+  // The artwork these lookups pick is a suggestion, and a suggestion should
+  // stand aside for a better one. Tracking what we chose last lets a second
+  // lookup replace it, while anything picked off the strip by hand is left
+  // exactly where it is.
+  const autoArt = useRef(null);
+  // UPCitemdb's free tier is a hundred lookups a day and the format dropdown
+  // is four options someone may well click through. Asking the same question
+  // twice spends a lookup to receive an answer we already have.
+  const lastLookup = useRef(null);
+
   const findCaseArt = async (title, format) => {
     const term = [cleanTitle(title) || title, format].filter(Boolean).join(" ");
-    if (term.length < 3) return;
+    if (term.length < 3 || term === lastLookup.current) return;
+    lastLookup.current = term;
     try {
       const { items } = await api.productSearch(term);
       const shots = (items || []).flatMap((i) => i.images).slice(0, 6);
       if (!shots.length) return;
       mergeArt(shots.map((url) => ({ url, kind: "box" })));
       // and take the slot off the poster — but never off something you chose
-      setForm((f) => ({
-        ...f,
-        image_url:
-          !f.image_url || /image\.tmdb\.org/i.test(f.image_url) ? shots[0] : f.image_url,
-      }));
+      setForm((f) => {
+        const ours =
+          !f.image_url ||
+          /image\.tmdb\.org/i.test(f.image_url) ||
+          f.image_url === autoArt.current;
+        if (!ours) return f;
+        autoArt.current = shots[0];
+        return { ...f, image_url: shots[0] };
+      });
     } catch {
       /* artwork is a bonus; an entry saves fine without it */
     }
@@ -180,6 +195,8 @@ export default function MoviesPage() {
   const openForm = () => {
     setForm(EMPTY_FORM);
     setArt([]);
+    autoArt.current = null;
+    lastLookup.current = null;
     setResults(null);
     setStep("search");
     setShowForm(true);
@@ -358,7 +375,15 @@ export default function MoviesPage() {
           <div className="form-row">
             <select
               value={form.format}
-              onChange={(e) => setForm({ ...form, format: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, format: e.target.value });
+                // The case photo is per edition: the DVD, the Blu-ray and the
+                // steelbook are three different objects with three different
+                // covers. Until the format is named the search can only guess,
+                // and it guesses Blu-ray — so naming it is exactly when the
+                // right case becomes findable.
+                findCaseArt(form.title, e.target.value);
+              }}
             >
               {FORMATS.map((f) => (
                 <option key={f}>{f}</option>
