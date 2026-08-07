@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.config import settings
+from app.trim import trim_border
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
@@ -103,6 +104,9 @@ def fetch_image(body: FetchBody):
     if len(resp.content) > MAX_BYTES:
         raise HTTPException(400, TOO_LARGE)
 
+    # catalogue art arrives padded onto whatever canvas the shop uses; the
+    # thumbnail takes its shape from the file, so the padding has to go
+    body = trim_border(resp.content)
     name = f"{uuid.uuid4().hex}{ext}"
-    (Path(settings.image_dir) / name).write_bytes(resp.content)
+    (Path(settings.image_dir) / name).write_bytes(body)
     return {"url": f"/images/{name}"}
