@@ -134,6 +134,29 @@ export default function MoviesPage() {
     }
   };
 
+  // TMDB has no case art — 229 posters for one film and every one a 2:3
+  // theatrical poster — so the picture of the thing on your shelf has to come
+  // from a shop listing. Runs on an explicit pick, never on a keystroke: it
+  // shares the barcode service's daily budget.
+  const findCaseArt = async (title, format) => {
+    const term = [cleanTitle(title) || title, format].filter(Boolean).join(" ");
+    if (term.length < 3) return;
+    try {
+      const { items } = await api.productSearch(term);
+      const shots = (items || []).flatMap((i) => i.images).slice(0, 6);
+      if (!shots.length) return;
+      mergeArt(shots.map((url) => ({ url, kind: "box" })));
+      // and take the slot off the poster — but never off something you chose
+      setForm((f) => ({
+        ...f,
+        image_url:
+          !f.image_url || /image\.tmdb\.org/i.test(f.image_url) ? shots[0] : f.image_url,
+      }));
+    } catch {
+      /* artwork is a bonus; an entry saves fine without it */
+    }
+  };
+
   const pickResult = (r) => {
     if (r.poster_url) mergeArt([{ url: r.poster_url, kind: "poster" }]);
     setForm({
@@ -148,6 +171,7 @@ export default function MoviesPage() {
     });
     setResults(null);
     setStep("details"); // picked a film — on to describing your copy
+    findCaseArt(r.title, form.format);
   };
 
   const openForm = () => {

@@ -184,6 +184,27 @@ export default function GamesPage() {
     }
   };
 
+  // Shop listings by name, for the systems the scan archive doesn't cover.
+  // Runs only when there's no scan, and only on an explicit pick — it shares
+  // the barcode service's daily budget.
+  const findRetailArt = async (title) => {
+    const term = cleanGameTitle(title) || title;
+    if (!term || term.length < 3) return;
+    try {
+      const { items } = await api.productSearch(term);
+      const shots = (items || []).flatMap((i) => i.images).slice(0, 6);
+      if (!shots.length) return;
+      mergeArt(shots.map((url) => ({ url, kind: "box" })));
+      setForm((f) => ({
+        ...f,
+        image_url:
+          !f.image_url || /igdb\.com/i.test(f.image_url) ? shots[0] : f.image_url,
+      }));
+    } catch {
+      /* artwork is a bonus */
+    }
+  };
+
   // A scan of the actual box, which IGDB's key art isn't. Needs the platform,
   // so it runs once one is settled on rather than at pick time; it's offered
   // alongside the other art instead of replacing whatever you already chose.
@@ -195,7 +216,13 @@ export default function GamesPage() {
         platform_id: platformId,
         ...(region ? { region } : {}),
       });
-      if (!url) return;
+      if (!url) {
+        // libretro stops around the Xbox 360, so anything newer has no box
+        // scan at all. A shop listing carries a photograph of the case, which
+        // is still the thing on your shelf rather than the key art.
+        findRetailArt(title);
+        return;
+      }
       mergeArt([{ url, kind: "box" }]);
       // and take the slot. A box scan is a photograph of the thing on your
       // shelf; IGDB's cover is the game's key art — the same picture for the

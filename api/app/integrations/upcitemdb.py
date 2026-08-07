@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 
 URL = "https://api.upcitemdb.com/prod/trial/lookup"
+SEARCH_URL = "https://api.upcitemdb.com/prod/trial/search"
 IMAGE_CAP = 8
 
 
@@ -77,3 +78,34 @@ def lookup(code: str) -> list[dict]:
         }
         for it in resp.json().get("items", [])[:5]
     ]
+
+
+def search(keyword: str, limit: int = 8) -> list[dict]:
+    """Retail listings matching a name — the route to a photograph of the case
+    for something added by title rather than scanned.
+
+    The metadata catalogues have nothing like this: TMDB holds 229 posters for
+    Blade Runner 2049 and every one is a 2:3 theatrical poster, while a shop
+    listing carries the actual keep case. Same daily budget as a barcode
+    lookup, and a short burst cap on top, so this runs on an explicit pick —
+    never on a keystroke.
+    """
+    term = (keyword or "").strip()
+    if len(term) < 3:
+        return []
+    try:
+        resp = httpx.get(SEARCH_URL, params={"s": term}, timeout=15)
+    except httpx.HTTPError as e:
+        raise BarcodeError(502, f"product search unreachable: {e}")
+    if resp.status_code == 429:
+        raise BarcodeError(429, "Product lookups exhausted for now (free tier)")
+    if resp.status_code >= 400:
+        raise BarcodeError(502, f"product search error: {resp.status_code}")
+    out = []
+    for it in resp.json().get("items", [])[:limit]:
+        images = _images(it)
+        if not images:
+            continue  # a listing with no picture is no use here
+        out.append({"title": it.get("title", ""), "brand": it.get("brand") or None,
+                    "images": images})
+    return out

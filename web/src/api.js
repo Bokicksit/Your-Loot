@@ -67,6 +67,7 @@ export const api = {
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
+  productSearch: (q) => request(`/api/lookup/products?q=${encodeURIComponent(q)}`),
   // Retailer image hosts rot and some block hotlinking, so a chosen box-art
   // photo is copied to our own storage. TMDB/IGDB CDNs are stable and stay
   // hotlinked. Falls back to the original URL if the copy fails — a picture

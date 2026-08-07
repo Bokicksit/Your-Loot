@@ -246,6 +246,14 @@ the Wanted tab, and the app jumps you there so you can see it arrive.
 
 Three ways to give something a picture, in the order the app prefers them:
 
+**Artwork without a barcode.** Picking a film or game from the online search
+also asks the retail database for photographs of the actual case, by name. The
+metadata catalogues have no case art at all — TMDB holds 229 posters for Blade
+Runner 2049 and every one is a theatrical poster — so this is the only route to
+a picture of the thing on your shelf when you haven't scanned it. Case photos
+lead the strip and one is picked for you, but never over a picture you chose
+yourself. These searches share the barcode service's daily allowance.
+
 **Artwork from the barcode.** After scanning a movie or game, a strip of
 thumbnails appears labelled *case*. These are photographs of the actual box,
 which is usually a better match for your shelf than a theatrical poster. The
