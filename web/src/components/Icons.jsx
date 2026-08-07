@@ -33,6 +33,8 @@ export function IconDefs() {
         <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5.5M11 5.5L4.5 12l6.5 6.5" /></symbol>
         <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 3.5L5.5 13.4h5.4l-.9 7.1 7.7-9.9h-5.4z" /></symbol>
         <symbol id="i-comic" viewBox="0 0 24 24"><path d="M4 5.5h11.5a2 2 0 012 2v11H6a2 2 0 01-2-2z" /><path d="M17.5 8.5H20v10a2 2 0 01-2 2H6" /><path d="M7 9h6M7 12.5h4" /></symbol>
+        <symbol id="i-tiles" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></symbol>
+        <symbol id="i-list" viewBox="0 0 24 24"><rect x="3.5" y="5" width="5" height="5" rx="1.2" /><rect x="3.5" y="14" width="5" height="5" rx="1.2" /><path d="M11.5 6.6h9M11.5 9.4h6M11.5 15.6h9M11.5 18.4h6" /></symbol>
       </defs>
     </svg>
   );

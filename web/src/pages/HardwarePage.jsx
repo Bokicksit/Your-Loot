@@ -10,6 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
 import { cleanGameTitle } from "../upc.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -37,6 +38,7 @@ export default function HardwarePage() {
   const [total, setTotal] = useState(0);
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("hardware");
   const [platformFilter, setPlatformFilter] = useState("");
   const [sort, setSort] = useState("title");
   const [showForm, setShowForm] = useState(false);
@@ -193,6 +195,7 @@ export default function HardwarePage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="hardware" />
       </div>
 
       {/* no online catalogue knows retro hardware, so there is nothing to
@@ -329,7 +332,7 @@ export default function HardwarePage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {rows.map((h) => (
           <HardwareRow
             key={h.id}

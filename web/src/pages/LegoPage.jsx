@@ -9,6 +9,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, shortFor, withUnknown } from "../vocab.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -38,6 +39,7 @@ export default function LegoPage() {
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState({ themes: [], years: [] });
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("lego");
   const [themeFilter, setThemeFilter] = useState("");
   const [sort, setSort] = useState("title");
   const [showForm, setShowForm] = useState(false);
@@ -238,6 +240,7 @@ export default function LegoPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="lego" />
       </div>
 
       <AddSheet open={showForm && step === "search"} title="Find a set" onClose={closeForm}>
@@ -444,7 +447,7 @@ export default function LegoPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {sets.map((s) => (
           <LegoRow key={s.id} set={s} onChange={patchSet} onReload={load} />
         ))}

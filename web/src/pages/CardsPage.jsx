@@ -8,6 +8,7 @@ import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
 import { useSettings } from "../settings.jsx";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
@@ -21,6 +22,7 @@ export default function CardsPage({ initialView = "collection" }) {
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("cards");
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
@@ -458,6 +460,7 @@ export default function CardsPage({ initialView = "collection" }) {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="cards" />
       </div>
 
       {/* Cards keep one step on purpose: picking a result opens its own
@@ -873,8 +876,12 @@ export default function CardsPage({ initialView = "collection" }) {
       {/* same 3/4/5 control the Pokédex has: a phone fits three readable
           cards, a tablet wants more, and it's the same decision either way */}
       <div
-        className={`grid cols-${cardCols}`}
-        style={{ gridTemplateColumns: `repeat(${cardCols}, minmax(0, 1fr))` }}
+        className={tiles ? `grid cols-${cardCols}` : "grid as-list"}
+        style={
+          tiles
+            ? { gridTemplateColumns: `repeat(${cardCols}, minmax(0, 1fr))` }
+            : undefined
+        }
       >
         {cards.map((c) => (
           <CardTile key={c.id} card={c} onChange={patchCard} onReload={load} />

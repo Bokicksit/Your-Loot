@@ -9,6 +9,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
 const REGIONS = ["Region-free", "A", "B", "C", "1", "2", "3", "4"];
@@ -39,6 +40,7 @@ export default function MoviesPage() {
   const [total, setTotal] = useState(0);
   const [formats, setFormats] = useState([]); // in-collection formats w/ counts
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("movies");
   const [formatFilter, setFormatFilter] = useState("");
   const [sort, setSort] = useState("title"); // title | format | added
   const [showForm, setShowForm] = useState(false);
@@ -296,6 +298,7 @@ export default function MoviesPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="movies" />
       </div>
 
       <AddSheet open={showForm && step === "search"} title="Find a film" onClose={closeForm}>
@@ -459,7 +462,7 @@ export default function MoviesPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {movies.map((m) => (
           <MovieRow key={m.id} movie={m} onChange={patchMovie} onReload={load} />
         ))}

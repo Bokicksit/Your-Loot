@@ -120,6 +120,28 @@ whether to discard the changes first, because losing a screen of typing to a
 mis-tap on a phone is a miserable way to lose it. An editor you opened but
 didn't change closes silently like anything else.
 
+### Tiles or a list
+
+Next to the sort dropdown are two small buttons that switch how a collection
+is drawn.
+
+**Tiles** put the picture first — a wall of covers you recognise by sight
+before you've read a word. Good for browsing, for spotting the gap on a shelf,
+and for anything where the artwork *is* the thing.
+
+**List** puts the detail first — a small thumbnail on the left and the
+platform, edition, year and every copy's condition legible without opening
+anything. Good for checking what you actually own, and for long collections
+where eight rows fit in the space three tiles would take.
+
+The choice is saved **per collection**, so Movies can sit in tiles while Books
+stays a list. Cards start as tiles and everything else starts as a list, which
+is how the app looked before the buttons existed — if you never touch them,
+nothing changes.
+
+The Pokédex has no such switch. It's a picture of a binder, and a binder is
+tiles.
+
 ### Sorting
 
 Every collection has a **sort** dropdown next to its filters. The options

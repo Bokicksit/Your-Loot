@@ -15,6 +15,7 @@ import {
   labelFor,
   withUnknown,
 } from "../vocab.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -47,6 +48,7 @@ export default function ComicsPage() {
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState({ series: [], publishers: [] });
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("comics");
   const [seriesFilter, setSeriesFilter] = useState("");
   const [publisherFilter, setPublisherFilter] = useState("");
   const [sort, setSort] = useState("series");
@@ -303,6 +305,7 @@ export default function ComicsPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="comics" />
       </div>
 
       <AddSheet open={showForm && step === "search"} title="Find an issue" onClose={closeForm}>
@@ -553,7 +556,7 @@ export default function ComicsPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {comics.map((c) => (
           <ComicRow key={c.id} comic={c} onChange={patchComic} onReload={load} />
         ))}

@@ -11,6 +11,7 @@ import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
 import { cleanGameTitle, firstHits, queryLadder } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, shortFor, withUnknown } from "../vocab.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -77,6 +78,7 @@ export default function GamesPage() {
   const [total, setTotal] = useState(0);
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("games");
   const [platformFilter, setPlatformFilter] = useState(""); // system; genre later
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
   const [sort, setSort] = useState("title"); // title | platform | added
@@ -372,6 +374,7 @@ export default function GamesPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="games" />
       </div>
 
       <AddSheet
@@ -578,7 +581,7 @@ export default function GamesPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {games.map((g) => (
           <GameRow
             key={g.id}

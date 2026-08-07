@@ -17,6 +17,10 @@ DEFAULTS = {
     "favorite_modules": "",
     "dex_cols": "4",
     "card_cols": "3",
+    # Which collections draw tiles instead of rows. Cards has always been
+    # tiles and everything else has always been rows, so this default is
+    # what the app already looked like before the toggle existed.
+    "tile_modules": "cards",
     "show_binder_in_collection": "false",
     "default_region": "NTSC-U",
 }
@@ -32,6 +36,7 @@ class SettingsOut(BaseModel):
     favorite_modules: list[str] = []
     dex_cols: int = 4
     card_cols: int = 3
+    tile_modules: list[str] = []
     show_binder_in_collection: bool = False
     default_region: str = "NTSC-U"
     # True until onboarding has been completed at least once
@@ -46,6 +51,7 @@ class SettingsUpdate(BaseModel):
     favorite_modules: list[str] | None = None
     dex_cols: int | None = Field(default=None, ge=2, le=8)
     card_cols: int | None = Field(default=None, ge=2, le=8)
+    tile_modules: list[str] | None = None
     show_binder_in_collection: bool | None = None
     default_region: str | None = Field(default=None, max_length=20)
 
@@ -60,6 +66,7 @@ def _current(db: Session) -> SettingsOut:
         favorite_modules=[m for m in _csv(raw["favorite_modules"]) if m in enabled],
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
+        tile_modules=[m for m in _csv(raw["tile_modules"]) if m in MODULES],
         show_binder_in_collection=str(raw["show_binder_in_collection"]).lower() == "true",
         default_region=raw["default_region"] or "NTSC-U",
         # the row only exists once onboarding has been submitted, so its

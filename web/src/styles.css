@@ -1954,3 +1954,146 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* ==================== tiles ⇄ rows, per collection ==================== */
+
+/* Two ways of reading the same shelf. Tiles answer "what have I got" by
+   sight — a wall of covers you recognise before you read anything. Rows
+   answer "what exactly is this copy" — platform, edition, condition, all
+   legible without opening a thing. Neither wins for every collection, so both
+   exist everywhere and the choice is remembered per collection.
+
+   Both shapes are CSS alone. The seven row components already emit
+   cover | text | buttons into a grid, and the card tile already emits
+   picture / info, so a class on the container is enough to re-flow either one
+   into the other — rather than a second component per collection that would
+   then have to be kept in step with the first. */
+
+/* ---- rows drawn as tiles: games, hardware, movies, books, records, LEGO, comics ---- */
+.game-list.as-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-min, 148px), 1fr));
+  gap: var(--s-3);
+  align-items: start;
+}
+.game-list.as-tiles .game-row {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  padding: var(--s-2);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+/* one column, so everything that was placed by hand stacks instead */
+.game-list.as-tiles .game-row > .game-cover,
+.game-list.as-tiles .game-row > .game-icon,
+.game-list.as-tiles .game-row > .game-text,
+.game-list.as-tiles .game-row > button.ghost,
+.game-list.as-tiles .game-row > .row-buttons,
+.game-list.as-tiles .game-row > .copy-edit,
+.game-list.as-tiles .game-row > .entry-edit { grid-column: 1; }
+
+/* A shelf holds portrait game boxes, square record sleeves and landscape LEGO
+   boxes all at once. A fixed frame with `contain` keeps the grid even without
+   cropping any of them, and 4:5 is the ratio that wastes the least on the set
+   as a whole — the row view makes the same trade for the same reason. */
+.game-list.as-tiles .game-cover,
+.game-list.as-tiles .game-icon {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  max-width: none;
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+  border-radius: var(--r-2);
+}
+.game-list.as-tiles .game-icon svg.i { width: 32px; height: 32px; }
+.game-list.as-tiles .game-text { align-self: start; gap: 2px; }
+.game-list.as-tiles .game-text strong { font-size: var(--f-3); }
+/* On a row the badges have a whole line to themselves and can afford it. In a
+   tile they're stacked under the picture, where every pixel they take is one
+   the next row of covers doesn't get. */
+.game-list.as-tiles .game-meta { gap: 4px; }
+.game-list.as-tiles .game-meta .chip { padding: 1px 5px; font-size: 9px; }
+.game-list.as-tiles .copy-chips { padding-top: 5px; gap: 4px; }
+/* The delete button had a full 40px row of its own — an eighth of the tile
+   spent on a control you use once. It moves onto the artwork, the way the
+   copy count already sits on a card. */
+.game-list.as-tiles .game-row { position: relative; }
+.game-list.as-tiles .row-buttons {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  background: rgba(8, 8, 10, .62);
+  border-radius: var(--r-1);
+  backdrop-filter: blur(3px);
+}
+/* the owned marker is a left edge stripe on a row, which reads as nothing at
+   all on a tile — give it the frame instead, the way an owned card tile has */
+.game-list.as-tiles .row-owned {
+  background:
+    linear-gradient(180deg, var(--gold-wash), transparent 42%),
+    var(--bg-1);
+  box-shadow: var(--glow-owned);
+}
+
+/* ---- card tiles drawn as rows ---- */
+.grid.as-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-2);
+}
+.grid.as-list .tile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  box-shadow: none;
+}
+/* the lift is a tile gesture; on a full-width row it just wobbles the page */
+.grid.as-list .tile:hover { transform: none; box-shadow: none; }
+.grid.as-list .tile > img,
+.grid.as-list .tile > .placeholder {
+  width: 46px;
+  border-radius: var(--r-1);
+}
+.grid.as-list .tile-info { padding: 0; gap: 3px; }
+.grid.as-list .tile-owned::after { border-radius: var(--r-2); }
+/* nothing is cramped here, so the number, the set and the chips all stay —
+   detail is the entire reason to be in this view */
+.grid.as-list .owned-badge {
+  top: 50%;
+  right: var(--s-3);
+  transform: translateY(-50%);
+}
+
+/* ---- the control ---- */
+.view-toggle {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+}
+.view-toggle button {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--r-2) - 3px);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background .16s var(--ease), color .16s var(--ease);
+}
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.on {
+  background: var(--bg-3);
+  color: var(--gold-bright);
+}
+.view-toggle svg.i { width: 15px; height: 15px; }

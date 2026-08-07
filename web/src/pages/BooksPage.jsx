@@ -7,6 +7,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 // Graphic Novel and Omnibus sit here rather than in Comics because that's
 // where the barcode puts them: a collected edition carries an ISBN, which Open
@@ -50,6 +51,7 @@ export default function BooksPage() {
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState({ authors: [], formats: [] });
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("books");
   const [authorFilter, setAuthorFilter] = useState("");
   const [formatFilter, setFormatFilter] = useState("");
   const [sort, setSort] = useState("title");
@@ -251,6 +253,7 @@ export default function BooksPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="books" />
       </div>
 
       <AddSheet open={showForm && step === "search"} title="Find a book" onClose={closeForm}>
@@ -440,7 +443,7 @@ export default function BooksPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {books.map((b) => (
           <BookRow key={b.id} book={b} onChange={patchBook} onReload={load} />
         ))}

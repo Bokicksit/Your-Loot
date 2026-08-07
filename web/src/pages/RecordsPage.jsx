@@ -8,6 +8,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 // "Vinyl box set", not "Box set": in a records collection a box set is almost
 // always wax, and saying so is what keeps a price check off the CD edition.
@@ -50,6 +51,7 @@ export default function RecordsPage() {
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState({ artists: [], labels: [], formats: [] });
   const [search, setSearch] = useState("");
+  const [tiles] = useTileView("records");
   const [artistFilter, setArtistFilter] = useState("");
   const [labelFilter, setLabelFilter] = useState("");
   const [formatFilter, setFormatFilter] = useState("");
@@ -273,6 +275,7 @@ export default function RecordsPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        <ViewToggle module="records" />
       </div>
 
       <AddSheet open={showForm && step === "search"} title="Find a record" onClose={closeForm}>
@@ -504,7 +507,7 @@ export default function RecordsPage() {
         </div>
       )}
 
-      <div className="game-list">
+      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {records.map((r) => (
           <RecordRow key={r.id} record={r} onChange={patchRecord} onReload={load} />
         ))}

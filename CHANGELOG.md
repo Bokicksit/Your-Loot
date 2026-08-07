@@ -8,6 +8,14 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **Tiles or a list, per collection.** Every collection now has a layout
+  toggle next to its sort dropdown. The seven that were rows can draw
+  picture-first tiles; Cards, which was always tiles, can draw a detail-first
+  list with the thumbnail on the left. Saved per collection, so Movies can be
+  tiles while Books stays a list. Defaults reproduce the old layouts exactly.
+  The Pokédex is unchanged — it's a picture of a binder.
+
 ## [2.02] — 2026-08-07
 
 The first tagged release. Everything before this was development against a
