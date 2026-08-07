@@ -14,9 +14,14 @@ isn't that tidy: the Charizard you're hunting and the SNES console you're
 hunting live on the same list.
 
 <p align="center">
-  <img src="docs/screenshots/collection.png" alt="A collection grid of cards" width="30%">
-  <img src="docs/screenshots/scan.png" alt="Scanning a barcode" width="30%">
-  <img src="docs/screenshots/pokedex.png" alt="The Pokédex binder" width="30%">
+  <img src="docs/screenshots/wanted.jpg" alt="One wanted list holding a LEGO set, a 4K film, two Pokémon cards and three games" width="32%">
+  <img src="docs/screenshots/games.jpg" alt="A shelf of Dreamcast games as cover tiles" width="32%">
+  <img src="docs/screenshots/scan.jpg" alt="Scanning the barcode on a SNES box" width="32%">
+</p>
+
+<p align="center">
+  <em>One wanted list across everything · your shelf as its own covers · and a
+  barcode fills the rest in</em>
 </p>
 
 > [!WARNING]
@@ -24,6 +29,10 @@ hunting live on the same list.
 > edit the whole collection. That's deliberate for a single-user app on a home
 > network — but don't expose it to the internet. Put it behind a VPN or an
 > authenticating reverse proxy. See [SECURITY.md](SECURITY.md).
+
+<p align="center">
+  <img src="docs/screenshots/collections.jpg" alt="The eight collections" width="52%">
+</p>
 
 📖 **[User Guide](docs/USER-GUIDE.md)** — how everything works, in depth:
 adding items, barcode scanning, the binder, grading, backups, troubleshooting.
@@ -38,6 +47,11 @@ entered by hand with your own photo.
 **Pokédex binder** — a slot per national dex number, mirroring a physical
 binder: one card per Pokémon, marked either *the one* or *will upgrade*.
 Filter by what's missing, what wants upgrading, and by rarity.
+
+<p align="center">
+  <img src="docs/screenshots/cards.jpg" alt="A card collection four across" width="46%">
+  <img src="docs/screenshots/pokedex.jpg" alt="The Pokédex binder, part filled" width="46%">
+</p>
 
 **Games** — IGDB-backed search, platform/region, and per-copy completeness
 (loose/CIB/sealed) and condition. Barcode scanning for boxed games. For
@@ -130,8 +144,9 @@ Add them to `.env` and `docker compose up -d` again.
 ```bash
 docker compose pull && docker compose up -d
 ```
-Database migrations run automatically. Pin a version with `TAG=1.34` in `.env`
-if you'd rather update deliberately.
+Database migrations run automatically. To update deliberately instead, pin a
+version with `TAG=` in `.env` — the numbers are on the
+[releases page](https://github.com/Bokicksit/Your-Loot/releases).
 
 **Refresh the card database** (new sets, corrections) — weekly cron is plenty:
 ```bash
