@@ -286,7 +286,11 @@ export default function CardTile({ card, onChange, onReload }) {
   return (
     <>
     <div ref={tileRef} className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
-      {card.owned.length > 0 && <span className="owned-badge">×{card.owned.length}</span>}
+      {card.owned.length > 0 && (
+        <span className={`owned-badge ${card.owned.length > 1 ? "many" : ""}`}>
+          ×{card.owned.length}
+        </span>
+      )}
       {card.image_url ? (
         <img
           src={card.image_url}

@@ -58,7 +58,13 @@ DEFAULT_REGIONS = ["usa", "world", "usa, europe", "europe", "japan"]
 # dumps that aren't the retail box
 BAD_TAGS = ("beta", "proto", "demo", "sample", "unl", "pirate", "test program", "hack")
 
-_ARTICLES = re.compile(r"\b(the|a|an)\b")
+# Articles and the small joining words. A storefront title is a sentence —
+# "Spider-Man and the X-Men in Arcade's Revenge" — where No-Intro is a filing
+# convention that turns the same game into "Spider-Man - X-Men - Arcade's
+# Revenge". The words the two disagree about are exactly these, so neither side
+# keeps them. Dropping them from both can only merge keys that were already
+# near-identical.
+_FILLER = re.compile(r"\b(the|a|an|and|in|of|on|at|to|for|with)\b")
 _PUNCT = re.compile(r"[^a-z0-9]+")
 _YEAR_SUFFIX = re.compile(r"\s*\(\d{4}\)\s*$")
 _TAGS = re.compile(r"\(([^)]*)\)")
@@ -77,8 +83,8 @@ def _norm(title: str) -> str:
     """
     s = _YEAR_SUFFIX.sub("", title or "").lower()
     s = s.replace("&", " and ")
-    s = _ARTICLES.sub(" ", s)
     s = _PUNCT.sub(" ", s)
+    s = _FILLER.sub(" ", s)
     return " ".join(s.split())
 
 
@@ -118,6 +124,32 @@ def _score(tags: list[str], region: str | None) -> int:
     return -rank * 10 - len(tags)
 
 
+def _near(index: dict[str, list], key: str) -> list | None:
+    """Last resort when two flattened titles still don't line up exactly.
+
+    A catalog title and an archive filename sometimes differ by one real word —
+    a "Super" the box carries and the store drops, a trailing "DX". This takes a
+    candidate only when one title's words are wholly contained in the other's
+    and exactly that much separates them, which is loose enough to catch those
+    and tight enough that "Spider-Man" can't match "Spider-Man - Venom - Maximum
+    Carnage". A tie is treated as a miss: with two equally good candidates
+    there's no way to tell which box is the one on the shelf, and the wrong box
+    is worse than none.
+    """
+    ours = set(key.split())
+    if len(ours) < 2:  # a one-word title has nothing left to match on
+        return None
+    found = []
+    for candidate, hits in index.items():
+        theirs = set(candidate.split())
+        if len(theirs ^ ours) > 1:
+            continue
+        if not (ours <= theirs or theirs <= ours):
+            continue
+        found.append(hits)
+    return found[0] if len(found) == 1 else None
+
+
 def boxart(title: str, platform_abbr: str | None, region: str | None = None) -> str | None:
     """URL of the best box scan for this game, or None."""
     system = SYSTEMS.get(platform_abbr or "")
@@ -127,7 +159,8 @@ def boxart(title: str, platform_abbr: str | None, region: str | None = None) -> 
         index = _index(system)
     except httpx.HTTPError:
         return None
-    hits = index.get(_norm(title))
+    key = _norm(title)
+    hits = index.get(key) or _near(index, key)
     if not hits:
         return None
     filename, tags = max(hits, key=lambda h: _score(h[1], region))

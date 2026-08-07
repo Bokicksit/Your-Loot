@@ -541,23 +541,45 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    can still see at a glance that you own more than one. */
 .grid.cols-4 .tile-info strong,
 .grid.cols-4 .tile-info .title { font-size: var(--f-2); }
-.grid.cols-4 .tile-info small,
 .grid.cols-4 .tile-info .meta { font-size: 9px; letter-spacing: .02em; gap: 3px; }
 .grid.cols-4 .tile { padding: 5px; }
 .grid.cols-4 .tile-info { padding: 5px 1px; }
 
 .grid.cols-5 .tile-info strong,
 .grid.cols-5 .tile-info .title { font-size: var(--f-1); letter-spacing: 0; }
-.grid.cols-5 .tile-info small,
 .grid.cols-5 .tile-info .meta { font-size: 8px; letter-spacing: 0; gap: 2px; }
 .grid.cols-5 .tile { padding: 4px; }
 .grid.cols-5 .tile-info { padding: 4px 1px; }
-/* At five across there is room for the number or the set code, not both, and
-   the number is what identifies the card. The set is in the expansion. */
-.grid.cols-5 .set-abbr { display: none; }
 
+/* Past three across a tile is too narrow for the rarity mark, the set code and
+   the card number to share a line — shrinking them only bought a font size or
+   two before the number started clipping mid-digit ("#44/1(" instead of
+   "#44/106"), which is worse than not showing it. So they come off the tile
+   entirely, the same way the copy chips do, and the expansion carries all
+   three in full. */
+.grid.cols-4 .tile-info small,
+.grid.cols-5 .tile-info small,
 .grid.cols-4 .copy-chips,
 .grid.cols-5 .copy-chips { display: none; }
+
+/* The badge is a quarter of the tile's width once four are in a row, sitting on
+   top of the only thing worth looking at at that size. "×1" is also most of
+   them, and it says nothing the gold frame hasn't already — so it goes, and a
+   real double stays as a smaller pill. Either way the expansion has the
+   counter. */
+.grid.cols-4 .owned-badge,
+.grid.cols-5 .owned-badge { display: none; }
+.grid.cols-4 .owned-badge.many,
+.grid.cols-5 .owned-badge.many {
+  display: grid;
+  top: 5px;
+  right: 5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 9px;
+  border-radius: 9px;
+}
 
 .tile-owned {
   background:
