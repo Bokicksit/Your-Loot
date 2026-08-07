@@ -144,10 +144,9 @@ tiles.
 
 ### Sorting
 
-Every collection has a **sort** dropdown next to its filters, the wanted
-list included. The options
-differ per collection, because what you file a shelf by isn't what you file a
-long box by:
+Every collection has a **sort** dropdown next to its filters, and so does the
+wanted list. The options differ per collection, because what you file a shelf
+by isn't what you file a long box by:
 
 | Collection | Sorts | Opens on |
 | --- | --- | --- |
@@ -159,8 +158,13 @@ long box by:
 | Records | artist · A–Z · label · year | artist |
 | LEGO | A–Z · theme · set number · year · piece count | A–Z |
 | Comics | series & issue · A–Z · publisher · cover year | series & issue |
+| Wanted | A–Z · by collection | Last added |
 
-**Last added** and **First added** are on all eight.
+**Last added** and **First added** are on all eight, and on the wanted list.
+
+On **Wanted**, "last added" is the day you decided you wanted it, not the day
+the catalog first heard of the item — and **by collection** groups the list
+rather than filtering it, which is what the chips above it already do.
 
 A few of these do more than they say:
 
