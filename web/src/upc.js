@@ -159,6 +159,45 @@ function tidySeries(raw) {
   return series;
 }
 
+/**
+ * Progressively simpler queries, best first.
+ *
+ * This was built for barcode scans, where the shop's product title carries a
+ * publisher prefix and a tail of edition noise the catalogues don't index. But
+ * a title typed in by hand has the same trouble — people type what's printed
+ * on the box, subtitle and all — so both routes use it now. Stop at the first
+ * query that returns anything.
+ */
+export function queryLadder(title) {
+  const first = String(title || "").trim();
+  if (first.length < 2) return [];
+  const out = [first];
+  const add = (q) => {
+    const t = String(q || "").trim();
+    if (t.length > 1 && !out.includes(t)) out.push(t);
+  };
+  // the full title first: plenty of real titles genuinely start with a
+  // publisher's name, and stripping it upfront would break exactly those
+  const stripped = stripPublisherPrefix(first);
+  add(stripped);
+  let words = (stripped || first).split(/\s+/);
+  while (words.length > 2 && out.length < 5) {
+    words = words.slice(0, -1);
+    add(words.join(" "));
+  }
+  return out;
+}
+
+/** Run a ladder against a search function, returning the first non-empty hit. */
+export async function firstHits(queries, run) {
+  let found = [];
+  for (const q of queries) {
+    found = (await run(q)) || [];
+    if (found.length) break;
+  }
+  return found;
+}
+
 // Strip bracketed segments and format/edition noise so the remaining string
 // works as a TMDB/IGDB query.
 export function cleanTitle(title) {

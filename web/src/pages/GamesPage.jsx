@@ -9,7 +9,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
-import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
+import { cleanGameTitle, firstHits, queryLadder } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, shortFor, withUnknown } from "../vocab.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
@@ -136,12 +136,15 @@ export default function GamesPage() {
     return () => clearTimeout(t);
   }, [search, platformFilter, sort]);
 
+  // Same ladder the barcode path uses. A typed title has the same trouble a
+  // scanned one does — people type what's printed on the box, subtitle and
+  // all — so one exact query is exactly the wrong thing to try only once.
   const igdbSearch = async () => {
     if (form.title.trim().length < 2 || searching) return;
     setSearching(true);
     setResults(null); // clear the old hits so the status stands alone
     try {
-      setResults(await api.igdbSearch(form.title.trim()));
+      setResults(await firstHits(queryLadder(form.title), (q) => api.igdbSearch(q)));
     } catch (e) {
       alert(e.message);
     } finally {
@@ -172,23 +175,7 @@ export default function GamesPage() {
       }));
       setSearching(true);
       try {
-        // fallback ladder: full title first (protects titles that genuinely
-        // start with a publisher), then publisher-prefix stripped, then
-        // trailing words dropped — stop at the first query with results
-        const queries = [title];
-        const pre = stripPublisherPrefix(title);
-        if (pre && pre !== title) queries.push(pre);
-        let words = (pre || title).split(" ");
-        while (words.length > 2 && queries.length < 5) {
-          words = words.slice(0, -1);
-          queries.push(words.join(" "));
-        }
-        let found = [];
-        for (const q of queries) {
-          found = await api.igdbSearch(q);
-          if (found.length) break;
-        }
-        setResults(found);
+        setResults(await firstHits(queryLadder(title), (q) => api.igdbSearch(q)));
       } finally {
         setSearching(false);
       }

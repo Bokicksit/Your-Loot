@@ -103,10 +103,25 @@ export default function BooksPage() {
   // the ISBN barcode on the back of a book resolves in a single call
   const onBarcode = (code) => lookup({ isbn: code });
 
-  const textSearch = () => {
-    const q = [form.title.trim(), form.author.trim()].filter(Boolean).join(" ");
+  // Title and author together is the precise query, but Open Library indexes
+  // plenty of editions without a usable author string, so a miss falls back to
+  // the title on its own rather than reporting nothing found.
+  const textSearch = async () => {
+    const title = form.title.trim();
+    const author = form.author.trim();
+    const q = [title, author].filter(Boolean).join(" ");
     if (q.length < 2) return;
-    lookup({ q });
+    setSearching(true);
+    setResults(null);
+    try {
+      let hits = await api.openLibrarySearch({ q });
+      if (!hits?.length && author && title) hits = await api.openLibrarySearch({ q: title });
+      setResults(hits || []);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSearching(false);
+    }
   };
 
   const pickResult = (r) => {

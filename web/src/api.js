@@ -119,8 +119,6 @@ export const api = {
   comicVineSearch: (params) =>
     request(`/api/comics/search?${new URLSearchParams(params)}`),
   backupUrl: "/api/backup",
-  tidyImages: (apply = false) =>
-    request(`/api/images/tidy?apply=${apply ? "true" : "false"}`, { method: "POST" }),
   restoreBackup: async (file) => {
     const fd = new FormData();
     fd.append("file", file);

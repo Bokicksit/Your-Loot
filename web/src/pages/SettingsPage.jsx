@@ -164,8 +164,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <TidyArtCard />
-
       <BackupCard />
 
       {version && <p className="version-tag">Your Loot v{version}</p>}
@@ -174,93 +172,6 @@ export default function SettingsPage() {
 }
 
 const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
-
-const KB = (n) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
-
-// One-off pass for pictures saved before artwork got trimmed on the way in.
-// It always looks before it touches anything: the count comes from a dry run,
-// and only then is there something to press.
-function TidyArtCard() {
-  const [busy, setBusy] = useState(false);
-  const [found, setFound] = useState(null); // dry-run result
-  const [done, setDone] = useState(null);
-  const [error, setError] = useState(null);
-
-  const run = async (apply) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await api.tidyImages(apply);
-      if (apply) {
-        setDone(r);
-        setFound(null);
-      } else {
-        setFound(r);
-      }
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="settings-card">
-      <h3>Tidy artwork padding</h3>
-      <p>
-        Shops publish cover art matted onto a white canvas, which made
-        thumbnails show a small cover adrift in an empty box. Pictures saved
-        from now on are trimmed automatically; this is for the ones already in
-        your library. Only artwork matted on white is touched — a photo you
-        took yourself is left alone.
-      </p>
-      <div className="form-row">
-        <button className="ghost" onClick={() => run(false)} disabled={busy}>
-          {busy ? "…" : "Check what would change"}
-        </button>
-        {found?.padded > 0 && (
-          <button
-            className="primary"
-            disabled={busy}
-            onClick={() => {
-              if (
-                confirm(
-                  `Trim ${found.padded} picture${found.padded === 1 ? "" : "s"}?\n\n` +
-                    "This rewrites those files in place and can't be undone. " +
-                    "Take a backup first if you'd rather be safe."
-                )
-              )
-                run(true);
-            }}
-          >
-            <Icon id="check" />
-            Trim {found.padded}
-          </button>
-        )}
-      </div>
-      {found && (
-        <p className="modal-note">
-          <Icon id="info" />
-          {found.padded === 0
-            ? `Checked ${found.scanned} picture${found.scanned === 1 ? "" : "s"} — nothing needs trimming.`
-            : `${found.padded} of ${found.scanned} have white padding (about ${KB(found.bytes_saved)} of it).`}
-        </p>
-      )}
-      {done && (
-        <p className="modal-note">
-          <Icon id="check" />
-          Trimmed {done.padded} picture{done.padded === 1 ? "" : "s"}, saving {KB(done.bytes_saved)}.
-        </p>
-      )}
-      {error && (
-        <p className="error">
-          <Icon id="alert" />
-          {error}
-        </p>
-      )}
-    </section>
-  );
-}
 
 function BackupCard() {
   const fileInput = useRef(null);

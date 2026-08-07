@@ -142,6 +142,18 @@ def search_musicbrainz(
             return [found, *named]
         if not (q or "").strip() and not (artist or "").strip():
             raise HTTPException(400, "give an album, an artist or a barcode")
+        # Discogs leads by name for the same reason it leads by barcode: it is
+        # catalogued by people describing the record in their hands, so it
+        # carries pressings MusicBrainz has never heard of. Typing the album in
+        # used to reach only MusicBrainz, which made a scan and a search of the
+        # same record answer differently.
+        if discogs_client.configured:
+            try:
+                hits = discogs_client.search(query=q, artist=artist)
+                if hits:
+                    return hits
+            except httpx.HTTPError:
+                pass  # a dead token shouldn't take the search down with it
         return musicbrainz_client.search(query=q, artist=artist)
     except httpx.HTTPError as e:
         raise HTTPException(502, f"MusicBrainz unreachable: {e}")

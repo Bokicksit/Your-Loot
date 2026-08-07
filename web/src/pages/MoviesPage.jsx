@@ -8,7 +8,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { cleanTitle, detectEdition, detectFormat } from "../upc.js";
+import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
 const REGIONS = ["Region-free", "A", "B", "C", "1", "2", "3", "4"];
@@ -89,7 +89,10 @@ export default function MoviesPage() {
     setSearching(true);
     setResults(null); // clear the old hits so the status stands alone
     try {
-      setResults(await api.tmdbSearch(form.title.trim()));
+      // cleanTitle so "Alien 4K UHD Steelbook" typed by hand searches for
+      // "Alien", the same as a scanned product title does
+      const typed = cleanTitle(form.title) || form.title;
+      setResults(await firstHits(queryLadder(typed), (q) => api.tmdbSearch(q)));
     } catch (e) {
       alert(e.message);
     } finally {
