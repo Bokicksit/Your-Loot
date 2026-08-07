@@ -74,6 +74,69 @@ def _reject_private(host: str):
             raise HTTPException(400, "that address isn't allowed")
 
 
+class TidyResult(BaseModel):
+    scanned: int
+    padded: int
+    bytes_saved: int
+    applied: bool
+    examples: list[str] = []
+
+
+# a stored library is artwork, not a photo roll; this is a sanity bound, not a
+# real limit anyone should hit
+SCAN_CAP = 20_000
+
+
+@router.post("/tidy", response_model=TidyResult)
+def tidy_images(apply: bool = False):
+    """One-off pass over already-stored pictures, cutting the white padding off
+    any that were saved before trimming existed.
+
+    Defaults to a dry run: it reports what it *would* change and touches
+    nothing. Pass apply=true to rewrite them. Only pictures matted on white (or
+    fully transparent) qualify, the same rule new artwork goes through, so a
+    photograph you took is left alone unless it genuinely has a white border.
+    """
+    root = Path(settings.image_dir)
+    if not root.is_dir():
+        return TidyResult(scanned=0, padded=0, bytes_saved=0, applied=apply)
+
+    scanned = padded = saved = 0
+    examples: list[str] = []
+    for path in sorted(root.iterdir()):
+        if scanned >= SCAN_CAP:
+            break
+        if not path.is_file() or path.suffix.lower() not in ALLOWED:
+            continue
+        scanned += 1
+        try:
+            before = path.read_bytes()
+        except OSError:
+            continue
+        after = trim_border(before)
+        if after is before or len(after) == len(before):
+            continue
+        padded += 1
+        saved += max(0, len(before) - len(after))
+        if len(examples) < 8:
+            examples.append(path.name)
+        if apply:
+            # write beside it and swap, so a failure halfway can't leave a
+            # half-written picture where the real one was
+            tmp = path.with_suffix(path.suffix + ".tidy")
+            try:
+                tmp.write_bytes(after)
+                tmp.replace(path)
+            except OSError:
+                tmp.unlink(missing_ok=True)
+                padded -= 1
+                saved -= max(0, len(before) - len(after))
+
+    return TidyResult(
+        scanned=scanned, padded=padded, bytes_saved=saved, applied=apply, examples=examples
+    )
+
+
 @router.post("/fetch")
 def fetch_image(body: FetchBody):
     """Store a copy of an image from a pasted URL — e.g. the card art from

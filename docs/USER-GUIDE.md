@@ -15,6 +15,7 @@ version.
   [records](#records) · [LEGO](#lego) · [comics](#comics)
 - [The wanted list](#the-wanted-list)
 - [Settings](#settings)
+- [Tidy artwork padding](#tidy-artwork-padding)
 - [Backup and restore](#backup-and-restore)
 - [Keeping it healthy](#keeping-it-healthy)
 - [Troubleshooting](#troubleshooting)
@@ -617,6 +618,30 @@ entry is removed entirely rather than becoming an orphan in your library.
 **Backup & restore** — see below.
 
 Settings are stored on the server, so they're the same on every device.
+
+---
+
+## Tidy artwork padding
+
+Shops publish cover art matted onto a canvas of their own choosing — a portrait
+book cover centred in a wide white rectangle. Since the thumbnail takes its
+shape from the picture, that padding turned into a small cover adrift in an
+empty box.
+
+Artwork saved from now on has the padding trimmed on the way in. **Settings →
+Tidy artwork padding** is the one-off pass for pictures already in your
+library.
+
+It looks before it touches anything: **Check what would change** reports how
+many have padding and how much, and only then does a *Trim* button appear.
+Trimming rewrites those files in place and can't be undone, so take a backup
+first if you'd rather be safe. Running it twice is harmless — the second run
+finds nothing.
+
+Only artwork matted on **white** is touched. That rule is what keeps it safe: a
+game cover that happens to be dark at the edges would otherwise read as padding
+and lose its own artwork, and a photo you took yourself is left alone unless it
+genuinely has a white border.
 
 ---
 
