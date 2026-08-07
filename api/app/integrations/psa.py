@@ -51,7 +51,14 @@ class PsaClient:
         try:
             r = httpx.get(
                 f"{API}/cert/GetByCertNumber/{digits}",
-                headers={"Authorization": f"bearer {self.api_key}"},
+                # exactly the headers PSA's own sample code sends, down to the
+                # Content-Type on a GET. It makes no difference to their gateway
+                # — every variant returns the same answer — but matching the
+                # documented call removes a variable from any future debugging.
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"bearer {self.api_key}",
+                },
                 timeout=20,
             )
         except httpx.HTTPError as e:
