@@ -13,7 +13,7 @@ import {
   LEGO_PARTS_ONLY,
   VINYL_GRADES,
 } from "../vocab.js";
-import { useEnabledModules } from "../settings.jsx";
+import { useEnabledModules, useListPref } from "../settings.jsx";
 
 const MODULE_ICONS = {
   cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
@@ -106,6 +106,7 @@ export default function WantedPage() {
   const [acquiring, setAcquiring] = useState(null); // item_id being acquired
   const [acqVals, setAcqVals] = useState({});
   const [openInfo, setOpenInfo] = useState(null); // item_id with info expanded
+  const [sort, setSort] = useListPref("wanted", "sort", "added");
   // a row is two sibling <li>s, and which one is open lives here rather than in
   // the row, so there's nothing to hang a ref on — the rows are tagged instead
   const stillInside = (t) => {
@@ -121,10 +122,10 @@ export default function WantedPage() {
     stillInside,
   );
 
-  const load = () => api.wanted().then(setRows);
+  const load = () => api.wanted({ sort }).then(setRows);
   useEffect(() => {
     load();
-  }, []);
+  }, [sort]);
 
   const remove = async (itemId) => {
     await api.removeWanted(itemId);
@@ -219,6 +220,21 @@ export default function WantedPage() {
         <span className="count" style={{ marginLeft: "auto" }}>
           {shown.length}
         </span>
+      </div>
+      <div className="chip-row">
+        {/* one list across eight collections, so "by collection" groups it
+            rather than filtering it — the chips above already filter */}
+        <select
+          className="chip-select"
+          title="Sort"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="added">Last added</option>
+          <option value="oldest">First added</option>
+          <option value="title">A–Z</option>
+          <option value="module">By collection</option>
+        </select>
       </div>
       {facets.length > 0 && (
         <div className="chip-row">

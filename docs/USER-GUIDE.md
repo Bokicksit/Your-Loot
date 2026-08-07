@@ -144,7 +144,8 @@ tiles.
 
 ### Sorting
 
-Every collection has a **sort** dropdown next to its filters. The options
+Every collection has a **sort** dropdown next to its filters, the wanted
+list included. The options
 differ per collection, because what you file a shelf by isn't what you file a
 long box by:
 

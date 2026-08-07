@@ -29,11 +29,16 @@ Full detail is in the commit log, where every change has its own note.
   already tracks records at — a reissue drops a track, a Japanese press has
   Japanese titles. Positions are kept as printed, so "B2" still says which
   side it's on. Migration 0017.
+- **Sorting on the wanted list** — last added, first added, A–Z, or grouped by
+  collection. Remembered like the other collections'.
 - **Sort and filters are remembered per collection.** Choosing "last added",
   or filtering Games to SNES, used to last until you left the page. Stored on
   the server rather than in the browser, so a phone and a desk agree.
 
 ### Fixed
+- **The wanted list put new items at the bottom.** It ordered by
+  `wanted.priority`, which nothing has ever set, so every row sat in one NULL
+  bucket and fell through to oldest-first. It now defaults to newest-first.
 - **The expanded panel was crushed inside a tile.** Opening an item in tile
   view left its details in a 166px column — one word per line of title, a
   summary the width of a ribbon. An opened tile now spans the grid and lays

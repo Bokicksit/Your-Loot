@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -182,8 +182,23 @@ def stats(db: Session = Depends(get_db)):
 
 
 @router.get("/wanted", response_model=list[WantedItemOut])
-def wanted_list(db: Session = Depends(get_db), module: str | None = None):
-    """The unified wanted list — one query across all modules."""
+def wanted_list(
+    db: Session = Depends(get_db),
+    module: str | None = None,
+    sort: str = Query("added", pattern="^(added|oldest|title|module)$"),
+):
+    """The unified wanted list — one query across all modules.
+
+    Ordered newest-first by default. `wanted.priority` exists and nothing has
+    ever set it, so ordering by it put every row in one undifferentiated NULL
+    bucket and fell through to oldest-first — which meant the thing you added
+    a minute ago went to the bottom of the list. When priority becomes
+    something the UI can actually set, it earns a sort of its own.
+
+    "Added" is when it went on the wanted list, not when the catalogue first
+    heard of the item — the date that matters here is the day you decided you
+    wanted it.
+    """
     q = (
         select(Wanted)
         .join(CollectionItem)
@@ -198,10 +213,20 @@ def wanted_list(db: Session = Depends(get_db), module: str | None = None):
             joinedload(Wanted.item).joinedload(CollectionItem.lego_attrs),
             joinedload(Wanted.item).joinedload(CollectionItem.comic_attrs),
         )
-        .order_by(Wanted.priority.asc().nulls_last(), Wanted.created_at)
     )
     if module:
         q = q.where(CollectionItem.module == module)
+
+    if sort == "oldest":
+        order = [Wanted.created_at.asc(), Wanted.id.asc()]
+    elif sort == "title":
+        order = [CollectionItem.title]
+    elif sort == "module":
+        # grouped by collection, and alphabetical inside each
+        order = [CollectionItem.module, CollectionItem.title]
+    else:
+        order = [Wanted.created_at.desc(), Wanted.id.desc()]
+    q = q.order_by(*order)
     def _facet(item: CollectionItem) -> str | None:
         """Sub-filter value: system for games, genre for movies."""
         if item.module == Module.games.value and item.game_attrs and item.game_attrs.platform:

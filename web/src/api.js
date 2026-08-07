@@ -47,7 +47,8 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ happy }),
     }),
-  wanted: () => request("/api/wanted"),
+  wanted: (params = {}) =>
+    request(`/api/wanted?${new URLSearchParams(params)}`),
   games: (params = {}) =>
     request(`/api/games?${new URLSearchParams(params)}`),
   platforms: () => request("/api/games/platforms"),
