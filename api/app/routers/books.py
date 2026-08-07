@@ -105,6 +105,17 @@ def search_openlibrary(
         raise HTTPException(502, f"Open Library unreachable: {e}")
 
 
+@router.get("/description")
+def book_description(olid: str = Query(min_length=3, max_length=30)):
+    """The blurb for one book, fetched only once it's been chosen.
+
+    Its own route rather than a field on the search results: it costs an extra
+    request per book, sometimes two, and a page of twenty results would pay
+    that twenty times over for nineteen books nobody picked.
+    """
+    return {"description": openlibrary_client.description(olid)}
+
+
 @router.get("/facets")
 def book_facets(db: Session = Depends(get_db)):
     """Authors and formats present in the collection, for the filters."""

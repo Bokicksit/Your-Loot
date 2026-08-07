@@ -88,6 +88,8 @@ export const api = {
   updateBook: (itemId, body) =>
     request(`/api/books/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteBook: (itemId) => request(`/api/books/${itemId}`, { method: "DELETE" }),
+  bookDescription: (olid) =>
+    request(`/api/books/description?olid=${encodeURIComponent(olid)}`),
   openLibrarySearch: (params) =>
     request(`/api/books/search?${new URLSearchParams(params)}`),
   records: (params = {}) => request(`/api/records?${new URLSearchParams(params)}`),

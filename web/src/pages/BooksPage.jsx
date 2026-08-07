@@ -136,9 +136,20 @@ export default function BooksPage() {
       publish_year: r.publish_year || "",
       page_count: r.page_count || "",
       image_url: r.image_url || null,
+      blurb: null,
     }));
     setResults(null);
     setStep("details"); // picked an edition — on to describing your copy
+    // The blurb is a second request and often a miss, so the form opens
+    // without waiting and fills itself in if one turns up.
+    if (r.olid) {
+      api
+        .bookDescription(r.olid)
+        .then(({ description }) =>
+          description && setForm((f) => ({ ...f, blurb: description }))
+        )
+        .catch(() => {}); // no blurb is the normal case, not an error
+    }
   };
 
   const openForm = () => {
@@ -169,6 +180,7 @@ export default function BooksPage() {
         // a jacket borrowed from a shop listing outlives the listing this way;
         // Open Library's own covers are stable and stay linked
         image_url: await api.localiseImage(form.image_url),
+        blurb: form.blurb || null,
       });
       if (form.own) {
         await api.addOwned(created.id, {

@@ -18,6 +18,12 @@ Full detail is in the commit log, where every change has its own note.
   delete controls stay out of the way until you tap it, then appear under the
   picture with the rest of the detail.
 
+- **Book blurbs.** `book_attrs.blurb` already existed, and the expanded book
+  panel already rendered it — nothing ever filled it in, so it had always been
+  empty. Picking a book now fetches its description from Open Library, the
+  same way a game shows its IGDB summary. Coverage is good for well-known
+  titles and thin below that; when there's nothing, nothing is shown.
+
 ### Fixed
 - **A manual crop kept the whole photo.** The crop box was positioned in
   percentages of its container, which is full width, while the photo inside it
