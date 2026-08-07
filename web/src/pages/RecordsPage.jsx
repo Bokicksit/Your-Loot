@@ -9,6 +9,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useListPref } from "../settings.jsx";
 
 // "Vinyl box set", not "Box set": in a records collection a box set is almost
 // always wax, and saying so is what keeps a price check off the CD edition.
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   country: "",
   barcode: "",
   track_count: "",
+  tracklist: null,
   image_url: null,
   own: true,
   condition: DEFAULT_VINYL_GRADE,
@@ -52,10 +54,10 @@ export default function RecordsPage() {
   const [facets, setFacets] = useState({ artists: [], labels: [], formats: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("records");
-  const [artistFilter, setArtistFilter] = useState("");
-  const [labelFilter, setLabelFilter] = useState("");
-  const [formatFilter, setFormatFilter] = useState("");
-  const [sort, setSort] = useState("artist");
+  const [artistFilter, setArtistFilter] = useListPref("records", "artistFilter", "");
+  const [labelFilter, setLabelFilter] = useListPref("records", "labelFilter", "");
+  const [formatFilter, setFormatFilter] = useListPref("records", "formatFilter", "");
+  const [sort, setSort] = useListPref("records", "sort", "artist");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -143,9 +145,18 @@ export default function RecordsPage() {
       barcode: r.barcode || f.barcode,
       track_count: r.track_count || "",
       image_url: r.image_url || null,
+      tracklist: null,
     }));
     setResults(null);
     setStep("details");
+    // Only Discogs knows the running order, and only per pressing. A second
+    // request, so the form opens now and fills itself in if one arrives.
+    if (r.discogs_id) {
+      api
+        .recordTracklist(r.discogs_id)
+        .then(({ tracklist }) => tracklist && setForm((f) => ({ ...f, tracklist })))
+        .catch(() => {}); // MusicBrainz-only pressings simply have none
+    }
   };
 
   const openForm = () => {
@@ -175,6 +186,7 @@ export default function RecordsPage() {
         country: form.country.trim() || null,
         barcode: form.barcode.trim() || null,
         track_count: form.track_count ? Number(form.track_count) : null,
+        tracklist: form.tracklist || null,
         // a sleeve photo from a shop listing outlives the listing this way
         image_url: await api.localiseImage(form.image_url),
       });
@@ -816,6 +828,15 @@ function RecordRow({ record, onChange, onReload }) {
                 download — the pressing format is what makes it a record */}
             <EbayLink title={record.title} terms={[a.artist, a.format]} />
           </div>
+          {/* Positions are kept as Discogs lists them, because on a record
+              "B2" is where the track physically is, not just its number. */}
+          {a.tracklist && (
+            <ol className="tracklist">
+              {a.tracklist.split("\n").map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ol>
+          )}
         </span>
       )}
 

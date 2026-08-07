@@ -2030,10 +2030,41 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    chips, and it costs the closed tile nothing. */
 .game-list.as-tiles .game-row { position: relative; }
 .game-list.as-tiles .row-buttons { display: none; }
-.game-list.as-tiles .game-row.open .row-buttons {
-  display: flex;
-  justify-self: end;
+
+/* An opened tile becomes a row for as long as it's open.
+   The detail panel is a child of the tile, so left where it was it inherits
+   the tile's width — a 166px column, which turns a title into one word per
+   line and a summary into a ribbon. Spanning the grid gives it the page, and
+   at that width the row layout is simply the right one: cover on the left,
+   everything else beside it. Same markup, same rules the list view already
+   uses, no second panel to keep in step. */
+.game-list.as-tiles .game-row.open {
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-content: initial;
 }
+.game-list.as-tiles .game-row.open > .game-cover,
+.game-list.as-tiles .game-row.open > .game-icon { grid-column: 1; }
+.game-list.as-tiles .game-row.open > .game-text { grid-column: 2; }
+.game-list.as-tiles .game-row.open > .row-buttons {
+  grid-column: 3;
+  display: flex;
+  align-self: start;
+}
+.game-list.as-tiles .game-row.open > .copy-edit,
+.game-list.as-tiles .game-row.open > .entry-edit { grid-column: 1 / -1; }
+/* back to the row's own cover: full-width artwork only makes sense in a tile */
+.game-list.as-tiles .game-row.open > .game-cover,
+.game-list.as-tiles .game-row.open > .game-icon {
+  width: auto;
+  height: 62px;
+  min-width: 40px;
+  max-width: 88px;
+  aspect-ratio: auto;
+  align-self: start;
+}
+.game-list.as-tiles .game-row.open .game-text strong { font-size: var(--f-4); }
+.game-list.as-tiles .game-row.open .game-meta .chip { padding: 2px 7px; font-size: var(--f-1); }
 /* the owned marker is a left edge stripe on a row, which reads as nothing at
    all on a tile — give it the frame instead, the way an owned card tile has */
 .game-list.as-tiles .row-owned {
@@ -2103,3 +2134,25 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   color: var(--gold-bright);
 }
 .view-toggle svg.i { width: 15px; height: 15px; }
+
+/* A pressing's running order. Numbered by Discogs' own positions rather than
+   the list marker, since "A1" says which side it's on and "1." doesn't. */
+.tracklist {
+  grid-column: 1 / -1;
+  margin: var(--s-2) 0 0;
+  padding: var(--s-2) 0 0;
+  list-style: none;
+  border-top: 1px dashed var(--line);
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.tracklist li {
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  padding: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tracklist li:nth-child(odd) { color: var(--text); }

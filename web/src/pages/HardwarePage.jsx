@@ -8,7 +8,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { useSettings } from "../settings.jsx";
+import { useSettings, useListPref } from "../settings.jsx";
 import { cleanGameTitle } from "../upc.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
@@ -39,8 +39,8 @@ export default function HardwarePage() {
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("hardware");
-  const [platformFilter, setPlatformFilter] = useState("");
-  const [sort, setSort] = useState("title");
+  const [platformFilter, setPlatformFilter] = useListPref("hardware", "platformFilter", "");
+  const [sort, setSort] = useListPref("hardware", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const { settings } = useSettings();
   // a blank form starts at whatever region you told Settings you mostly buy

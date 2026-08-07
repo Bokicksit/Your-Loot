@@ -8,7 +8,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { useSettings } from "../settings.jsx";
+import { useSettings, useListPref } from "../settings.jsx";
 import { cleanGameTitle, firstHits, queryLadder } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, shortFor, withUnknown } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
@@ -79,9 +79,9 @@ export default function GamesPage() {
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("games");
-  const [platformFilter, setPlatformFilter] = useState(""); // system; genre later
+  const [platformFilter, setPlatformFilter] = useListPref("games", "platformFilter", ""); // system; genre later
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
-  const [sort, setSort] = useState("title"); // title | platform | added
+  const [sort, setSort] = useListPref("games", "sort", "title"); // title | platform | added
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const { settings } = useSettings();

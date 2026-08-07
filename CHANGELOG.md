@@ -24,7 +24,20 @@ Full detail is in the commit log, where every change has its own note.
   same way a game shows its IGDB summary. Coverage is good for well-known
   titles and thin below that; when there's nothing, nothing is shown.
 
+- **Record tracklists.** MusicBrainz gives a track count and nothing else.
+  Discogs knows the running order per pressing, which is the level this module
+  already tracks records at — a reissue drops a track, a Japanese press has
+  Japanese titles. Positions are kept as printed, so "B2" still says which
+  side it's on. Migration 0017.
+- **Sort and filters are remembered per collection.** Choosing "last added",
+  or filtering Games to SNES, used to last until you left the page. Stored on
+  the server rather than in the browser, so a phone and a desk agree.
+
 ### Fixed
+- **The expanded panel was crushed inside a tile.** Opening an item in tile
+  view left its details in a 166px column — one word per line of title, a
+  summary the width of a ribbon. An opened tile now spans the grid and lays
+  itself out as a row for as long as it's open.
 - **A manual crop kept the whole photo.** The crop box was positioned in
   percentages of its container, which is full width, while the photo inside it
   is centred and usually narrower — so the rectangle you drew and the pixels

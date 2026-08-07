@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/records", tags=["records"])
 
 ATTR_FIELDS = (
     "artist", "label", "catalog_number", "format", "speed", "pressing",
-    "release_year", "country", "barcode", "track_count",
+    "release_year", "country", "barcode", "track_count", "tracklist",
 )
 
 
@@ -157,6 +157,17 @@ def search_musicbrainz(
         return musicbrainz_client.search(query=q, artist=artist)
     except httpx.HTTPError as e:
         raise HTTPException(502, f"MusicBrainz unreachable: {e}")
+
+
+@router.get("/tracklist")
+def record_tracklist(release_id: str):
+    """The running order for one Discogs pressing.
+
+    Its own route, fetched only once a pressing has been chosen: it is a
+    request per record, and a page of search results would spend ten of them
+    on nine records nobody picked.
+    """
+    return {"tracklist": discogs_client.tracklist(release_id)}
 
 
 @router.get("/facets")

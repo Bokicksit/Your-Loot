@@ -14,6 +14,7 @@ class RecordAttrsOut(BaseModel):
     country: str | None = None
     barcode: str | None = None
     track_count: int | None = None
+    tracklist: str | None = None
 
 
 class RecordOut(BaseModel):
@@ -43,6 +44,7 @@ class RecordCreate(BaseModel):
     country: str | None = Field(default=None, max_length=10)
     barcode: str | None = Field(default=None, max_length=20)
     track_count: int | None = None
+    tracklist: str | None = None
     image_url: str | None = None
     notes: str | None = None
 
@@ -61,5 +63,6 @@ class RecordUpdate(BaseModel):
     country: str | None = Field(default=None, max_length=10)
     barcode: str | None = Field(default=None, max_length=20)
     track_count: int | None = None
+    tracklist: str | None = None
     image_url: str | None = None
     notes: str | None = None

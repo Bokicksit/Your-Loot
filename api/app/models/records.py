@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -24,5 +24,7 @@ class RecordAttrs(Base):
     country: Mapped[str | None] = mapped_column(String(10))
     barcode: Mapped[str | None] = mapped_column(String(20), index=True)
     track_count: Mapped[int | None] = mapped_column()
+    # one track to a line, as Discogs lists them for this pressing
+    tracklist: Mapped[str | None] = mapped_column(Text)
 
     item = relationship("CollectionItem", back_populates="record_attrs")

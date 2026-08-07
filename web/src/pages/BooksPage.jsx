@@ -8,6 +8,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useListPref } from "../settings.jsx";
 
 // Graphic Novel and Omnibus sit here rather than in Comics because that's
 // where the barcode puts them: a collected edition carries an ISBN, which Open
@@ -52,9 +53,9 @@ export default function BooksPage() {
   const [facets, setFacets] = useState({ authors: [], formats: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("books");
-  const [authorFilter, setAuthorFilter] = useState("");
-  const [formatFilter, setFormatFilter] = useState("");
-  const [sort, setSort] = useState("title");
+  const [authorFilter, setAuthorFilter] = useListPref("books", "authorFilter", "");
+  const [formatFilter, setFormatFilter] = useListPref("books", "formatFilter", "");
+  const [sort, setSort] = useListPref("books", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);

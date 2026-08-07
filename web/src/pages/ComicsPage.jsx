@@ -16,6 +16,7 @@ import {
   withUnknown,
 } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -49,9 +50,9 @@ export default function ComicsPage() {
   const [facets, setFacets] = useState({ series: [], publishers: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("comics");
-  const [seriesFilter, setSeriesFilter] = useState("");
-  const [publisherFilter, setPublisherFilter] = useState("");
-  const [sort, setSort] = useState("series");
+  const [seriesFilter, setSeriesFilter] = useListPref("comics", "seriesFilter", "");
+  const [publisherFilter, setPublisherFilter] = useListPref("comics", "publisherFilter", "");
+  const [sort, setSort] = useListPref("comics", "sort", "series");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);

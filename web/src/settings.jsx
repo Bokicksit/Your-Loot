@@ -41,6 +41,32 @@ export function useSettings() {
   return v;
 }
 
+/** A collection's sort or filter, remembered between visits.
+ *
+ *  Drop-in for useState: same shape, same call site. A sort you chose is a
+ *  decision about how you like to look at your shelf, not a per-visit whim,
+ *  and re-picking "last added" every time you open the app is exactly the
+ *  kind of small tax that makes software feel like it isn't listening.
+ *
+ *  Server-side rather than localStorage on purpose — this app is used from a
+ *  phone and a desk, and the preference should be the same in both.
+ */
+export function useListPref(module, key, fallback) {
+  const { settings, save } = useSettings();
+  const prefs = settings?.list_prefs || {};
+  // settings load after the first render, so until they arrive the fallback
+  // stands in; ?? not || so that a deliberately empty filter survives
+  const value = prefs[module]?.[key] ?? fallback;
+  const set = (next) =>
+    save({
+      list_prefs: {
+        ...prefs,
+        [module]: { ...(prefs[module] || {}), [key]: next },
+      },
+    });
+  return [value, set];
+}
+
 /** Modules the user actually collects, in display order. */
 export function useEnabledModules() {
   const { settings } = useSettings();

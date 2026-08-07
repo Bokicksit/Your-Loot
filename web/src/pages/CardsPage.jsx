@@ -7,7 +7,7 @@ import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
-import { useSettings } from "../settings.jsx";
+import { useSettings, useListPref } from "../settings.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
@@ -24,9 +24,9 @@ export default function CardsPage({ initialView = "collection" }) {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("cards");
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
-  const [setFilter, setSetFilter] = useState("");
-  const [rarityFilter, setRarityFilter] = useState("");
-  const [sort, setSort] = useState("dex");
+  const [setFilter, setSetFilter] = useListPref("cards", "setFilter", "");
+  const [rarityFilter, setRarityFilter] = useListPref("cards", "rarityFilter", "");
+  const [sort, setSort] = useListPref("cards", "sort", "dex");
   const cardCols = settings?.card_cols || 3;
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
   const [sets, setSets] = useState([]); // for the set autocomplete

@@ -74,6 +74,37 @@ class DiscogsClient:
         r.raise_for_status()
         return r.json()
 
+    def tracklist(self, release_id: int | str) -> str | None:
+        """The running order for one pressing, one track to a line.
+
+        Per pressing rather than per album on purpose: a reissue drops a track,
+        a single-disc edit runs them in a different order, and a 12" lists
+        sides. That is the level this module already tracks records at.
+
+        Positions are kept ("A1", "B2") because on a record they are where the
+        track physically is, not just its number. Durations are kept when
+        Discogs has them and simply left off when it doesn't.
+        """
+        if not self.configured or not release_id:
+            return None
+        try:
+            data = self._get(f"/releases/{release_id}", {})
+        except httpx.HTTPError:
+            return None  # a missing tracklist is not worth failing an add over
+
+        lines = []
+        for t in data.get("tracklist") or []:
+            # headings ("Side A") carry no track and would read as a blank row
+            if t.get("type_") not in (None, "track"):
+                continue
+            title = (t.get("title") or "").strip()
+            if not title:
+                continue
+            pos = (t.get("position") or "").strip()
+            dur = (t.get("duration") or "").strip()
+            lines.append(" · ".join(p for p in (pos, title, dur) if p))
+        return "\n".join(lines) or None
+
     def _summarise(self, hit: dict) -> dict:
         artist, title = _split_title(hit.get("title") or "")
         fmt_parts = [p for p in (hit.get("format") or []) if isinstance(p, str)]

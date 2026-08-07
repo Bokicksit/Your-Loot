@@ -10,6 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, shortFor, withUnknown } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -40,8 +41,8 @@ export default function LegoPage() {
   const [facets, setFacets] = useState({ themes: [], years: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("lego");
-  const [themeFilter, setThemeFilter] = useState("");
-  const [sort, setSort] = useState("title");
+  const [themeFilter, setThemeFilter] = useListPref("lego", "themeFilter", "");
+  const [sort, setSort] = useListPref("lego", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);

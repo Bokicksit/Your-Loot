@@ -10,6 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useListPref } from "../settings.jsx";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
 const REGIONS = ["Region-free", "A", "B", "C", "1", "2", "3", "4"];
@@ -41,8 +42,8 @@ export default function MoviesPage() {
   const [formats, setFormats] = useState([]); // in-collection formats w/ counts
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("movies");
-  const [formatFilter, setFormatFilter] = useState("");
-  const [sort, setSort] = useState("title"); // title | format | added
+  const [formatFilter, setFormatFilter] = useListPref("movies", "formatFilter", "");
+  const [sort, setSort] = useListPref("movies", "sort", "title"); // title | format | added
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);

@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -21,6 +23,10 @@ DEFAULTS = {
     # tiles and everything else has always been rows, so this default is
     # what the app already looked like before the toggle existed.
     "tile_modules": "cards",
+    # How each collection was last left: its sort, and whatever it was
+    # filtered by. One JSON blob rather than twenty keys, because the set
+    # differs per collection and grows whenever a filter does.
+    "list_prefs": "{}",
     "show_binder_in_collection": "false",
     "default_region": "NTSC-U",
 }
@@ -30,6 +36,16 @@ def _csv(v: str | None) -> list[str]:
     return [x for x in (v or "").split(",") if x]
 
 
+def _prefs(v: str | None) -> dict:
+    """Stored as JSON in a text column. Anything unreadable is treated as
+    "no preference" — a corrupt blob should lose a sort order, not the page."""
+    try:
+        out = json.loads(v or "{}")
+    except ValueError:
+        return {}
+    return out if isinstance(out, dict) else {}
+
+
 class SettingsOut(BaseModel):
     owner_name: str | None = None
     enabled_modules: list[str] = []
@@ -37,6 +53,7 @@ class SettingsOut(BaseModel):
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
+    list_prefs: dict = {}
     show_binder_in_collection: bool = False
     default_region: str = "NTSC-U"
     # True until onboarding has been completed at least once
@@ -52,6 +69,7 @@ class SettingsUpdate(BaseModel):
     dex_cols: int | None = Field(default=None, ge=2, le=8)
     card_cols: int | None = Field(default=None, ge=2, le=8)
     tile_modules: list[str] | None = None
+    list_prefs: dict | None = None
     show_binder_in_collection: bool | None = None
     default_region: str | None = Field(default=None, max_length=20)
 
@@ -67,6 +85,7 @@ def _current(db: Session) -> SettingsOut:
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
         tile_modules=[m for m in _csv(raw["tile_modules"]) if m in MODULES],
+        list_prefs=_prefs(raw["list_prefs"]),
         show_binder_in_collection=str(raw["show_binder_in_collection"]).lower() == "true",
         default_region=raw["default_region"] or "NTSC-U",
         # the row only exists once onboarding has been submitted, so its
@@ -84,7 +103,9 @@ def get_settings(db: Session = Depends(get_db)):
 def update_settings(body: SettingsUpdate, db: Session = Depends(get_db)):
     data = body.model_dump(exclude_unset=True)
     for key, value in data.items():
-        if isinstance(value, list):
+        if isinstance(value, dict):
+            value = json.dumps(value, separators=(",", ":"))
+        elif isinstance(value, list):
             value = ",".join(v for v in value if v in MODULES)
         elif isinstance(value, bool):
             value = "true" if value else "false"

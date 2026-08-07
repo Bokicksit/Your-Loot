@@ -99,6 +99,8 @@ export const api = {
   updateRecord: (itemId, body) =>
     request(`/api/records/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteRecord: (itemId) => request(`/api/records/${itemId}`, { method: "DELETE" }),
+  recordTracklist: (releaseId) =>
+    request(`/api/records/tracklist?release_id=${encodeURIComponent(releaseId)}`),
   musicBrainzSearch: (params) =>
     request(`/api/records/search?${new URLSearchParams(params)}`),
   lego: (params = {}) => request(`/api/lego?${new URLSearchParams(params)}`),
