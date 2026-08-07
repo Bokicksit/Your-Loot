@@ -39,6 +39,7 @@ export const api = {
   },
   cardFacets: (params = {}) =>
     request(`/api/cards/facets?${new URLSearchParams(params)}`),
+  psaCert: (cert) => request(`/api/cards/psa/${encodeURIComponent(cert)}`),
   cardsSearch: (params) =>
     request(`/api/cards/search?${new URLSearchParams(params)}`),
   pokedex: () => request("/api/cards/pokedex"),

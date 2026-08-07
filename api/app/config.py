@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     rebrickable_api_key: str = ""
     comicvine_api_key: str = ""
     discogs_token: str = ""
+    psa_api_key: str = ""
 
 
 settings = Settings()

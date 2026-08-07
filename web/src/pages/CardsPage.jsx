@@ -72,6 +72,7 @@ export default function CardsPage({ initialView = "collection" }) {
     keeper: false, // binder card is "the one" vs a placeholder to upgrade
     variant: "Non-Holo",
     stamp: "",
+    cert_number: "",
   });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -160,6 +161,60 @@ export default function CardsPage({ initialView = "collection" }) {
     })();
   }, [searchParams]);
 
+  // A slab describes itself, so this needs no catalogue at all — which is what
+  // lets it add cards the Pokémon dump has never heard of. It still tries the
+  // catalogue first: a hit attaches the graded copy to the card you already
+  // own, instead of splitting one Charizard across two entries.
+  const [cert, setCert] = useState("");
+  const [certBusy, setCertBusy] = useState(false);
+
+  const lookupCert = async () => {
+    const digits = cert.replace(/\D/g, "");
+    if (digits.length < 6 || certBusy) return;
+    setCertBusy(true);
+    try {
+      const res = await api.psaCert(digits);
+      if (!res.found) {
+        alert(`PSA doesn't know cert ${digits}. Check the number on the label.`);
+        return;
+      }
+      const c = res.cert;
+      setResults(null);
+      setAddVals((v) => ({
+        ...v,
+        own: true,
+        grader: "PSA",
+        grade: c.grade || "",
+        condition: "NM", // a slab's condition is its grade
+        cert_number: c.cert_number,
+      }));
+      if (res.match) {
+        // the add panel opens under a card in the results grid, so the match
+        // is shown as a one-card result rather than appearing from nowhere
+        setResults([res.match]);
+        setPicked(res.match);   // joins the card you already have
+        setManual(null);
+      } else {
+        // nothing in the catalogue — PSA's own description becomes the entry
+        setPicked(null);
+        setManual({
+          title: c.subject || c.title,
+          set_name: c.set_name || "",
+          set_abbr: "",
+          card_number: c.card_number || "",
+          set_total: "",
+          rarity: c.rarity || "",
+          national_dex_no: "",
+          image_url: c.image_url || null,
+        });
+      }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setCertBusy(false);
+    }
+  };
+
   const doSearch = async () => {
     if (searching || form.name.trim().length < 2) return;
     setSearching(true);
@@ -191,6 +246,7 @@ export default function CardsPage({ initialView = "collection" }) {
           in_binder: toBinder,
           variant: addVals.variant === "Non-Holo" ? null : addVals.variant,
           stamp: addVals.stamp.trim() || null,
+          cert_number: addVals.cert_number || null,
         });
         if (toBinder) {
           // record whether this occupant is the desired card or a placeholder
@@ -465,6 +521,24 @@ export default function CardsPage({ initialView = "collection" }) {
           already separated by position rather than by screen. */}
       <AddSheet open={showForm} title="Add a card" onClose={closeForm}>
         <div className="add-form">
+          {/* A graded card carries its whole identity on the slab label, so the
+              cert number alone describes it — including cards this catalogue
+              has never heard of. */}
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              inputMode="numeric"
+              placeholder="PSA cert number (on the slab label)"
+              value={cert}
+              onChange={(e) => setCert(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), lookupCert())}
+            />
+            <button type="button" className="ghost" onClick={lookupCert} disabled={certBusy}>
+              {certBusy ? "…" : "Look up"}
+            </button>
+          </div>
+          {certBusy && <Searching what="Asking PSA" />}
           <div className="form-row">
             <input
               type="text"

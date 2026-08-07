@@ -9,6 +9,7 @@ import httpx
 
 from app.cards_util import classify_layer
 from app.db import get_db
+from app.integrations.psa import PsaError, psa_client
 from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
@@ -308,6 +309,44 @@ def add_from_tcgdex(card_id: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(item)
     return card_to_out(item)
+
+
+@router.get("/psa/{cert}")
+def psa_cert(cert: str, db: Session = Depends(get_db)):
+    """The card behind a PSA certification number.
+
+    A slab carries its own identity on the label, so this needs no catalogue
+    match to work — which is the point: it can describe cards the Pokémon dump
+    has never heard of, and sports cards it never will.
+
+    It still *tries* the catalogue first, on name and printed number. When it
+    hits, the graded copy joins the card you already own instead of splitting
+    the same Charizard across two entries and confusing the Pokédex. When it
+    misses, `match` is null and the caller creates an entry from PSA's own
+    description.
+    """
+    if not psa_client.configured:
+        raise HTTPException(503, "PSA not configured — set PSA_API_KEY")
+    try:
+        found = psa_client.by_cert(cert)
+    except PsaError as e:
+        raise HTTPException(e.status, e.message)
+    if not found:
+        return {"found": False, "cert": None, "match": None}
+
+    # Catalogue match: the subject is the card's name and the printed number
+    # settles which print it is. Deliberately narrow — a wrong match would
+    # attach your slab to somebody else's card.
+    match = None
+    if found["subject"]:
+        q = _base_query().where(contains(CollectionItem.title, found["subject"].strip()))
+        if found["card_number"]:
+            q = q.where(starts_with(CardAttrs.card_number, found["card_number"].strip()))
+        hits = db.scalars(q.limit(2)).unique().all()
+        if len(hits) == 1:
+            match = card_to_out(hits[0])
+
+    return {"found": True, "cert": found, "match": match}
 
 
 @router.post("", response_model=CardOut, status_code=201)

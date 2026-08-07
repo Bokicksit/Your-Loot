@@ -10,6 +10,7 @@ class OwnedOut(BaseModel):
     completeness: str | None = None
     grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
     grade: str | None = None
+    cert_number: str | None = None  # cards: the slab label number
     in_binder: bool = False  # cards: this copy occupies a binder slot
     variant: str | None = None  # cards: Non-Holo/Reverse Holo/Holo
     stamp: str | None = None  # cards: promo stamp text
@@ -22,6 +23,7 @@ class OwnedCreate(BaseModel):
     completeness: str | None = None  # games only
     grader: str | None = None  # cards only
     grade: str | None = None
+    cert_number: str | None = None  # cards only
     in_binder: bool = False  # cards only
     variant: str | None = None  # cards only
     stamp: str | None = None  # cards only
