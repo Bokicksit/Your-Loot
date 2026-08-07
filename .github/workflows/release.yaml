@@ -1,0 +1,56 @@
+name: release
+
+# A tag is the only thing anyone should pin to. Pushing one publishes the
+# GitHub Release automatically so that the notes, the tag and the image tag
+# can't drift apart — which is what happens when releases are written by hand
+# and one of the three gets forgotten.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the Release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # --generate-notes needs the history to diff against
+
+      - id: v
+        # the tag is authoritative for the release; VERSION has to agree with
+        # it or the release would point at image tags that don't exist
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          file=$(sed -e '1s/^\xEF\xBB\xBF//' VERSION | tr -d '[:space:]')
+          if [ "$tag" != "v$file" ]; then
+            echo "tag $tag does not match VERSION ($file) — expected v$file" >&2
+            exit 1
+          fi
+          echo "version=$file" >> "$GITHUB_OUTPUT"
+
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          cat > notes.md <<EOF
+          ## Images
+
+          Multi-arch (\`linux/amd64\`, \`linux/arm64\`):
+
+          \`\`\`
+          ghcr.io/bokicksit/getloot-api:${VERSION}
+          ghcr.io/bokicksit/getloot-web:${VERSION}
+          \`\`\`
+
+          Pin this release by setting \`TAG=${VERSION}\` in your \`.env\`, then
+          \`docker compose pull && docker compose up -d\`. Migrations run on
+          start. **Take a backup from the Settings page first** — downgrading
+          across a schema change is not supported.
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --generate-notes

@@ -1,5 +1,8 @@
-# build stage
-FROM node:20-alpine AS build
+# build stage — pinned to the BUILDER's architecture on purpose. This stage
+# only emits static files, which are the same bytes whatever CPU runs the
+# browser, so there is nothing to gain from running npm under QEMU emulation
+# for the arm64 image and several minutes per build to lose.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json* ./
 RUN npm install

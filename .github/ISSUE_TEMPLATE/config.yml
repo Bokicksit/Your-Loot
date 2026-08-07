@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup, upgrade or "how do I…"
+    url: https://github.com/Bokicksit/Your-Loot/discussions
+    about: Questions and help go in Discussions — faster, and others can find the answer.
+  - name: Read the user guide first
+    url: https://github.com/Bokicksit/Your-Loot/blob/main/docs/USER-GUIDE.md
+    about: Adding items, scanning, the binder, grading, backups, troubleshooting.
+  - name: Security vulnerability
+    url: https://github.com/Bokicksit/Your-Loot/security/advisories/new
+    about: Report privately, not as a public issue.

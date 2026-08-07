@@ -1,0 +1,46 @@
+name: Feature request
+description: Something the app should do and doesn't
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful requests describe **the shelf, not the software** —
+        what you own, and what you can't currently record about it. That
+        usually suggests a better feature than a guess at the UI would.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What can't you do today?
+      description: >
+        What are you trying to track, and where does the app get in the way?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: How you imagine it working
+      description: Optional — a rough idea is fine, and "no idea" is fine too.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part
+      options:
+        - Cards / Pokédex
+        - Games
+        - Hardware
+        - Movies
+        - Books
+        - Records
+        - LEGO
+        - Comics
+        - A new collection type
+        - Barcode scanning
+        - Search, sorting or filtering
+        - Backup, import or export
+        - Across the whole app
+    validations:
+      required: true

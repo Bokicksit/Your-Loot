@@ -1,5 +1,10 @@
 # 💰 Your Loot
 
+[![Release](https://img.shields.io/github/v/release/Bokicksit/Your-Loot?sort=semver)](https://github.com/Bokicksit/Your-Loot/releases)
+[![Licence: AGPL v3](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
+[![Build](https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml/badge.svg)](https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml)
+![amd64 + arm64](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-informational)
+
 Self-hosted collection tracker for **Pokémon cards, video games, hardware,
 physical movies, books, records, LEGO, and comics** — one app, one database,
 one wanted list that spans all of them.
@@ -8,7 +13,17 @@ Most trackers do a single category. This one is built for people whose shelf
 isn't that tidy: the Charizard you're hunting and the SNES console you're
 hunting live on the same list.
 
-*(screenshots go here)*
+<p align="center">
+  <img src="docs/screenshots/collection.png" alt="A collection grid of cards" width="30%">
+  <img src="docs/screenshots/scan.png" alt="Scanning a barcode" width="30%">
+  <img src="docs/screenshots/pokedex.png" alt="The Pokédex binder" width="30%">
+</p>
+
+> [!WARNING]
+> **There is no login screen.** Anyone who can reach the port can read and
+> edit the whole collection. That's deliberate for a single-user app on a home
+> network — but don't expose it to the internet. Put it behind a VPN or an
+> authenticating reverse proxy. See [SECURITY.md](SECURITY.md).
 
 📖 **[User Guide](docs/USER-GUIDE.md)** — how everything works, in depth:
 adding items, barcode scanning, the binder, grading, backups, troubleshooting.
