@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -10,6 +10,13 @@ class Owned(TimestampMixin, Base):
     __tablename__ = "owned"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Defaults to the owner in the database, so every existing INSERT that
+    # knows nothing about users keeps working and lands on user 1. Sessions
+    # will set it explicitly; the default comes off then.
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        index=True, server_default="1",
+    )
     item_id: Mapped[int] = mapped_column(
         ForeignKey("collection_item.id", ondelete="CASCADE"), index=True
     )
@@ -41,8 +48,15 @@ class Wanted(TimestampMixin, Base):
     __tablename__ = "wanted"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Defaults to the owner in the database, so every existing INSERT that
+    # knows nothing about users keeps working and lands on user 1. Sessions
+    # will set it explicitly; the default comes off then.
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        index=True, server_default="1",
+    )
     item_id: Mapped[int] = mapped_column(
-        ForeignKey("collection_item.id", ondelete="CASCADE"), unique=True
+        ForeignKey("collection_item.id", ondelete="CASCADE")
     )
     priority: Mapped[int | None] = mapped_column()  # 1 = grail, higher = lower prio
     notes: Mapped[str | None] = mapped_column(Text)

@@ -9,6 +9,7 @@ from app.models.item import CollectionItem, Module
 from app.models.movies import MovieAttrs
 from app.models.records import RecordAttrs
 from app.models.settings import Setting
+from app.models.users import ItemOverride, User
 
 __all__ = [
     "Base",
@@ -18,6 +19,7 @@ __all__ = [
     "ComicAttrs",
     "DexSlot",
     "GameAttrs",
+    "ItemOverride",
     "LegoAttrs",
     "Module",
     "MovieAttrs",
@@ -25,5 +27,6 @@ __all__ = [
     "Platform",
     "RecordAttrs",
     "Setting",
+    "User",
     "Wanted",
 ]

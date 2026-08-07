@@ -17,6 +17,13 @@ from app.sorting import leading_number, rarity_rank
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
+# Until sessions exist there is exactly one user, and the database defaults
+# every user_id to them. Reads and primary-key lookups have to name them
+# explicitly all the same — a composite key cannot be looked up with half of
+# itself. This is the single place that changes when auth lands.
+OWNER_ID = 1
+
+
 MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
 
 
@@ -396,9 +403,9 @@ class HappyUpdate(BaseModel):
 def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
     """'Happy with it' — this dex slot's keeper card stays even without an
     IR/SIR, so the binder stops flagging it for upgrade."""
-    slot = db.get(DexSlot, dex_no)
+    slot = db.get(DexSlot, (OWNER_ID, dex_no))
     if slot is None:
-        slot = DexSlot(dex_no=dex_no, happy=body.happy)
+        slot = DexSlot(user_id=OWNER_ID, dex_no=dex_no, happy=body.happy)
         db.add(slot)
     else:
         slot.happy = body.happy
@@ -451,7 +458,10 @@ def pokedex(db: Session = Depends(get_db)):
             names[dex] = title
 
     final = {
-        s.dex_no for s in db.scalars(select(DexSlot).where(DexSlot.happy)).all()
+        s.dex_no
+        for s in db.scalars(
+            select(DexSlot).where(DexSlot.user_id == OWNER_ID, DexSlot.happy)
+        ).all()
     }
 
     def card_out(item):

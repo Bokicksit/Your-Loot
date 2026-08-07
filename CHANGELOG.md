@@ -9,6 +9,24 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **Groundwork for user accounts** (migrations 0018–0021). Nothing signs in
+  yet and nothing looks different. A `users` table exists with the current
+  owner as user 1; `owned` and `wanted` record who they belong to; `dex_slots`
+  and `settings` are keyed per person, so two people can't share one binder or
+  overwrite each other's preferences; and `item_override` holds the photo and
+  notes you attach to a shared catalogue entry.
+- Every `user_id` defaults to the owner in the database, so an existing
+  install upgrades with no change in behaviour.
+
+### Fixed
+- **`wanted.item_id` was UNIQUE**, which meant exactly one person could ever
+  want a given item. Now unique per person.
+- **Your photo of an item was written to the shared catalogue row**, where a
+  second user would have seen it. Personal art and notes now have their own
+  table. Nothing leaked — there has only ever been one user — but it had to be
+  fixed before there were two.
+
+### Added
 - **Tiles or a list, per collection.** Every collection now has a layout
   toggle next to its sort dropdown. The seven that were rows can draw
   picture-first tiles; Cards, which was always tiles, can draw a detail-first

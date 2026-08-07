@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -37,5 +37,10 @@ class DexSlot(Base):
 
     __tablename__ = "dex_slots"
 
+    # a binder each: the slot belongs to whoever filled it
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True, server_default="1",
+    )
     dex_no: Mapped[int] = mapped_column(primary_key=True)
     happy: Mapped[bool] = mapped_column(default=False, server_default="false")
