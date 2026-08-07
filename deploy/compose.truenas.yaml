@@ -49,7 +49,6 @@ services:
       REBRICKABLE_API_KEY: "" # LEGO
       COMICVINE_API_KEY: ""   # comics
       DISCOGS_TOKEN: ""       # records — far better barcode coverage than MusicBrainz
-      PSA_API_KEY: ""         # graded cards by cert number (needs PSA approval)
       # downloads the full card database on first start (safe to leave on;
       # it only runs when the catalog is empty)
       SEED_ON_START: "true"

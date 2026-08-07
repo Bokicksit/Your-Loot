@@ -34,7 +34,6 @@ services:
       REBRICKABLE_API_KEY: ${REBRICKABLE_API_KEY:-}
       COMICVINE_API_KEY: ${COMICVINE_API_KEY:-}
       DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
-      PSA_API_KEY: ${PSA_API_KEY:-}
       SEED_ON_START: ${SEED_ON_START:-false}
     volumes:
       - ./data/images:/data/images

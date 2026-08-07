@@ -106,7 +106,6 @@ key at all.
 | `REBRICKABLE_API_KEY` | LEGO set search | [rebrickable.com](https://rebrickable.com/users/_/settings/#api) → Account → Settings → API |
 | `COMICVINE_API_KEY` | comic search | [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) |
 | `DISCOGS_TOKEN` | record barcodes | [discogs.com/settings/developers](https://www.discogs.com/settings/developers) → Generate token |
-| `PSA_API_KEY` | graded cards by cert number | [psacard.com/publicapi](https://www.psacard.com/publicapi) — **the token alone isn't enough; the account must be approved by PSA** |
 
 Add them to `.env` and `docker compose up -d` again.
 
