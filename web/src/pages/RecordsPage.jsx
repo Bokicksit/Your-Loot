@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
-import AddSheet, { ByHand } from "../components/AddSheet.jsx";
+import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -94,6 +94,7 @@ export default function RecordsPage() {
 
   const lookup = async (params) => {
     setSearching(true);
+    setResults(null); // clear the old hits so the status stands alone
     try {
       setResults(await api.musicBrainzSearch(params));
     } catch (e) {
@@ -301,6 +302,7 @@ export default function RecordsPage() {
             </button>
           </div>
 
+        {searching && <Searching />}
           {results && (
             <>
               <span className="game-info-line">

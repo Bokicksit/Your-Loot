@@ -39,6 +39,19 @@ export default function AddSheet({ open, title, onClose, onBack, children }) {
   );
 }
 
+// Shown where the results are about to appear, for as long as the lookup
+// takes. Some of these searches are genuinely slow — a comic run can be five
+// requests deep — and a button that quietly changes to "…" reads as nothing
+// happening at all.
+export function Searching({ what = "Searching" }) {
+  return (
+    <p className="searching" role="status" aria-live="polite">
+      <span className="spinner" aria-hidden="true" />
+      {what}…
+    </p>
+  );
+}
+
 // The line at the bottom of the search step: the way through to typing it in
 // yourself, for everything the databases have never heard of.
 export function ByHand({ onClick, children = "Enter it by hand" }) {

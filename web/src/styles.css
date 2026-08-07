@@ -1747,6 +1747,31 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   margin: 0;
 }
 
+/* "Searching…" — sits where the results will land, so the wait happens where
+   you're already looking rather than in a button caption */
+.searching {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-3);
+  color: var(--text-dim);
+  font-size: var(--f-2);
+}
+.spinner {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 2px solid var(--line);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2.4s; }
+}
+
 /* the escape hatch out of searching, for what no database has heard of */
 .by-hand {
   justify-self: start;

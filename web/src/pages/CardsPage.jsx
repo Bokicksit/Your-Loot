@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
-import AddSheet from "../components/AddSheet.jsx";
+import AddSheet, { Searching } from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -163,6 +163,7 @@ export default function CardsPage({ initialView = "collection" }) {
     if (searching || form.name.trim().length < 2) return;
     setSearching(true);
     setPicked(null);
+    setResults(null); // clear the old hits so the status stands alone
     try {
       setOnline(null);
       const params = { name: form.name.trim() };
@@ -575,6 +576,7 @@ export default function CardsPage({ initialView = "collection" }) {
             </div>
           )}
 
+          {searching && <Searching />}
           {/* Shown whenever a search has run, not only on zero hits: a common
               name returns dozens of prints and yours may be none of them, and
               until now that dead end had no way out. */}

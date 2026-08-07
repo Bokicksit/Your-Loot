@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import ArtOptions from "../components/ArtOptions.jsx";
-import AddSheet, { ByHand } from "../components/AddSheet.jsx";
+import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -139,6 +139,7 @@ export default function GamesPage() {
   const igdbSearch = async () => {
     if (form.title.trim().length < 2 || searching) return;
     setSearching(true);
+    setResults(null); // clear the old hits so the status stands alone
     try {
       setResults(await api.igdbSearch(form.title.trim()));
     } catch (e) {
@@ -387,6 +388,7 @@ export default function GamesPage() {
           </button>
           <BarcodeScan onCode={onBarcode} />
         </div>
+        {searching && <Searching />}
         {results && (
           <ul className="igdb-results">
             {results.length === 0 && (
