@@ -625,6 +625,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
       platform_id: game.attrs.platform_id ? String(game.attrs.platform_id) : "",
       region: game.attrs.region || "",
       is_hardware: game.attrs.is_hardware,
+      image_url: game.image_url,
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -640,6 +641,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
         platform_id: entry.platform_id ? Number(entry.platform_id) : null,
         region: entry.region || null,
         is_hardware: entry.is_hardware,
+        image_url: await api.localiseImage(entry.image_url),
       });
       setEntryOpen(false);
       onReload(); // re-fetch: sort order and filter counts may have changed
@@ -785,6 +787,11 @@ function GameRow({ game, platforms, onChange, onReload }) {
             >
               Hardware
             </button>
+            <ImagePicker
+              value={entry.image_url}
+              label="Box photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
             <button
               className="primary icon"
               style={{ marginLeft: "auto" }}

@@ -410,6 +410,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
       serial_number: a.serial_number || "",
       working: a.working || "works",
       parent_id: a.parent_id ? String(a.parent_id) : "",
+      image_url: hw.image_url,
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -427,6 +428,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
         serial_number: entry.serial_number.trim() || null,
         working: entry.working,
         parent_id: entry.parent_id ? Number(entry.parent_id) : null,
+        image_url: await api.localiseImage(entry.image_url),
       });
       setEntryOpen(false);
       onReload();
@@ -640,6 +642,11 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
                   </option>
                 ))}
             </select>
+            <ImagePicker
+              value={entry.image_url}
+              label="Unit photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
+            />
             <button
               className="primary icon"
               style={{ marginLeft: "auto" }}

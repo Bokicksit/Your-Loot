@@ -398,6 +398,19 @@ export default function CardTile({ card, onChange, onReload }) {
             </li>
           ))}
         </ul>
+        {/* the tile hides its chips once the grid gets dense, so the counter
+            has to exist somewhere that isn't the tile */}
+        <div className="form-row">
+          <span className="copy-step">
+            <button onClick={removeLastCopy} disabled={busy || !card.owned.length} title="Remove a copy">
+              <Icon id="minus" />
+            </button>
+            <b>{card.owned.length}</b>
+            <button onClick={addCopy} disabled={busy} title="Add another copy">
+              <Icon id="plus" />
+            </button>
+          </span>
+        </div>
         <div className="form-row wrap">
           {/* every card can get its own art — a photo of your actual copy, or
               a pasted link when the catalog has none */}

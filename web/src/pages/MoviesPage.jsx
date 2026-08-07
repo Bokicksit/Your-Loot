@@ -504,6 +504,7 @@ function MovieRow({ movie, onChange, onReload }) {
       edition: movie.attrs.edition || "",
       region_code: movie.attrs.region_code || "",
       genre: movie.attrs.genre || "",
+      image_url: movie.image_url,
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -520,6 +521,7 @@ function MovieRow({ movie, onChange, onReload }) {
         edition: entry.edition.trim() || null,
         region_code: entry.region_code || null,
         genre: entry.genre || null,
+        image_url: await api.localiseImage(entry.image_url),
       });
       setEntryOpen(false);
       onReload();
@@ -684,6 +686,11 @@ function MovieRow({ movie, onChange, onReload }) {
               placeholder="Edition"
               value={entry.edition}
               onChange={(e) => setEntry({ ...entry, edition: e.target.value })}
+            />
+            <ImagePicker
+              value={entry.image_url}
+              label="Case photo"
+              onChange={(url) => setEntry({ ...entry, image_url: url })}
             />
             <button
               className="primary icon"

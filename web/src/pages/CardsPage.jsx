@@ -947,7 +947,7 @@ export default function CardsPage({ initialView = "collection" }) {
       {/* same 3/4/5 control the Pokédex has: a phone fits three readable
           cards, a tablet wants more, and it's the same decision either way */}
       <div
-        className="grid"
+        className={`grid cols-${cardCols}`}
         style={{ gridTemplateColumns: `repeat(${cardCols}, minmax(0, 1fr))` }}
       >
         {cards.map((c) => (

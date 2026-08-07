@@ -533,6 +533,32 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .tile.square > img,
 .tile.square > .placeholder { aspect-ratio: 1; }
 
+/* Denser grids, same as the Pokédex already does for its slots.
+   At four across a card tile is about 80px wide and at five about 62px, which
+   is narrower than a single condition chip. The chips and the counter move out
+   of the way and live in the expansion instead — tap the card and they're all
+   there, per copy, with room to read them. The ×N corner badge stays, so you
+   can still see at a glance that you own more than one. */
+.grid.cols-4 .tile-info strong,
+.grid.cols-4 .tile-info .title { font-size: var(--f-2); }
+.grid.cols-4 .tile-info small,
+.grid.cols-4 .tile-info .meta { font-size: 9px; letter-spacing: .02em; gap: 3px; }
+.grid.cols-4 .tile { padding: 5px; }
+.grid.cols-4 .tile-info { padding: 5px 1px; }
+
+.grid.cols-5 .tile-info strong,
+.grid.cols-5 .tile-info .title { font-size: var(--f-1); letter-spacing: 0; }
+.grid.cols-5 .tile-info small,
+.grid.cols-5 .tile-info .meta { font-size: 8px; letter-spacing: 0; gap: 2px; }
+.grid.cols-5 .tile { padding: 4px; }
+.grid.cols-5 .tile-info { padding: 4px 1px; }
+/* At five across there is room for the number or the set code, not both, and
+   the number is what identifies the card. The set is in the expansion. */
+.grid.cols-5 .set-abbr { display: none; }
+
+.grid.cols-4 .copy-chips,
+.grid.cols-5 .copy-chips { display: none; }
+
 .tile-owned {
   background:
     linear-gradient(180deg, var(--gold-wash), transparent 42%),
