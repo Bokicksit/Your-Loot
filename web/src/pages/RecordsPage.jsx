@@ -620,7 +620,7 @@ function RecordRow({ record, onChange, onReload }) {
     <div ref={rowRef} className={`game-row ${record.owned.length ? "row-owned" : ""}`}>
       {record.image_url ? (
         <img
-          className="game-cover square"
+          className="game-cover"
           src={record.image_url}
           alt=""
           loading="lazy"
@@ -628,7 +628,7 @@ function RecordRow({ record, onChange, onReload }) {
           onClick={() => setInfoOpen(!infoOpen)}
         />
       ) : (
-        <span className="game-icon square" style={{ cursor: "pointer" }} onClick={() => setInfoOpen(!infoOpen)}>
+        <span className="game-icon" style={{ cursor: "pointer" }} onClick={() => setInfoOpen(!infoOpen)}>
           <Icon id="vinyl" />
         </span>
       )}

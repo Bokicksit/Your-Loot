@@ -1191,18 +1191,29 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .game-row > button.ghost, .game-row > .row-buttons { grid-column: 3; }
 .game-row > .row-buttons { display: flex; gap: 4px; }
 .game-row > .copy-edit, .game-row > .entry-edit { grid-column: 1 / -1; }
-.game-cover, .game-icon {
+/* The picture decides its own shape.
+   A game box is portrait, a record sleeve is square, a LEGO set photo is 4:3
+   landscape, and a scanned box photo is whatever the shop uploaded — one fixed
+   frame had to crop most of them. Height is fixed so rows still line up, width
+   follows the image's own proportions, and the clamp stops a panorama or a
+   sliver from dragging the row about. `contain` only bites at those extremes,
+   where letterboxing beats cropping. */
+.game-cover {
+  flex: none;
+  height: 62px;
+  width: auto;
+  min-width: 40px;
+  max-width: 88px;
+  border-radius: var(--r-1);
+  background: var(--bg-0);
+  object-fit: contain;
+}
+.game-icon {
   flex: none;
   width: 44px;
   height: 62px;
   border-radius: var(--r-1);
   background: var(--bg-0);
-  object-fit: cover;
-}
-/* a sleeve is square — cropping one into a card's portrait shape cuts the
-   artwork off at top and bottom */
-.game-cover.square, .game-icon.square { height: 44px; }
-.game-icon {
   display: grid;
   place-items: center;
   color: var(--text-dim);
@@ -1223,8 +1234,19 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
   padding-top: var(--s-2);
   border-top: 1px dashed var(--line);
+}
+/* A copy chip carries a whole sentence on some collections — "Complete, box &
+   instructions · Used" — and .chip is nowrap by default, so it ran straight
+   out of the row and clipped its own remove button. Let these wrap inside the
+   pill instead: two short lines beats a sentence with the end cut off. */
+.chip.copy {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  text-align: left;
 }
 /* chips nested in the text column (compact game rows): no divider needed */
 .game-text .copy-chips { border-top: 0; padding-top: 4px; justify-self: start; }

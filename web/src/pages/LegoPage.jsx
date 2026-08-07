@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
+import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -43,6 +44,7 @@ export default function LegoPage() {
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
+  const [art, setArt] = useState([]); // retailer photos of the actual box
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -84,10 +86,40 @@ export default function LegoPage() {
     }
   };
 
-  // A LEGO barcode isn't the set number, and Rebrickable doesn't index
-  // barcodes — so a scan fills the field and you search by name, or type the
-  // set number from the box corner.
-  const onBarcode = (code) => setForm((f) => ({ ...f, barcode: code }));
+  // Rebrickable doesn't index barcodes, but the shops do — and their listings
+  // carry photographs of the actual box, which Rebrickable's set image isn't:
+  // that's the built model on white. So the scan goes the long way round, the
+  // same as games and movies, and the set number usually falls out of the
+  // product title into a real Rebrickable search.
+  const onBarcode = async (code) => {
+    setForm((f) => ({ ...f, barcode: code }));
+    let res;
+    try {
+      res = await api.barcodeLookup(code);
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+    if (!res.found) {
+      alert("No product match for that barcode — search by set name or number.");
+      return;
+    }
+    const raw = res.titles[0].title;
+    const boxArt = (res.titles[0].images || []).map((url) => ({ url, kind: "box" }));
+    setArt(boxArt);
+    // "LEGO Star Wars Millennium Falcon 75192" — a LEGO set number is 4-7
+    // digits, and the year is the only other number that turns up in these
+    // titles, so anything reading like one is left alone
+    const nums = [...raw.matchAll(/\b(\d{4,7})\b/g)].map((m) => m[1]);
+    const setNo = nums.find((n) => !(n.length === 4 && Number(n) >= 1900 && Number(n) <= 2099));
+    setForm((f) => ({
+      ...f,
+      title: f.title || raw,
+      image_url: boxArt[0]?.url || f.image_url,
+      ...(setNo ? { set_number: setNo } : {}),
+    }));
+    if (setNo) lookup({ set_number: setNo });
+  };
 
   const textSearch = () => {
     if (form.set_number.trim()) return lookup({ set_number: form.set_number.trim() });
@@ -111,6 +143,7 @@ export default function LegoPage() {
 
   const openForm = () => {
     setForm(EMPTY_FORM);
+    setArt([]);
     setResults(null);
     setStep("search");
     setShowForm(true);
@@ -343,6 +376,13 @@ export default function LegoPage() {
               onChange={(e) => setForm({ ...form, minifig_count: e.target.value })}
             />
           </div>
+          {/* photos of the actual box from the scanned barcode, alongside
+              Rebrickable's set image — which is the built model, not the box */}
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
           <div className="form-row">
             <ImagePicker
               value={form.image_url}
