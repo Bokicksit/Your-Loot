@@ -195,7 +195,18 @@ export default function GamesPage() {
         platform_id: platformId,
         ...(region ? { region } : {}),
       });
-      if (url) mergeArt([{ url, kind: "box" }]);
+      if (!url) return;
+      mergeArt([{ url, kind: "box" }]);
+      // and take the slot. A box scan is a photograph of the thing on your
+      // shelf; IGDB's cover is the game's key art — the same picture for the
+      // original, the reprint and the download. Offering the scan but leaving
+      // the key art selected meant everything still looked like key art unless
+      // you noticed the strip. Anything you chose yourself is left alone.
+      setForm((f) => ({
+        ...f,
+        image_url:
+          !f.image_url || /igdb\.com/i.test(f.image_url) ? url : f.image_url,
+      }));
     } catch {
       /* box art is a bonus; never let it break the add flow */
     }
@@ -430,12 +441,33 @@ export default function GamesPage() {
               }}
             >
               <option value="">Platform…</option>
-              {(form.igdb_id && allowedPlatforms.length > 0
-                ? platforms.filter((p) => allowedPlatforms.includes(p.id))
-                : platforms
-              ).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
+              {/* IGDB's suggestion leads, but never locks you in. Its entries
+                  are per-platform, so searching a game that saw a later port
+                  can match the port and offer only that system — and then the
+                  cartridge on your shelf has no system to pick, and no box
+                  scan to find, because the scan is looked up per system. */}
+              {form.igdb_id && allowedPlatforms.length > 0 ? (
+                <>
+                  <optgroup label="Released on">
+                    {platforms
+                      .filter((p) => allowedPlatforms.includes(p.id))
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="All systems">
+                    {platforms
+                      .filter((p) => !allowedPlatforms.includes(p.id))
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </optgroup>
+                </>
+              ) : (
+                platforms.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))
+              )}
             </select>
             <select
               value={form.region}

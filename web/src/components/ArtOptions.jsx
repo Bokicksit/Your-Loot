@@ -11,7 +11,11 @@ export default function ArtOptions({ options, value, onChange }) {
         Artwork — pick the one that matches your copy
       </span>
       <div className="art-strip">
-        {options.map((o) => (
+        {/* case photos and box scans lead: for a physical shelf they're the
+            picture of the thing you own, and key art is the fallback */}
+        {[...options]
+          .sort((a, b) => (a.kind === "box" ? 0 : 1) - (b.kind === "box" ? 0 : 1))
+          .map((o) => (
           <button
             type="button"
             key={o.url}
