@@ -1238,15 +1238,22 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   padding-top: var(--s-2);
   border-top: 1px dashed var(--line);
 }
-/* A copy chip carries a whole sentence on some collections — "Complete, box &
-   instructions · Used" — and .chip is nowrap by default, so it ran straight
-   out of the row and clipped its own remove button. Let these wrap inside the
-   pill instead: two short lines beats a sentence with the end cut off. */
+/* The chip is where a copy's condition is edited, but it read as a label, so
+   the pencil says so. Chips also carry the badge form of a value rather than
+   the full sentence the dropdown shows ("CIB", not "Complete, box &
+   instructions"), which is what keeps them to one tight line — wrapping stays
+   on only as a backstop for a value typed in by hand. */
 .chip.copy {
   max-width: 100%;
   min-width: 0;
   white-space: normal;
   text-align: left;
+}
+.chip.copy > svg.i {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  opacity: .55;
 }
 /* chips nested in the text column (compact game rows): no divider needed */
 .game-text .copy-chips { border-top: 0; padding-top: 4px; justify-self: start; }

@@ -697,6 +697,7 @@ function ComicRow({ comic, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Edit this copy"
               >
+                <Icon id="pencil" />
                 {copyLabel(o) || "set grade…"}
                 <button
                   onClick={(e) => {

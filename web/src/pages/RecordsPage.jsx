@@ -648,6 +648,7 @@ function RecordRow({ record, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Media / sleeve grade — click to edit"
               >
+                <Icon id="pencil" />
                 {gradePair(o) || "set grades…"}
                 <button
                   onClick={(e) => {

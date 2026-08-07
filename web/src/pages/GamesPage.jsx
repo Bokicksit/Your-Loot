@@ -10,7 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings } from "../settings.jsx";
 import { cleanGameTitle, stripPublisherPrefix } from "../upc.js";
-import { GAME_COMPLETENESS, labelFor, withUnknown } from "../vocab.js";
+import { GAME_COMPLETENESS, labelFor, shortFor, withUnknown } from "../vocab.js";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -610,7 +610,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
   };
 
   const copyLabel = (o) =>
-    [o.completeness && labelFor(GAME_COMPLETENESS, o.completeness), o.condition]
+    [o.completeness && shortFor(GAME_COMPLETENESS, o.completeness), o.condition]
       .filter(Boolean)
       .join(" · ");
 
@@ -710,6 +710,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Edit this copy"
               >
+                <Icon id="pencil" />
                 {copyLabel(o) || "set condition…"}
                 <button
                   onClick={(e) => {

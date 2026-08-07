@@ -31,7 +31,7 @@ export const GAME_COMPLETENESS = [
   ["game+case", "Game & case"],
   ["game+manual", "Game & manual"],
   ["loose", "Loose"],
-  ["case+manual", "Case & manual (no game)"],
+  ["case+manual", "Case & manual (no game)", "Case & manual"],
   ["case only", "Case only"],
   ["manual only", "Manual only"],
 ];
@@ -43,15 +43,16 @@ export const GAME_PARTS_ONLY = new Set(["case+manual", "case only", "manual only
 // A LEGO set is bought sealed and then usually stops being sealed, so what a
 // copy is worth turns on how much of it survived: box, instructions, and
 // whether the bricks are all there.
+// third element is the badge form — see shortFor()
 export const LEGO_COMPLETENESS = [
-  ["sealed", "Sealed (MISB)"],
-  ["complete+box", "Complete, box & instructions"],
-  ["complete+instructions", "Complete with instructions, no box"],
-  ["complete", "Complete, bricks only"],
-  ["incomplete", "Missing pieces"],
-  ["parts", "Parts only"],
-  ["instructions", "Instructions only"],
-  ["box", "Box only"],
+  ["sealed", "Sealed (MISB)", "MISB"],
+  ["complete+box", "Complete, box & instructions", "CIB"],
+  ["complete+instructions", "Complete with instructions, no box", "No box"],
+  ["complete", "Complete, bricks only", "Bricks only"],
+  ["incomplete", "Missing pieces", "Missing pcs"],
+  ["parts", "Parts only", "Parts"],
+  ["instructions", "Instructions only", "Instr. only"],
+  ["box", "Box only", "Box only"],
 ];
 
 // Same idea as GAME_PARTS_ONLY: an empty box or a spare instruction booklet
@@ -91,6 +92,14 @@ export const COMIC_SLAB_GRADES = [
 /** Display label for a stored value; unrecognised values show as themselves. */
 export const labelFor = (pairs, value) =>
   pairs.find(([v]) => v === value)?.[1] ?? value;
+
+/** The badge form. A dropdown has a whole line to explain itself; a chip sits
+ *  inline in a row next to the title and has to stay short, so entries carry
+ *  an optional third element for it. Falls back to the full label. */
+export const shortFor = (pairs, value) => {
+  const hit = pairs.find(([v]) => v === value);
+  return hit ? hit[2] ?? hit[1] : value;
+};
 
 /** Keep an off-list stored value selectable so editing a copy can't silently
  *  rewrite it to whichever option happened to be first. */

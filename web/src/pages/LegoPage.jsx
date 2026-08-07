@@ -8,7 +8,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, withUnknown } from "../vocab.js";
+import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, shortFor, withUnknown } from "../vocab.js";
 
 const EMPTY_FORM = {
   title: "",
@@ -27,7 +27,7 @@ const EMPTY_FORM = {
 
 const copyLabel = (o) =>
   [
-    o.completeness && labelFor(LEGO_COMPLETENESS, o.completeness),
+    o.completeness && shortFor(LEGO_COMPLETENESS, o.completeness),
     o.condition && labelFor(LEGO_CONDITION, o.condition),
   ]
     .filter(Boolean)
@@ -580,6 +580,7 @@ function LegoRow({ set, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Edit this copy"
               >
+                <Icon id="pencil" />
                 {copyLabel(o) || "set condition…"}
                 <button
                   onClick={(e) => {

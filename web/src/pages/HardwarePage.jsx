@@ -484,6 +484,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
                 onClick={() => (editing === o.id ? setEditing(null) : openEdit(o))}
                 title="Edit this unit"
               >
+                <Icon id="pencil" />
                 {[o.completeness, o.condition].filter(Boolean).join(" · ") || "set condition…"}
                 <button
                   onClick={(e) => {

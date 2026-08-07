@@ -25,6 +25,7 @@ export default function CardsPage({ initialView = "collection" }) {
   const [setFilter, setSetFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("");
   const [sort, setSort] = useState("dex");
+  const cardCols = settings?.card_cols || 3;
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
@@ -869,7 +870,12 @@ export default function CardsPage({ initialView = "collection" }) {
         </div>
       )}
 
-      <div className="grid">
+      {/* same 3/4/5 control the Pokédex has: a phone fits three readable
+          cards, a tablet wants more, and it's the same decision either way */}
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${cardCols}, minmax(0, 1fr))` }}
+      >
         {cards.map((c) => (
           <CardTile key={c.id} card={c} onChange={patchCard} onReload={load} />
         ))}

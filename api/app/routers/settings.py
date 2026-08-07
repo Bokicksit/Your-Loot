@@ -16,6 +16,7 @@ DEFAULTS = {
     "enabled_modules": ",".join(MODULES),
     "favorite_modules": "",
     "dex_cols": "4",
+    "card_cols": "3",
     "show_binder_in_collection": "false",
     "default_region": "NTSC-U",
 }
@@ -30,6 +31,7 @@ class SettingsOut(BaseModel):
     enabled_modules: list[str] = []
     favorite_modules: list[str] = []
     dex_cols: int = 4
+    card_cols: int = 3
     show_binder_in_collection: bool = False
     default_region: str = "NTSC-U"
     # True until onboarding has been completed at least once
@@ -43,6 +45,7 @@ class SettingsUpdate(BaseModel):
     enabled_modules: list[str] | None = None
     favorite_modules: list[str] | None = None
     dex_cols: int | None = Field(default=None, ge=2, le=8)
+    card_cols: int | None = Field(default=None, ge=2, le=8)
     show_binder_in_collection: bool | None = None
     default_region: str | None = Field(default=None, max_length=20)
 
@@ -56,6 +59,7 @@ def _current(db: Session) -> SettingsOut:
         enabled_modules=enabled or MODULES,
         favorite_modules=[m for m in _csv(raw["favorite_modules"]) if m in enabled],
         dex_cols=int(raw["dex_cols"] or 4),
+        card_cols=int(raw["card_cols"] or 3),
         show_binder_in_collection=str(raw["show_binder_in_collection"]).lower() == "true",
         default_region=raw["default_region"] or "NTSC-U",
         # the row only exists once onboarding has been submitted, so its
