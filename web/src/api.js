@@ -4,6 +4,13 @@ async function request(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
+  if (res.status === 401 && !path.startsWith("/api/auth/")) {
+    // A session that expired mid-use. Every screen would otherwise show its
+    // own error for the same cause; reloading puts the sign-in gate up, which
+    // is the actual answer.
+    window.location.reload();
+    throw new Error("Signed out");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || `${res.status} ${res.statusText}`);
@@ -12,6 +19,18 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  authMe: () => request("/api/auth/me"),
+  authLogin: (body) =>
+    request("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  authSetup: (body) =>
+    request("/api/auth/setup", { method: "POST", body: JSON.stringify(body) }),
+  authLogout: () => request("/api/auth/logout", { method: "POST" }),
+  changePassword: (body) =>
+    request("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
+  users: () => request("/api/auth/users"),
+  inviteUser: (body) =>
+    request("/api/auth/users", { method: "POST", body: JSON.stringify(body) }),
+  deleteUser: (id) => request(`/api/auth/users/${id}`, { method: "DELETE" }),
   cards: (params = {}) =>
     request(`/api/cards?${new URLSearchParams(params)}`),
   cardSets: () => request("/api/cards/sets"),

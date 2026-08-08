@@ -28,6 +28,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-getloot}
       IMAGE_DIR: /data/images
+      AUTH_MODE: ${AUTH_MODE:-single}
+      SECRET_KEY: ${SECRET_KEY:-}
+      SESSION_HTTPS_ONLY: ${SESSION_HTTPS_ONLY:-false}
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
       TMDB_API_KEY: ${TMDB_API_KEY:-}

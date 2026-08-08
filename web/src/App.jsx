@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import { Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+import SignIn from "./components/SignIn.jsx";
 import { MODULES, SettingsProvider, useEnabledModules, useSettings } from "./settings.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import CardsPage from "./pages/CardsPage.jsx";
@@ -232,9 +233,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <IconDefs />
-      <SettingsProvider>
-        <Shell />
-      </SettingsProvider>
+      {/* Outside SettingsProvider on purpose: settings are per-person now, so
+          asking for them before knowing who is asking gets a 401 and a
+          pointless reload. A single-user install passes straight through. */}
+      <SignIn>
+        <SettingsProvider>
+          <Shell />
+        </SettingsProvider>
+      </SignIn>
     </BrowserRouter>
   );
 }

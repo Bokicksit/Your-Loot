@@ -2,10 +2,13 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.auth import session_secret
 from app.config import settings
 from app.routers import (
+    auth,
     backup,
     books,
     cards,
@@ -23,6 +26,17 @@ from app.version import VERSION
 
 app = FastAPI(title="Your Loot", version=VERSION)
 
+# Signed cookie, http-only, not readable by scripts. Lax rather than strict so
+# following a link into the app doesn't land you on a signed-out page.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret(),
+    session_cookie="loot_session",
+    same_site="lax",
+    https_only=settings.session_https_only,
+    max_age=60 * 60 * 24 * 30,
+)
+
 # nginx fronts this in deployment; permissive CORS is for `npm run dev` only
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(cards.router)
 app.include_router(collection.router)
 app.include_router(games.router)

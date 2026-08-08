@@ -8,20 +8,15 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 import httpx
 
 from app.cards_util import classify_layer
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.tcgdex import tcgdex_client
-from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, Wanted
+from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, User, Wanted
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
-
-# Until sessions exist there is exactly one user, and the database defaults
-# every user_id to them. Reads and primary-key lookups have to name them
-# explicitly all the same — a composite key cannot be looked up with half of
-# itself. This is the single place that changes when auth lands.
-OWNER_ID = 1
 
 
 MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
@@ -400,12 +395,17 @@ class HappyUpdate(BaseModel):
 
 
 @router.put("/pokedex/{dex_no}/happy")
-def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
+def set_happy(
+    dex_no: int,
+    body: HappyUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     """'Happy with it' — this dex slot's keeper card stays even without an
     IR/SIR, so the binder stops flagging it for upgrade."""
-    slot = db.get(DexSlot, (OWNER_ID, dex_no))
+    slot = db.get(DexSlot, (user.id, dex_no))
     if slot is None:
-        slot = DexSlot(user_id=OWNER_ID, dex_no=dex_no, happy=body.happy)
+        slot = DexSlot(user_id=user.id, dex_no=dex_no, happy=body.happy)
         db.add(slot)
     else:
         slot.happy = body.happy
@@ -414,7 +414,7 @@ def set_happy(dex_no: int, body: HappyUpdate, db: Session = Depends(get_db)):
 
 
 @router.get("/pokedex")
-def pokedex(db: Session = Depends(get_db)):
+def pokedex(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """The binder: one entry per national dex number, ONE occupant each (the
     copy flagged in_binder). `final` = this is the desired card for that
     Pokémon; otherwise it's a placeholder awaiting an upgrade."""
@@ -460,7 +460,7 @@ def pokedex(db: Session = Depends(get_db)):
     final = {
         s.dex_no
         for s in db.scalars(
-            select(DexSlot).where(DexSlot.user_id == OWNER_ID, DexSlot.happy)
+            select(DexSlot).where(DexSlot.user_id == user.id, DexSlot.happy)
         ).all()
     }
 

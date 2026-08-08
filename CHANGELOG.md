@@ -9,6 +9,13 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **Optional user accounts.** `AUTH_MODE=multi` turns on a sign-in screen,
+  argon2 passwords and admin-created accounts, each person getting their own
+  copies, wanted list, binder and preferences. The default stays `single`:
+  no login screen, nothing to configure, and an existing install upgrades
+  without noticing. No reset emails — `python -m app.resetpw <email>` on the
+  host is the recovery path, because requiring an SMTP server to get back into
+  your own house would be worse than the problem.
 - **Groundwork for user accounts** (migrations 0018–0021). Nothing signs in
   yet and nothing looks different. A `users` table exists with the current
   owner as user 1; `owned` and `wanted` record who they belong to; `dex_slots`

@@ -1,0 +1,114 @@
+"""Who is asking.
+
+Two modes, one code path. A single-user install signs itself in as the owner
+and never shows a login screen — that is the default, and it is what every
+existing install keeps doing after an upgrade. Turn on multi-user and the same
+dependency starts reading a session cookie instead.
+
+Passwords are argon2id, which is the current answer and needs no tuning from
+us. Sessions are a signed cookie rather than a table: there is no server-side
+list to grow, and for an app this size "sign out everywhere" is not worth a
+schema for.
+"""
+
+import secrets
+
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
+from fastapi import Depends, HTTPException, Request
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.config import settings
+from app.db import engine, get_db
+from app.models import User
+
+OWNER_ID = 1  # the row migration 0018 seeded from the existing install
+
+_hasher = PasswordHasher()
+
+# A key that has to survive restarts, or every session dies whenever the
+# container does. Stored beside the owner's preferences rather than on disk:
+# IMAGE_DIR is served as static files, so anything secret in there is one
+# guessed URL away from being public.
+_SECRET_KEY_SETTING = "_session_secret"
+
+
+def hash_password(plain: str) -> str:
+    return _hasher.hash(plain)
+
+
+def verify_password(plain: str, hashed: str | None) -> bool:
+    if not hashed:
+        return False
+    try:
+        return _hasher.verify(hashed, plain)
+    except (VerifyMismatchError, InvalidHashError):
+        return False
+
+
+def session_secret() -> str:
+    """The cookie-signing key: yours if you set one, otherwise ours.
+
+    Generated on first start and kept, so that self-hosting needs no required
+    configuration and sessions still survive a restart. Setting SECRET_KEY
+    takes precedence and is what you want if you ever run more than one API
+    container, since they must agree.
+    """
+    if settings.secret_key:
+        return settings.secret_key
+    with engine.begin() as conn:
+        found = conn.execute(
+            text("SELECT value FROM settings WHERE user_id = :u AND key = :k"),
+            {"u": OWNER_ID, "k": _SECRET_KEY_SETTING},
+        ).scalar()
+        if found:
+            return found
+        made = secrets.token_urlsafe(48)
+        conn.execute(
+            text(
+                "INSERT INTO settings (user_id, key, value) VALUES (:u, :k, :v) "
+                "ON CONFLICT (user_id, key) DO NOTHING"
+            ),
+            {"u": OWNER_ID, "k": _SECRET_KEY_SETTING, "v": made},
+        )
+        return made
+
+
+def multi_user() -> bool:
+    return settings.auth_mode.strip().lower() == "multi"
+
+
+def needs_setup(db: Session) -> bool:
+    """Multi-user is on but nobody has a password yet.
+
+    The state you land in the first time you flip AUTH_MODE, and the only
+    moment an account may be claimed without already being signed in.
+    """
+    return (
+        db.query(User).filter(User.password_hash.isnot(None)).count() == 0
+    )
+
+
+def current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    """The signed-in user, or the owner when this install has only one."""
+    if not multi_user():
+        owner = db.get(User, OWNER_ID)
+        if owner is None:
+            # migration 0018 seeds this; if it is gone the install is broken in
+            # a way that guessing would only hide
+            raise HTTPException(500, "no owner account — check the database")
+        return owner
+
+    uid = request.session.get("uid")
+    user = db.get(User, uid) if uid else None
+    if user is None:
+        request.session.clear()
+        raise HTTPException(401, "Sign in to continue")
+    return user
+
+
+def require_admin(user: User = Depends(current_user)) -> User:
+    if not user.is_admin:
+        raise HTTPException(403, "Only an admin can do that")
+    return user

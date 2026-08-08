@@ -4,16 +4,11 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.auth import current_user
 from app.db import get_db
-from app.models import Setting
+from app.models import Setting, User
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
-
-# Until sessions exist there is exactly one user, and the database defaults
-# every user_id to them. Reads and primary-key lookups have to name them
-# explicitly all the same — a composite key cannot be looked up with half of
-# itself. This is the single place that changes when auth lands.
-OWNER_ID = 1
 
 
 MODULES = [
@@ -81,10 +76,10 @@ class SettingsUpdate(BaseModel):
     default_region: str | None = Field(default=None, max_length=20)
 
 
-def _current(db: Session) -> SettingsOut:
+def _current(db: Session, user_id: int) -> SettingsOut:
     stored = {
         s.key: s.value
-        for s in db.query(Setting).filter(Setting.user_id == OWNER_ID).all()
+        for s in db.query(Setting).filter(Setting.user_id == user_id).all()
     }
     raw = {**DEFAULTS, **stored}
     enabled = [m for m in _csv(raw["enabled_modules"]) if m in MODULES]
@@ -105,12 +100,16 @@ def _current(db: Session) -> SettingsOut:
 
 
 @router.get("", response_model=SettingsOut)
-def get_settings(db: Session = Depends(get_db)):
-    return _current(db)
+def get_settings(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    return _current(db, user.id)
 
 
 @router.put("", response_model=SettingsOut)
-def update_settings(body: SettingsUpdate, db: Session = Depends(get_db)):
+def update_settings(
+    body: SettingsUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     data = body.model_dump(exclude_unset=True)
     for key, value in data.items():
         if isinstance(value, dict):
@@ -121,10 +120,10 @@ def update_settings(body: SettingsUpdate, db: Session = Depends(get_db)):
             value = "true" if value else "false"
         elif value is not None:
             value = str(value).strip()
-        row = db.get(Setting, (OWNER_ID, key))
+        row = db.get(Setting, (user.id, key))
         if row is None:
-            db.add(Setting(user_id=OWNER_ID, key=key, value=value))
+            db.add(Setting(user_id=user.id, key=key, value=value))
         else:
             row.value = value
     db.commit()
-    return _current(db)
+    return _current(db, user.id)
