@@ -8,6 +8,13 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **An unreachable API asked you to sign in.** When `/api/auth/me` didn't
+  answer, the app assumed accounts were on and put up an email-and-password
+  form — for a server that wasn't responding, so no credentials could have
+  worked. It now says the server isn't answering and points at the usual
+  cause: two containers on different versions.
+
 ### Added
 - **The app has a face.** Icon, favicon, maskable and Apple touch icons, and a
   web manifest — a shelf holding a book, a record, a disc and a card, drawn in

@@ -20,13 +20,18 @@ export default function SignIn({ children }) {
     api
       .authMe()
       .then(setState)
-      .catch(() => setState({ multi_user: true, user: null, unreachable: true }));
+      // Not knowing is not the same as being signed out. This used to assume
+      // multi-user and put up an email-and-password form, which asks somebody
+      // to sign in to a server that isn't answering — the credentials can't
+      // work, and the real fault is hidden behind a login screen.
+      .catch((e) => setState({ unreachable: e.message || "no answer" }));
 
   useEffect(() => {
     refresh();
   }, []);
 
   if (state === null) return null; // a spinner here would flicker on every load
+  if (state.unreachable) return <Unreachable detail={state.unreachable} onRetry={refresh} />;
   if (state.user) return children;
   if (!state.multi_user && !state.locked) return children;
 
@@ -39,6 +44,45 @@ export default function SignIn({ children }) {
       error={error}
       setError={setError}
     />
+  );
+}
+
+/** The API didn't answer.
+ *
+ *  Nearly always one of two things on a self-hosted install: the API container
+ *  is still starting, or it's a different version from the web container —
+ *  which is what happens when one image pulls and the other doesn't.
+ */
+function Unreachable({ detail, onRetry }) {
+  return (
+    <div className="signin-scrim">
+      <div className="signin">
+        <h1>
+          <span className="brand-mark">
+            <Icon id="alert" />
+          </span>
+          Can't reach the server
+        </h1>
+        <p className="signin-lead">
+          The app loaded but the API didn't answer. It's usually still starting
+          — give it a moment and try again.
+        </p>
+        <button type="button" className="primary" onClick={onRetry}>
+          <Icon id="check" />
+          Try again
+        </button>
+        <p className="signin-note">
+          Still failing? Check both containers are on the same version:
+          <code>docker compose ps</code>
+          then
+          <code>docker compose logs api --tail=50</code>
+          <br />
+          Mismatched versions — one image updated and the other not — look
+          exactly like this.
+        </p>
+        {detail && <p className="signin-note">Reported: {detail}</p>}
+      </div>
+    </div>
   );
 }
 
