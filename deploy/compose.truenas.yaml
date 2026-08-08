@@ -15,13 +15,17 @@
 #
 # Card database refresh (weekly cron, System Settings -> Advanced -> Cron
 # Jobs, run as root):
-#   0 4 * * 0  docker exec getloot-api python /seed/seed_cards.py --download
+#   0 4 * * 0  docker exec yourloot-api python /seed/seed_cards.py --download
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
+      # Deliberately still 'getloot'. The images were renamed; this was not,
+      # because it is the name of the database that already exists on disk.
+      # Change it and the app connects to a database that isn't there, which
+      # looks exactly like the collection having vanished.
       POSTGRES_USER: getloot
       POSTGRES_PASSWORD: CHANGE_ME
       POSTGRES_DB: getloot
@@ -34,8 +38,8 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/bokicksit/getloot-api:latest
-    container_name: getloot-api # stable name for the refresh cron job
+    image: ghcr.io/bokicksit/yourloot-api:latest
+    container_name: yourloot-api # stable name for the refresh cron job
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg2://getloot:CHANGE_ME@postgres:5432/getloot
@@ -59,7 +63,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/bokicksit/getloot-web:latest
+    image: ghcr.io/bokicksit/yourloot-web:latest
     restart: unless-stopped
     ports:
       # 30080, not 8080: TrueNAS apps commonly take 8080 already. This is the

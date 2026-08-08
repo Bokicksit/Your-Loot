@@ -41,8 +41,8 @@ jobs:
           Multi-arch (\`linux/amd64\`, \`linux/arm64\`):
 
           \`\`\`
-          ghcr.io/bokicksit/getloot-api:${VERSION}
-          ghcr.io/bokicksit/getloot-web:${VERSION}
+          ghcr.io/bokicksit/yourloot-api:${VERSION}
+          ghcr.io/bokicksit/yourloot-web:${VERSION}
           \`\`\`
 
           Pin this release by setting \`TAG=${VERSION}\` in your \`.env\`, then

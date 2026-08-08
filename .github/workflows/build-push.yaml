@@ -41,10 +41,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: getloot-api
+          - image: yourloot-api
             context: . # repo root — api/Dockerfile copies /seed too
             dockerfile: api/Dockerfile
-          - image: getloot-web
+          - image: yourloot-web
             context: ./web
             dockerfile: web/Dockerfile
     steps:
