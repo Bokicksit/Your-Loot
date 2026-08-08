@@ -3,11 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.comicvine import comicvine_client
-from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted
+from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted, User
 from app.search import contains
 from app.sorting import leading_number
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.comics import (
     ComicAttrsOut,
     ComicCreate,
@@ -24,7 +26,7 @@ ATTR_FIELDS = (
 )
 
 
-def comic_to_out(item: CollectionItem) -> ComicOut:
+def comic_to_out(item: CollectionItem, uid: int) -> ComicOut:
     a = item.comic_attrs
     return ComicOut(
         id=item.id,
@@ -32,8 +34,8 @@ def comic_to_out(item: CollectionItem) -> ComicOut:
         image_url=item.image_url,
         notes=item.notes,
         attrs=ComicAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -91,11 +93,11 @@ def search_comicvine(
 
 
 @router.get("/facets")
-def comic_facets(db: Session = Depends(get_db)):
+def comic_facets(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Series and publishers present in the collection, for the filters."""
-    owned_exists = select(Owned.id).where(Owned.item_id == ComicAttrs.item_id).exists()
-    wanted_exists = select(Wanted.id).where(Wanted.item_id == ComicAttrs.item_id).exists()
-    on_shelf = owned_exists | ~wanted_exists
+    _shelf = on_my_shelf(user.id, ComicAttrs.item_id)
+    on_shelf = _shelf
 
     def facet(col):
         return [
@@ -117,6 +119,7 @@ def comic_facets(db: Session = Depends(get_db)):
 @router.get("", response_model=ComicListOut)
 def list_comics(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     series: str | None = None,
     publisher: str | None = None,
@@ -143,11 +146,9 @@ def list_comics(
         filters.append(ComicAttrs.series == series)
     if publisher:
         filters.append(ComicAttrs.publisher == publisher)
-    if not include_wanted_only:
-        # shelf view: wanted-but-unowned issues live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)
@@ -182,11 +183,12 @@ def list_comics(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return ComicListOut(total=total, items=[comic_to_out(i) for i in items])
+    return ComicListOut(total=total, items=[comic_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=ComicOut, status_code=201)
-def create_comic(body: ComicCreate, db: Session = Depends(get_db)):
+def create_comic(body: ComicCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """No dedupe: variant covers of one issue are different books to a
     collector, and owning two of the same is normal."""
     item = CollectionItem(
@@ -200,11 +202,12 @@ def create_comic(body: ComicCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return comic_to_out(item)
+    return comic_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=ComicOut)
-def update_comic(item_id: int, body: ComicUpdate, db: Session = Depends(get_db)):
+def update_comic(item_id: int, body: ComicUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.comics.value:
         raise HTTPException(404, "issue not found")
@@ -217,11 +220,12 @@ def update_comic(item_id: int, body: ComicUpdate, db: Session = Depends(get_db))
             setattr(item.comic_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return comic_to_out(item)
+    return comic_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_comic(item_id: int, db: Session = Depends(get_db)):
+def delete_comic(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.comics.value:
         raise HTTPException(404, "issue not found")

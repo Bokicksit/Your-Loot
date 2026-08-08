@@ -3,11 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.rebrickable import rebrickable_client
-from app.models import CollectionItem, LegoAttrs, Module, Owned, Wanted
+from app.models import CollectionItem, LegoAttrs, Module, Owned, Wanted, User
 from app.search import contains
 from app.sorting import leading_number
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.lego import (
     LegoAttrsOut,
     LegoCreate,
@@ -24,7 +26,7 @@ ATTR_FIELDS = (
 )
 
 
-def lego_to_out(item: CollectionItem) -> LegoOut:
+def lego_to_out(item: CollectionItem, uid: int) -> LegoOut:
     a = item.lego_attrs
     return LegoOut(
         id=item.id,
@@ -32,8 +34,8 @@ def lego_to_out(item: CollectionItem) -> LegoOut:
         image_url=item.image_url,
         notes=item.notes,
         attrs=LegoAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -73,11 +75,11 @@ def search_rebrickable(q: str | None = None, set_number: str | None = None):
 
 
 @router.get("/facets")
-def lego_facets(db: Session = Depends(get_db)):
+def lego_facets(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Themes and years present in the collection, for the filters."""
-    owned_exists = select(Owned.id).where(Owned.item_id == LegoAttrs.item_id).exists()
-    wanted_exists = select(Wanted.id).where(Wanted.item_id == LegoAttrs.item_id).exists()
-    on_shelf = owned_exists | ~wanted_exists
+    _shelf = on_my_shelf(user.id, LegoAttrs.item_id)
+    on_shelf = _shelf
 
     def facet(col):
         return [
@@ -96,6 +98,7 @@ def lego_facets(db: Session = Depends(get_db)):
 @router.get("", response_model=LegoListOut)
 def list_lego(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     theme: str | None = None,
     sort: str = Query("title", pattern="^(title|theme|number|year|pieces|added|oldest)$"),
@@ -119,11 +122,9 @@ def list_lego(
         )
     if theme:
         filters.append(LegoAttrs.theme == theme)
-    if not include_wanted_only:
-        # shelf view: wanted-but-unowned sets live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)
@@ -151,11 +152,12 @@ def list_lego(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return LegoListOut(total=total, items=[lego_to_out(i) for i in items])
+    return LegoListOut(total=total, items=[lego_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=LegoOut, status_code=201)
-def create_lego(body: LegoCreate, db: Session = Depends(get_db)):
+def create_lego(body: LegoCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """No dedupe on set number: owning two of the same set is normal — one
     built, one sealed — and they're tracked as separate copies or entries."""
     item = CollectionItem(
@@ -169,11 +171,12 @@ def create_lego(body: LegoCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return lego_to_out(item)
+    return lego_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=LegoOut)
-def update_lego(item_id: int, body: LegoUpdate, db: Session = Depends(get_db)):
+def update_lego(item_id: int, body: LegoUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.lego.value:
         raise HTTPException(404, "set not found")
@@ -186,11 +189,12 @@ def update_lego(item_id: int, body: LegoUpdate, db: Session = Depends(get_db)):
             setattr(item.lego_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return lego_to_out(item)
+    return lego_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_lego(item_id: int, db: Session = Depends(get_db)):
+def delete_lego(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.lego.value:
         raise HTTPException(404, "set not found")

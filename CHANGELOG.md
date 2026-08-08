@@ -25,7 +25,21 @@ Full detail is in the commit log, where every change has its own note.
 - Every `user_id` defaults to the owner in the database, so an existing
   install upgrades with no change in behaviour.
 
+- **A tenancy test suite** (`api/tests/test_tenancy.py`), written before the
+  sweep it checks. Two real accounts through the real API: no list, count,
+  binder or response body of one may contain anything of the other's.
+
 ### Fixed
+- **Every collection listed everybody's items.** The rule for "what's on my
+  shelf" read *owned by anyone, or wanted by nobody* — sound with one user,
+  and with two it was true of everything the other one owned. A shelf is what
+  you own.
+- **Responses carried other people's copies.** Condition, grade, cert number
+  and notes for every copy of an item, whoever owned it, were in the body of
+  every list. Now only yours.
+- **One binder, shared.** The Pokédex asked for cards flagged `in_binder`
+  without asking whose. Found by reading the query, not by the suite — the
+  suite covers it now.
 - **`wanted.item_id` was UNIQUE**, which meant exactly one person could ever
   want a given item. Now unique per person.
 - **Your photo of an item was written to the shared catalogue row**, where a

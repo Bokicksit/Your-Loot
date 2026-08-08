@@ -46,7 +46,10 @@ class CollectionItem(TimestampMixin, Base):
     lego_attrs = relationship("LegoAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     comic_attrs = relationship("ComicAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     owned = relationship("Owned", back_populates="item", cascade="all, delete-orphan")
-    wanted = relationship("Wanted", back_populates="item", uselist=False, cascade="all, delete-orphan")
+    # A list, not one row. It stopped being one-per-item the moment two people
+    # could want the same thing; callers ask tenancy.my_want() for the single
+    # answer they actually mean.
+    wanted = relationship("Wanted", back_populates="item", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("uq_item_source_external", "source", "external_id", unique=True),

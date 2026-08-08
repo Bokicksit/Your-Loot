@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
-from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, Wanted
+from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, User, Wanted
+from app.tenancy import my_copies, my_want, owns
 from app.schemas.collection import ItemStatusOut, WantedItemOut
 from app.schemas.common import OwnedCreate, WantedCreate
 
@@ -17,11 +19,13 @@ def _get_item(db: Session, item_id: int) -> CollectionItem:
     return item
 
 
-def _status(item: CollectionItem) -> ItemStatusOut:
-    return ItemStatusOut(item_id=item.id, owned=item.owned, wanted=item.wanted)
+def _status(item: CollectionItem, uid: int) -> ItemStatusOut:
+    return ItemStatusOut(
+        item_id=item.id, owned=my_copies(item, uid), wanted=my_want(item, uid)
+    )
 
 
-def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int):
+def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int, uid: int):
     """A binder holds ONE card per Pokémon: flagging a copy in_binder unflags
     any other binder copy sharing the same dex number (the physical swap)."""
     if item.module != Module.cards.value or not item.card_attrs:
@@ -34,6 +38,7 @@ def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int
         .join(CollectionItem, CollectionItem.id == Owned.item_id)
         .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
         .where(
+            Owned.user_id == uid,
             Owned.in_binder,
             Owned.id != keep_owned_id,
             CardAttrs.national_dex_no == dex,
@@ -44,75 +49,103 @@ def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int
 
 
 @router.post("/items/{item_id}/owned", response_model=ItemStatusOut)
-def add_owned(item_id: int, body: OwnedCreate, db: Session = Depends(get_db)):
+def add_owned(
+    item_id: int,
+    body: OwnedCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     item = _get_item(db, item_id)
-    owned = Owned(item_id=item.id, **body.model_dump())
+    owned = Owned(item_id=item.id, user_id=user.id, **body.model_dump())
     db.add(owned)
     if body.in_binder:
         db.flush()
-        _enforce_single_binder(db, item, owned.id)
+        _enforce_single_binder(db, item, owned.id, user.id)
     db.commit()
     db.refresh(item)
-    return _status(item)
+    return _status(item, user.id)
 
 
 @router.patch("/items/{item_id}/owned/{owned_id}", response_model=ItemStatusOut)
 def update_owned(
-    item_id: int, owned_id: int, body: OwnedCreate, db: Session = Depends(get_db)
+    item_id: int,
+    owned_id: int,
+    body: OwnedCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
 ):
     """Edit a copy's condition/completeness/notes — e.g. filling them in after
     a 'Got it' acquisition. Only fields present in the request change."""
     item = _get_item(db, item_id)
     owned = db.get(Owned, owned_id)
-    if not owned or owned.item_id != item.id:
+    if not owned or owned.item_id != item.id or owned.user_id != user.id:
         raise HTTPException(404, "owned record not found")
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(owned, k, v)
     if data.get("in_binder"):
-        _enforce_single_binder(db, item, owned.id)
+        _enforce_single_binder(db, item, owned.id, user.id)
     db.commit()
     db.refresh(item)
-    return _status(item)
+    return _status(item, user.id)
 
 
 @router.delete("/items/{item_id}/owned/{owned_id}", response_model=ItemStatusOut)
-def remove_owned(item_id: int, owned_id: int, db: Session = Depends(get_db)):
+def remove_owned(
+    item_id: int,
+    owned_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     item = _get_item(db, item_id)
     owned = db.get(Owned, owned_id)
-    if not owned or owned.item_id != item.id:
+    # somebody else's copy is not yours to delete, and saying "not found"
+    # rather than "not yours" keeps their collection none of your business
+    if not owned or owned.item_id != item.id or owned.user_id != user.id:
         raise HTTPException(404, "owned record not found")
     db.delete(owned)
     db.commit()
     db.refresh(item)
-    return _status(item)
+    return _status(item, user.id)
 
 
 @router.post("/items/{item_id}/wanted", response_model=ItemStatusOut)
-def add_wanted(item_id: int, body: WantedCreate, db: Session = Depends(get_db)):
+def add_wanted(
+    item_id: int,
+    body: WantedCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     item = _get_item(db, item_id)
-    if item.wanted is None:
-        db.add(Wanted(item_id=item.id, **body.model_dump()))
+    if my_want(item, user.id) is None:
+        db.add(Wanted(item_id=item.id, user_id=user.id, **body.model_dump()))
         db.commit()
         db.refresh(item)
-    return _status(item)
+    return _status(item, user.id)
 
 
 @router.delete("/items/{item_id}/wanted", response_model=ItemStatusOut)
-def remove_wanted(item_id: int, db: Session = Depends(get_db)):
+def remove_wanted(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
     item = _get_item(db, item_id)
-    if item.wanted is not None:
-        db.delete(item.wanted)
+    mine = my_want(item, user.id)
+    if mine is not None:
+        db.delete(mine)
         # a games/movies entry that was wanted-only existed solely for the
         # wishlist — prune it, or it would surface in the library as an
         # unowned ghost row. Cards are catalog rows and always stay.
-        if item.module != Module.cards.value and not item.owned:
+        # only prune it if nobody at all is holding it — another person's
+        # copy or wish is reason enough for the row to go on existing
+        if item.module != Module.cards.value and not item.owned and len(item.wanted) <= 1:
             db.delete(item)
             db.commit()
             return ItemStatusOut(item_id=item_id, owned=[], wanted=None)
         db.commit()
         db.refresh(item)
-    return _status(item)
+    return _status(item, user.id)
 
 
 def _detail(item: CollectionItem) -> str:
@@ -145,11 +178,11 @@ def _detail(item: CollectionItem) -> str:
 
 
 @router.get("/stats")
-def stats(db: Session = Depends(get_db)):
+def stats(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """Per-module counts for the home screen tiles. `items` counts only
     titles with at least one owned copy — wanted-only entries belong to the
     Wanted tile, not the collection counts."""
-    owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
+    owned_exists = owns(user.id, CollectionItem.id)
     items = dict(
         db.execute(
             select(CollectionItem.module, func.count())
@@ -161,6 +194,7 @@ def stats(db: Session = Depends(get_db)):
         db.execute(
             select(CollectionItem.module, func.count(Owned.id))
             .join(Owned, Owned.item_id == CollectionItem.id)
+            .where(Owned.user_id == user.id)
             .group_by(CollectionItem.module)
         ).all()
     )
@@ -168,6 +202,7 @@ def stats(db: Session = Depends(get_db)):
         db.execute(
             select(CollectionItem.module, func.count(Wanted.id))
             .join(Wanted, Wanted.item_id == CollectionItem.id)
+            .where(Wanted.user_id == user.id)
             .group_by(CollectionItem.module)
         ).all()
     )
@@ -184,6 +219,7 @@ def stats(db: Session = Depends(get_db)):
 @router.get("/wanted", response_model=list[WantedItemOut])
 def wanted_list(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     module: str | None = None,
     sort: str = Query("added", pattern="^(added|oldest|title|module)$"),
 ):
@@ -202,6 +238,7 @@ def wanted_list(
     q = (
         select(Wanted)
         .join(CollectionItem)
+        .where(Wanted.user_id == user.id)
         .options(
             joinedload(Wanted.item).joinedload(CollectionItem.card_attrs),
             joinedload(Wanted.item)

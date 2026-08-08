@@ -5,12 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.discogs import discogs_client
 from app.integrations.musicbrainz import musicbrainz_client
 from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
-from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted
+from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted, User
 from app.search import contains
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.records import (
     RecordAttrsOut,
     RecordCreate,
@@ -27,7 +29,7 @@ ATTR_FIELDS = (
 )
 
 
-def record_to_out(item: CollectionItem) -> RecordOut:
+def record_to_out(item: CollectionItem, uid: int) -> RecordOut:
     a = item.record_attrs
     return RecordOut(
         id=item.id,
@@ -35,8 +37,8 @@ def record_to_out(item: CollectionItem) -> RecordOut:
         image_url=item.image_url,
         notes=item.notes,
         attrs=RecordAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -171,11 +173,11 @@ def record_tracklist(release_id: str):
 
 
 @router.get("/facets")
-def record_facets(db: Session = Depends(get_db)):
+def record_facets(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Artists, labels and formats present in the collection, for the filters."""
-    owned_exists = select(Owned.id).where(Owned.item_id == RecordAttrs.item_id).exists()
-    wanted_exists = select(Wanted.id).where(Wanted.item_id == RecordAttrs.item_id).exists()
-    on_shelf = owned_exists | ~wanted_exists
+    _shelf = on_my_shelf(user.id, RecordAttrs.item_id)
+    on_shelf = _shelf
 
     def facet(col):
         return [
@@ -198,6 +200,7 @@ def record_facets(db: Session = Depends(get_db)):
 @router.get("", response_model=RecordListOut)
 def list_records(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     artist: str | None = None,
     label: str | None = None,
@@ -227,11 +230,9 @@ def list_records(
         filters.append(RecordAttrs.label == label)
     if format:
         filters.append(RecordAttrs.format == format)
-    if not include_wanted_only:
-        # shelf view: wanted-but-unowned records live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)
@@ -258,11 +259,12 @@ def list_records(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return RecordListOut(total=total, items=[record_to_out(i) for i in items])
+    return RecordListOut(total=total, items=[record_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=RecordOut, status_code=201)
-def create_record(body: RecordCreate, db: Session = Depends(get_db)):
+def create_record(body: RecordCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """No dedupe on barcode: owning two copies of the same pressing is normal,
     and a repress shares almost everything with the original but is a different
     record."""
@@ -277,11 +279,12 @@ def create_record(body: RecordCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return record_to_out(item)
+    return record_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=RecordOut)
-def update_record(item_id: int, body: RecordUpdate, db: Session = Depends(get_db)):
+def update_record(item_id: int, body: RecordUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.records.value:
         raise HTTPException(404, "record not found")
@@ -294,11 +297,12 @@ def update_record(item_id: int, body: RecordUpdate, db: Session = Depends(get_db
             setattr(item.record_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return record_to_out(item)
+    return record_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_record(item_id: int, db: Session = Depends(get_db)):
+def delete_record(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.records.value:
         raise HTTPException(404, "record not found")

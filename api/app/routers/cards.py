@@ -12,6 +12,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, User, Wanted
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
@@ -22,15 +23,15 @@ router = APIRouter(prefix="/api/cards", tags=["cards"])
 MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
 
 
-def card_to_out(item: CollectionItem) -> CardOut:
+def card_to_out(item: CollectionItem, uid: int) -> CardOut:
     return CardOut(
         id=item.id,
         title=item.title,
         image_url=item.image_url,
         source=item.source,
         attrs=item.card_attrs,
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -50,6 +51,7 @@ def _base_query():
 @router.get("/search", response_model=CardListOut)
 def search_cards(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     name: str = Query(min_length=2),
     number: str | None = None,
     set: str | None = None,
@@ -97,11 +99,12 @@ def search_cards(
         .unique()
         .all()
     )
-    return CardListOut(total=len(items), items=[card_to_out(i) for i in items])
+    return CardListOut(total=len(items), items=[card_to_out(i, user.id) for i in items])
 
 
 @router.get("/sets")
-def list_sets(db: Session = Depends(get_db), q: str | None = None):
+def list_sets(db: Session = Depends(get_db),
+    user: User = Depends(current_user), q: str | None = None):
     """Every set in the card database, newest first — powers the set
     autocomplete so the printed codes are discoverable, and makes a missing
     reseed obvious (abbr shows null)."""
@@ -133,10 +136,13 @@ def list_sets(db: Session = Depends(get_db), q: str | None = None):
 
 
 @router.get("/facets")
-def card_facets(db: Session = Depends(get_db), include_binder: bool = False):
+def card_facets(db: Session = Depends(get_db),
+    user: User = Depends(current_user), include_binder: bool = False):
     """Sets and rarities present among OWNED cards, with counts — drives the
     collection filter dropdowns. Mirrors the list's binder-hiding default."""
-    owned_q = select(Owned.id).where(Owned.item_id == CardAttrs.item_id)
+    owned_q = select(Owned.id).where(
+        Owned.item_id == CardAttrs.item_id, Owned.user_id == user.id
+    )
     if not include_binder:
         owned_q = owned_q.where(~Owned.in_binder)
     owned_exists = owned_q.exists()
@@ -164,6 +170,7 @@ def card_facets(db: Session = Depends(get_db), include_binder: bool = False):
 @router.get("", response_model=CardListOut)
 def list_cards(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     set_code: str | None = None,
     rarity: str | None = None,
@@ -195,7 +202,9 @@ def list_cards(
         # every card of one Pokémon — what the Pokédex offers as replacements
         filters.append(CardAttrs.national_dex_no == dex_no)
     if collection:
-        owned_q = select(Owned.id).where(Owned.item_id == CollectionItem.id)
+        owned_q = select(Owned.id).where(
+            Owned.item_id == CollectionItem.id, Owned.user_id == user.id
+        )
         if not include_binder:
             owned_q = owned_q.where(~Owned.in_binder)
         filters.append(owned_q.exists())
@@ -217,7 +226,7 @@ def list_cards(
     def acquired(agg):
         return (
             select(agg(Owned.created_at))
-            .where(Owned.item_id == CollectionItem.id)
+            .where(Owned.item_id == CollectionItem.id, Owned.user_id == user.id)
             .correlate(CollectionItem)
             .scalar_subquery()
         )
@@ -245,7 +254,7 @@ def list_cards(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return CardListOut(total=total, items=[card_to_out(i) for i in items])
+    return CardListOut(total=total, items=[card_to_out(i, user.id) for i in items])
 
 
 @router.get("/tcgdex/search")
@@ -271,7 +280,8 @@ def tcgdex_search(
 
 
 @router.post("/tcgdex/{card_id}", response_model=CardOut, status_code=201)
-def add_from_tcgdex(card_id: str, db: Session = Depends(get_db)):
+def add_from_tcgdex(card_id: str, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Import a TCGdex card into the local catalog. Keyed on
     (source='tcgdex', external_id) so re-importing returns the same row and a
     dump reseed can never clobber it."""
@@ -281,7 +291,7 @@ def add_from_tcgdex(card_id: str, db: Session = Depends(get_db)):
         )
     )
     if existing:
-        return card_to_out(existing)
+        return card_to_out(existing, user.id)
     try:
         d = tcgdex_client.get_card(card_id)
     except httpx.HTTPStatusError:
@@ -309,11 +319,12 @@ def add_from_tcgdex(card_id: str, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return card_to_out(item)
+    return card_to_out(item, user.id)
 
 
 @router.post("", response_model=CardOut, status_code=201)
-def create_card(body: CardCreate, db: Session = Depends(get_db)):
+def create_card(body: CardCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Add a card the dump doesn't have yet. A later reseed can't clobber it:
     upserts key on (source='ptcg', external_id) and these are source='manual'."""
     item = CollectionItem(
@@ -336,11 +347,12 @@ def create_card(body: CardCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return card_to_out(item)
+    return card_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=CardOut)
-def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db)):
+def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Edit a manual card (including its photo). Dump-sourced rows are
     read-only — a reseed would overwrite any edit anyway."""
     item = db.get(CollectionItem, item_id)
@@ -371,11 +383,12 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db)):
         item.card_attrs.layer = classify_layer(data["rarity"])
     db.commit()
     db.refresh(item)
-    return card_to_out(item)
+    return card_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_card(item_id: int, db: Session = Depends(get_db)):
+def delete_card(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Only manual entries can be deleted — dump-sourced catalog rows stay
     (removing your copies is what takes a card out of the collection)."""
     item = db.get(CollectionItem, item_id)
@@ -414,7 +427,8 @@ def set_happy(
 
 
 @router.get("/pokedex")
-def pokedex(db: Session = Depends(get_db), user: User = Depends(current_user)):
+def pokedex(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """The binder: one entry per national dex number, ONE occupant each (the
     copy flagged in_binder). `final` = this is the desired card for that
     Pokémon; otherwise it's a placeholder awaiting an upgrade."""
@@ -423,7 +437,11 @@ def pokedex(db: Session = Depends(get_db), user: User = Depends(current_user)):
             _base_query().where(
                 CardAttrs.national_dex_no.is_not(None),
                 select(Owned.id)
-                .where(Owned.item_id == CollectionItem.id, Owned.in_binder)
+                .where(
+                    Owned.item_id == CollectionItem.id,
+                    Owned.user_id == user.id,
+                    Owned.in_binder,
+                )
                 .exists(),
             )
         )

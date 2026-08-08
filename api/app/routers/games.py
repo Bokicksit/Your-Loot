@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations import libretro
 from app.integrations.igdb import igdb_client
-from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted
+from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted, User
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
 from app.search import contains
 from app.sorting import year_from_title
@@ -14,7 +16,7 @@ from app.sorting import year_from_title
 router = APIRouter(prefix="/api/games", tags=["games"])
 
 
-def game_to_out(item: CollectionItem) -> GameOut:
+def game_to_out(item: CollectionItem, uid: int) -> GameOut:
     a = item.game_attrs
     return GameOut(
         id=item.id,
@@ -37,8 +39,8 @@ def game_to_out(item: CollectionItem) -> GameOut:
             working=a.working,
             parent_id=a.parent_id,
         ),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -61,6 +63,7 @@ def game_boxart(
     platform_id: int | None = None,
     region: str | None = None,
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
 ):
     """A scan of the actual box, from libretro-thumbnails.
 
@@ -78,17 +81,17 @@ def game_boxart(
 
 
 @router.get("/platforms")
-def list_platforms(db: Session = Depends(get_db), in_use: bool = False):
+def list_platforms(db: Session = Depends(get_db),
+    user: User = Depends(current_user), in_use: bool = False):
     """Full lookup for the add form; in_use=true returns only platforms that
     have at least one collection entry (with counts) — used by the filter UI."""
     if in_use:
         # mirror the library view: wanted-only entries don't count here either
-        owned_exists = select(Owned.id).where(Owned.item_id == GameAttrs.item_id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == GameAttrs.item_id).exists()
+        _shelf = on_my_shelf(user.id, GameAttrs.item_id)
         rows = db.execute(
             select(Platform, func.count(GameAttrs.item_id))
             .join(GameAttrs, GameAttrs.platform_id == Platform.id)
-            .where(owned_exists | ~wanted_exists)
+            .where(_shelf)
             .group_by(Platform.id)
             .order_by(Platform.name)
         ).all()
@@ -117,6 +120,7 @@ def igdb_search(q: str = Query(min_length=2)):
 @router.get("", response_model=GameListOut)
 def list_games(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     platform_id: int | None = None,
     is_hardware: bool | None = None,
@@ -139,11 +143,9 @@ def list_games(
         filters.append(GameAttrs.platform_id == platform_id)
     if is_hardware is not None:
         filters.append(GameAttrs.is_hardware == is_hardware)
-    if not include_wanted_only:
-        # library view: wanted-but-unowned entries live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
 
     if filters:
         q = q.where(*filters)
@@ -168,11 +170,12 @@ def list_games(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return GameListOut(total=total, items=[game_to_out(i) for i in items])
+    return GameListOut(total=total, items=[game_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=GameOut, status_code=201)
-def create_game(body: GameCreate, db: Session = Depends(get_db)):
+def create_game(body: GameCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Manual entry, or IGDB-prefilled when igdb_id is set (dedupes on it)."""
     if body.platform_id is not None and db.get(Platform, body.platform_id) is None:
         raise HTTPException(400, "unknown platform_id")
@@ -210,11 +213,12 @@ def create_game(body: GameCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return game_to_out(item)
+    return game_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=GameOut)
-def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db)):
+def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.games.value:
         raise HTTPException(404, "game not found")
@@ -233,11 +237,12 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db)):
             setattr(item.game_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return game_to_out(item)
+    return game_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_game(item_id: int, db: Session = Depends(get_db)):
+def delete_game(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Removes the catalog entry AND its owned/wanted records (cascade) —
     meant for fixing manual-entry mistakes, not for 'I sold this'."""
     item = db.get(CollectionItem, item_id)

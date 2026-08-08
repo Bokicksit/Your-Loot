@@ -24,6 +24,7 @@ from sqlalchemy import Date, DateTime, text
 from sqlalchemy.orm import Session
 
 from app.config import settings as cfg
+from app.auth import require_admin
 from app.db import get_db
 from app.models import Base
 from app.version import VERSION
@@ -49,8 +50,11 @@ def _decoder(column):
     return None
 
 
+# Whole-server, not per-person: this is the disaster-recovery copy, and a
+# restore replaces everything for everybody. Admin-only for that reason —
+# a per-user export is a different feature and would need its own endpoint.
 @router.get("")
-def download_backup(db: Session = Depends(get_db)):
+def download_backup(db: Session = Depends(get_db), _=Depends(require_admin)):
     tables = {}
     for table in Base.metadata.sorted_tables:
         tables[table.name] = [
@@ -192,7 +196,9 @@ def _reset_sequences(db: Session):
 
 
 @router.post("/restore")
-async def restore_backup(file: UploadFile, db: Session = Depends(get_db)):
+async def restore_backup(
+    file: UploadFile, db: Session = Depends(get_db), _=Depends(require_admin)
+):
     """Replaces the entire collection with the contents of a backup. Everything
     is validated before a single row is touched, and the wipe-and-reload runs in
     one transaction, so a bad file leaves the database exactly as it was."""

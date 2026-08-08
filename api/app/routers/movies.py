@@ -3,9 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.tmdb import tmdb_client
-from app.models import CollectionItem, Module, MovieAttrs, Owned, Wanted
+from app.models import CollectionItem, Module, MovieAttrs, Owned, Wanted, User
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.movies import (
     MovieAttrsOut,
     MovieCreate,
@@ -19,7 +21,7 @@ from app.sorting import year_from_title
 router = APIRouter(prefix="/api/movies", tags=["movies"])
 
 
-def movie_to_out(item: CollectionItem) -> MovieOut:
+def movie_to_out(item: CollectionItem, uid: int) -> MovieOut:
     a = item.movie_attrs
     return MovieOut(
         id=item.id,
@@ -34,8 +36,8 @@ def movie_to_out(item: CollectionItem) -> MovieOut:
             overview=a.overview,
             tmdb_id=a.tmdb_id,
         ),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -65,15 +67,15 @@ def tmdb_search(q: str = Query(min_length=2)):
 
 
 @router.get("/formats")
-def list_formats(db: Session = Depends(get_db)):
+def list_formats(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Formats present in the collection (library view), with counts —
     mirrors the games platform filter."""
-    owned_exists = select(Owned.id).where(Owned.item_id == MovieAttrs.item_id).exists()
-    wanted_exists = select(Wanted.id).where(Wanted.item_id == MovieAttrs.item_id).exists()
+    _shelf = on_my_shelf(user.id, MovieAttrs.item_id)
     rows = db.execute(
         select(MovieAttrs.format, func.count())
         .where(MovieAttrs.format.is_not(None))
-        .where(owned_exists | ~wanted_exists)
+        .where(_shelf)
         .group_by(MovieAttrs.format)
         .order_by(MovieAttrs.format)
     ).all()
@@ -83,6 +85,7 @@ def list_formats(db: Session = Depends(get_db)):
 @router.get("", response_model=MovieListOut)
 def list_movies(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     format: str | None = None,
     sort: str = Query("title", pattern="^(title|format|year|added|oldest)$"),
@@ -103,11 +106,9 @@ def list_movies(
     if format:
         filters.append(MovieAttrs.format == format)
 
-    if not include_wanted_only:
-        # library view: wanted-but-unowned entries live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
 
     if filters:
         q = q.where(*filters)
@@ -133,11 +134,12 @@ def list_movies(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return MovieListOut(total=total, items=[movie_to_out(i) for i in items])
+    return MovieListOut(total=total, items=[movie_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=MovieOut, status_code=201)
-def create_movie(body: MovieCreate, db: Session = Depends(get_db)):
+def create_movie(body: MovieCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Manual or TMDB-prefilled. No dedupe on tmdb_id — the same film may
     exist once per physical edition (Blu-ray, 4K steelbook, …)."""
     item = CollectionItem(
@@ -158,11 +160,12 @@ def create_movie(body: MovieCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return movie_to_out(item)
+    return movie_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=MovieOut)
-def update_movie(item_id: int, body: MovieUpdate, db: Session = Depends(get_db)):
+def update_movie(item_id: int, body: MovieUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.movies.value:
         raise HTTPException(404, "movie not found")
@@ -175,11 +178,12 @@ def update_movie(item_id: int, body: MovieUpdate, db: Session = Depends(get_db))
             setattr(item.movie_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return movie_to_out(item)
+    return movie_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_movie(item_id: int, db: Session = Depends(get_db)):
+def delete_movie(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.movies.value:
         raise HTTPException(404, "movie not found")

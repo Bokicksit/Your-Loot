@@ -3,11 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.auth import current_user
 from app.db import get_db
 from app.integrations.openlibrary import openlibrary_client
 from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
-from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted
+from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted, User
 from app.search import contains
+from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.books import (
     BookAttrsOut,
     BookCreate,
@@ -24,7 +26,7 @@ ATTR_FIELDS = (
 )
 
 
-def book_to_out(item: CollectionItem) -> BookOut:
+def book_to_out(item: CollectionItem, uid: int) -> BookOut:
     a = item.book_attrs
     return BookOut(
         id=item.id,
@@ -32,8 +34,8 @@ def book_to_out(item: CollectionItem) -> BookOut:
         image_url=item.image_url,
         notes=item.notes,
         attrs=BookAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
-        owned=item.owned,
-        wanted=item.wanted,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
     )
 
 
@@ -117,11 +119,11 @@ def book_description(olid: str = Query(min_length=3, max_length=30)):
 
 
 @router.get("/facets")
-def book_facets(db: Session = Depends(get_db)):
+def book_facets(db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Authors and formats present in the collection, for the filters."""
-    owned_exists = select(Owned.id).where(Owned.item_id == BookAttrs.item_id).exists()
-    wanted_exists = select(Wanted.id).where(Wanted.item_id == BookAttrs.item_id).exists()
-    in_library = owned_exists | ~wanted_exists
+    _shelf = on_my_shelf(user.id, BookAttrs.item_id)
+    in_library = _shelf
     authors = [
         {"author": a, "count": c}
         for a, c in db.execute(
@@ -146,6 +148,7 @@ def book_facets(db: Session = Depends(get_db)):
 @router.get("", response_model=BookListOut)
 def list_books(
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
     search: str | None = None,
     author: str | None = None,
     format: str | None = None,
@@ -170,11 +173,9 @@ def list_books(
         filters.append(BookAttrs.author == author)
     if format:
         filters.append(BookAttrs.format == format)
-    if not include_wanted_only:
-        # library view: wanted-but-unowned books live on the Wanted tab only
-        owned_exists = select(Owned.id).where(Owned.item_id == CollectionItem.id).exists()
-        wanted_exists = select(Wanted.id).where(Wanted.item_id == CollectionItem.id).exists()
-        filters.append(owned_exists | ~wanted_exists)
+    # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    # for both is what include_wanted_only means.
+    filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
         q = q.where(*filters)
         count_q = count_q.where(*filters)
@@ -200,11 +201,12 @@ def list_books(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return BookListOut(total=total, items=[book_to_out(i) for i in items])
+    return BookListOut(total=total, items=[book_to_out(i, user.id) for i in items])
 
 
 @router.post("", response_model=BookOut, status_code=201)
-def create_book(body: BookCreate, db: Session = Depends(get_db)):
+def create_book(body: BookCreate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     """Books repeat legitimately — a paperback and a first-edition hardcover
     of the same title are different objects — so there's no ISBN dedupe."""
     item = CollectionItem(
@@ -218,11 +220,12 @@ def create_book(body: BookCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
-    return book_to_out(item)
+    return book_to_out(item, user.id)
 
 
 @router.patch("/{item_id}", response_model=BookOut)
-def update_book(item_id: int, body: BookUpdate, db: Session = Depends(get_db)):
+def update_book(item_id: int, body: BookUpdate, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.books.value:
         raise HTTPException(404, "book not found")
@@ -235,11 +238,12 @@ def update_book(item_id: int, body: BookUpdate, db: Session = Depends(get_db)):
             setattr(item.book_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return book_to_out(item)
+    return book_to_out(item, user.id)
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_book(item_id: int, db: Session = Depends(get_db)):
+def delete_book(item_id: int, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.books.value:
         raise HTTPException(404, "book not found")
