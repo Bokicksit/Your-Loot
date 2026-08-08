@@ -8,6 +8,11 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **The Collections heading rotates.** 50 general lines plus 14 for each
+  collection you actually keep — so a record collector is never asked about
+  minifigs. One line per visit, not per render.
+
 ### Fixed
 - **Hardware showed the games count.** A console and a cartridge share a table
   server-side, so `/api/stats` had no hardware number and the home tile

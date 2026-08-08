@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { MODULES, useEnabledModules, useSettings } from "../settings.jsx";
+import { DEFAULT_TAGLINE, pickTagline } from "../taglines.js";
 
 const PATHS = {
   cards: "/cards", games: "/games", hardware: "/hardware",
@@ -18,10 +19,18 @@ export default function HomePage() {
   const { settings } = useSettings();
   const enabled = useEnabledModules();
   const [stats, setStats] = useState(null);
+  // Chosen once settings are known, so the category lines can join in — and
+  // held for the session, so navigating back here doesn't reshuffle it.
+  const [tagline, setTagline] = useState(DEFAULT_TAGLINE);
 
   useEffect(() => {
     api.stats().then(setStats).catch(() => {});
   }, []);
+
+  const enabledKeys = enabled.map((m) => m.key).join(",");
+  useEffect(() => {
+    if (enabledKeys) setTagline(pickTagline(enabledKeys.split(",")));
+  }, [enabledKeys]);
 
   // On or off, and nothing in between. Starring used to be a second, quieter
   // switch that decided the same thing, which meant a collection could be
@@ -36,7 +45,7 @@ export default function HomePage() {
 
   return (
     <div className="home">
-      <h2>What are we opening?</h2>
+      <h2>{tagline}</h2>
 
       <div className="home-tiles">
         {shown.map((m) => (
