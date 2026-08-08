@@ -29,11 +29,10 @@ export default function HomePage() {
   // what Settings says you collect.
   const shown = enabled;
   const hidden = MODULES.length - enabled.length;
-  const count = (key) => {
-    // hardware lives in the games module server-side
-    const s = stats?.[key === "hardware" ? "games" : key];
-    return s ? s.items : null;
-  };
+  // Hardware used to borrow the games count, because the API had no hardware
+  // number to give — so a shelf with one console read "29 items". It reports
+  // both separately now, and this asks for what it means.
+  const count = (key) => (stats?.[key] ? stats[key].items : null);
 
   return (
     <div className="home">

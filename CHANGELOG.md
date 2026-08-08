@@ -8,6 +8,12 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **Hardware showed the games count.** A console and a cartridge share a table
+  server-side, so `/api/stats` had no hardware number and the home tile
+  borrowed the games one — one console read as 29 items. Both are reported
+  separately now, and the games count no longer includes hardware.
+
 ### Changed
 - **The mark is in the header**, and on the sign-in screen — the shelf, rather
   than the generic coin that stood in for it.

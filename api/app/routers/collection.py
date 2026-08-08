@@ -181,7 +181,14 @@ def _detail(item: CollectionItem) -> str:
 def stats(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """Per-module counts for the home screen tiles. `items` counts only
     titles with at least one owned copy — wanted-only entries belong to the
-    Wanted tile, not the collection counts."""
+    Wanted tile, not the collection counts.
+
+    Hardware is reported separately even though it has no module of its own.
+    A console and a cartridge share a table because they share a platform, a
+    region and a completeness — but they are two tiles on the home screen, and
+    the split has to happen somewhere. Here is better than in the client,
+    which previously had no hardware number to show and used the games one.
+    """
     owned_exists = owns(user.id, CollectionItem.id)
     items = dict(
         db.execute(
@@ -206,7 +213,25 @@ def stats(db: Session = Depends(get_db), user: User = Depends(current_user)):
             .group_by(CollectionItem.module)
         ).all()
     )
-    return {
+    # `module` alone can't tell a console from a game, so ask the attrs table
+    # which of the games rows are hardware and subtract them out.
+    hw_items, hw_owned, hw_wanted = (
+        db.scalar(
+            select(func.count(q))
+            .select_from(CollectionItem)
+            .join(GameAttrs, GameAttrs.item_id == CollectionItem.id)
+            .outerjoin(j, j.item_id == CollectionItem.id)
+            .where(GameAttrs.is_hardware, cond)
+        )
+        or 0
+        for q, j, cond in (
+            (func.distinct(CollectionItem.id), Owned, Owned.user_id == user.id),
+            (Owned.id, Owned, Owned.user_id == user.id),
+            (Wanted.id, Wanted, Wanted.user_id == user.id),
+        )
+    )
+
+    out = {
         m.value: {
             "items": items.get(m.value, 0),
             "owned": owned.get(m.value, 0),
@@ -214,6 +239,14 @@ def stats(db: Session = Depends(get_db), user: User = Depends(current_user)):
         }
         for m in Module
     }
+    games = out.get(Module.games.value, {"items": 0, "owned": 0, "wanted": 0})
+    out["hardware"] = {"items": hw_items, "owned": hw_owned, "wanted": hw_wanted}
+    out[Module.games.value] = {
+        "items": games["items"] - hw_items,
+        "owned": games["owned"] - hw_owned,
+        "wanted": games["wanted"] - hw_wanted,
+    }
+    return out
 
 
 @router.get("/wanted", response_model=list[WantedItemOut])
