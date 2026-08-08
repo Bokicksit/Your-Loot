@@ -155,6 +155,9 @@ export const api = {
     }
     return res.json();
   },
+  // TEMPORARY — see api/app/routers/maintenance.py
+  backfillStart: () => request("/api/maintenance/backfill", { method: "POST" }),
+  backfillStatus: () => request("/api/maintenance/backfill"),
   settings: () => request("/api/settings"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

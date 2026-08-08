@@ -33,7 +33,7 @@ from app.models import BookAttrs, CollectionItem, RecordAttrs
 PAUSE = 1.0
 
 
-def _books(db, dry_run: bool) -> tuple[int, int, list[str]]:
+def _books(db, dry_run: bool, say) -> tuple[int, int, list[str]]:
     rows = db.scalars(
         select(BookAttrs)
         .join(CollectionItem, CollectionItem.id == BookAttrs.item_id)
@@ -41,7 +41,7 @@ def _books(db, dry_run: bool) -> tuple[int, int, list[str]]:
     ).all()
     filled = skipped = 0
     no_id = []
-    print(f"\nBooks without a blurb: {len(rows)}")
+    say(f"Books without a blurb: {len(rows)}")
     for a in rows:
         title = a.item.title if a.item else f"item {a.item_id}"
         if not a.isbn:
@@ -54,16 +54,16 @@ def _books(db, dry_run: bool) -> tuple[int, int, list[str]]:
         time.sleep(PAUSE)
         if not text:
             skipped += 1
-            print(f"  —  {title}: Open Library has none")
+            say(f"  —  {title}: Open Library has none")
             continue
         a.blurb = text
         db.commit()
         filled += 1
-        print(f"  ok {title}: {len(text)} chars")
+        say(f"  ok {title}: {len(text)} chars")
     return filled, skipped, no_id
 
 
-def _records(db, dry_run: bool) -> tuple[int, int, list[str]]:
+def _records(db, dry_run: bool, say) -> tuple[int, int, list[str]]:
     rows = db.scalars(
         select(RecordAttrs)
         .join(CollectionItem, CollectionItem.id == RecordAttrs.item_id)
@@ -71,9 +71,9 @@ def _records(db, dry_run: bool) -> tuple[int, int, list[str]]:
     ).all()
     filled = skipped = 0
     no_id = []
-    print(f"\nRecords without a tracklist: {len(rows)}")
+    say(f"Records without a tracklist: {len(rows)}")
     if rows and not discogs_client.configured:
-        print("  (no DISCOGS_TOKEN — tracklists come from Discogs, so this is a no-op)")
+        say("  (no DISCOGS_TOKEN — tracklists come from Discogs, so this is a no-op)")
         return 0, len(rows), []
     for a in rows:
         title = a.item.title if a.item else f"item {a.item_id}"
@@ -97,19 +97,42 @@ def _records(db, dry_run: bool) -> tuple[int, int, list[str]]:
         if not ids or len(names) > 1:
             skipped += 1
             why = "nothing" if not ids else f"{len(names)} different records"
-            print(f"  —  {title}: that barcode matches {why}")
+            say(f"  —  {title}: that barcode matches {why}")
             continue
         text = discogs_client.tracklist(ids[0])
         time.sleep(PAUSE)
         if not text:
             skipped += 1
-            print(f"  —  {title}: Discogs lists no tracks")
+            say(f"  —  {title}: Discogs lists no tracks")
             continue
         a.tracklist = text
         db.commit()
         filled += 1
-        print(f"  ok {title}: {len(text.splitlines())} tracks")
+        say(f"  ok {title}: {len(text.splitlines())} tracks")
     return filled, skipped, no_id
+
+
+def run(dry_run: bool = False, say=print) -> dict:
+    """The whole pass, as data.
+
+    Shared by the command line and the Settings button so there is one
+    implementation rather than two that drift apart.
+    """
+    with SessionLocal() as db:
+        b_filled, b_skipped, b_noid = _books(db, dry_run, say)
+        r_filled, r_skipped, r_noid = _records(db, dry_run, say)
+    return {
+        "books": {
+            "filled": b_filled,
+            "nothing_found": b_skipped,
+            "unidentifiable": b_noid,
+        },
+        "records": {
+            "filled": r_filled,
+            "nothing_found": r_skipped,
+            "unidentifiable": r_noid,
+        },
+    }
 
 
 def main() -> int:
@@ -117,9 +140,11 @@ def main() -> int:
     if dry_run:
         print("Dry run — counting only, nothing will be fetched or written.")
 
-    with SessionLocal() as db:
-        b_filled, b_skipped, b_noid = _books(db, dry_run)
-        r_filled, r_skipped, r_noid = _records(db, dry_run)
+    out = run(dry_run)
+    b = out["books"]
+    r = out["records"]
+    b_filled, b_skipped, b_noid = b["filled"], b["nothing_found"], b["unidentifiable"]
+    r_filled, r_skipped, r_noid = r["filled"], r["nothing_found"], r["unidentifiable"]
 
     print("\n" + "-" * 52)
     print(f"Books:   {b_filled} filled, {b_skipped} had none to find")

@@ -18,7 +18,6 @@ MODULES = [
 DEFAULTS = {
     "owner_name": None,          # None = never set, drives first-run onboarding
     "enabled_modules": ",".join(MODULES),
-    "favorite_modules": "",
     "dex_cols": "4",
     "card_cols": "3",
     # Which collections draw tiles instead of rows. Cards has always been
@@ -51,7 +50,6 @@ def _prefs(v: str | None) -> dict:
 class SettingsOut(BaseModel):
     owner_name: str | None = None
     enabled_modules: list[str] = []
-    favorite_modules: list[str] = []
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
@@ -67,7 +65,6 @@ class SettingsUpdate(BaseModel):
 
     owner_name: str | None = Field(default=None, max_length=50)
     enabled_modules: list[str] | None = None
-    favorite_modules: list[str] | None = None
     dex_cols: int | None = Field(default=None, ge=2, le=8)
     card_cols: int | None = Field(default=None, ge=2, le=8)
     tile_modules: list[str] | None = None
@@ -86,7 +83,6 @@ def _current(db: Session, user_id: int) -> SettingsOut:
     return SettingsOut(
         owner_name=raw["owner_name"],
         enabled_modules=enabled or MODULES,
-        favorite_modules=[m for m in _csv(raw["favorite_modules"]) if m in enabled],
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
         tile_modules=[m for m in _csv(raw["tile_modules"]) if m in MODULES],

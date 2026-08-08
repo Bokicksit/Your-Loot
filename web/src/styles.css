@@ -2286,3 +2286,19 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .home-hint svg.i { width: 15px; height: 15px; flex: none; }
 .home-hint a { color: var(--gold-bright); }
+
+/* TEMPORARY — progress output for the backfill button in Settings */
+.maint-log {
+  margin: var(--s-2) 0 0;
+  padding: var(--s-2);
+  max-height: 200px;
+  overflow: auto;
+  background: var(--bg-0);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-1);
+  font-family: var(--font-num);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-mute);
+  white-space: pre-wrap;
+}

@@ -14,6 +14,9 @@ Full detail is in the commit log, where every change has its own note.
   reports what it couldn't identify rather than guessing.
 
 ### Changed
+- **Favourites are gone.** A collection was either on, or on-but-starred, and
+  the two switches decided the same thing — so a collection could be turned on
+  and still be nowhere. Now: on means it's on the Collections tab.
 - **Three tabs: Collections, Wanted, Settings.** Collections is the page the
   wordmark already opened, showing the collections you keep rather than a
   scrolling list of all of them. Settings came down off the header, and the

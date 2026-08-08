@@ -21,7 +21,6 @@ export default function Onboarding() {
       await save({
         owner_name: name.trim(),
         enabled_modules: picked.length ? picked : MODULES.map((m) => m.key),
-        favorite_modules: picked.slice(0, 2),
       });
     } catch (e) {
       alert(e.message);

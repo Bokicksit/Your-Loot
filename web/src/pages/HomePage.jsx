@@ -23,18 +23,12 @@ export default function HomePage() {
     api.stats().then(setStats).catch(() => {});
   }, []);
 
-  const favs = settings?.favorite_modules || [];
-  // Starred first — but with the full list gone from the tab bar, this page is
-  // the only way into a collection, so an unstarred one would be stranded.
-  // Nothing starred means everything you've turned on.
-  const starred = enabled.filter((m) => favs.includes(m.key));
-  const shown = starred.length ? starred : enabled;
-  // Two different kinds of missing, and telling someone to "turn on" a
-  // collection they already turned on is the sort of small wrongness that
-  // makes people stop trusting the rest of the copy.
-  const off = MODULES.length - enabled.length;
-  const unstarred = enabled.length - shown.length;
-  const hidden = off + unstarred;
+  // On or off, and nothing in between. Starring used to be a second, quieter
+  // switch that decided the same thing, which meant a collection could be
+  // turned on and still be nowhere — so it's gone, and this list is simply
+  // what Settings says you collect.
+  const shown = enabled;
+  const hidden = MODULES.length - enabled.length;
   const count = (key) => {
     // hardware lives in the games module server-side
     const s = stats?.[key === "hardware" ? "games" : key];
@@ -67,13 +61,8 @@ export default function HomePage() {
         <p className="home-hint">
           <Icon id="sliders" />
           <span>
-            {hidden} more {hidden === 1 ? "collection" : "collections"}{" "}
-            {off && unstarred
-              ? "to turn on or star"
-              : off
-                ? `to turn on`
-                : `to star`}{" "}
-            in <Link to="/settings">Settings</Link>.
+            {hidden} more {hidden === 1 ? "collection" : "collections"} to turn
+            on in <Link to="/settings">Settings</Link>.
           </span>
         </p>
       )}

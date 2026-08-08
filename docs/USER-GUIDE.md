@@ -97,9 +97,9 @@ Three tabs along the bottom:
 | **Wanted** | Everything you're hunting, all categories in one list |
 | **Settings** | Name, collections, display, backups |
 
-Collections is the same page the **Your Loot** wordmark opens. It shows the
-collections you've starred — or all the ones you've turned on, if you haven't
-starred any — so it stays as short as your shelf actually is.
+Collections is the same page the **Your Loot** wordmark opens, and it shows
+exactly what you've turned on in Settings — nothing more. One switch, one
+list.
 
 If something is missing from it, a line at the bottom says how many and points
 at Settings. When nothing is missing there's no line, because a permanent
@@ -635,7 +635,8 @@ entry is removed entirely rather than becoming an orphan in your library.
 
 **Collector name** — the header greeting. Blank gives you "Your Loot".
 
-**Collections** — turn each on or off, and star the ones you want on the Collections tab. Starring nothing shows everything you have turned on.
+**Collections** — turn each on or off. What's on here is what's on the
+Collections tab.
 
 > Turning a collection off **hides** it. Nothing is deleted. Its items stay in
 > the database and stop appearing in the menu, on Home, and in the wanted list.

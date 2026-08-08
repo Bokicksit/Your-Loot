@@ -17,6 +17,7 @@ from app.routers import (
     games,
     images,
     lego,
+    maintenance,
     lookup,
     movies,
     records,
@@ -58,6 +59,7 @@ app.include_router(images.router)
 app.include_router(backup.router)
 app.include_router(settings_router.router)
 app.include_router(lookup.router)
+app.include_router(maintenance.router)  # TEMPORARY — see routers/maintenance.py
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.image_dir), name="images")
