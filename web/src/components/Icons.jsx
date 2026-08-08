@@ -13,7 +13,7 @@ export function IconDefs() {
         <symbol id="i-console" viewBox="0 0 24 24"><rect x="2.6" y="8.4" width="13.4" height="10.2" rx="2.2"></rect> <path d="M5.6 11.6h5.4M5.6 14.6h2.4"></path> <circle cx="13.2" cy="15" r="1.05" fill="currentColor" stroke="none"></circle> <path d="M16 11.4h2.6a2.6 2.6 0 0 0 2.6-2.6V7.2"></path> <rect x="16.4" y="4.2" width="4.4" height="3" rx="1"></rect></symbol>
         <symbol id="i-disc" viewBox="0 0 24 24"><rect x="3" y="9.6" width="18" height="10.4" rx="2.2"></rect> <path d="M3.5 9.6 3.9 6.2a1 1 0 0 1 1.12-.87l15 1.75a1 1 0 0 1 .87 1.12l-.15 1.4"></path> <path d="M8.4 5.7 6.7 9.4M13.4 6.3 11.7 9.9M18.4 6.9 16.7 10.4"></path></symbol>
         <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"></circle> <circle cx="12" cy="12" r="4.4"></circle> <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"></circle></symbol>
-        <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="5" /></symbol>
+        <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"></circle> <circle cx="12" cy="12" r="6.2"></circle> <path d="M14.1 9.5a2.1 2.1 0 00-2-1.2h-.4a1.9 1.9 0 00-.3 3.75l1.6.3a1.9 1.9 0 01-.3 3.75h-.4a2.1 2.1 0 01-2-1.2M12 7v1.3M12 15.7V17"></path></symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h9.5M4.5 17h5.5" /><circle cx="17" cy="12" r="2" /><circle cx="13.5" cy="17" r="2" /></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13" /></symbol>
