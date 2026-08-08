@@ -9,6 +9,19 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **`python -m app.backfill`** — fills in book blurbs and record tracklists on
+  items added before either existed. Never overwrites, safe to re-run, and
+  reports what it couldn't identify rather than guessing.
+
+### Changed
+- **Three tabs: Collections, Wanted, Settings.** Collections is the page the
+  wordmark already opened, showing the collections you keep rather than a
+  scrolling list of all of them. Settings came down off the header, and the
+  full-list sheet is gone.
+- Password and email fields are styled like the rest of the app — they had
+  been falling through to the browser's own boxes.
+
+### Added
 - **Lock this app** (Settings) — a password, or a short PIN for a phone, on a
   single-user install. One account, no user management, no login screen until
   you ask for one. The way Radarr and Sonarr do it.

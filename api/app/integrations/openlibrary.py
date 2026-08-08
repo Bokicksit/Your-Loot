@@ -97,6 +97,30 @@ class OpenLibraryClient:
             })
         return out
 
+    def description_by_isbn(self, isbn: str) -> str | None:
+        """The blurb for a book we only know the ISBN of.
+
+        Books added before blurbs existed kept their ISBN and nothing else
+        pointing back at Open Library, so the backfill starts from the barcode
+        on the jacket and walks the same edition -> work path a scan does.
+        """
+        code = "".join(ch for ch in (isbn or "") if ch.isalnum())
+        if len(code) < 10:
+            return None
+        try:
+            r = httpx.get(f"{API}/isbn/{code}.json", headers=UA, timeout=20,
+                          follow_redirects=True)
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            edition = r.json()
+        except (httpx.HTTPError, ValueError):
+            return None
+        works = edition.get("works") or []
+        if not works:
+            return _clean(edition.get("description"))
+        return self.description((works[0].get("key") or "").strip("/").split("/")[-1])
+
     def description(self, olid: str) -> str | None:
         """The blurb for a book, or None if Open Library hasn't got one.
 

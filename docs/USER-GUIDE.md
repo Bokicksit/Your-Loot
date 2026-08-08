@@ -93,15 +93,17 @@ Three tabs along the bottom:
 
 | Tab | What's there |
 | --- | --- |
-| **Collections** | The full list — tap one to open it |
+| **Collections** | The ones you keep — tap one to open it |
 | **Wanted** | Everything you're hunting, all categories in one list |
-| **Favourites** | Just the collections you've starred, with their counts |
+| **Settings** | Name, collections, display, backups |
 
-Favourites is the fast path to the two or three you actually open daily;
-Collections always has the rest, so there's no "see all" duplicating it. Star a
-collection in Settings.
+Collections is the same page the **Your Loot** wordmark opens. It shows the
+collections you've starred — or all the ones you've turned on, if you haven't
+starred any — so it stays as short as your shelf actually is.
 
-**Settings** is the gear in the top-right.
+If something is missing from it, a line at the bottom says how many and points
+at Settings. When nothing is missing there's no line, because a permanent
+notice about collections you already have is just noise.
 
 ### Opening and closing an item
 
@@ -633,7 +635,7 @@ entry is removed entirely rather than becoming an orphan in your library.
 
 **Collector name** — the header greeting. Blank gives you "Your Loot".
 
-**Collections** — turn each on or off, and star the ones you want on Home.
+**Collections** — turn each on or off, and star the ones you want on the Collections tab. Starring nothing shows everything you have turned on.
 
 > Turning a collection off **hides** it. Nothing is deleted. Its items stay in
 > the database and stop appearing in the menu, on Home, and in the wanted list.

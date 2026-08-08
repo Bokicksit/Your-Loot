@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -6,7 +5,6 @@ import {
   Route,
   Routes,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 import { Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
@@ -35,73 +33,28 @@ const PATHS = {
   comics: "/comics",
 };
 
-// Collections opens the full list, Wanted is the hunt, Favourites is the
-// shortcut to the ones you starred. Wanted gives up the star to Favourites,
-// since a star means "starred" everywhere else in the app.
-function TabBar({ onOpenCollections }) {
+// Collections is the same page the wordmark opens: the collections you keep,
+// and nothing else. Wanted is the hunt. Settings came down off the header,
+// where it was a grey cog competing with the app's name for the one corner a
+// thumb can't comfortably reach anyway.
+function TabBar() {
   const { pathname } = useLocation();
   const inCollection = Object.values(PATHS).some((p) => pathname.startsWith(p));
   return (
     <nav className="tabbar">
-      <button
-        className={inCollection ? "active" : ""}
-        onClick={onOpenCollections}
-        aria-haspopup="menu"
-      >
+      <NavLink to="/" end className={inCollection ? "active" : undefined}>
         <Icon id="card" />
         <span>Collections</span>
-      </button>
+      </NavLink>
       <NavLink to="/wanted">
         <Icon id="target" />
         <span>Wanted</span>
       </NavLink>
-      <NavLink to="/" end>
-        <Icon id="star" />
-        <span>Favourites</span>
+      <NavLink to="/settings">
+        <Icon id="sliders" />
+        <span>Settings</span>
       </NavLink>
     </nav>
-  );
-}
-
-function CollectionsSheet({ open, onClose }) {
-  const enabled = useEnabledModules();
-  const navigate = useNavigate();
-  if (!open) return null;
-  return (
-    <div className="modal-scrim sheet-scrim" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>Collections</h2>
-        {enabled.map((m) => (
-          <button
-            key={m.key}
-            className="sheet-row"
-            onClick={() => {
-              navigate(PATHS[m.key]);
-              onClose();
-            }}
-          >
-            <Icon id={m.icon} />
-            <span className="sheet-text">
-              <strong>{m.label}</strong>
-              <small>{m.blurb}</small>
-            </span>
-          </button>
-        ))}
-        <button
-          className="sheet-row muted"
-          onClick={() => {
-            navigate("/settings");
-            onClose();
-          }}
-        >
-          <Icon id="sliders" />
-          <span className="sheet-text">
-            <strong>Settings</strong>
-            <small>Name, collections, display</small>
-          </span>
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -156,7 +109,6 @@ function PageTitle() {
 
 function Shell() {
   const { settings } = useSettings();
-  const [sheet, setSheet] = useState(false);
   const name = settings?.owner_name;
 
   return (
@@ -168,15 +120,12 @@ function Shell() {
             {name ? `${name}’s` : "Your"} <em>Loot</em>
           </h1>
         </Link>
-        <Link to="/settings" className="ghost icon" title="Settings">
-          <Icon id="sliders" />
-        </Link>
       </header>
 
       <main className="content">
         <PageTitle />
         <Routes>
-          <Route path="/" element={<HomePage onOpenCollections={() => setSheet(true)} />} />
+          <Route path="/" element={<HomePage />} />
           <Route
             path="/cards"
             element={<RequireModule moduleKey="cards"><CardsPage /></RequireModule>}
@@ -222,8 +171,7 @@ function Shell() {
         </Routes>
       </main>
 
-      <TabBar onOpenCollections={() => setSheet(true)} />
-      <CollectionsSheet open={sheet} onClose={() => setSheet(false)} />
+      <TabBar />
       {settings?.needs_onboarding && <Onboarding />}
     </>
   );

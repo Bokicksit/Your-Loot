@@ -227,7 +227,7 @@ function LockCard() {
             "Set a password — or a short PIN, which is easier on a phone — and " +
             "it will ask first."}
       </p>
-      <form className="form-row wrap" onSubmit={save}>
+      <form className="lock-form" onSubmit={save}>
         {me.locked && (
           <input
             type="password"

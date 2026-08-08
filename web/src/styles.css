@@ -221,7 +221,11 @@ svg.i.filled { fill: currentColor; stroke: none; }
 .toolbar > input[type="search"],
 .toolbar > input[type="text"] { flex: 1 1 auto; min-width: 0; }
 
-input[type="text"], input[type="search"], input[type="number"], select {
+/* password and email were missing here, so the sign-in screen and the lock
+   settings fell through to the browser's own boxes — a different height, a
+   different border and a different font, in the middle of the app's own. */
+input[type="text"], input[type="search"], input[type="number"],
+input[type="password"], input[type="email"], select {
   appearance: none;
   min-height: var(--tap);
   width: 100%;
@@ -241,6 +245,17 @@ input:focus, select:focus {
   border-color: var(--gold-line);
   box-shadow: 0 0 0 3px var(--gold-wash);
 }
+/* Dots set solid are a smear. Spacing them out makes a PIN countable at a
+   glance, which is the whole reason for typing one on a phone. */
+input[type="password"] {
+  letter-spacing: .18em;
+  font-family: var(--font-num);
+}
+input[type="password"]::placeholder {
+  letter-spacing: normal;
+  font-family: inherit;
+}
+
 input[type="search"] {
   background: var(--bg-3) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e6980' stroke-width='2.2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M16.5 16.5 21 21'/></svg>") no-repeat 11px 50% / 17px;
   padding-left: 38px;
@@ -2198,7 +2213,18 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   color: var(--text-mute);
   line-height: 1.5;
 }
-.signin input { width: 100%; }
+.signin input {
+  width: 100%;
+  min-height: calc(var(--tap) + 4px);
+  font-size: var(--f-4);
+  text-align: center;
+}
+.signin input[type="password"] { letter-spacing: .3em; }
+.signin input[type="password"]::placeholder { letter-spacing: normal; }
+.signin button.primary {
+  min-height: calc(var(--tap) + 4px);
+  justify-content: center;
+}
 .signin-error {
   display: flex;
   align-items: center;
@@ -2238,3 +2264,25 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border-radius: var(--r-1);
   font-size: 10px;
 }
+
+/* Two password fields and a button don't belong on one wrapped row — at any
+   width narrower than a desk they collapse into a stack of half-widths. */
+.lock-form {
+  display: grid;
+  gap: var(--s-2);
+  max-width: 340px;
+}
+.lock-form button { justify-content: center; }
+
+/* the "there's more in Settings" line under the collection tiles */
+.home-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: var(--s-4) 0 0;
+  font-size: var(--f-2);
+  color: var(--text-mute);
+}
+.home-hint svg.i { width: 15px; height: 15px; flex: none; }
+.home-hint a { color: var(--gold-bright); }
