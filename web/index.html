@@ -2,8 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Your Loot</title>
+    <meta name="description" content="Collection tracker for cards, games, movies, records, comics, Lego, books and hardware." />
+
+    <!-- The mark is a shelf holding four things you collect. One weight, one
+         colour, so it survives being 16px in a browser tab. -->
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Matches the app background, so the browser chrome and the status bar
+         stop being a bright strip above a dark app. -->
+    <meta name="theme-color" content="#0b0a0e" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Installed on iOS this runs without Safari's chrome; the translucent
+         status bar lets the app's own background show through it. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Your Loot" />
+    <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body>
     <div id="root"></div>

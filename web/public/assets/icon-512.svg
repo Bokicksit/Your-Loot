@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="512" height="512">
+  <rect width="120" height="120" fill="#0b0a0e"></rect>
+  <g transform="translate(60 60) scale(1.06) translate(-60 -60)">
+  <g fill="none" stroke="#f2b73c" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="16" y="18" width="88" height="84" rx="8" stroke-width="5"></rect>
+    <path d="M16 60 H104" stroke-width="5"></path>
+    <rect x="35" y="25" width="22" height="32" rx="3" stroke-width="3.5"></rect>
+    <path d="M35 31 H57 M35 51 H57" stroke-width="2.2"></path>
+    <path d="M42 37 V47 H52" stroke-width="3"></path>
+    <circle cx="76" cy="41" r="15" stroke-width="3.5"></circle>
+    <circle cx="76" cy="41" r="7" stroke-width="2.2"></circle>
+    <circle cx="76" cy="41" r="1.4" stroke-width="2.8"></circle>
+    <circle cx="46" cy="81" r="15" stroke-width="4"></circle>
+    <circle cx="46" cy="81" r="5.5" stroke-width="3"></circle>
+    <g transform="rotate(-8 76 81)">
+      <rect x="64" y="64" width="24" height="33" rx="3" stroke-width="3.5"></rect>
+      <rect x="68" y="68" width="16" height="25" rx="1.5" stroke-width="1.8"></rect>
+      <path d="M71 75 H81 M76 75 V86" stroke-width="2.6"></path>
+    </g>
+  </g>
+  </g>
+</svg>

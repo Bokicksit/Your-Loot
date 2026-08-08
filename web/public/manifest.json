@@ -1,0 +1,33 @@
+{
+  "name": "Your Loot",
+  "short_name": "Your Loot",
+  "description": "Collection tracker for cards, games, movies, records, comics, Lego, books and hardware.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0a0e",
+  "theme_color": "#0b0a0e",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/assets/icon-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -9,14 +9,14 @@
 :root {
   /* ---- palette: display-case dark (warm gold on cool ink) ---- */
   --bg-0:        #0b0a0e;   /* app background */
-  --bg-1:        #131218;   /* panel / card */
+  --bg-1:        #131119;   /* panel / card — brand 'surface' */
   --bg-2:        #1b1a22;   /* raised panel, bars */
   --bg-3:        #242331;   /* inputs, selects, chips */
   --bg-4:        #2d2b3b;   /* hover on inputs */
   --line:        #302e3d;   /* visible border */
   --line-soft:   #201f29;   /* hairline / dividers */
 
-  --text:        #f3f0ec;
+  --text:        #efeaf6;   /* brand text: cool, not the warm cream it was */
   --text-dim:    #a8a2b3;
   --text-mute:   #6e6980;
 

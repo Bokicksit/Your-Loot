@@ -8,6 +8,19 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **The app has a face.** Icon, favicon, maskable and Apple touch icons, and a
+  web manifest — a shelf holding a book, a record, a disc and a card, drawn in
+  one weight and one colour so it survives being 16px in a browser tab.
+- **Installable.** Add to Home Screen now produces an app rather than a
+  bookmark: standalone display, the app's own background behind the status
+  bar, and an offline shell.
+
+### Changed
+- Two colour tokens moved to match the brand exactly: the panel surface, and
+  the text, which was a warm cream and is now the cooler value the rest of the
+  palette was designed against.
+
 ### Changed
 - **Scanning a comic now names the run.** The big barcode is identical on
   every issue of a run, so it can only ever say which *run* you're holding —
