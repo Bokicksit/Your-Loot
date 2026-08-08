@@ -9,6 +9,15 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **Lock this app** (Settings) — a password, or a short PIN for a phone, on a
+  single-user install. One account, no user management, no login screen until
+  you ask for one. The way Radarr and Sonarr do it.
+- **Login throttling.** Five wrong answers per address and account, then a
+  five-minute wait. Getting it right clears the count, so mistyping your own
+  password twice costs nothing.
+- `python -m app.resetpw --clear` takes the lock off from the host.
+
+### Added
 - **Optional user accounts.** `AUTH_MODE=multi` turns on a sign-in screen,
   argon2 passwords and admin-created accounts, each person getting their own
   copies, wanted list, binder and preferences. The default stays `single`:

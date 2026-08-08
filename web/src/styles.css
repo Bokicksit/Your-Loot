@@ -2223,3 +2223,18 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   overflow-x: auto;
   white-space: nowrap;
 }
+
+/* the small print under a settings control */
+.settings-note {
+  margin: var(--s-2) 0 0;
+  font-size: var(--f-1);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.settings-note code {
+  padding: 1px 5px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-1);
+  font-size: 10px;
+}

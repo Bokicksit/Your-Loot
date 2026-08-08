@@ -5,15 +5,18 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.auth import (
+    OWNER_ID,
     current_user,
     hash_password,
     multi_user,
     needs_setup,
+    owner_locked,
     require_admin,
     verify_password,
 )
 from app.db import get_db
 from app.models import User
+from app.ratelimit import client_key, logins
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -38,21 +41,37 @@ class MeOut(BaseModel):
 
     multi_user: bool
     needs_setup: bool = False
+    # single-user, but the owner has set a password: show a password-only form
+    locked: bool = False
     user: UserOut | None = None
 
 
+# On a single-user install the email is implied — there is one account — so
+# the form is just a password, or a PIN. Four digits is weak on its own and
+# perfectly reasonable behind a five-tries-then-wait brake on a home network,
+# which is the same bargain Plex makes.
+MIN_SECRET = 4
+
+
 class Credentials(BaseModel):
+    email: EmailStr | None = None
+    password: str = Field(min_length=MIN_SECRET, max_length=200)
+
+
+class SetupIn(BaseModel):
+    """Claiming an account when accounts are on. A real password, not a PIN —
+    the PIN bargain only holds for one account on a home network."""
+
     email: EmailStr
     password: str = Field(min_length=8, max_length=200)
-
-
-class SetupIn(Credentials):
     display_name: str | None = Field(default=None, max_length=50)
 
 
 class PasswordChange(BaseModel):
     current_password: str | None = None
-    new_password: str = Field(min_length=8, max_length=200)
+    # None clears it: on a single-user install that takes the lock off the
+    # door again, which has to be as easy as putting it on
+    new_password: str | None = Field(default=None, min_length=MIN_SECRET, max_length=200)
 
 
 class InviteIn(BaseModel):
@@ -67,7 +86,14 @@ def me(request: Request, db: Session = Depends(get_db)):
     """Deliberately not a 401 when signed out — the client asks this first to
     find out which screen to draw, and an error is not an answer to that."""
     if not multi_user():
-        return MeOut(multi_user=False, user=UserOut.model_validate(current_user(request, db)))
+        locked = owner_locked(db)
+        signed_in = not locked or request.session.get("uid") == OWNER_ID
+        owner = db.get(User, OWNER_ID)
+        return MeOut(
+            multi_user=False,
+            locked=locked,
+            user=UserOut.model_validate(owner) if signed_in and owner else None,
+        )
     if needs_setup(db):
         return MeOut(multi_user=True, needs_setup=True)
     uid = request.session.get("uid")
@@ -105,13 +131,32 @@ def setup(body: SetupIn, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=UserOut)
 def login(body: Credentials, request: Request, db: Session = Depends(get_db)):
-    if not multi_user():
-        raise HTTPException(400, "This install is in single-user mode")
-    user = db.query(User).filter(User.email == body.email).one_or_none()
+    key = client_key(request, body.email or "owner")
+    wait = logins.retry_after(key)
+    if wait:
+        raise HTTPException(
+            429,
+            f"Too many attempts. Try again in {wait} seconds.",
+            headers={"Retry-After": str(wait)},
+        )
+
+    if multi_user():
+        user = db.query(User).filter(User.email == body.email).one_or_none()
+        wrong = "Wrong email or password"
+    else:
+        # one account, so the address is implied and the form asks for less
+        user = db.get(User, OWNER_ID)
+        wrong = "Wrong password"
+        if user is not None and not user.password_hash:
+            raise HTTPException(400, "This install has no password set")
+
     # one message for both halves: saying which was wrong tells an attacker
     # which addresses have accounts
     if user is None or not verify_password(body.password, user.password_hash):
-        raise HTTPException(401, "Wrong email or password")
+        logins.failed(key)
+        raise HTTPException(401, wrong)
+
+    logins.succeeded(key)
     request.session["uid"] = user.id
     return user
 
@@ -131,7 +176,9 @@ def change_password(
     that it always does, so a borrowed session can't lock the owner out."""
     if user.password_hash and not verify_password(body.current_password or "", user.password_hash):
         raise HTTPException(403, "Current password is wrong")
-    user.password_hash = hash_password(body.new_password)
+    if body.new_password is None and multi_user():
+        raise HTTPException(400, "An account needs a password when accounts are on")
+    user.password_hash = hash_password(body.new_password) if body.new_password else None
     db.commit()
 
 

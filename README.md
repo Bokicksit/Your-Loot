@@ -24,11 +24,15 @@ hunting live on the same list.
   barcode fills the rest in</em>
 </p>
 
-> [!WARNING]
-> **There is no login screen.** Anyone who can reach the port can read and
-> edit the whole collection. That's deliberate for a single-user app on a home
-> network — but don't expose it to the internet. Put it behind a VPN or an
-> authenticating reverse proxy. See [SECURITY.md](SECURITY.md).
+> [!IMPORTANT]
+> **Out of the box there is no login screen** — it opens straight into your
+> collection, which is what you want on a home network. Two ways to change
+> that: set a password or PIN in **Settings → Lock this app**, or turn on
+> `AUTH_MODE=multi` for real accounts.
+>
+> Either way, **still don't put it on the open internet.** A lock on the app
+> is not the same as hardening a server. Use a VPN or an authenticating
+> reverse proxy — see [SECURITY.md](SECURITY.md).
 
 <p align="center">
   <img src="docs/screenshots/collections.jpg" alt="The eight collections" width="52%">
@@ -99,6 +103,13 @@ filters and the same sold-price shortcut. Mark something acquired and
 it moves into your collection with the condition you set. Find only the case or
 the manual and it records the spare while the game stays on the hunt.
 
+**Accounts, if you want them** — nothing by default: the app opens straight
+into your collection. Set a password or a short PIN in Settings and it asks
+first, the way Radarr and Sonarr do. Or run with `AUTH_MODE=multi` for proper
+accounts, where everyone gets their own copies, wanted list, binder and
+Pokédex off one shared catalog. Passwords are argon2id, sessions are signed
+http-only cookies, and repeated wrong guesses are throttled.
+
 **Backup & restore** — Settings gives you a one-click zip of the whole
 install: every item, every copy, the wanted list, the binder, your settings,
 and your uploaded photos. Restoring replaces everything from that file. It's
@@ -136,6 +147,12 @@ key at all.
 | `COMICVINE_API_KEY` | comic search | [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) |
 | `DISCOGS_TOKEN` | record barcodes | [discogs.com/settings/developers](https://www.discogs.com/settings/developers) → Generate token |
 
+There's one more that isn't a key:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `AUTH_MODE` | `single` | `single` = one collection, and a login only if you set a password in Settings. `multi` = accounts, each with their own collection. |
+
 Add them to `.env` and `docker compose up -d` again.
 
 ## Keeping it running
@@ -162,8 +179,9 @@ uploaded images; nothing else holds state.
 
 ## Remote access
 
-The app has **no login of its own**, so don't expose port 8080 to the internet
-directly. Either:
+Even with a password set, **don't expose port 8080 to the internet directly.**
+The lock keeps a housemate out of your collection; it is not a hardened
+front door, and there's no HTTPS unless you put some in front. Either:
 
 - **Tailscale** — reach it privately from your phone, nothing public.
 - **Cloudflare Tunnel + Access** — a real HTTPS hostname gated by your email.

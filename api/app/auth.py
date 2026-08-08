@@ -79,6 +79,21 @@ def multi_user() -> bool:
     return settings.auth_mode.strip().lower() == "multi"
 
 
+def owner_locked(db: Session) -> bool:
+    """Single-user, but with a lock on the door.
+
+    Radarr and Sonarr do this and Plex does it with a PIN: one account, no
+    invitations, no user management — just a password between the internet
+    and your shelf. Nobody wants to invent accounts for a house they live in
+    alone; plenty of people still want the door shut.
+
+    It is simply "the owner has set a password". No third mode, no extra
+    setting: set one and the login screen appears, clear it and it's gone.
+    """
+    owner = db.get(User, OWNER_ID)
+    return bool(owner and owner.password_hash)
+
+
 def needs_setup(db: Session) -> bool:
     """Multi-user is on but nobody has a password yet.
 
@@ -98,7 +113,11 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
             # migration 0018 seeds this; if it is gone the install is broken in
             # a way that guessing would only hide
             raise HTTPException(500, "no owner account — check the database")
-        return owner
+        if not owner.password_hash:
+            return owner  # no password set: the app signs itself in, as always
+        if request.session.get("uid") == owner.id:
+            return owner
+        raise HTTPException(401, "Sign in to continue")
 
     uid = request.session.get("uid")
     user = db.get(User, uid) if uid else None

@@ -20,6 +20,9 @@ services:
     # tmpfs, not a volume: nothing here should outlive the run
     tmpfs:
       - /var/lib/postgresql/data
+    # a second database for the single-user API, created on first start
+    volumes:
+      - ./deploy/test-databases.sql:/docker-entrypoint-initdb.d/10-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U getloot"]
       interval: 3s
@@ -42,6 +45,22 @@ services:
       postgres:
         condition: service_healthy
 
+  # The default mode gets its own API, because the single-user lock only
+  # exists there and it is what most installs will actually run.
+  api-single:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/solo
+      IMAGE_DIR: /data/images
+      AUTH_MODE: single
+      SECRET_KEY: test-only-not-a-secret
+      SEED_ON_START: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   tests:
     build:
       context: .
@@ -49,14 +68,19 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/getloot
       LOOT_URL: http://api:8000
+      LOOT_SOLO_URL: http://api-single:8000
       # the opt-in from conftest.py. Set here and nowhere else.
       LOOT_DESTRUCTIVE_OK: "1"
     depends_on:
       api:
         condition: service_started
+      api-single:
+        condition: service_started
       postgres:
         condition: service_healthy
     command: >
       sh -c "pip install --quiet --disable-pip-version-check -r requirements-dev.txt &&
-             until python -c 'import httpx,sys; sys.exit(0 if httpx.get(\"http://api:8000/api/health\", timeout=2).status_code==200 else 1)' 2>/dev/null; do sleep 1; done &&
+             for u in http://api:8000 http://api-single:8000; do
+               until python -c \"import httpx,sys; sys.exit(0 if httpx.get('$$u/api/health', timeout=2).status_code==200 else 1)\" 2>/dev/null; do sleep 1; done;
+             done &&
              python -m pytest tests -q"

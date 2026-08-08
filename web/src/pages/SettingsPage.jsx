@@ -164,6 +164,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <LockCard />
       <BackupCard />
 
       {version && <p className="version-tag">Your Loot v{version}</p>}
@@ -172,6 +173,99 @@ export default function SettingsPage() {
 }
 
 const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
+
+/** Radarr and Sonarr put this in settings rather than in a config file, and
+ *  they're right to: turning the lock on is a decision you make once you've
+ *  already got the app open, not something you want to restart a container
+ *  for. */
+function LockCard() {
+  const [me, setMe] = useState(null);
+  const [secret, setSecret] = useState("");
+  const [current, setCurrent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = () => api.authMe().then(setMe).catch(() => {});
+  useEffect(() => {
+    load();
+  }, []);
+
+  // Accounts mode has its own screen for this; here we only handle the
+  // one-account case, where the whole feature is "is there a password".
+  if (!me || me.multi_user) return null;
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      await api.changePassword({
+        current_password: current || null,
+        new_password: secret || null,
+      });
+      setSecret("");
+      setCurrent("");
+      setNote(secret ? "Locked. You'll be asked for this next time." : "Lock removed.");
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="settings-card">
+      <h3>Lock this app</h3>
+      <p>
+        {me.locked
+          ? "This app asks for a password before it opens."
+          : "Anyone who can reach this app can see and edit your collection. " +
+            "Set a password — or a short PIN, which is easier on a phone — and " +
+            "it will ask first."}
+      </p>
+      <form className="form-row wrap" onSubmit={save}>
+        {me.locked && (
+          <input
+            type="password"
+            placeholder="Current password or PIN"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        )}
+        <input
+          type="password"
+          placeholder={me.locked ? "New — or blank to remove the lock" : "Password or PIN (4+)"}
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          autoComplete="new-password"
+          minLength={secret ? 4 : undefined}
+        />
+        <button type="submit" className="primary" disabled={busy}>
+          <Icon id="check" />
+          {busy ? "…" : me.locked && !secret ? "Remove lock" : "Save"}
+        </button>
+      </form>
+      {note && <p className="settings-note">{note}</p>}
+      {error && (
+        <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>
+          {error}
+        </p>
+      )}
+      <p className="settings-note">
+        It protects the app, not the data — anyone with access to the server
+        can still read the database. Locked out? Run{" "}
+        <code>docker compose exec api python -m app.resetpw --clear</code> on
+        the host.
+      </p>
+    </section>
+  );
+}
 
 function BackupCard() {
   const fileInput = useRef(null);

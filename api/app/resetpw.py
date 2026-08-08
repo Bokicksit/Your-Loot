@@ -7,7 +7,8 @@ server, and requiring an SMTP host before you can recover your own account
 would be a worse problem than the one it solves. Whoever can reach the
 container can already read the database, so shell access is the credential.
 
-Run with no arguments to list the accounts.
+Run with no arguments to list the accounts, or --clear to take the lock off a
+single-user install entirely.
 """
 
 import getpass
@@ -21,6 +22,19 @@ from app.models import User
 def main() -> int:
     args = [a for a in sys.argv[1:] if a]
     with SessionLocal() as db:
+        if args and args[0] in ("--clear", "-c"):
+            # the way back in when somebody locks themselves out of a
+            # one-account install: no password means no login screen, which is
+            # where this app started
+            owner = db.get(User, 1)
+            if owner is None:
+                print("No owner account.", file=sys.stderr)
+                return 1
+            owner.password_hash = None
+            db.commit()
+            print("Password cleared — this install no longer asks for one.")
+            return 0
+
         if not args:
             users = db.query(User).order_by(User.id).all()
             print(f"{len(users)} account(s):")

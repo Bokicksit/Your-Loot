@@ -27,12 +27,22 @@ export default function SignIn({ children }) {
   }, []);
 
   if (state === null) return null; // a spinner here would flicker on every load
-  if (!state.multi_user || state.user) return children;
+  if (state.user) return children;
+  if (!state.multi_user && !state.locked) return children;
 
-  return <Gate needsSetup={state.needs_setup} onDone={refresh} error={error} setError={setError} />;
+  return (
+    <Gate
+      needsSetup={state.needs_setup}
+      // one account: the address is implied, so the form is one field
+      soloLock={!state.multi_user}
+      onDone={refresh}
+      error={error}
+      setError={setError}
+    />
+  );
 }
 
-function Gate({ needsSetup, onDone, error, setError }) {
+function Gate({ needsSetup, soloLock, onDone, error, setError }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -47,7 +57,7 @@ function Gate({ needsSetup, onDone, error, setError }) {
       if (needsSetup) {
         await api.authSetup({ email, password, display_name: name.trim() || null });
       } else {
-        await api.authLogin({ email, password });
+        await api.authLogin(soloLock ? { password } : { email, password });
       }
       await onDone();
     } catch (err) {
@@ -86,22 +96,27 @@ function Gate({ needsSetup, onDone, error, setError }) {
             autoComplete="nickname"
           />
         )}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="username"
-          required
-        />
+        {!soloLock && (
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            required
+          />
+        )}
         <input
           type="password"
-          placeholder={needsSetup ? "Choose a password (8+ characters)" : "Password"}
+          placeholder={
+            needsSetup ? "Choose a password (8+ characters)" : "Password or PIN"
+          }
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete={needsSetup ? "new-password" : "current-password"}
-          minLength={8}
+          minLength={needsSetup ? 8 : 4}
           required
+          autoFocus={soloLock}
         />
 
         {error && (
@@ -113,7 +128,7 @@ function Gate({ needsSetup, onDone, error, setError }) {
 
         <button type="submit" className="primary" disabled={busy}>
           <Icon id="check" />
-          {busy ? "…" : needsSetup ? "Claim this server" : "Sign in"}
+          {busy ? "…" : needsSetup ? "Claim this server" : "Unlock"}
         </button>
 
         {/* Somebody will lock themselves out, and the answer cannot be an
@@ -122,7 +137,11 @@ function Gate({ needsSetup, onDone, error, setError }) {
           <p className="signin-note">
             Forgotten it? There is no reset email — this is your server. Reset
             it from the host:
-            <code>docker compose exec api python -m app.resetpw you@example.com</code>
+            <code>
+              {soloLock
+                ? "docker compose exec api python -m app.resetpw --clear"
+                : "docker compose exec api python -m app.resetpw you@example.com"}
+            </code>
           </p>
         )}
       </form>

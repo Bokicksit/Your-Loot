@@ -22,15 +22,52 @@ affected, upgrade.
 
 Worth being explicit, because it changes what counts as a vulnerability.
 
-**Your Loot has no authentication.** Anyone who can reach the port can read
-and edit the entire collection. That's a deliberate choice for a single-user
-app on a home network, not an oversight — and it means **you must not expose
-it directly to the internet.** Put it behind a VPN (Tailscale, WireGuard) or
-an authenticating reverse proxy. "No login screen" is not a vulnerability
-report; a way to get past one that's supposed to be there is.
+**Authentication is optional, and off by default.** Out of the box, anyone
+who can reach the port can read and edit the whole collection. That is a
+choice for a single-user app on a home network, not an oversight, and "there
+is no login screen by default" is not a vulnerability report. A way past one
+that is supposed to be there very much is.
 
-*(Optional user accounts are the next thing being built. Until then, the
-above holds.)*
+There are three states:
+
+| | |
+| --- | --- |
+| **Default** | No login. The app signs itself in as the owner. |
+| **Locked** (a password or PIN set in Settings) | One account, one password, no accounts to manage. |
+| **`AUTH_MODE=multi`** | Accounts, each with their own collection off a shared catalog. |
+
+Where two people share an install, they are properly separated — copies,
+wanted list, binder, preferences and per-item photos and notes — and that is
+covered by tests rather than by assertion.
+
+**A lock is not a hardened front door, and you should still not expose this
+to the internet.** What it is: enough to keep a housemate, a guest on your
+wifi, or a curious browser on the LAN out of your collection. What it is
+not:
+
+- **There is no HTTPS unless you put some in front.** `SESSION_HTTPS_ONLY`
+  defaults to false because plenty of these run on a LAN over plain http, and
+  a secure-only cookie would silently never be sent. Over http, a session
+  cookie travels in the clear.
+- **A four-digit PIN is a four-digit PIN.** It is offered because it is what
+  you want on a phone, and it is defensible because guessing is throttled —
+  five wrong answers per address and account, then a five-minute wait — not
+  because four digits is strong.
+- **No lockout, no 2FA, no email verification.** The last is deliberate: an
+  app you run yourself should not need an SMTP server before you can get back
+  into it. `python -m app.resetpw` on the host is the recovery path, and shell
+  access to the container is the credential, since whoever has it can read the
+  database anyway.
+- **It protects the app, not the data.** Anyone who can reach the host can
+  read Postgres directly.
+
+So: a VPN (Tailscale, WireGuard) or an authenticating reverse proxy is still
+the answer for reaching this from outside. The lock is a second layer, not a
+replacement for the first.
+
+Cross-site request forgery is covered: the session cookie is `SameSite=Lax`
+and every state-changing route is POST/PATCH/DELETE, so a form on another
+site cannot ride your session.
 
 **The API trusts its own network.** The api container expects to be reachable
 only by the web container. The compose files don't publish its port for that
