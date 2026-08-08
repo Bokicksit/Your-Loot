@@ -5,14 +5,14 @@ export function IconDefs() {
   return (
     <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }} aria-hidden="true">
       <defs>
-        <symbol id="i-card" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M9 7.5h6M9 11h4" /></symbol>
+        <symbol id="i-card" viewBox="0 0 24 24"><rect x="3.6" y="6" width="9" height="13" rx="2" transform="rotate(-13 8.1 12.5)"></rect> <rect x="10" y="4" width="10.5" height="16" rx="2" fill="var(--bg-1)"></rect> <circle cx="15.25" cy="12" r="2.6"></circle> <path d="M10 12h2.65M17.85 12h2.65"></path></symbol>
         <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h5M15.5 12h5" /><circle cx="12" cy="12" r="2.8" /></symbol>
         <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.72 5.62 6.18.86-4.47 4.31 1.08 6.11L12 17.6l-5.51 2.9 1.08-6.11L3.1 10.08l6.18-.86z" /></symbol>
-        <symbol id="i-pad" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="4.5" /><path d="M8 10.8v3.4M6.3 12.5h3.4" /><circle cx="15.8" cy="11.6" r="1.15" /><circle cx="18.4" cy="14.2" r="1.15" /></symbol>
-        <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5h5.5A2.5 2.5 0 0112 7v12a2 2 0 00-2-2H4z" /><path d="M20 4.5h-5.5A2.5 2.5 0 0012 7v12a2 2 0 012-2h6z" /></symbol>
-        <symbol id="i-console" viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="8" rx="1.8" /><path d="M6.5 12.5h5M15.5 6v2.5M15.5 6h4M6 19v1.2M18 19v1.2" /><circle cx="17.2" cy="12.5" r="1" /></symbol>
-        <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.4" /></symbol>
-        <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="12" cy="12" r="1" /></symbol>
+        <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7.6 7.5h8.8a4.6 4.6 0 0 1 4.5 3.7l.75 4.3a2.5 2.5 0 0 1-4.65 1.7L15.6 14.8H8.4l-1.4 2.4a2.5 2.5 0 0 1-4.65-1.7l.75-4.3A4.6 4.6 0 0 1 7.6 7.5z"></path> <path d="M6.1 11.4h2.9M7.55 9.95v2.9"></path> <circle cx="15.4" cy="10.6" r=".95" fill="currentColor" stroke="none"></circle> <circle cx="17.7" cy="12.4" r=".95" fill="currentColor" stroke="none"></circle></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><rect x="3.4" y="4" width="4.6" height="16" rx="1.3"></rect> <rect x="9.2" y="4" width="4.6" height="16" rx="1.3"></rect> <rect x="15.2" y="5.6" width="4.6" height="14.4" rx="1.3" transform="rotate(11 17.5 12.8)"></rect> <path d="M5.7 8.2v-1.4M11.5 8.2v-1.4"></path></symbol>
+        <symbol id="i-console" viewBox="0 0 24 24"><rect x="2.6" y="8.4" width="13.4" height="10.2" rx="2.2"></rect> <path d="M5.6 11.6h5.4M5.6 14.6h2.4"></path> <circle cx="13.2" cy="15" r="1.05" fill="currentColor" stroke="none"></circle> <path d="M16 11.4h2.6a2.6 2.6 0 0 0 2.6-2.6V7.2"></path> <rect x="16.4" y="4.2" width="4.4" height="3" rx="1"></rect></symbol>
+        <symbol id="i-disc" viewBox="0 0 24 24"><rect x="3" y="9.6" width="18" height="10.4" rx="2.2"></rect> <path d="M3.5 9.6 3.9 6.2a1 1 0 0 1 1.12-.87l15 1.75a1 1 0 0 1 .87 1.12l-.15 1.4"></path> <path d="M8.4 5.7 6.7 9.4M13.4 6.3 11.7 9.9M18.4 6.9 16.7 10.4"></path></symbol>
+        <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"></circle> <circle cx="12" cy="12" r="4.4"></circle> <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"></circle></symbol>
         <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="5" /></symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h9.5M4.5 17h5.5" /><circle cx="17" cy="12" r="2" /><circle cx="13.5" cy="17" r="2" /></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>
@@ -29,10 +29,10 @@ export function IconDefs() {
         <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8.5V6a2 2 0 012-2h2.5M20 8.5V6a2 2 0 00-2-2h-2.5M4 15.5V18a2 2 0 002 2h2.5M20 15.5V18a2 2 0 01-2 2h-2.5M4 12h16" /></symbol>
         <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5" /><path d="M4.5 17v1.5a2 2 0 002 2h11a2 2 0 002-2V17" /></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9.5M7.5 13.5L12 9l4.5 4.5" /><path d="M4.5 7V5.5a2 2 0 012-2h11a2 2 0 012 2V7" /></symbol>
-        <symbol id="i-brick" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="10.5" rx="1.5" /><path d="M8 9V7.2a1.6 1.6 0 013.2 0V9M12.8 9V7.2a1.6 1.6 0 013.2 0V9" /></symbol>
+        <symbol id="i-brick" viewBox="0 0 24 24"><rect x="3.4" y="9.2" width="17.2" height="9.6" rx="1.8"></rect> <path d="M6.6 9.2V7.4a1.4 1.4 0 0 1 1.4-1.4h1.6a1.4 1.4 0 0 1 1.4 1.4v1.8M13 9.2V7.4A1.4 1.4 0 0 1 14.4 6H16a1.4 1.4 0 0 1 1.4 1.4v1.8"></path></symbol>
         <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5.5M11 5.5L4.5 12l6.5 6.5" /></symbol>
         <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 3.5L5.5 13.4h5.4l-.9 7.1 7.7-9.9h-5.4z" /></symbol>
-        <symbol id="i-comic" viewBox="0 0 24 24"><path d="M4 5.5h11.5a2 2 0 012 2v11H6a2 2 0 01-2-2z" /><path d="M17.5 8.5H20v10a2 2 0 01-2 2H6" /><path d="M7 9h6M7 12.5h4" /></symbol>
+        <symbol id="i-comic" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.4"></rect> <path d="M7.6 7.8h8.8v4.9h-4.9l-2.9 2.9v-2.9H7.6z"></path></symbol>
         <symbol id="i-tiles" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></symbol>
         <symbol id="i-list" viewBox="0 0 24 24"><rect x="3.5" y="5" width="5" height="5" rx="1.2" /><rect x="3.5" y="14" width="5" height="5" rx="1.2" /><path d="M11.5 6.6h9M11.5 9.4h6M11.5 15.6h9M11.5 18.4h6" /></symbol>
       </defs>
@@ -44,6 +44,48 @@ export function Icon({ id }) {
   return (
     <svg className="i">
       <use href={`#i-${id}`} />
+    </svg>
+  );
+}
+
+/** The mark: a shelf holding a book, a record, a disc and a card.
+ *
+ *  Not in the sprite, and not an <Icon>. The sprite is one weight throughout
+ *  and `.i` sets stroke-width in CSS, which beats the presentation attributes
+ *  below — the mark draws in five weights across a 120 grid, so borrowing that
+ *  class would flatten every one of them into the same hairline.
+ *
+ *  Inherits `currentColor`, so it takes the gold from whatever it sits in
+ *  rather than carrying a hex around.
+ */
+export function BrandMark({ size = 22 }) {
+  return (
+    <svg
+      className="mark"
+      viewBox="0 0 120 120"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="16" y="18" width="88" height="84" rx="8" strokeWidth="5" />
+      <path d="M16 60 H104" strokeWidth="5" />
+      <rect x="35" y="25" width="22" height="32" rx="3" strokeWidth="3.5" />
+      <path d="M35 31 H57 M35 51 H57" strokeWidth="2.6" />
+      <path d="M42 37 V47 H52" strokeWidth="3" />
+      <circle cx="76" cy="41" r="15" strokeWidth="3.5" />
+      <circle cx="76" cy="41" r="7" strokeWidth="2.6" />
+      <circle cx="76" cy="41" r="1.4" strokeWidth="2.8" />
+      <circle cx="46" cy="81" r="15" strokeWidth="4" />
+      <circle cx="46" cy="81" r="5.5" strokeWidth="3" />
+      <g transform="rotate(-8 76 81)">
+        <rect x="64" y="64" width="24" height="33" rx="3" strokeWidth="3.5" />
+        <rect x="68" y="68" width="16" height="25" rx="1.5" strokeWidth="2.6" />
+        <path d="M71 75 H81 M76 75 V86" strokeWidth="2.6" />
+      </g>
     </svg>
   );
 }

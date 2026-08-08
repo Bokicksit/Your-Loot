@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
-import { Icon } from "./Icons.jsx";
+import { BrandMark, Icon } from "./Icons.jsx";
 
 /** The gate.
  *
@@ -116,7 +116,7 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
       <form className="signin" onSubmit={submit}>
         <h1>
           <span className="brand-mark">
-            <Icon id="coin" />
+            <BrandMark size={26} />
           </span>
           Your <b>Loot</b>
         </h1>

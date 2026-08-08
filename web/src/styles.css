@@ -135,7 +135,12 @@ svg.i.filled { fill: currentColor; stroke: none; }
   align-items: center;
   gap: var(--s-2);
 }
-.topbar .brand svg.i { width: 20px; height: 20px; color: var(--gold); }
+/* The mark carries its own stroke weights, so it must not pick up svg.i's
+   single width — it has its own class for exactly that reason. */
+svg.mark { flex: none; overflow: visible; }
+.topbar .brand svg.i,
+.topbar .brand svg.mark { color: var(--gold); }
+.topbar .brand svg.i { width: 20px; height: 20px; }
 .topbar .brand em {
   font-style: normal;
   color: var(--gold);

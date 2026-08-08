@@ -6,7 +6,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { Icon, IconDefs } from "./components/Icons.jsx";
+import { BrandMark, Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import SignIn from "./components/SignIn.jsx";
 import { MODULES, SettingsProvider, useEnabledModules, useSettings } from "./settings.jsx";
@@ -116,7 +116,7 @@ function Shell() {
       <header className="topbar">
         <Link to="/" className="brand-link">
           <h1 className="brand">
-            <Icon id="coin" />
+            <BrandMark size={22} />
             {name ? `${name}’s` : "Your"} <em>Loot</em>
           </h1>
         </Link>

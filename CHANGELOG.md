@@ -8,6 +8,13 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **The mark is in the header**, and on the sign-in screen — the shelf, rather
+  than the generic coin that stood in for it.
+- **New collection icons**, all eight, drawn for this app rather than picked
+  from a set: two overlapping cards, a controller, a disc sleeve, a record, a
+  speech panel, a brick, three books on a shelf and a console.
+
 ### Fixed
 - **An unreachable API asked you to sign in.** When `/api/auth/me` didn't
   answer, the app assumed accounts were on and put up an email-and-password
