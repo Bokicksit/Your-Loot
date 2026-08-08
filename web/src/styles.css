@@ -2326,3 +2326,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .run-text small { font-size: var(--f-1); color: var(--text-mute); }
+
+/* Typing the barcode's five-digit add-on into the issue box is a reasonable
+   mistake — the tooltip talks about it and nothing else accepts it. Say what
+   the digits mean instead of searching for an issue that can't exist. */
+.addon-hint {
+  flex: 1 0 100%;
+  justify-content: flex-start;
+  gap: 7px;
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  text-align: left;
+}
+.addon-hint b { color: var(--gold-bright); }

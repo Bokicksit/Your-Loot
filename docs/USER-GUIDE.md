@@ -249,9 +249,14 @@ What a scan gets you depends on the collection:
   any lookup.
 
   There's a **small five-digit code** beside the barcode (`00111` = issue 1,
-  cover 1, first printing). Scan it and the issue number fills itself in, but
-  it's a bonus — scanners read it inconsistently and it isn't on every book,
-  so nothing waits for it.
+  cover 1, first printing). If your scanner picks it up the issue number fills
+  itself in — but it's a shortcut, not a step. Scanners read it
+  inconsistently, it isn't on every book, and the number is on the cover in
+  front of you.
+
+  There's no field to type it into, because it isn't an issue number. If you
+  type one in anyway the app spots it and offers what it means — `00111`
+  becomes issue 1 on a tap.
 
   Comic Vine has no barcode endpoint at all and no API key changes that;
   `COMICVINE_API_KEY` powers the run and issue lookups.

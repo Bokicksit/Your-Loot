@@ -17,7 +17,9 @@ Full detail is in the commit log, where every change has its own note.
   tells five *Guardians of the Galaxy* apart. Pick one and the title and year
   fill in; the issue number is on the cover in your hand.
 - The five-digit code beside the barcode still fills the issue when scanned,
-  but nothing waits for it.
+  but nothing waits for it — and the hint no longer says "or just type it",
+  which sent people looking for a field that doesn't exist. Type five digits
+  into Issue # and the app now says what they mean and offers the issue.
 
 ### Removed
 - The temporary backfill button in Settings. `python -m app.backfill` stays —

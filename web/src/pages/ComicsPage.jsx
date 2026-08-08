@@ -344,6 +344,25 @@ export default function ComicsPage() {
               onChange={(e) => setForm({ ...form, issue_number: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
             />
+            {/* Five digits here is the barcode add-on, not an issue number —
+                no comic has reached 11111. Rather than searching for an issue
+                that cannot exist, offer what those digits actually mean. */}
+            {/^\d{5}$/.test(form.issue_number) && (
+              <button
+                type="button"
+                className="ghost addon-hint"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    issue_number: String(Number(f.issue_number.slice(0, 3))),
+                  }))
+                }
+              >
+                <Icon id="info" />
+                That's the code beside the barcode — it means issue{" "}
+                <b>{String(Number(form.issue_number.slice(0, 3)))}</b>. Use that?
+              </button>
+            )}
             {/* the run's start year, not the cover year — it's what tells six
                 different Guardians of the Galaxy #1s apart. Same field as the
                 one in the details below, so filling either fills both. */}
@@ -363,9 +382,11 @@ export default function ComicsPage() {
           </div>
           <p className="modal-note">
             <Icon id="info" />
-            Scanning the big barcode names the series — every issue of a run
-            shares it. Scan the <strong>small five-digit code</strong> beside it
-            for the issue number, or just type it.
+            Scanning the big barcode names the run and its year — every issue
+            of a run shares that barcode, so it can't say which issue you're
+            holding. <strong>Type the issue number off the cover.</strong> If
+            your scanner picks up the small five-digit code beside the barcode
+            it'll fill that in for you, but it's a shortcut, not a step.
           </p>
           <div className="form-row">
             <input
