@@ -194,6 +194,19 @@ See [`deploy/compose.truenas.yaml`](deploy/compose.truenas.yaml) — paste it in
 **Apps → Discover Apps → ⋮ → Install via YAML**, after editing the password and
 dataset paths. It publishes port 30080, since 8080 is usually taken.
 
+**To update it:** *Apps → Installed → Your Loot → Edit*, then **Save**. TrueNAS
+pulls the images and recreates the containers — that's the whole update. The
+`docker compose pull` in [Keeping it running](#keeping-it-running) is for
+plain-Docker installs; a TrueNAS app is managed by TrueNAS, and running compose
+against it by hand from a shell means fighting it for control of the stack.
+
+**To check what's actually running**, open `http://<your-nas>:30080/api/health`
+in a browser. That's the API's version; the bottom of the Settings page is the
+web container's. **If the two disagree, one image updated and the other
+didn't** — which looks like the app being broken rather than being half
+upgraded, so it's worth checking first whenever something is behaving oddly
+after an update.
+
 ## Development
 
 ```bash
