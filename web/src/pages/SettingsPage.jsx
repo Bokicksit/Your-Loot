@@ -148,7 +148,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <MaintenanceCard />
       <LockCard />
       <BackupCard />
 
@@ -163,86 +162,6 @@ const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
  *  they're right to: turning the lock on is a decision you make once you've
  *  already got the app open, not something you want to restart a container
  *  for. */
-/* TEMPORARY — the one-off backfill button. Delete this component and its two
-   api.js calls once the collection has been filled in; the CLI stays. */
-function MaintenanceCard() {
-  const [state, setState] = useState(null);
-  const [error, setError] = useState(null);
-  const timer = useRef(null);
-
-  const poll = () =>
-    api
-      .backfillStatus()
-      .then((s) => {
-        setState(s);
-        if (!s.running && timer.current) {
-          clearInterval(timer.current);
-          timer.current = null;
-        }
-      })
-      .catch(() => {});
-
-  useEffect(() => {
-    poll();
-    return () => timer.current && clearInterval(timer.current);
-  }, []);
-
-  const start = async () => {
-    setError(null);
-    try {
-      setState(await api.backfillStart());
-      timer.current = timer.current || setInterval(poll, 1500);
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-
-  const running = state?.running;
-  const summary = state?.summary;
-
-  return (
-    <section className="settings-card">
-      <h3>Fetch missing descriptions</h3>
-      <p>
-        Book blurbs and record tracklists are newer than most of what's on your
-        shelf. This asks for the ones that were never fetched. It doesn't
-        overwrite anything, including what you typed yourself, and it's safe to
-        run twice.
-      </p>
-      <button className="primary" onClick={start} disabled={running}>
-        <Icon id={running ? "target" : "check"} />
-        {running ? "Working…" : "Fetch them"}
-      </button>
-
-      {error && <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>{error}</p>}
-
-      {state?.log?.length > 0 && (
-        <pre className="maint-log">{state.log.slice(-14).join("\n")}</pre>
-      )}
-
-      {summary && !running && (
-        <p className="settings-note">
-          Books: {summary.books.filled} filled. Records:{" "}
-          {summary.records.filled} filled.
-          {summary.books.unidentifiable.length + summary.records.unidentifiable.length > 0 && (
-            <>
-              {" "}
-              {summary.books.unidentifiable.length + summary.records.unidentifiable.length}{" "}
-              had no ISBN or barcode to look up — re-add one from a search or a
-              scan and it'll pick the text up.
-            </>
-          )}
-        </p>
-      )}
-      <p className="settings-note">
-        A one-off. It'll be taken out of Settings once your shelf is caught up —
-        <code>docker compose exec api python -m app.backfill</code> does the
-        same thing from the host.
-      </p>
-    </section>
-  );
-}
-
 function LockCard() {
   const [me, setMe] = useState(null);
   const [secret, setSecret] = useState("");

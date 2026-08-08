@@ -141,6 +141,8 @@ export const api = {
   deleteComic: (itemId) => request(`/api/comics/${itemId}`, { method: "DELETE" }),
   gameBoxart: (params) =>
     request(`/api/games/boxart?${new URLSearchParams(params)}`),
+  comicRuns: (series) =>
+    request(`/api/comics/runs?series=${encodeURIComponent(series)}`),
   comicVineSearch: (params) =>
     request(`/api/comics/search?${new URLSearchParams(params)}`),
   backupUrl: "/api/backup",
@@ -155,9 +157,6 @@ export const api = {
     }
     return res.json();
   },
-  // TEMPORARY — see api/app/routers/maintenance.py
-  backfillStart: () => request("/api/maintenance/backfill", { method: "POST" }),
-  backfillStatus: () => request("/api/maintenance/backfill"),
   settings: () => request("/api/settings"),
   saveSettings: (body) =>
     request("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

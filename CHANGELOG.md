@@ -8,6 +8,21 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **Scanning a comic now names the run.** The big barcode is identical on
+  every issue of a run, so it can only ever say which *run* you're holding —
+  and it was filling in whatever issue the shop's listing happened to mention,
+  which is the issue that shop stocked. It now looks the run up on Comic Vine
+  and offers the ones by that name with the year each began, which is what
+  tells five *Guardians of the Galaxy* apart. Pick one and the title and year
+  fill in; the issue number is on the cover in your hand.
+- The five-digit code beside the barcode still fills the issue when scanned,
+  but nothing waits for it.
+
+### Removed
+- The temporary backfill button in Settings. `python -m app.backfill` stays —
+  anyone upgrading has the same gap.
+
 ### Added
 - **`python -m app.backfill`** — fills in book blurbs and record tracklists on
   items added before either existed. Never overwrites, safe to re-run, and

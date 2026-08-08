@@ -52,6 +52,35 @@ def _base_query():
     )
 
 
+@router.get("/runs")
+def series_runs(series: str):
+    """The runs called `series`, newest first, with the year each began.
+
+    A comic's main barcode is the same on every issue of a run, so a scan can
+    only ever say *which run* you're holding. That is still most of the answer
+    — the run names the comic and the year that separates this Guardians of
+    the Galaxy from the four others — and the issue number is on the cover in
+    your hand, which is a quicker read than any lookup.
+    """
+    if not comicvine_client.configured:
+        raise HTTPException(503, "Comic Vine not configured — set COMICVINE_API_KEY")
+    name = (series or "").strip()
+    if len(name) < 2:
+        raise HTTPException(400, "give a series name")
+    out = []
+    for v in comicvine_client.volumes(name):
+        pub = (v.get("publisher") or {}).get("name")
+        out.append({
+            "id": v.get("id"),
+            "name": v.get("name"),
+            "start_year": int(v["start_year"]) if str(v.get("start_year") or "").isdigit() else None,
+            "publisher": pub,
+            "issue_count": v.get("count_of_issues"),
+        })
+    out.sort(key=lambda r: (r["start_year"] or 0), reverse=True)
+    return out
+
+
 @router.get("/search")
 def search_comicvine(
     q: str | None = None,

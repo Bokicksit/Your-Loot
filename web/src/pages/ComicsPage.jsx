@@ -57,6 +57,7 @@ export default function ComicsPage() {
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
   const [results, setResults] = useState(null);
+  const [runs, setRuns] = useState(null); // which run a scanned barcode belongs to
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -107,24 +108,31 @@ export default function ComicsPage() {
   // series and issue number, which is exactly what Comic Vine can search on.
   // The digits are kept either way; they're worth having on the entry even
   // when nothing recognises them.
+  /** A run picked from the list: this is where the title and the year come
+   *  from, and the only two things a comic's barcode can actually tell you. */
+  const pickRun = (run) => {
+    setRuns(null);
+    setForm((f) => ({
+      ...f,
+      series: run.name,
+      title: f.title || run.name,
+      volume_year: run.start_year || "",
+      publisher: run.publisher || f.publisher,
+    }));
+  };
+
   const onBarcode = async (code) => {
-    // The small five-digit symbol beside the main barcode. First three digits
-    // are the issue, then the cover and the printing: 00111 is issue 1, cover
-    // 1, first print. This is the *only* place a comic's barcode says which
-    // issue you're holding.
+    // The small five-digit symbol beside the main barcode encodes the issue,
+    // the cover and the printing. Scanners read it inconsistently, shops don't
+    // print it on every book, and the number is on the cover in your hand
+    // anyway — so it fills the issue in when it arrives and is never required.
     if (/^\d{5}$/.test(code)) {
-      const issue = String(Number(code.slice(0, 3)));
-      setForm((f) => ({ ...f, issue_number: issue }));
-      if (form.series.trim()) {
-        lookup({
-          series: form.series.trim(),
-          issue,
-          ...(form.volume_year ? { year: form.volume_year } : {}),
-        });
-      }
+      setForm((f) => ({ ...f, issue_number: String(Number(code.slice(0, 3))) }));
       return;
     }
+
     setForm((f) => ({ ...f, barcode: code }));
+    setRuns(null);
     let raw = null;
     try {
       const res = await api.barcodeLookup(code);
@@ -142,26 +150,31 @@ export default function ComicsPage() {
     }
     const guess = comicQuery(raw);
     if (!guess) {
-      // something came back, just not a series we can pick out — better to
-      // hand over what the shop said than to pretend the scan found nothing
       setForm((f) => ({ ...f, title: f.title || raw }));
       alert(`That barcode is "${raw}" — fill the series and issue in by hand.`);
       return;
     }
-    // Every issue of a run carries the SAME main barcode — the issue is only
-    // in the five-digit symbol beside it. So whatever issue the shop's listing
-    // happens to name is the issue that shop stocked, not the one in your
-    // hand, and it must not be filled in. The series is real; take that, and
-    // the on-sale date as the cover year, and ask for the issue.
-    setForm((f) => ({
-      ...f,
-      series: guess.series,
-      ...(guess.coverYear ? { cover_year: guess.coverYear } : {}),
-    }));
-    if (form.issue_number.trim()) {
-      lookup({ series: guess.series, issue: form.issue_number.trim() });
-    } else {
-      lookup({ series: guess.series });
+
+    // Every issue of a run carries the same main barcode, so the scan names
+    // the run and not the issue. The run is worth having on its own: it is
+    // the comic's title and the year that tells five Guardians of the Galaxy
+    // apart. Comic Vine knows the runs; ask it, rather than trusting whatever
+    // issue the shop's listing happened to be selling.
+    setForm((f) => ({ ...f, series: guess.series, title: f.title || guess.series }));
+    setSearching(true);
+    try {
+      const found = await api.comicRuns(guess.series);
+      if (found.length === 1) {
+        pickRun(found[0]);
+      } else if (found.length) {
+        setRuns(found);
+      } else {
+        alert(`Scanned "${guess.series}" — Comic Vine has no run by that name.`);
+      }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -369,6 +382,40 @@ export default function ComicsPage() {
           </div>
 
         {searching && <Searching />}
+
+          {/* A scan names the run, not the issue — so this is the whole answer
+              a barcode can give, and the year is the part that matters. */}
+          {runs && (
+            <>
+              <span className="game-info-line">
+                {runs.length} runs called “{form.series}” — which one is it?
+              </span>
+              <div className="run-list">
+                {runs.map((r) => (
+                  <button
+                    type="button"
+                    key={r.id}
+                    className="run-row"
+                    onClick={() => pickRun(r)}
+                  >
+                    <b>{r.start_year || "—"}</b>
+                    <span className="run-text">
+                      <strong>{r.name}</strong>
+                      <small>
+                        {[r.publisher, r.issue_count && `${r.issue_count} issues`]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="settings-note" style={{ marginBottom: "var(--s-2)" }}>
+                Then type the issue number off the cover.
+              </p>
+            </>
+          )}
+
           {results && (
             <>
               <span className="game-info-line">

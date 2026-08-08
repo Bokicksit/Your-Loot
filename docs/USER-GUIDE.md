@@ -236,16 +236,25 @@ What a scan gets you depends on the collection:
   Blu-ray steelbook fills in "Blu-ray" and "Steelbook" for you.
 - **Books** — the ISBN resolves to the exact edition in one step.
 - **Records** — the barcode identifies the *pressing*, not just the album.
-- **Comics — two barcodes, and they say different things.** The big one is the
-  same on *every issue of a run*: it names the series and nothing more.
-  Scanning it fills the series and searches the run. The **small five-digit
-  code** printed beside it is the one that says which issue you're holding —
-  `00111` is issue 1, cover 1, first printing — so scan that second and the
-  issue number fills itself in. Type it instead if you'd rather; it's the
-  first three digits.
+- **Comics — the barcode names the run, and you type the issue.** The big
+  barcode is identical on *every issue of a run*, so it can't tell you which
+  one you're holding — and whatever issue a shop's listing happens to mention
+  is the issue that shop was selling, not yours.
+
+  What it can do is name the comic. Scanning it looks the run up on Comic
+  Vine and offers the ones by that name, each with the year it began — which
+  is exactly what separates five different *Guardians of the Galaxy*. Pick
+  the year off the cover and the title and year fill in. Then type the issue
+  number, which is printed on the cover in your hand and quicker to read than
+  any lookup.
+
+  There's a **small five-digit code** beside the barcode (`00111` = issue 1,
+  cover 1, first printing). Scan it and the issue number fills itself in, but
+  it's a bonus — scanners read it inconsistently and it isn't on every book,
+  so nothing waits for it.
 
   Comic Vine has no barcode endpoint at all and no API key changes that;
-  `COMICVINE_API_KEY` only powers the series-and-issue search.
+  `COMICVINE_API_KEY` powers the run and issue lookups.
 - **LEGO** — the barcode is stored on the entry for your records, but
   Rebrickable doesn't index barcodes, so search by set number.
 

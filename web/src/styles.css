@@ -2287,18 +2287,42 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .home-hint svg.i { width: 15px; height: 15px; flex: none; }
 .home-hint a { color: var(--gold-bright); }
 
-/* TEMPORARY — progress output for the backfill button in Settings */
-.maint-log {
-  margin: var(--s-2) 0 0;
-  padding: var(--s-2);
-  max-height: 200px;
+
+/* The runs a scanned comic could belong to. The year leads because that's
+   what tells five identically-named runs apart, and it's what you're choosing
+   between — the names are all the same by definition. */
+.run-list {
+  display: grid;
+  gap: var(--s-2);
+  max-height: 46vh;
   overflow: auto;
-  background: var(--bg-0);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r-1);
-  font-family: var(--font-num);
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--text-mute);
-  white-space: pre-wrap;
+  margin-bottom: var(--s-2);
 }
+.run-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  text-align: left;
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  color: inherit;
+  cursor: pointer;
+}
+.run-row:hover { border-color: var(--gold-line); background: var(--bg-2); }
+.run-row > b {
+  flex: none;
+  min-width: 46px;
+  font-family: var(--font-num);
+  font-size: var(--f-4);
+  color: var(--gold-bright);
+}
+.run-text { display: grid; gap: 1px; min-width: 0; }
+.run-text strong {
+  font-size: var(--f-3);
+  font-weight: var(--w-med);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.run-text small { font-size: var(--f-1); color: var(--text-mute); }
