@@ -14,7 +14,7 @@ isn't that tidy: the Charizard you're hunting and the SNES console you're
 hunting live on the same list.
 
 <p align="center">
-  <img src="docs/screenshots/wanted.jpg" alt="One wanted list holding a LEGO set, a 4K film, two Pokémon cards and three games" width="32%">
+  <img src="docs/screenshots/wanted.jpg" alt="One wanted list holding two Pokémon cards, five PlayStation games, a LEGO set and a Blu-ray" width="32%">
   <img src="docs/screenshots/games.jpg" alt="A shelf of Dreamcast games as cover tiles" width="32%">
   <img src="docs/screenshots/scan.jpg" alt="Scanning the barcode on a SNES box" width="32%">
 </p>
@@ -35,7 +35,7 @@ hunting live on the same list.
 > reverse proxy — see [SECURITY.md](SECURITY.md).
 
 <p align="center">
-  <img src="docs/screenshots/collections.jpg" alt="The eight collections" width="52%">
+  <img src="docs/screenshots/collections.jpg" alt="The collections you keep, with counts" width="52%">
 </p>
 
 📖 **[User Guide](docs/USER-GUIDE.md)** — how everything works, in depth:
@@ -83,9 +83,10 @@ identifies the *pressing*: label, catalogue number, country, and year, so a
 actually is — media and sleeve independently, on the Goldmine scale (`VG+/VG`).
 
 **LEGO** — Rebrickable-backed set search by number or name, with theme, year,
-piece and minifig counts. Each copy records how much of it survived: sealed,
-complete with box and instructions, bricks only, missing pieces, or just the
-spare instructions.
+piece and minifig counts. Each copy answers two questions rather than one:
+whether you kept the box, and what state the set is in — sealed, opened and
+complete, loose bricks, built, or missing pieces. Sealed implies the box, and
+the form won't let you say otherwise.
 
 **Comics** — Comic Vine search by series and issue. Tracks the run
 (`volume_year`) and the variant cover, because Amazing Spider-Man #1 exists in
