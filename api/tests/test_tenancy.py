@@ -50,35 +50,24 @@ def _client() -> httpx.Client:
 
 
 @pytest.fixture(scope="module")
-def people():
-    """An owner and somebody they invited, each signed in."""
-    with _client() as c:
-        me = c.get("/api/auth/me").json()
-        if not me["multi_user"]:
-            pytest.skip("needs AUTH_MODE=multi")
+def people(owner):
+    """The owner, and somebody they invited."""
+    me = owner.get("/api/auth/me").json()
+    if not me["multi_user"]:
+        pytest.skip("needs AUTH_MODE=multi")
 
-    tag = uuid.uuid4().hex[:8]
-    alice = _client()
-    if httpx.Client(base_url=BASE).get("/api/auth/me").json().get("needs_setup"):
-        r = alice.post(
-            "/api/auth/setup",
-            json={"email": f"alice-{tag}@example.com", "password": "alice-password-1"},
-        )
-        r.raise_for_status()
-    else:
-        pytest.skip("already claimed — run against a fresh install")
-
-    bob_email = f"bob-{tag}@example.com"
-    alice.post(
+    bob_email = f"bob-{uuid.uuid4().hex[:8]}@example.com"
+    owner.post(
         "/api/auth/users",
         json={"email": bob_email, "password": "bob-password-2"},
     ).raise_for_status()
 
     bob = _client()
-    bob.post("/api/auth/login", json={"email": bob_email, "password": "bob-password-2"}).raise_for_status()
+    bob.post(
+        "/api/auth/login", json={"email": bob_email, "password": "bob-password-2"}
+    ).raise_for_status()
 
-    yield alice, bob
-    alice.close()
+    yield owner, bob
     bob.close()
 
 

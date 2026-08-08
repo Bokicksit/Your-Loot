@@ -56,6 +56,30 @@ The API is on :8000 with docs at `/docs`, the web app on :5173 with hot
 reload. Integration keys are all optional — every collection works without
 them, you just lose online search for that category.
 
+## Tests
+
+```bash
+docker compose -f compose.test.yaml run --rm tests
+```
+
+Its own stack, its own database, storage that dies with the container. That
+separation is deliberate: restoring a backup replaces the entire database, so
+the suite that exercises it must not be one flag away from doing that to the
+install holding somebody's actual collection. The destructive tests refuse to
+run unless `LOOT_DESTRUCTIVE_OK=1`, which only `compose.test.yaml` sets.
+
+Three things are covered, in order of how much they'd hurt:
+
+- **Migrations** reverse and re-apply without losing data. This one runs
+  safely anywhere — it builds and drops its own scratch database — and it's
+  the one protecting people you'll never meet from an upgrade at midnight.
+- **Backup and restore** actually round-trips, including per-copy condition
+  and notes, and refuses a corrupt file rather than half-applying it.
+- **Tenancy**: two real accounts, and nothing of one appears anywhere in the
+  other's answers.
+
+CI runs all of it, and no image is published unless it passes.
+
 ## House style
 
 The code is commented, but for *why* rather than *what*. A comment explaining

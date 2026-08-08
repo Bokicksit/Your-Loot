@@ -13,7 +13,27 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # Nothing is published until this passes. Before it existed, every push to
+  # main tagged an image `latest` whether or not the app started — and `latest`
+  # is what the documented update command pulls.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Migrations, backups and tenancy
+        run: docker compose -f compose.test.yaml run --rm tests
+
+      - name: What the API said if that failed
+        if: failure()
+        run: docker compose -f compose.test.yaml logs api --tail=60
+
+      - name: Tear the stack down
+        if: always()
+        run: docker compose -f compose.test.yaml down -v
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

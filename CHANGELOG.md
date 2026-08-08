@@ -25,6 +25,11 @@ Full detail is in the commit log, where every change has its own note.
 - Every `user_id` defaults to the owner in the database, so an existing
   install upgrades with no change in behaviour.
 
+- **A test suite and a CI gate.** Migrations reverse and re-apply without
+  losing data; backup and restore round-trips; two accounts stay separate.
+  19 tests on an isolated stack, and `build-push` no longer publishes an image
+  unless they pass — before, every push to main tagged `latest` whether or not
+  the app started.
 - **A tenancy test suite** (`api/tests/test_tenancy.py`), written before the
   sweep it checks. Two real accounts through the real API: no list, count,
   binder or response body of one may contain anything of the other's.
