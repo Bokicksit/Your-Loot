@@ -9,6 +9,19 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **Tiles on the wanted list**, same toggle as everywhere else.
+- **Book defaults in Settings** — hardcover or paperback, jacket or no jacket.
+  A shelf leans one way, so those two get answered once instead of on every
+  book.
+
+### Changed
+- **LEGO records the box separately.** "Complete, box & instructions" folded
+  two independent facts into one word. Now a checkbox for the box and five
+  states: sealed, opened, loose bricks, built, missing pieces. Sealed forces
+  the box on, since it can't be true without one. Migration 0022 converts
+  existing sets.
+
+### Added
 - **The Collections heading rotates.** 50 general lines plus 14 for each
   collection you actually keep — so a record collector is never asked about
   minifigs. One line per visit, not per render.

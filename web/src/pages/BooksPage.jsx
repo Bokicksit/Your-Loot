@@ -8,7 +8,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
-import { useListPref } from "../settings.jsx";
+import { useListPref, useSettings } from "../settings.jsx";
 
 // Graphic Novel and Omnibus sit here rather than in Comics because that's
 // where the barcode puts them: a collected edition carries an ISBN, which Open
@@ -48,6 +48,15 @@ const EMPTY_FORM = {
 };
 
 export default function BooksPage() {
+  const { settings } = useSettings();
+  // A shelf leans one way — mostly hardbacks with jackets, or mostly
+  // paperbacks — so the two fields nobody changes get answered once in
+  // Settings instead of on every book.
+  const blankBook = () => ({
+    ...EMPTY_FORM,
+    format: settings?.default_book_format || EMPTY_FORM.format,
+    completeness: settings?.default_book_jacket || EMPTY_FORM.completeness,
+  });
   const [books, setBooks] = useState([]);
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState({ authors: [], formats: [] });
@@ -154,7 +163,7 @@ export default function BooksPage() {
   };
 
   const openForm = () => {
-    setForm(EMPTY_FORM);
+    setForm(blankBook());
     setResults(null);
     setStep("search");
     setShowForm(true);
@@ -192,7 +201,7 @@ export default function BooksPage() {
         await api.addWanted(created.id);
       }
       const wantMode = !form.own;
-      setForm(EMPTY_FORM);
+      setForm(blankBook());
       setResults(null);
       setShowForm(false);
       if (wantMode) navigate("/wanted");

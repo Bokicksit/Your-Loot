@@ -2344,3 +2344,68 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-align: left;
 }
 .addon-hint b { color: var(--gold-bright); }
+
+/* ---- the wanted list drawn as tiles ----
+   Flex rather than grid, because the row's children are loose — a chip, an
+   image, the text and three separate buttons with no wrapper between them.
+   In a single-column grid each button claims a row of its own and the tile
+   grows to 449px; wrapping lets the three share one line. */
+.wanted-list.as-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-min, 148px), 1fr));
+  gap: var(--s-3);
+  align-items: start;
+}
+.wanted-list.as-tiles > li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+.wanted-list.as-tiles > li > img,
+.wanted-list.as-tiles > li > .placeholder {
+  flex: 1 0 100%;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+  border-radius: var(--r-2);
+}
+.wanted-list.as-tiles .game-text {
+  flex: 1 0 100%;
+  gap: 2px;
+}
+.wanted-list.as-tiles .game-text strong { font-size: var(--f-3); }
+/* the three actions share one line instead of a row each */
+.wanted-list.as-tiles > li > a,
+.wanted-list.as-tiles > li > button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* which collection it's from rides the artwork rather than pushing it down */
+.wanted-list.as-tiles > li > .module-chip {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 2;
+  background: rgba(8, 8, 10, .66);
+  border-radius: var(--r-1);
+  backdrop-filter: blur(3px);
+}
+
+/* the module badge rides the artwork rather than taking its own row */
+.wanted-list.as-tiles > li > .layer-tag,
+.wanted-list.as-tiles > li > .badge,
+.wanted-list.as-tiles > li > .plat-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+}
+.wanted-list.as-tiles > li > button,
+.wanted-list.as-tiles > li > .row-buttons {
+  justify-self: end;
+}

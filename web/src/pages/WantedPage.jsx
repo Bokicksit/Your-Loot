@@ -10,10 +10,10 @@ import {
   GAME_PARTS_ONLY,
   LEGO_COMPLETENESS,
   LEGO_CONDITION,
-  LEGO_PARTS_ONLY,
   VINYL_GRADES,
 } from "../vocab.js";
 import { useEnabledModules, useListPref } from "../settings.jsx";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const MODULE_ICONS = {
   cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
@@ -107,6 +107,7 @@ export default function WantedPage() {
   const [acqVals, setAcqVals] = useState({});
   const [openInfo, setOpenInfo] = useState(null); // item_id with info expanded
   const [sort, setSort] = useListPref("wanted", "sort", "added");
+  const [tiles] = useTileView("wanted");
   // a row is two sibling <li>s, and which one is open lives here rather than in
   // the row, so there's nothing to hang a ref on — the rows are tagged instead
   const stillInside = (t) => {
@@ -146,7 +147,7 @@ export default function WantedPage() {
   // Buying the case, the manual or an empty LEGO box isn't getting the thing —
   // record the piece you found, but keep hunting what you're actually after.
   const keepsHunting = (vals) =>
-    GAME_PARTS_ONLY.has(vals.completeness) || LEGO_PARTS_ONLY.has(vals.completeness);
+    GAME_PARTS_ONLY.has(vals.completeness);
 
   const confirmGotIt = async () => {
     await api.addOwned(acquiring, acqVals);
@@ -235,6 +236,7 @@ export default function WantedPage() {
           <option value="title">A–Z</option>
           <option value="module">By collection</option>
         </select>
+        <ViewToggle module="wanted" />
       </div>
       {facets.length > 0 && (
         <div className="chip-row">
@@ -262,7 +264,7 @@ export default function WantedPage() {
           <p>Tap the star on any card, game, or movie and it lands here.</p>
         </div>
       )}
-      <ul className="wanted-list">
+      <ul className={`wanted-list ${tiles ? "as-tiles" : ""}`}>
         {shown.map((r) => (
           <Fragment key={r.item_id}>
             <li data-row={r.item_id}>

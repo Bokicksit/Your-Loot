@@ -8,7 +8,14 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { LEGO_COMPLETENESS, LEGO_CONDITION, labelFor, shortFor, withUnknown } from "../vocab.js";
+import {
+  LEGO_COMPLETENESS,
+  LEGO_CONDITION,
+  LEGO_NEEDS_BOX,
+  labelFor,
+  shortFor,
+  withUnknown,
+} from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
@@ -23,13 +30,15 @@ const EMPTY_FORM = {
   barcode: "",
   image_url: null,
   own: true,
-  completeness: "complete+box",
+  completeness: "open",
+  has_box: true,
   condition: "used",
 };
 
 const copyLabel = (o) =>
   [
     o.completeness && shortFor(LEGO_COMPLETENESS, o.completeness),
+    o.has_box ? "+ box" : null,
     o.condition && labelFor(LEGO_CONDITION, o.condition),
   ]
     .filter(Boolean)
@@ -175,6 +184,7 @@ export default function LegoPage() {
         await api.addOwned(created.id, {
           condition: form.condition,
           completeness: form.completeness,
+          has_box: !!form.has_box,
         });
       } else {
         await api.addWanted(created.id);
@@ -402,11 +412,33 @@ export default function LegoPage() {
             >
               {form.own ? "I own it" : "I want it"}
             </button>
+            <button
+              type="button"
+              className={`toggle ${form.has_box ? "on" : ""}`}
+              disabled={!form.own || form.completeness === LEGO_NEEDS_BOX}
+              title={
+                form.completeness === LEGO_NEEDS_BOX
+                  ? "A sealed set is in its box by definition"
+                  : "Did you keep the box?"
+              }
+              onClick={() => setForm({ ...form, has_box: !form.has_box })}
+            >
+              {form.has_box ? "With box" : "No box"}
+            </button>
             <select
               disabled={!form.own}
               title="What you have"
               value={form.completeness}
-              onChange={(e) => setForm({ ...form, completeness: e.target.value })}
+              onChange={(e) => {
+                const completeness = e.target.value;
+                // Sealed means in the box; letting the two disagree would
+                // record a set that cannot exist.
+                setForm((f) => ({
+                  ...f,
+                  completeness,
+                  has_box: completeness === LEGO_NEEDS_BOX ? true : f.has_box,
+                }));
+              }}
             >
               {LEGO_COMPLETENESS.map(([v, l]) => (
                 <option key={v} value={v}>
@@ -460,7 +492,11 @@ export default function LegoPage() {
 function LegoRow({ set, onChange, onReload }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [editVals, setEditVals] = useState({ completeness: "complete+box", condition: "used" });
+  const [editVals, setEditVals] = useState({
+    completeness: "open",
+    has_box: true,
+    condition: "used",
+  });
   const [infoOpen, setInfoOpen] = useState(false);
   const a = set.attrs;
 
@@ -483,7 +519,8 @@ function LegoRow({ set, onChange, onReload }) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      completeness: o.completeness || "complete+box",
+      completeness: o.completeness || "open",
+      has_box: o.has_box ?? true,
       condition: o.condition || "used",
     });
   };
@@ -729,10 +766,30 @@ function LegoRow({ set, onChange, onReload }) {
 
       {editing !== null && (
         <span className="copy-edit">
+          <button
+            type="button"
+            className={`toggle ${editVals.has_box ? "on" : ""}`}
+            disabled={editVals.completeness === LEGO_NEEDS_BOX}
+            title={
+              editVals.completeness === LEGO_NEEDS_BOX
+                ? "A sealed set is in its box by definition"
+                : "Did you keep the box?"
+            }
+            onClick={() => setEditVals({ ...editVals, has_box: !editVals.has_box })}
+          >
+            {editVals.has_box ? "With box" : "No box"}
+          </button>
           <select
             title="What you have"
             value={editVals.completeness}
-            onChange={(e) => setEditVals({ ...editVals, completeness: e.target.value })}
+            onChange={(e) => {
+              const completeness = e.target.value;
+              setEditVals((v) => ({
+                ...v,
+                completeness,
+                has_box: completeness === LEGO_NEEDS_BOX ? true : v.has_box,
+              }));
+            }}
           >
             {withUnknown(LEGO_COMPLETENESS, editVals.completeness).map(([v, l]) => (
               <option key={v} value={v}>

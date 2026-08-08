@@ -14,6 +14,10 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 MODULES = [
     "cards", "games", "hardware", "movies", "books", "records", "lego", "comics",
 ]
+# Things that can be drawn as tiles. The wanted list is a view, not a
+# collection — it can't be turned on or off — but it has the same two layouts,
+# so it belongs in this list and nowhere else.
+VIEWS = MODULES + ["wanted"]
 # stored as comma-separated strings in the key/value settings table
 DEFAULTS = {
     "owner_name": None,          # None = never set, drives first-run onboarding
@@ -30,6 +34,9 @@ DEFAULTS = {
     "list_prefs": "{}",
     "show_binder_in_collection": "false",
     "default_region": "NTSC-U",
+    # what a book is, unless you say otherwise — most shelves lean one way
+    "default_book_format": "Hardcover",
+    "default_book_jacket": "With jacket",
 }
 
 
@@ -56,6 +63,8 @@ class SettingsOut(BaseModel):
     list_prefs: dict = {}
     show_binder_in_collection: bool = False
     default_region: str = "NTSC-U"
+    default_book_format: str = "Hardcover"
+    default_book_jacket: str = "With jacket"
     # True until onboarding has been completed at least once
     needs_onboarding: bool = False
 
@@ -71,6 +80,8 @@ class SettingsUpdate(BaseModel):
     list_prefs: dict | None = None
     show_binder_in_collection: bool | None = None
     default_region: str | None = Field(default=None, max_length=20)
+    default_book_format: str | None = Field(default=None, max_length=30)
+    default_book_jacket: str | None = Field(default=None, max_length=30)
 
 
 def _current(db: Session, user_id: int) -> SettingsOut:
@@ -85,10 +96,12 @@ def _current(db: Session, user_id: int) -> SettingsOut:
         enabled_modules=enabled or MODULES,
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
-        tile_modules=[m for m in _csv(raw["tile_modules"]) if m in MODULES],
+        tile_modules=[m for m in _csv(raw["tile_modules"]) if m in VIEWS],
         list_prefs=_prefs(raw["list_prefs"]),
         show_binder_in_collection=str(raw["show_binder_in_collection"]).lower() == "true",
         default_region=raw["default_region"] or "NTSC-U",
+        default_book_format=raw["default_book_format"] or "Hardcover",
+        default_book_jacket=raw["default_book_jacket"] or "With jacket",
         # the row only exists once onboarding has been submitted, so its
         # absence — not an empty name — is what asks the question
         needs_onboarding="owner_name" not in stored,
@@ -111,7 +124,8 @@ def update_settings(
         if isinstance(value, dict):
             value = json.dumps(value, separators=(",", ":"))
         elif isinstance(value, list):
-            value = ",".join(v for v in value if v in MODULES)
+            allowed = VIEWS if key == "tile_modules" else MODULES
+            value = ",".join(v for v in value if v in allowed)
         elif isinstance(value, bool):
             value = "true" if value else "false"
         elif value is not None:

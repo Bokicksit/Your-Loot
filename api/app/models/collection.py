@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -27,6 +27,10 @@ class Owned(TimestampMixin, Base):
     # games only: loose/CIB/sealed — per copy, since you can own a loose one
     # and later add a CIB one
     completeness: Mapped[str | None] = mapped_column(String(20))
+    # LEGO: did you keep the box? A separate question from what state the set
+    # is in — a built display piece can have its box in the loft, and a sealed
+    # one is nothing without it.
+    has_box: Mapped[bool | None] = mapped_column(Boolean)
     # cards only: grading ("PSA" + "9"); both null = raw
     grader: Mapped[str | None] = mapped_column(String(10))
     grade: Mapped[str | None] = mapped_column(String(6))

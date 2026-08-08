@@ -141,6 +141,8 @@ stays a list. Cards start as tiles and everything else starts as a list, which
 is how the app looked before the buttons existed — if you never touch them,
 nothing changes.
 
+The wanted list has the same two buttons.
+
 The Pokédex has no such switch. It's a picture of a binder, and a binder is
 tiles.
 

@@ -4,6 +4,9 @@ import { Icon } from "../components/Icons.jsx";
 import { MODULES, useSettings } from "../settings.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
+// mirrors the two book fields most shelves never change
+const BOOK_FORMATS = ["Hardcover", "Paperback", "Trade Paperback", "Mass Market"];
+const BOOK_JACKETS = ["With jacket", "No jacket"];
 
 export default function SettingsPage() {
   const { settings, save } = useSettings();
@@ -132,6 +135,25 @@ export default function SettingsPage() {
           >
             {settings.show_binder_in_collection ? "Shown" : "Hidden"}
           </button>
+        </div>
+        <div className="form-row">
+          <span className="settings-label">Books are usually</span>
+          <select
+            value={settings.default_book_format}
+            onChange={(e) => flash({ default_book_format: e.target.value })}
+          >
+            {BOOK_FORMATS.map((f) => (
+              <option key={f}>{f}</option>
+            ))}
+          </select>
+          <select
+            value={settings.default_book_jacket}
+            onChange={(e) => flash({ default_book_jacket: e.target.value })}
+          >
+            {BOOK_JACKETS.map((j) => (
+              <option key={j}>{j}</option>
+            ))}
+          </select>
         </div>
         <div className="form-row">
           <span className="settings-label">

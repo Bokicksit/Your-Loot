@@ -44,20 +44,19 @@ export const GAME_PARTS_ONLY = new Set(["case+manual", "case only", "manual only
 // copy is worth turns on how much of it survived: box, instructions, and
 // whether the bricks are all there.
 // third element is the badge form — see shortFor()
+// Two questions, not one. The box is a checkbox beside this — a built display
+// piece can still have its box in the loft, and "sealed" without one is a
+// contradiction the form refuses to let you make.
 export const LEGO_COMPLETENESS = [
-  ["sealed", "Sealed (MISB)", "MISB"],
-  ["complete+box", "Complete, box & instructions", "CIB"],
-  ["complete+instructions", "Complete with instructions, no box", "No box"],
-  ["complete", "Complete, bricks only", "Bricks only"],
+  ["sealed", "Sealed", "Sealed"],
+  ["open", "Opened, complete", "Complete"],
+  ["loose", "Loose bricks", "Loose"],
+  ["built", "Built", "Built"],
   ["incomplete", "Missing pieces", "Missing pcs"],
-  ["parts", "Parts only", "Parts"],
-  ["instructions", "Instructions only", "Instr. only"],
-  ["box", "Box only", "Box only"],
 ];
 
-// Same idea as GAME_PARTS_ONLY: an empty box or a spare instruction booklet
-// isn't the set, so it doesn't end the hunt.
-export const LEGO_PARTS_ONLY = new Set(["parts", "instructions", "box"]);
+// Sealed is the one state that cannot be true without the box.
+export const LEGO_NEEDS_BOX = "sealed";
 
 export const LEGO_CONDITION = [
   ["new", "New"],
