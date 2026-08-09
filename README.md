@@ -1,9 +1,15 @@
-# 💰 Your Loot
+<p align="center">
+  <img src="docs/logo.svg" alt="" width="96">
+</p>
 
-[![Release](https://img.shields.io/github/v/release/Bokicksit/Your-Loot?sort=semver)](https://github.com/Bokicksit/Your-Loot/releases)
-[![Licence: AGPL v3](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
-[![Build](https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml/badge.svg)](https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml)
-![amd64 + arm64](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-informational)
+<h1 align="center">Your Loot</h1>
+
+<p align="center">
+  <a href="https://github.com/Bokicksit/Your-Loot/releases"><img src="https://img.shields.io/github/v/release/Bokicksit/Your-Loot?sort=semver" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-blue" alt="Licence: AGPL v3"></a>
+  <a href="https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml"><img src="https://github.com/Bokicksit/Your-Loot/actions/workflows/build-push.yaml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-informational" alt="amd64 and arm64">
+</p>
 
 Self-hosted collection tracker for **Pokémon cards, video games, hardware,
 physical movies, books, records, LEGO, and comics** — one app, one database,
