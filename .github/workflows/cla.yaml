@@ -1,0 +1,65 @@
+name: CLA
+
+# Asks a first-time contributor to sign the CLA, and records that they did.
+#
+# This runs in the repo rather than through cla-assistant.io on purpose. The
+# hosted service keeps the agreement in a Gist, which would leave two copies of
+# CLA.md drifting apart — this reads the one in the repo, and the signatures
+# land in .github/cla-signatures.json where they can be read, audited and
+# backed up like everything else.
+#
+# On `pull_request_target` rather than `pull_request` so it can comment on pull
+# requests from forks, which is all of them. That trigger runs with write
+# access to this repo, so it is only safe as long as nothing here checks out or
+# executes the contributor's code — and nothing here does. Don't add a checkout
+# step to this file.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, closed]
+
+permissions:
+  actions: write
+  contents: write # to write the signatures file
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    # comments on other issues shouldn't spin this up
+    if: >
+      github.event_name == 'pull_request_target' ||
+      contains(github.event.comment.body, 'I have read the CLA Document')
+    steps:
+      - uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: .github/cla-signatures.json
+          path-to-document: https://github.com/Bokicksit/Your-Loot/blob/main/CLA.md
+          branch: main
+          # the owner and the bots that open dependency PRs
+          allowlist: Bokicksit,dependabot[bot],github-actions[bot]
+          custom-notsigned-prcomment: >
+            Thanks for this — before it can be merged, the
+            [Contributor Licence Agreement](https://github.com/Bokicksit/Your-Loot/blob/main/CLA.md)
+            needs signing. It's one comment, and you keep your copyright.
+
+
+            Why it exists is explained in
+            [CONTRIBUTING.md](https://github.com/Bokicksit/Your-Loot/blob/main/CONTRIBUTING.md#the-cla-and-why-there-is-one) —
+            short version: this app is going on the app stores, whose terms are
+            incompatible with the AGPL, and that is only possible while every
+            line can also be licensed separately.
+
+
+            If you'd rather not sign, that's genuinely fine. Close this and open
+            an issue describing the fix instead — it still gets you credited.
+
+
+            To sign, copy this into a new comment:
+          custom-pr-sign-comment: I have read the CLA Document and I hereby sign the CLA
+          custom-allsigned-prcomment: Signed — thanks. Nothing else needed on the licence side.

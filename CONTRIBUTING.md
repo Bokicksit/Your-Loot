@@ -24,7 +24,8 @@ discuss after it's written than before. A short issue saves you the work.
 ## The CLA, and why there is one
 
 Code contributions need a signed [Contributor Licence Agreement](CLA.md). A
-bot will ask on your first pull request; it's one click.
+bot asks on your first pull request and you sign by replying to it with one
+line — no account, no form, nothing to email.
 
 Here's the honest reason, because "our lawyers require it" is not a reason:
 
