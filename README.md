@@ -169,8 +169,10 @@ Add them to `.env` and `docker compose up -d` again.
 docker compose pull && docker compose up -d
 ```
 Database migrations run automatically. To update deliberately instead, pin a
-version with `TAG=` in `.env` — the numbers are on the
-[releases page](https://github.com/Bokicksit/Your-Loot/releases).
+version with `TAG=` in `.env` — `TAG=2.32`, taken from the
+[releases page](https://github.com/Bokicksit/Your-Loot/releases) **without the
+leading `v`**, since the release is named `v2.32` but the image it built is
+tagged `2.32`.
 
 **Refresh the card database** (new sets, corrections) — weekly cron is plenty:
 ```bash
