@@ -35,6 +35,27 @@ const EMPTY_FORM = {
 
 // Hardware: consoles + accessories. Same data module as games under the hood
 // (is_hardware=true), its own tab and per-unit fields up here.
+// Shared wording, so every collection asks the same question the same way.
+// Returns false only if the person says no.
+async function confirmDuplicate(scope, title) {
+  let matches = [];
+  try {
+    ({ matches } = await api.duplicates(scope, title));
+  } catch {
+    return true; // the check failing must never block an add
+  }
+  if (!matches.length) return true;
+  const m = matches[0];
+  const copies = m.copies === 1 ? "1 copy" : `${m.copies} copies`;
+  return confirm(
+    `${m.title} is already in this collection` +
+      (m.detail ? ` — ${m.detail}` : "") +
+      `, with ${copies}.
+
+Add another?`
+  );
+}
+
 export default function HardwarePage() {
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -119,6 +140,10 @@ export default function HardwarePage() {
   const submit = async (e) => {
     e.preventDefault();
     try {
+      // Ask before making a second one. Two identical rows take a moment
+      // to create and a while to notice.
+      if (!(await confirmDuplicate("hardware", form.title))) return;
+
       const created = await api.addGame({
         title: form.title,
         platform_id: form.platform_id ? Number(form.platform_id) : null,
@@ -420,6 +445,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
+      notes: o.notes || "",
       completeness: o.completeness || "loose",
       condition: o.condition || "Good",
     });
@@ -604,6 +630,15 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
               <option key={c}>{c}</option>
             ))}
           </select>
+          {/* per copy, not per item: which of the two is signed, and
+              which one came from your dad */}
+          <input
+            type="text"
+            className="grow"
+            placeholder="Note"
+            value={editVals.notes || ""}
+            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
+          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>

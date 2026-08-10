@@ -87,6 +87,9 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ happy }),
     }),
+  // asked before an add creates anything, so a second copy is a decision
+  duplicates: (module, title) =>
+    request(`/api/duplicates?${new URLSearchParams({ module, title })}`),
   wanted: (params = {}) =>
     request(`/api/wanted?${new URLSearchParams(params)}`),
   games: (params = {}) =>

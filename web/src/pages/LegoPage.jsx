@@ -46,6 +46,27 @@ const copyLabel = (o) =>
     .filter(Boolean)
     .join(" · ");
 
+// Shared wording, so every collection asks the same question the same way.
+// Returns false only if the person says no.
+async function confirmDuplicate(scope, title) {
+  let matches = [];
+  try {
+    ({ matches } = await api.duplicates(scope, title));
+  } catch {
+    return true; // the check failing must never block an add
+  }
+  if (!matches.length) return true;
+  const m = matches[0];
+  const copies = m.copies === 1 ? "1 copy" : `${m.copies} copies`;
+  return confirm(
+    `${m.title} is already in this collection` +
+      (m.detail ? ` — ${m.detail}` : "") +
+      `, with ${copies}.
+
+Add another?`
+  );
+}
+
 export default function LegoPage() {
   const [sets, setSets] = useState([]);
   const [total, setTotal] = useState(0);
@@ -175,6 +196,10 @@ export default function LegoPage() {
   const submit = async (e) => {
     e.preventDefault();
     try {
+      // Ask before making a second one. Two identical rows take a moment
+      // to create and a while to notice.
+      if (!(await confirmDuplicate("lego", form.title))) return;
+
       const created = await api.addLego({
         title: form.title,
         set_number: form.set_number.trim() || null,
@@ -546,6 +571,7 @@ function LegoRow({ set, onChange, onReload , onTagsChanged}) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
+      notes: o.notes || "",
       completeness: o.completeness || "open",
       has_box: o.has_box ?? true,
       condition: o.condition || "used",
@@ -849,6 +875,15 @@ function LegoRow({ set, onChange, onReload , onTagsChanged}) {
               </option>
             ))}
           </select>
+          {/* per copy, not per item: which of the two is signed, and
+              which one came from your dad */}
+          <input
+            type="text"
+            className="grow"
+            placeholder="Note"
+            value={editVals.notes || ""}
+            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
+          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>

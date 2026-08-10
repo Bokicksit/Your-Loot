@@ -46,6 +46,27 @@ const copyLabel = (o) =>
       ? `${labelFor(COMIC_GRADES, o.condition)} (raw)`
       : "";
 
+// Shared wording, so every collection asks the same question the same way.
+// Returns false only if the person says no.
+async function confirmDuplicate(scope, title) {
+  let matches = [];
+  try {
+    ({ matches } = await api.duplicates(scope, title));
+  } catch {
+    return true; // the check failing must never block an add
+  }
+  if (!matches.length) return true;
+  const m = matches[0];
+  const copies = m.copies === 1 ? "1 copy" : `${m.copies} copies`;
+  return confirm(
+    `${m.title} is already in this collection` +
+      (m.detail ? ` — ${m.detail}` : "") +
+      `, with ${copies}.
+
+Add another?`
+  );
+}
+
 export default function ComicsPage() {
   const [comics, setComics] = useState([]);
   const [total, setTotal] = useState(0);
@@ -228,6 +249,10 @@ export default function ComicsPage() {
   const submit = async (e) => {
     e.preventDefault();
     try {
+      // Ask before making a second one. Two identical rows take a moment
+      // to create and a while to notice.
+      if (!(await confirmDuplicate("comics", form.title))) return;
+
       const created = await api.addComic({
         title: form.title,
         series: form.series.trim() || null,
@@ -687,6 +712,7 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
+      notes: o.notes || "",
       condition: o.condition || "VF",
       grader: o.grader || "",
       grade: o.grade || "",
@@ -698,6 +724,9 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
         condition: editVals.condition,
         grader: editVals.grader || null,
         grade: editVals.grader ? editVals.grade || null : null,
+        // named explicitly here, unlike the pages that send editVals whole —
+        // leaving it out would drop the note silently on save
+        notes: editVals.notes?.trim() || null,
       });
       setEditing(null);
       return s;
@@ -1007,6 +1036,15 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
               ))}
             </select>
           )}
+          {/* per copy, not per item: which of the two is signed, and
+              which one came from your dad */}
+          <input
+            type="text"
+            className="grow"
+            placeholder="Note"
+            value={editVals.notes || ""}
+            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
+          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>
