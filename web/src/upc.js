@@ -198,10 +198,37 @@ export async function firstHits(queries, run) {
   return found;
 }
 
-// Strip bracketed segments and format/edition noise so the remaining string
-// works as a TMDB/IGDB query.
+// How a shop says a second-hand thing is fine, written at the front of the
+// listing: "Restored The Legend of Zelda…", "Pre-Owned Halo 3".
+//
+// Bracketed noise already comes off below, so this is only for the bare words.
+// It matters more than it looks: the query ladder shortens a title from the
+// *end*, so a junk word at the front survives every rung and the whole search
+// fails rather than degrading. One word turned a real barcode into no results.
+//
+// "New" is deliberately not in the list on its own — New Super Mario Bros.,
+// New Pokémon Snap, New Little King's Story. It only counts as noise when
+// another condition word follows it, which is why it is a separate clause.
+const CONDITION_PREFIX = new RegExp(
+  "^\\s*(?:" +
+    "(?:brand\\s+)?new\\s+(?:and\\s+)?(?:factory\\s+)?(?:sealed|in\\s+box|unopened)|" +
+    "restored|refurbished|refurb|renewed|reconditioned|certified\\s+refurbished|" +
+    "pre[-\\s]?owned|used|second[-\\s]?hand|open\\s+box|like\\s+new" +
+  ")[\\s\\-–—:,]+",
+  "i"
+);
+
+// Strip bracketed segments, condition words and format/edition noise so the
+// remaining string works as a TMDB/IGDB query.
 export function cleanTitle(title) {
-  return title
+  let t = title;
+  // repeated, because listings stack them: "Used Refurbished Mario Kart"
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(CONDITION_PREFIX, "");
+  } while (t !== prev);
+  return t
     .replace(/\[[^\]]*\]|\([^)]*\)/g, " ")
     .replace(/4k(\s*(ultra\s*hd|uhd))?|ultra\s*hd|\buhd\b|blu-?ray|\bdvd\b|\bvhs\b|\bdigital\b/gi, " ")
     .replace(/steelbook|criterion( collection)?|collector'?s edition|limited edition|special edition|anniversary edition|director'?s cut/gi, " ")
