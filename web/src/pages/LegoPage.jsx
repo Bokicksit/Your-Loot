@@ -7,6 +7,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import {
   LEGO_COMPLETENESS,
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
   minifig_count: "",
   barcode: "",
   image_url: null,
+  tags: [],
   own: true,
   completeness: "open",
   has_box: true,
@@ -51,6 +53,9 @@ export default function LegoPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("lego");
   const [themeFilter, setThemeFilter] = useListPref("lego", "themeFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("lego", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("lego", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -65,6 +70,7 @@ export default function LegoPage() {
   const load = () => {
     const params = { sort };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (themeFilter) params.theme = themeFilter;
     api
       .lego(params)
@@ -84,7 +90,7 @@ export default function LegoPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, themeFilter, sort]);
+  }, [search, themeFilter, sort, tagFilter, tagsChanged]);
 
   const lookup = async (params) => {
     setSearching(true);
@@ -180,6 +186,11 @@ export default function LegoPage() {
         barcode: form.barcode.trim() || null,
         image_url: form.image_url,
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "lego", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -202,7 +213,7 @@ export default function LegoPage() {
 
   const patchSet = (id, status) =>
     setSets((ss) =>
-      ss.map((s) => (s.id === id ? { ...s, owned: status.owned, wanted: status.wanted } : s))
+      ss.map((s) => (s.id === id ? { ...s, owned: status.owned, wanted: status.wanted, tags: status.tags ?? set.tags } : s))
     );
 
   return (
@@ -236,6 +247,12 @@ export default function LegoPage() {
             ))}
           </select>
         )}
+        <TagFilter
+          scope="lego"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -404,6 +421,15 @@ export default function LegoPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="lego"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -482,14 +508,15 @@ export default function LegoPage() {
 
       <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {sets.map((s) => (
-          <LegoRow key={s.id} set={s} onChange={patchSet} onReload={load} />
+          <LegoRow key={s.id} set={s} onChange={patchSet} onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)} />
         ))}
       </div>
     </div>
   );
 }
 
-function LegoRow({ set, onChange, onReload }) {
+function LegoRow({ set, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({
@@ -560,6 +587,7 @@ function LegoRow({ set, onChange, onReload }) {
       piece_count: a.piece_count ?? "",
       minifig_count: a.minifig_count ?? "",
       image_url: set.image_url,
+      tags: set.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -580,6 +608,10 @@ function LegoRow({ set, onChange, onReload }) {
         minifig_count: entry.minifig_count ? Number(entry.minifig_count) : null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(set.id, "lego", entry.tags);
+      onTagsChanged?.();
       setEntry(null);
       onReload();
     } catch (e) {
@@ -715,6 +747,14 @@ function LegoRow({ set, onChange, onReload }) {
             />
           </div>
           <div className="form-row">
+            <TagEditor
+              scope="lego"
+              id={set.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Set photo"
@@ -761,6 +801,7 @@ function LegoRow({ set, onChange, onReload }) {
             {/* the set number is how LEGO is bought and sold, full stop */}
             <EbayLink title={set.title} terms={[a.set_number]} />
           </div>
+          <TagChips tags={set.tags} />
         </span>
       )}
 

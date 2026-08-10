@@ -6,6 +6,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 import { useListPref, useSettings } from "../settings.jsx";
@@ -42,6 +43,7 @@ const EMPTY_FORM = {
   series: "",
   blurb: null,
   image_url: null,
+  tags: [],
   own: true,
   completeness: "With jacket",
   condition: "Very Good",
@@ -64,6 +66,9 @@ export default function BooksPage() {
   const [tiles] = useTileView("books");
   const [authorFilter, setAuthorFilter] = useListPref("books", "authorFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("books", "formatFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("books", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("books", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -77,6 +82,7 @@ export default function BooksPage() {
   const load = () => {
     const params = { sort };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (authorFilter) params.author = authorFilter;
     if (formatFilter) params.format = formatFilter;
     api
@@ -98,7 +104,7 @@ export default function BooksPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, authorFilter, formatFilter, sort]);
+  }, [search, authorFilter, formatFilter, sort, tagFilter, tagsChanged]);
 
   const lookup = async (params) => {
     setSearching(true);
@@ -192,6 +198,11 @@ export default function BooksPage() {
         image_url: await api.localiseImage(form.image_url),
         blurb: form.blurb || null,
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "books", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -213,7 +224,7 @@ export default function BooksPage() {
 
   const patchBook = (id, status) =>
     setBooks((bs) =>
-      bs.map((b) => (b.id === id ? { ...b, owned: status.owned, wanted: status.wanted } : b))
+      bs.map((b) => (b.id === id ? { ...b, owned: status.owned, wanted: status.wanted, tags: status.tags ?? book.tags } : b))
     );
 
   return (
@@ -261,6 +272,12 @@ export default function BooksPage() {
             ))}
           </select>
         )}
+        <TagFilter
+          scope="books"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -415,6 +432,15 @@ export default function BooksPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="books"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -467,14 +493,15 @@ export default function BooksPage() {
 
       <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {books.map((b) => (
-          <BookRow key={b.id} book={b} onChange={patchBook} onReload={load} />
+          <BookRow key={b.id} book={b} onChange={patchBook} onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)} />
         ))}
       </div>
     </div>
   );
 }
 
-function BookRow({ book, onChange, onReload }) {
+function BookRow({ book, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({ completeness: "With jacket", condition: "Very Good" });
@@ -542,6 +569,7 @@ function BookRow({ book, onChange, onReload }) {
       series: a.series || "",
       publish_year: a.publish_year ?? "",
       image_url: book.image_url,
+      tags: book.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -563,6 +591,10 @@ function BookRow({ book, onChange, onReload }) {
         publish_year: entry.publish_year ? Number(entry.publish_year) : null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(book.id, "books", entry.tags);
+      onTagsChanged?.();
       setEntry(null);
       onReload();
     } catch (e) {
@@ -710,6 +742,14 @@ function BookRow({ book, onChange, onReload }) {
             />
           </div>
           <div className="form-row">
+            <TagEditor
+              scope="books"
+              id={book.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Cover photo"
@@ -759,6 +799,7 @@ function BookRow({ book, onChange, onReload }) {
                 edition, not a different medium, and sellers list both ways */}
             <EbayLink title={book.title} terms={[a.author]} />
           </div>
+          <TagChips tags={book.tags} />
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>
       )}

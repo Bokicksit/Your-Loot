@@ -7,6 +7,7 @@ import AddSheet from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
 import { cleanGameTitle } from "../upc.js";
@@ -26,6 +27,7 @@ const EMPTY_FORM = {
   working: "works",
   parent_id: "",
   image_url: null,
+  tags: [],
   own: true,
   completeness: "loose", // consoles are usually out of box
   condition: "Good",
@@ -40,6 +42,9 @@ export default function HardwarePage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("hardware");
   const [platformFilter, setPlatformFilter] = useListPref("hardware", "platformFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("hardware", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("hardware", "sort", "title");
   const [showForm, setShowForm] = useState(false);
   const { settings } = useSettings();
@@ -84,6 +89,7 @@ export default function HardwarePage() {
   const load = () => {
     const params = { is_hardware: true, sort, limit: 200 };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (platformFilter) params.platform_id = platformFilter;
     api
       .games(params)
@@ -99,7 +105,7 @@ export default function HardwarePage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, platformFilter, sort]);
+  }, [search, platformFilter, sort, tagFilter, tagsChanged]);
 
   // settings arrive after mount, so the default region is picked up on open
   const openForm = () => {
@@ -124,6 +130,11 @@ export default function HardwarePage() {
         parent_id: form.parent_id ? Number(form.parent_id) : null,
         image_url: await api.localiseImage(form.image_url),
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "hardware", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -149,7 +160,7 @@ export default function HardwarePage() {
   const patchRow = (id, status) =>
     setRows((rs) =>
       rs.map((r) =>
-        r.id === id ? { ...r, owned: status.owned, wanted: status.wanted } : r
+        r.id === id ? { ...r, owned: status.owned, wanted: status.wanted, tags: status.tags ?? hw.tags } : r
       )
     );
 
@@ -183,6 +194,12 @@ export default function HardwarePage() {
             </option>
           ))}
         </select>
+        <TagFilter
+          scope="hardware"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -284,6 +301,15 @@ export default function HardwarePage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="hardware"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row">
             <button
               type="button"
@@ -341,6 +367,7 @@ export default function HardwarePage() {
             platforms={platforms}
             onChange={patchRow}
             onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)}
           />
         ))}
       </div>
@@ -348,7 +375,7 @@ export default function HardwarePage() {
   );
 }
 
-function HardwareRow({ hw, all, platforms, onChange, onReload }) {
+function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned copy id
   const [editVals, setEditVals] = useState({ completeness: "loose", condition: "Good" });
@@ -414,6 +441,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
       working: a.working || "works",
       parent_id: a.parent_id ? String(a.parent_id) : "",
       image_url: hw.image_url,
+      tags: hw.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -433,6 +461,10 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
         parent_id: entry.parent_id ? Number(entry.parent_id) : null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(hw.id, "hardware", entry.tags);
+      onTagsChanged?.();
       setEntryOpen(false);
       onReload();
     } catch (e) {
@@ -545,6 +577,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
                 and it's the one thing hardware sellers do write down */}
             <EbayLink title={hw.title} terms={[a.model_number, a.platform_name]} />
           </div>
+          <TagChips tags={hw.tags} />
           {children.length > 0 && (
             <p className="game-summary">
               Connected gear: {children.map((c) => c.title).join(", ")}
@@ -648,6 +681,16 @@ function HardwareRow({ hw, all, platforms, onChange, onReload }) {
                   </option>
                 ))}
             </select>
+          </div>
+          <div className="form-row">
+            <TagEditor
+              scope="hardware"
+              id={hw.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Unit photo"

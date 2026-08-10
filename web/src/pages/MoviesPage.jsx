@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   genre: "",
   overview: null,
   image_url: null,
+  tags: [],
   tmdb_id: null,
   own: true,
   completeness: "CIB",
@@ -43,6 +45,9 @@ export default function MoviesPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("movies");
   const [formatFilter, setFormatFilter] = useListPref("movies", "formatFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("movies", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("movies", "sort", "title"); // title | format | added
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -64,6 +69,7 @@ export default function MoviesPage() {
   const load = () => {
     const params = { sort };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (formatFilter) params.format = formatFilter;
     api
       .movies(params)
@@ -85,7 +91,7 @@ export default function MoviesPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, formatFilter, sort]);
+  }, [search, formatFilter, sort, tagFilter, tagsChanged]);
 
   const tmdbSearch = async () => {
     if (form.title.trim().length < 2 || searching) return;
@@ -220,6 +226,11 @@ export default function MoviesPage() {
         image_url: await api.localiseImage(form.image_url),
         tmdb_id: form.tmdb_id,
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "movies", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -246,7 +257,7 @@ export default function MoviesPage() {
   const patchMovie = (id, status) =>
     setMovies((ms) =>
       ms.map((m) =>
-        m.id === id ? { ...m, owned: status.owned, wanted: status.wanted } : m
+        m.id === id ? { ...m, owned: status.owned, wanted: status.wanted, tags: status.tags ?? movie.tags } : m
       )
     );
 
@@ -303,6 +314,12 @@ export default function MoviesPage() {
             {f.format} ({f.count})
           </button>
         ))}
+        <TagFilter
+          scope="movies"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -430,6 +447,15 @@ export default function MoviesPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="movies"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row">
             <button
               type="button"
@@ -490,14 +516,15 @@ export default function MoviesPage() {
 
       <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {movies.map((m) => (
-          <MovieRow key={m.id} movie={m} onChange={patchMovie} onReload={load} />
+          <MovieRow key={m.id} movie={m} onChange={patchMovie} onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)} />
         ))}
       </div>
     </div>
   );
 }
 
-function MovieRow({ movie, onChange, onReload }) {
+function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
@@ -558,6 +585,7 @@ function MovieRow({ movie, onChange, onReload }) {
       region_code: movie.attrs.region_code || "",
       genre: movie.attrs.genre || "",
       image_url: movie.image_url,
+      tags: movie.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -576,6 +604,10 @@ function MovieRow({ movie, onChange, onReload }) {
         genre: entry.genre || null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(movie.id, "movies", entry.tags);
+      onTagsChanged?.();
       setEntryOpen(false);
       onReload();
     } catch (e) {
@@ -692,6 +724,7 @@ function MovieRow({ movie, onChange, onReload }) {
               terms={[movie.attrs.format, movie.attrs.edition]}
             />
           </div>
+          <TagChips tags={movie.tags} />
           {movie.attrs.overview && (
             <p className="game-summary">{movie.attrs.overview}</p>
           )}
@@ -743,6 +776,16 @@ function MovieRow({ movie, onChange, onReload }) {
               value={entry.edition}
               onChange={(e) => setEntry({ ...entry, edition: e.target.value })}
             />
+          </div>
+          <div className="form-row">
+            <TagEditor
+              scope="movies"
+              id={movie.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Case photo"

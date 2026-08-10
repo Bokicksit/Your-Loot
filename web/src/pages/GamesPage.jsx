@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
 import { cleanGameTitle, firstHits, queryLadder } from "../upc.js";
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
   is_hardware: false,
   igdb_id: null,
   image_url: null,
+  tags: [],
   own: true, // most additions are things already on the shelf
   completeness: "CIB",
   condition: "Good",
@@ -81,6 +83,9 @@ export default function GamesPage() {
   const [tiles] = useTileView("games");
   const [platformFilter, setPlatformFilter] = useListPref("games", "platformFilter", ""); // system; genre later
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
+  const [tagFilter, setTagFilter] = useListPref("games", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("games", "sort", "title"); // title | platform | added
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -114,6 +119,7 @@ export default function GamesPage() {
     // hardware lives on its own tab now — this page is games only
     const params = { sort, is_hardware: false };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (platformFilter) params.platform_id = platformFilter;
     api
       .games(params)
@@ -136,7 +142,7 @@ export default function GamesPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, platformFilter, sort]);
+  }, [search, platformFilter, sort, tagFilter, tagsChanged]);
 
   // Same ladder the barcode path uses. A typed title has the same trouble a
   // scanned one does — people type what's printed on the box, subtitle and
@@ -306,6 +312,11 @@ export default function GamesPage() {
         developer: form.developer,
         publisher: form.publisher,
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "games", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         // catalog + first copy in one go
         await api.addOwned(created.id, {
@@ -336,7 +347,7 @@ export default function GamesPage() {
   const patchGame = (id, status) =>
     setGames((gs) =>
       gs.map((g) =>
-        g.id === id ? { ...g, owned: status.owned, wanted: status.wanted } : g
+        g.id === id ? { ...g, owned: status.owned, wanted: status.wanted, tags: status.tags ?? game.tags } : g
       )
     );
 
@@ -370,6 +381,12 @@ export default function GamesPage() {
             </option>
           ))}
         </select>
+        <TagFilter
+          scope="games"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -529,6 +546,15 @@ export default function GamesPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="games"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row">
             <button
               type="button"
@@ -597,6 +623,7 @@ export default function GamesPage() {
             platforms={platforms}
             onChange={patchGame}
             onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)}
           />
         ))}
       </div>
@@ -623,7 +650,7 @@ function PlatformBadge({ abbr, name }) {
   );
 }
 
-function GameRow({ game, platforms, onChange, onReload }) {
+function GameRow({ game, platforms, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned id being edited
   const [editVals, setEditVals] = useState({ completeness: "CIB", condition: "Good" });
@@ -696,6 +723,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
       region: game.attrs.region || "",
       is_hardware: game.attrs.is_hardware,
       image_url: game.image_url,
+      tags: game.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -713,6 +741,10 @@ function GameRow({ game, platforms, onChange, onReload }) {
         is_hardware: entry.is_hardware,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(game.id, "games", entry.tags);
+      onTagsChanged?.();
       setEntryOpen(false);
       onReload(); // re-fetch: sort order and filter counts may have changed
     } catch (e) {
@@ -819,6 +851,7 @@ function GameRow({ game, platforms, onChange, onReload }) {
                 no seller writes into a listing title */}
             <EbayLink title={game.title} terms={[a.platform_name]} />
           </div>
+          <TagChips tags={game.tags} />
           {a.summary && <p className="game-summary">{a.summary}</p>}
         </span>
       )}
@@ -860,6 +893,16 @@ function GameRow({ game, platforms, onChange, onReload }) {
             >
               Hardware
             </button>
+          </div>
+          <div className="form-row">
+            <TagEditor
+              scope="games"
+              id={game.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Box photo"

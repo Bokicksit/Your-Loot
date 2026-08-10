@@ -6,6 +6,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { comicQuery } from "../upc.js";
 import {
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   barcode: "",
   blurb: null,
   image_url: null,
+  tags: [],
   own: true,
   condition: "VF",
   grader: "",
@@ -52,6 +54,9 @@ export default function ComicsPage() {
   const [tiles] = useTileView("comics");
   const [seriesFilter, setSeriesFilter] = useListPref("comics", "seriesFilter", "");
   const [publisherFilter, setPublisherFilter] = useListPref("comics", "publisherFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("comics", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("comics", "sort", "series");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -66,6 +71,7 @@ export default function ComicsPage() {
   const load = () => {
     const params = { sort };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (seriesFilter) params.series = seriesFilter;
     if (publisherFilter) params.publisher = publisherFilter;
     api
@@ -88,7 +94,7 @@ export default function ComicsPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, seriesFilter, publisherFilter, sort]);
+  }, [search, seriesFilter, publisherFilter, sort, tagFilter, tagsChanged]);
 
   const lookup = async (params) => {
     setSearching(true);
@@ -235,6 +241,11 @@ export default function ComicsPage() {
         blurb: form.blurb,
         image_url: form.image_url,
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "comics", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -257,7 +268,7 @@ export default function ComicsPage() {
 
   const patchComic = (id, status) =>
     setComics((cs) =>
-      cs.map((c) => (c.id === id ? { ...c, owned: status.owned, wanted: status.wanted } : c))
+      cs.map((c) => (c.id === id ? { ...c, owned: status.owned, wanted: status.wanted, tags: status.tags ?? comic.tags } : c))
     );
 
   return (
@@ -305,6 +316,12 @@ export default function ComicsPage() {
             ))}
           </select>
         )}
+        <TagFilter
+          scope="comics"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -558,6 +575,15 @@ export default function ComicsPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields: a tag is what you think of once the rest
+              is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="comics"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -627,14 +653,15 @@ export default function ComicsPage() {
 
       <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {comics.map((c) => (
-          <ComicRow key={c.id} comic={c} onChange={patchComic} onReload={load} />
+          <ComicRow key={c.id} comic={c} onChange={patchComic} onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)} />
         ))}
       </div>
     </div>
   );
 }
 
-function ComicRow({ comic, onChange, onReload }) {
+function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({ condition: "VF", grader: "", grade: "" });
@@ -706,6 +733,7 @@ function ComicRow({ comic, onChange, onReload }) {
       variant: a.variant || "",
       creators: a.creators || "",
       image_url: comic.image_url,
+      tags: comic.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -727,6 +755,10 @@ function ComicRow({ comic, onChange, onReload }) {
         cover_year: entry.cover_year ? Number(entry.cover_year) : null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped title.
+      await api.setItemTags(comic.id, "comics", entry.tags);
+      onTagsChanged?.();
       setEntry(null);
       onReload();
     } catch (e) {
@@ -871,6 +903,14 @@ function ComicRow({ comic, onChange, onReload }) {
             />
           </div>
           <div className="form-row">
+            <TagEditor
+              scope="comics"
+              id={comic.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+          </div>
+          <div className="form-row">
             <ImagePicker
               value={entry.image_url}
               label="Cover photo"
@@ -921,6 +961,7 @@ function ComicRow({ comic, onChange, onReload }) {
                 cover is the only thing left that separates two listings */}
             <EbayLink title={comic.title} terms={[a.variant]} />
           </div>
+          <TagChips tags={comic.tags} />
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>
       )}
