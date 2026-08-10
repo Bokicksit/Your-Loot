@@ -39,9 +39,9 @@ class RecordCreate(BaseModel):
     catalog_number: str | None = Field(default=None, max_length=60)
     format: str | None = Field(default=None, max_length=40)
     speed: str | None = Field(default=None, max_length=10)
-    pressing: str | None = Field(default=None, max_length=100)
+    pressing: str | None = Field(default=None, max_length=200)
     release_year: int | None = None
-    country: str | None = Field(default=None, max_length=10)
+    country: str | None = Field(default=None, max_length=60)
     barcode: str | None = Field(default=None, max_length=20)
     track_count: int | None = None
     tracklist: str | None = None
@@ -58,9 +58,9 @@ class RecordUpdate(BaseModel):
     catalog_number: str | None = Field(default=None, max_length=60)
     format: str | None = Field(default=None, max_length=40)
     speed: str | None = Field(default=None, max_length=10)
-    pressing: str | None = Field(default=None, max_length=100)
+    pressing: str | None = Field(default=None, max_length=200)
     release_year: int | None = None
-    country: str | None = Field(default=None, max_length=10)
+    country: str | None = Field(default=None, max_length=60)
     barcode: str | None = Field(default=None, max_length=20)
     track_count: int | None = None
     tracklist: str | None = None

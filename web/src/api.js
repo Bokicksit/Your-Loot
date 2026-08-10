@@ -1,3 +1,24 @@
+// FastAPI answers a rejected field with `detail` as a *list* of error objects,
+// not a string. Reading it as one gave every validation failure in the app the
+// same message — "[object Object]" — which says nothing about which field was
+// wrong or why. This names the field and quotes the reason.
+export function errorMessage(body, res) {
+  const d = body?.detail;
+  if (typeof d === "string" && d) return d;
+  if (Array.isArray(d) && d.length) {
+    const said = d.slice(0, 3).map((e) => {
+      // loc is ["body", "country"] — the tail is the field, and for a nested
+      // model it's the last name rather than the whole path.
+      const field = (e.loc || []).filter((p) => p !== "body" && typeof p === "string").pop();
+      const msg = e.msg || "is not valid";
+      return field ? `${field}: ${msg}` : msg;
+    });
+    if (d.length > said.length) said.push(`and ${d.length - said.length} more`);
+    return said.join("; ");
+  }
+  return `${res.status} ${res.statusText}`;
+}
+
 // Thin fetch wrapper. Same-origin paths — nginx (prod) or vite (dev) proxies /api.
 async function request(path, options = {}) {
   const res = await fetch(path, {
@@ -13,7 +34,7 @@ async function request(path, options = {}) {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+    throw new Error(errorMessage(body, res));
   }
   return res.status === 204 ? null : res.json();
 }
@@ -52,7 +73,7 @@ export const api = {
     const res = await fetch("/api/images", { method: "POST", body: fd });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
-      throw new Error(b.detail || `${res.status} ${res.statusText}`);
+      throw new Error(errorMessage(b, res));
     }
     return res.json();
   },
@@ -153,7 +174,7 @@ export const api = {
     const res = await fetch("/api/backup/restore", { method: "POST", body: fd });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
-      throw new Error(b.detail || `${res.status} ${res.statusText}`);
+      throw new Error(errorMessage(b, res));
     }
     return res.json();
   },

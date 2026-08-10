@@ -19,9 +19,11 @@ class RecordAttrs(Base):
     catalog_number: Mapped[str | None] = mapped_column(String(60))
     format: Mapped[str | None] = mapped_column(String(40))
     speed: Mapped[str | None] = mapped_column(String(10))
-    pressing: Mapped[str | None] = mapped_column(String(100))
+    pressing: Mapped[str | None] = mapped_column(String(200))
     release_year: Mapped[int | None] = mapped_column()
-    country: Mapped[str | None] = mapped_column(String(10))
+    # the name, not the code: Discogs says "USA & Europe" where MusicBrainz
+    # says "XE", and both end up in here
+    country: Mapped[str | None] = mapped_column(String(60))
     barcode: Mapped[str | None] = mapped_column(String(20), index=True)
     track_count: Mapped[int | None] = mapped_column()
     # one track to a line, as Discogs lists them for this pressing
