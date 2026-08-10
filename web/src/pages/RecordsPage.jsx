@@ -648,6 +648,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
       release_year: a.release_year ?? "",
       country: a.country || "",
       image_url: record.image_url,
+      tags: record.tags || [],
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -671,6 +672,10 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
         release_year: entry.release_year ? Number(entry.release_year) : null,
         image_url: await api.localiseImage(entry.image_url),
       });
+      // Staged with the rest of the form rather than saved on the spot, so
+      // Cancel discards a tag the same way it discards a retyped title.
+      await api.setItemTags(record.id, "records", entry.tags);
+      onTagsChanged?.();
       setEntry(null);
       onReload();
     } catch (e) {
@@ -824,6 +829,14 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
               placeholder="Pressing (180g, clear vinyl, reissue…)"
               value={entry.pressing}
               onChange={(e) => setEntry({ ...entry, pressing: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <TagEditor
+              scope="records"
+              id={record.id}
+              value={entry.tags}
+              onChange={(tags) => setEntry({ ...entry, tags })}
             />
           </div>
           <div className="form-row">
