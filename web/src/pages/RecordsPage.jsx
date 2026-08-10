@@ -7,7 +7,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import { TagEditor, TagFilter } from "../components/Tags.jsx";
+import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
@@ -586,19 +586,6 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
     }
   };
 
-  const saveTags = async (names) => {
-    // optimistic, because a chip that waits for the network to appear feels
-    // broken at the speed people type these
-    onChange(record.id, { owned: record.owned, wanted: record.wanted, tags: names });
-    try {
-      await api.setItemTags(record.id, "records", names);
-      onTagsChanged?.();
-    } catch (e) {
-      alert(e.message);
-      onReload();
-    }
-  };
-
   const removeCopy = (o) => {
     if (!confirm(`Remove this copy of ${record.title} (${gradePair(o) || "copy"})?`)) return;
     run(() => api.removeOwned(record.id, o.id));
@@ -892,15 +879,11 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
           </div>
           {/* Positions are kept as Discogs lists them, because on a record
               "B2" is where the track physically is, not just its number. */}
-          {/* Tags live here and nowhere else: a tile is a picture and a row
-              is one line, and neither has room for words that only matter
-              once you have opened the thing. */}
-          <TagEditor
-            scope="records"
-            id={record.id}
-            value={record.tags || []}
-            onChange={saveTags}
-          />
+          {/* Shown, not edited. Opening the description is reading; changing
+              what a record says is what the pencil is for, and a box that
+              writes the moment you type in it does not belong on a panel with
+              nothing to confirm it. */}
+          <TagChips tags={record.tags} />
           {a.tracklist && (
             <ol className="tracklist">
               {a.tracklist.split("\n").map((line, i) => (
