@@ -170,7 +170,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <GenreBackfillCard />
       <LockCard />
       <BackupCard />
 
@@ -185,53 +184,6 @@ const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
  *  they're right to: turning the lock on is a decision you make once you've
  *  already got the app open, not something you want to restart a container
  *  for. */
-/* TEMPORARY — a one-off for records added before there was a genre column.
-   Delete this component, its call site above, api.backfillGenres, the route in
-   the settings router and app.backfill._genres once it has been run. */
-function GenreBackfillCard() {
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const run = async () => {
-    setBusy(true);
-    setResult(null);
-    try {
-      setResult(await api.backfillGenres());
-    } catch (e) {
-      setResult({ error: e.message });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="settings-card">
-      <div className="settings-row">
-        <span className="settings-label">
-          Fill in genres for records added before the field existed. Asks
-          Discogs once per record, by barcode — a record without one is
-          reported rather than guessed at.
-        </span>
-        <button className="primary" onClick={run} disabled={busy}>
-          {busy ? "Asking Discogs…" : "Re-pull record genres"}
-        </button>
-      </div>
-      {result && (
-        <div className="settings-row">
-          <span className="settings-label">
-            {result.error
-              ? result.error
-              : `${result.filled} filled, ${result.nothing_found} had none to find` +
-                (result.unidentifiable?.length
-                  ? `, ${result.unidentifiable.length} had no barcode to look up`
-                  : "")}
-          </span>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function LockCard() {
   const [me, setMe] = useState(null);
   const [secret, setSecret] = useState("");

@@ -138,22 +138,3 @@ def update_settings(
     db.commit()
     return _current(db, user.id)
 
-
-# --- TEMPORARY -------------------------------------------------------------
-# A one-off for collections that predate the genre column. Delete this route,
-# its button in Settings, and app.backfill._genres once it has been run.
-@router.post("/backfill-genres")
-def backfill_genres(user: User = Depends(current_user)):
-    """Ask Discogs what each untagged record's genre is, by barcode.
-
-    Runs inline rather than in the background: it is one request per record
-    with a second's pause between, and a collection this touches is small
-    enough that waiting is honest and a progress bar would be a lie.
-    """
-    from app.backfill import _genres
-    from app.db import SessionLocal
-
-    lines: list[str] = []
-    with SessionLocal() as db:
-        filled, skipped, no_id = _genres(db, False, lines.append)
-    return {"filled": filled, "nothing_found": skipped, "unidentifiable": no_id, "log": lines}
