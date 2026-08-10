@@ -14,6 +14,7 @@ import {
 } from "../vocab.js";
 import { useEnabledModules, useListPref } from "../settings.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { TagChips, TagFilter } from "../components/Tags.jsx";
 
 const MODULE_ICONS = {
   cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
@@ -102,6 +103,9 @@ export default function WantedPage() {
   const enabled = useEnabledModules();
   const [rows, setRows] = useState([]);
   const [filter, setFilter] = useState("all");
+  // Tags belong to one collection, so this only means anything once the
+  // list has been narrowed to one — until then there is no scope to ask in.
+  const [tagFilter, setTagFilter] = useState("");
   const [facet, setFacet] = useState(""); // system (games) / genre (movies)
   const [acquiring, setAcquiring] = useState(null); // item_id being acquired
   const [acqVals, setAcqVals] = useState({});
@@ -191,18 +195,27 @@ export default function WantedPage() {
   const visible = rows.filter((r) => enabledKeys.includes(r.module));
   const moduleRows =
     filter === "all" ? visible : visible.filter((r) => r.module === filter);
+  // filtered here rather than by the query: /api/wanted is one list across
+  // every collection, and the rows already carry their tags
+  const taggedRows =
+    tagFilter && filter !== "all"
+      ? moduleRows.filter((r) => (r.tags || []).includes(tagFilter))
+      : moduleRows;
   // sub-filter values present among the current module's wanted rows
   const facets =
     filter === "games" || filter === "movies"
-      ? [...new Set(moduleRows.map((r) => r.facet).filter(Boolean))].sort()
+      ? [...new Set(taggedRows.map((r) => r.facet).filter(Boolean))].sort()
       : [];
   const shown = facet
-    ? moduleRows.filter((r) => r.facet === facet)
-    : moduleRows;
+    ? taggedRows.filter((r) => r.facet === facet)
+    : taggedRows;
 
   const pickFilter = (key) => {
     setFilter(key);
     setFacet("");
+    // a tag belongs to the collection you picked it in, so it means nothing
+    // in the next one — carrying it over would just empty the list
+    setTagFilter("");
   };
 
   return (
@@ -225,6 +238,14 @@ export default function WantedPage() {
       <div className="chip-row">
         {/* one list across eight collections, so "by collection" groups it
             rather than filtering it — the chips above already filter */}
+        {filter !== "all" && (
+          <TagFilter
+            scope={filter}
+            value={tagFilter}
+            onChange={setTagFilter}
+            includeWanted
+          />
+        )}
         <select
           className="chip-select"
           title="Sort"
@@ -320,6 +341,7 @@ export default function WantedPage() {
                     )}
                   </div>
                 </div>
+                <TagChips tags={r.tags} />
                 {r.info_text && <p className="game-summary">{r.info_text}</p>}
               </li>
             )}

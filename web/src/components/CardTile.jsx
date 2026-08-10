@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import EbayLink from "./EbayLink.jsx";
 import { Icon } from "./Icons.jsx";
+import { TagChips, TagEditor } from "./Tags.jsx";
 import ImagePicker from "./ImagePicker.jsx";
 import RarityMark from "./RarityMark.jsx";
 
@@ -29,7 +30,7 @@ const ENTRY_FIELDS = [
   "card_number", "set_total", "rarity",
 ];
 
-export default function CardTile({ card, onChange, onReload }) {
+export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
   const [busy, setBusy] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
   // a card is a tile plus a detail panel below its whole row, not one box, so
@@ -123,6 +124,7 @@ export default function CardTile({ card, onChange, onReload }) {
       card_number: a.card_number || "",
       set_total: a.set_total ?? "",
       rarity: a.rarity || "",
+      tags: card.tags || [],
     });
   };
 
@@ -144,6 +146,10 @@ export default function CardTile({ card, onChange, onReload }) {
         national_dex_no: entry.national_dex_no ? Number(entry.national_dex_no) : null,
         set_total: entry.set_total ? Number(entry.set_total) : null,
       });
+      // Staged with the rest of the form, so Cancel discards a tag the
+      // same way it discards a retyped rarity.
+      await api.setItemTags(card.id, "cards", entry.tags);
+      onTagsChanged?.();
       setEntry(null);
       onReload?.();
     } catch (e) {
@@ -402,6 +408,7 @@ export default function CardTile({ card, onChange, onReload }) {
             </li>
           ))}
         </ul>
+        <TagChips tags={card.tags} />
         {/* the tile hides its chips once the grid gets dense, so the counter
             has to exist somewhere that isn't the tile */}
         <div className="form-row">
@@ -539,6 +546,14 @@ export default function CardTile({ card, onChange, onReload }) {
                 placeholder="Rarity"
                 value={entry.rarity}
                 onChange={(e) => setEntry({ ...entry, rarity: e.target.value })}
+              />
+            </div>
+            <div className="form-row">
+              <TagEditor
+                scope="cards"
+                id={card.id}
+                value={entry.tags}
+                onChange={(tags) => setEntry({ ...entry, tags })}
               />
             </div>
             <div className="form-row">

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
+import { TagFilter } from "../components/Tags.jsx";
 import AddSheet, { Searching } from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
 import RarityMark from "../components/RarityMark.jsx";
@@ -26,6 +27,9 @@ export default function CardsPage({ initialView = "collection" }) {
   const [facets, setFacets] = useState({ sets: [], rarities: [] });
   const [setFilter, setSetFilter] = useListPref("cards", "setFilter", "");
   const [rarityFilter, setRarityFilter] = useListPref("cards", "rarityFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("cards", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("cards", "sort", "dex");
   const cardCols = settings?.card_cols || 3;
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
@@ -87,6 +91,7 @@ export default function CardsPage({ initialView = "collection" }) {
   const load = () => {
     const params = { include_binder: showBinder, sort };
     if (search) params.search = search;
+    if (tagFilter) params.tag = tagFilter;
     if (setFilter) params.set_code = setFilter;
     if (rarityFilter) params.rarity = rarityFilter;
     api
@@ -109,7 +114,7 @@ export default function CardsPage({ initialView = "collection" }) {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, setFilter, rarityFilter, showBinder, sort]);
+  }, [search, setFilter, rarityFilter, showBinder, sort, tagFilter, tagsChanged]);
 
   useEffect(() => {
     api.cardSets().then(setSets).catch(() => {});
@@ -446,6 +451,12 @@ export default function CardsPage({ initialView = "collection" }) {
         )}
         {/* outside the facet guard: sorting is worth having even on a
             collection too small to have anything to filter by */}
+        <TagFilter
+          scope="cards"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -884,7 +895,13 @@ export default function CardsPage({ initialView = "collection" }) {
         }
       >
         {cards.map((c) => (
-          <CardTile key={c.id} card={c} onChange={patchCard} onReload={load} />
+          <CardTile
+            key={c.id}
+            card={c}
+            onChange={patchCard}
+            onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)}
+          />
         ))}
       </div>
     </div>
