@@ -425,3 +425,60 @@ def wanted_list(
             )
         )
     return out
+
+
+@router.get("/duplicates")
+def duplicates(
+    module: str,
+    title: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Do you already have something by this name in this collection?
+
+    Asked by the add form before it creates anything, so a second copy is a
+    decision rather than an accident — two identical rows are easy to make and
+    tedious to find again.
+
+    Matched on the title alone, case- and space-insensitively. Deliberately
+    looser than the thing that makes two items genuinely distinct: Halo 3 on
+    Xbox and on the 360 are different objects, but being asked about them is
+    the correct outcome, and a check that only fired on an exact match of
+    every field would never fire on the case this exists for.
+
+    Scoped to your own shelf, so a housemate's copy is not an answer to a
+    question about yours.
+    """
+    key = " ".join((title or "").split()).casefold()
+    if not key:
+        return {"matches": []}
+
+    is_hardware = module == "hardware"
+    db_module = Module.games.value if is_hardware else module
+    q = (
+        select(CollectionItem)
+        .where(
+            CollectionItem.module == db_module,
+            func.lower(func.trim(CollectionItem.title)) == key,
+            owns(user.id, CollectionItem.id),
+        )
+        .options(selectinload(CollectionItem.owned))
+    )
+    if db_module == Module.games.value:
+        # hardware and games share a table and must not answer for each other
+        q = q.join(GameAttrs, GameAttrs.item_id == CollectionItem.id).where(
+            GameAttrs.is_hardware.is_(is_hardware)
+        )
+
+    rows = db.scalars(q).unique().all()
+    return {
+        "matches": [
+            {
+                "item_id": i.id,
+                "title": i.title,
+                "detail": _detail(i),
+                "copies": len(my_copies(i, user.id)),
+            }
+            for i in rows
+        ]
+    }
