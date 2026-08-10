@@ -133,6 +133,18 @@ export const api = {
     request(`/api/books/description?olid=${encodeURIComponent(olid)}`),
   openLibrarySearch: (params) =>
     request(`/api/books/search?${new URLSearchParams(params)}`),
+  // Tags: one endpoint for every collection. `scope` is the collection as the
+  // app shows it, so hardware asks for its own words rather than games'.
+  tags: (scope, params = {}) =>
+    request(`/api/tags?${new URLSearchParams({ scope, ...params })}`),
+  setItemTags: (itemId, scope, names) =>
+    request(`/api/tags/item/${itemId}`, {
+      method: "PUT",
+      body: JSON.stringify({ scope, names }),
+    }),
+  renameTag: (tagId, name) =>
+    request(`/api/tags/${tagId}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  deleteTag: (tagId) => request(`/api/tags/${tagId}`, { method: "DELETE" }),
   records: (params = {}) => request(`/api/records?${new URLSearchParams(params)}`),
   recordFacets: () => request("/api/records/facets"),
   addRecord: (body) =>

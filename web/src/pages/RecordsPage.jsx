@@ -7,6 +7,7 @@ import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
+import { TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
@@ -33,6 +34,7 @@ const EMPTY_FORM = {
   track_count: "",
   tracklist: null,
   image_url: null,
+  tags: [],
   own: true,
   condition: DEFAULT_VINYL_GRADE,
   sleeve_condition: DEFAULT_VINYL_GRADE,
@@ -57,6 +59,9 @@ export default function RecordsPage() {
   const [artistFilter, setArtistFilter] = useListPref("records", "artistFilter", "");
   const [labelFilter, setLabelFilter] = useListPref("records", "labelFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("records", "formatFilter", "");
+  const [tagFilter, setTagFilter] = useListPref("records", "tagFilter", "");
+  // bumped whenever tags change, so the filter re-reads its counts
+  const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("records", "sort", "artist");
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
@@ -73,6 +78,7 @@ export default function RecordsPage() {
     if (artistFilter) params.artist = artistFilter;
     if (labelFilter) params.label = labelFilter;
     if (formatFilter) params.format = formatFilter;
+    if (tagFilter) params.tag = tagFilter;
     api
       .records(params)
       .then((d) => {
@@ -94,7 +100,7 @@ export default function RecordsPage() {
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, artistFilter, labelFilter, formatFilter, sort]);
+  }, [search, artistFilter, labelFilter, formatFilter, tagFilter, sort, tagsChanged]);
 
   const lookup = async (params) => {
     setSearching(true);
@@ -190,6 +196,11 @@ export default function RecordsPage() {
         // a sleeve photo from a shop listing outlives the listing this way
         image_url: await api.localiseImage(form.image_url),
       });
+      // after the create, because a tag needs something to hang on
+      if (form.tags.length) {
+        await api.setItemTags(created.id, "records", form.tags);
+        setTagsChanged((n) => n + 1);
+      }
       if (form.own) {
         await api.addOwned(created.id, {
           condition: form.condition,
@@ -211,7 +222,11 @@ export default function RecordsPage() {
 
   const patchRecord = (id, status) =>
     setRecords((rs) =>
-      rs.map((r) => (r.id === id ? { ...r, owned: status.owned, wanted: status.wanted } : r))
+      rs.map((r) =>
+        r.id === id
+          ? { ...r, owned: status.owned, wanted: status.wanted, tags: status.tags ?? r.tags }
+          : r
+      )
     );
 
   return (
@@ -273,6 +288,12 @@ export default function RecordsPage() {
             ))}
           </select>
         )}
+        <TagFilter
+          scope="records"
+          value={tagFilter}
+          onChange={setTagFilter}
+          reloadKey={tagsChanged}
+        />
         <select
           className="chip-select"
           title="Sort"
@@ -465,6 +486,15 @@ export default function RecordsPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {/* last of the fields, because a tag is the one thing here you
+              think of after everything else is filled in */}
+          <div className="form-row">
+            <TagEditor
+              scope="records"
+              value={form.tags}
+              onChange={(tags) => setForm({ ...form, tags })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -521,14 +551,20 @@ export default function RecordsPage() {
 
       <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
         {records.map((r) => (
-          <RecordRow key={r.id} record={r} onChange={patchRecord} onReload={load} />
+          <RecordRow
+            key={r.id}
+            record={r}
+            onChange={patchRecord}
+            onReload={load}
+            onTagsChanged={() => setTagsChanged((n) => n + 1)}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function RecordRow({ record, onChange, onReload }) {
+function RecordRow({ record, onChange, onReload, onTagsChanged }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editVals, setEditVals] = useState({
@@ -547,6 +583,19 @@ function RecordRow({ record, onChange, onReload }) {
       alert(e.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveTags = async (names) => {
+    // optimistic, because a chip that waits for the network to appear feels
+    // broken at the speed people type these
+    onChange(record.id, { owned: record.owned, wanted: record.wanted, tags: names });
+    try {
+      await api.setItemTags(record.id, "records", names);
+      onTagsChanged?.();
+    } catch (e) {
+      alert(e.message);
+      onReload();
     }
   };
 
@@ -830,6 +879,15 @@ function RecordRow({ record, onChange, onReload }) {
           </div>
           {/* Positions are kept as Discogs lists them, because on a record
               "B2" is where the track physically is, not just its number. */}
+          {/* Tags live here and nowhere else: a tile is a picture and a row
+              is one line, and neither has room for words that only matter
+              once you have opened the thing. */}
+          <TagEditor
+            scope="records"
+            id={record.id}
+            value={record.tags || []}
+            onChange={saveTags}
+          />
           {a.tracklist && (
             <ol className="tracklist">
               {a.tracklist.split("\n").map((line, i) => (

@@ -441,6 +441,63 @@ button.ghost.icon svg.i, button.primary.icon svg.i, a.ghost.icon svg.i { width: 
 }
 .chip.copy:hover { border-style: solid; border-color: var(--gold); }
 
+/* Tags: your own words. Quieter than a copy chip — a copy is a thing you
+   own and this is a note about it, so it reads as a label, not an object. */
+.chip.tag {
+  min-height: 28px;
+  padding: 0 var(--s-2) 0 var(--s-3);
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font-size: var(--f-1);
+  font-weight: var(--w-med);
+  letter-spacing: .03em;
+  white-space: normal;   /* "want to play" should wrap, not overflow */
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--s-2);
+}
+.tag-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+}
+.tag-editor:focus-within { border-color: var(--gold-line); }
+.tag-editor .chip.tag { background: var(--gold-wash); border-color: var(--gold-line); color: var(--gold-bright); }
+.tag-editor .chip.tag button {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+.tag-editor .chip.tag button:hover { color: var(--danger); background: var(--danger-wash); }
+.tag-editor .chip.tag button svg.i { width: 11px; height: 11px; stroke-width: 2.2; }
+/* the box grows to fill whatever the chips leave, and keeps a usable width
+   on its own line rather than collapsing to nothing on a narrow phone */
+.tag-input {
+  flex: 1 1 9rem;
+  min-width: 9rem;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font-size: var(--f-2);
+}
+.tag-input:focus { outline: none; }
+
 /* inline entry editor (pencil on a row): full-width panel of form rows */
 .entry-edit {
   grid-column: 1 / -1;
