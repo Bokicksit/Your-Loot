@@ -454,11 +454,18 @@ button.ghost.icon svg.i, button.primary.icon svg.i, a.ghost.icon svg.i { width: 
   letter-spacing: .03em;
   white-space: normal;   /* "want to play" should wrap, not overflow */
 }
+/* heading above its chips, stacked so the label sits on its own line the way
+   the other sections of an opened panel do */
+.tag-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--s-3);
+}
 .tag-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: var(--s-2);
 }
 .tag-editor {
   display: flex;

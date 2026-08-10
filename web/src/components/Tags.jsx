@@ -17,15 +17,21 @@ import { Icon } from "./Icons.jsx";
 /** Read-only chips. Lives in an opened detail panel and nowhere else — a tile
  *  is a picture of the thing, and a row is one line, so neither has room for
  *  labels that only matter once you've opened it. */
-export function TagChips({ tags }) {
+export function TagChips({ tags, label = "Tags" }) {
   if (!tags?.length) return null;
   return (
-    <div className="tag-chips">
-      {tags.map((t) => (
-        <span key={t} className="chip tag">
-          {t}
-        </span>
-      ))}
+    <div className="tag-block">
+      {/* the same small-caps heading the rest of an opened panel uses, so a
+          row of your own words reads as one of its sections rather than as
+          something that landed there */}
+      {label && <span className="game-info-line">{label}</span>}
+      <div className="tag-chips">
+        {tags.map((t) => (
+          <span key={t} className="chip tag">
+            {t}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -135,7 +141,7 @@ export function TagEditor({ scope, value = [], onChange, id }) {
         type="text"
         list={listId}
         className="tag-input"
-        placeholder={value.length ? "Add another…" : "Tags — hip-hop, want to play…"}
+        placeholder="Add another tag"
         value={draft}
         maxLength={40}
         onChange={(e) => setDraft(e.target.value)}
