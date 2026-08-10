@@ -8,6 +8,7 @@ class RecordAttrsOut(BaseModel):
     label: str | None = None
     catalog_number: str | None = None
     format: str | None = None
+    genre: str | None = None
     speed: str | None = None
     pressing: str | None = None
     release_year: int | None = None
@@ -40,6 +41,7 @@ class RecordCreate(BaseModel):
     label: str | None = Field(default=None, max_length=120)
     catalog_number: str | None = Field(default=None, max_length=60)
     format: str | None = Field(default=None, max_length=40)
+    genre: str | None = Field(default=None, max_length=60)
     speed: str | None = Field(default=None, max_length=10)
     pressing: str | None = Field(default=None, max_length=200)
     release_year: int | None = None
@@ -59,6 +61,7 @@ class RecordUpdate(BaseModel):
     label: str | None = Field(default=None, max_length=120)
     catalog_number: str | None = Field(default=None, max_length=60)
     format: str | None = Field(default=None, max_length=40)
+    genre: str | None = Field(default=None, max_length=60)
     speed: str | None = Field(default=None, max_length=10)
     pressing: str | None = Field(default=None, max_length=200)
     release_year: int | None = None

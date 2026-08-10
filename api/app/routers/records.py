@@ -25,7 +25,7 @@ from app.schemas.records import (
 router = APIRouter(prefix="/api/records", tags=["records"])
 
 ATTR_FIELDS = (
-    "artist", "label", "catalog_number", "format", "speed", "pressing",
+    "artist", "label", "catalog_number", "format", "genre", "speed", "pressing",
     "release_year", "country", "barcode", "track_count", "tracklist",
 )
 
@@ -198,6 +198,7 @@ def record_facets(db: Session = Depends(get_db),
         "artists": facet(RecordAttrs.artist),
         "labels": facet(RecordAttrs.label),
         "formats": facet(RecordAttrs.format),
+        "genres": facet(RecordAttrs.genre),
         # tags are not here on purpose: every collection reads them from
         # /api/tags, which is the one place their counts are worked out
     }
@@ -211,6 +212,7 @@ def list_records(
     artist: str | None = None,
     label: str | None = None,
     format: str | None = None,
+    genre: str | None = None,
     tag: str | None = None,
     sort: str = Query("artist", pattern="^(artist|title|label|year|added|oldest)$"),
     include_wanted_only: bool = False,
@@ -237,6 +239,8 @@ def list_records(
         filters.append(RecordAttrs.label == label)
     if format:
         filters.append(RecordAttrs.format == format)
+    if genre:
+        filters.append(RecordAttrs.genre == genre)
     if tag:
         filters.append(tagged(user.id, "records", tag, CollectionItem.id))
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking

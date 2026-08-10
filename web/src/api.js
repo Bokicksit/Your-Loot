@@ -147,6 +147,8 @@ export const api = {
   deleteTag: (tagId) => request(`/api/tags/${tagId}`, { method: "DELETE" }),
   records: (params = {}) => request(`/api/records?${new URLSearchParams(params)}`),
   recordFacets: () => request("/api/records/facets"),
+  // TEMPORARY: one-off for collections older than the genre column
+  backfillGenres: () => request("/api/settings/backfill-genres", { method: "POST" }),
   addRecord: (body) =>
     request("/api/records", { method: "POST", body: JSON.stringify(body) }),
   updateRecord: (itemId, body) =>

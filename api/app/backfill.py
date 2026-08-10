@@ -112,6 +112,52 @@ def _records(db, dry_run: bool, say) -> tuple[int, int, list[str]]:
     return filled, skipped, no_id
 
 
+def _genres(db, dry_run: bool, say) -> tuple[int, int, list[str]]:
+    """Fill in the genre on records added before there was a column for it.
+
+    Cheaper than the tracklist pass: the search hit already carries the genre,
+    so there is no second request per record. Same identification, though —
+    the barcode names the pressing, and artist-and-title would happily file a
+    reissue under whatever the first fuzzy match happened to be.
+    """
+    rows = db.scalars(
+        select(RecordAttrs)
+        .join(CollectionItem, CollectionItem.id == RecordAttrs.item_id)
+        .where(RecordAttrs.genre.is_(None))
+    ).all()
+    filled = skipped = 0
+    no_id = []
+    say(f"Records without a genre: {len(rows)}")
+    if rows and not discogs_client.configured:
+        say("  (no DISCOGS_TOKEN — genres come from Discogs, so this is a no-op)")
+        return 0, len(rows), []
+    for a in rows:
+        title = a.item.title if a.item else f"item {a.item_id}"
+        if not a.barcode:
+            no_id.append(title)
+            continue
+        if dry_run:
+            skipped += 1
+            continue
+        hits = discogs_client.by_barcode(a.barcode, limit=5)
+        time.sleep(PAUSE)
+        # One barcode listed twice is the same pressing catalogued twice and
+        # they agree; two different records behind one barcode is where this
+        # stops, exactly as the tracklist pass does.
+        names = {(h.get("title") or "").strip().lower() for h in hits}
+        genre = next((h.get("genre") for h in hits if h.get("genre")), None)
+        if not genre or len(names) > 1:
+            skipped += 1
+            why = "no genre" if not genre else f"{len(names)} different records"
+            say(f"  —  {title}: that barcode matches {why}")
+            continue
+        a.genre = genre[:60]
+        db.commit()
+        filled += 1
+        say(f"  ok {title}: {genre}")
+    return filled, skipped, no_id
+
+
 def run(dry_run: bool = False, say=print) -> dict:
     """The whole pass, as data.
 
@@ -121,7 +167,13 @@ def run(dry_run: bool = False, say=print) -> dict:
     with SessionLocal() as db:
         b_filled, b_skipped, b_noid = _books(db, dry_run, say)
         r_filled, r_skipped, r_noid = _records(db, dry_run, say)
+        g_filled, g_skipped, g_noid = _genres(db, dry_run, say)
     return {
+        "genres": {
+            "filled": g_filled,
+            "nothing_found": g_skipped,
+            "unidentifiable": g_noid,
+        },
         "books": {
             "filled": b_filled,
             "nothing_found": b_skipped,
@@ -149,6 +201,8 @@ def main() -> int:
     print("\n" + "-" * 52)
     print(f"Books:   {b_filled} filled, {b_skipped} had none to find")
     print(f"Records: {r_filled} filled, {r_skipped} had none to find")
+    g = out["genres"]
+    print(f"Genres:  {g['filled']} filled, {g['nothing_found']} had none to find")
     for label, missing, needs in (
         ("books", b_noid, "an ISBN"),
         ("records", r_noid, "a barcode"),

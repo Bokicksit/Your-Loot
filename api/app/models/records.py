@@ -18,6 +18,8 @@ class RecordAttrs(Base):
     label: Mapped[str | None] = mapped_column(String(120))
     catalog_number: Mapped[str | None] = mapped_column(String(60))
     format: Mapped[str | None] = mapped_column(String(40))
+    # the first genre Discogs files the release under — "Hip Hop", "Rock"
+    genre: Mapped[str | None] = mapped_column(String(60), index=True)
     speed: Mapped[str | None] = mapped_column(String(10))
     pressing: Mapped[str | None] = mapped_column(String(200))
     release_year: Mapped[int | None] = mapped_column()

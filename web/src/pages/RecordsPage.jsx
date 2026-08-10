@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   label: "",
   catalog_number: "",
   format: '12" Vinyl',
+  genre: "",
   speed: "33⅓",
   pressing: "",
   release_year: "",
@@ -53,12 +54,13 @@ const gradePair = (o) =>
 export default function RecordsPage() {
   const [records, setRecords] = useState([]);
   const [total, setTotal] = useState(0);
-  const [facets, setFacets] = useState({ artists: [], labels: [], formats: [] });
+  const [facets, setFacets] = useState({ artists: [], labels: [], formats: [], genres: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("records");
   const [artistFilter, setArtistFilter] = useListPref("records", "artistFilter", "");
   const [labelFilter, setLabelFilter] = useListPref("records", "labelFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("records", "formatFilter", "");
+  const [genreFilter, setGenreFilter] = useListPref("records", "genreFilter", "");
   const [tagFilter, setTagFilter] = useListPref("records", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
   const [tagsChanged, setTagsChanged] = useState(0);
@@ -78,6 +80,7 @@ export default function RecordsPage() {
     if (artistFilter) params.artist = artistFilter;
     if (labelFilter) params.label = labelFilter;
     if (formatFilter) params.format = formatFilter;
+    if (genreFilter) params.genre = genreFilter;
     if (tagFilter) params.tag = tagFilter;
     api
       .records(params)
@@ -94,13 +97,14 @@ export default function RecordsPage() {
       if (gone(f.artists, artistFilter)) setArtistFilter("");
       if (gone(f.labels, labelFilter)) setLabelFilter("");
       if (gone(f.formats, formatFilter)) setFormatFilter("");
+      if (gone(f.genres || [], genreFilter)) setGenreFilter("");
     });
   };
 
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, artistFilter, labelFilter, formatFilter, tagFilter, sort, tagsChanged]);
+  }, [search, artistFilter, labelFilter, formatFilter, genreFilter, tagFilter, sort, tagsChanged]);
 
   const lookup = async (params) => {
     setSearching(true);
@@ -141,6 +145,7 @@ export default function RecordsPage() {
       label: r.label || "",
       catalog_number: r.catalog_number || "",
       format: r.format || f.format,
+      genre: r.genre || "",
       // 7" singles spin at 45; everything else is an LP until told otherwise
       speed: r.speed || (/7"/.test(r.format || "") ? "45" : f.speed),
       // "Limited Edition, Reissue, Kith" — what separates this copy from the
@@ -186,6 +191,7 @@ export default function RecordsPage() {
         label: form.label.trim() || null,
         catalog_number: form.catalog_number.trim() || null,
         format: form.format || null,
+        genre: form.genre.trim() || null,
         speed: form.speed || null,
         pressing: form.pressing.trim() || null,
         release_year: form.release_year ? Number(form.release_year) : null,
@@ -245,6 +251,13 @@ export default function RecordsPage() {
         </button>
       </div>
 
+      {/* one list, shared by the genre box on the add form and the edit
+          form — typing beats picking, but not knowing beats both */}
+      <datalist id="record-genres">
+        {(facets.genres || []).map((g) => (
+          <option key={g.value} value={g.value} />
+        ))}
+      </datalist>
       <div className="chip-row">
         {facets.formats.length > 0 && (
           <select
@@ -270,6 +283,20 @@ export default function RecordsPage() {
             {facets.artists.map((a) => (
               <option key={a.value} value={a.value}>
                 {a.value} ({a.count})
+              </option>
+            ))}
+          </select>
+        )}
+        {facets.genres?.length > 0 && (
+          <select
+            className="chip-select"
+            value={genreFilter}
+            onChange={(e) => setGenreFilter(e.target.value)}
+          >
+            <option value="">All genres</option>
+            {facets.genres.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.value} ({g.count})
               </option>
             ))}
           </select>
@@ -472,6 +499,14 @@ export default function RecordsPage() {
             />
             <input
               type="text"
+              list="record-genres"
+              style={{ maxWidth: "140px" }}
+              placeholder="Genre"
+              value={form.genre}
+              onChange={(e) => setForm({ ...form, genre: e.target.value })}
+            />
+            <input
+              type="text"
               style={{ maxWidth: "90px" }}
               placeholder="Country"
               value={form.country}
@@ -630,6 +665,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
       label: a.label || "",
       catalog_number: a.catalog_number || "",
       format: a.format || "",
+      genre: a.genre || "",
       speed: a.speed || "",
       pressing: a.pressing || "",
       release_year: a.release_year ?? "",
@@ -652,6 +688,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
         label: entry.label.trim() || null,
         catalog_number: entry.catalog_number.trim() || null,
         format: entry.format || null,
+        genre: entry.genre.trim() || null,
         speed: entry.speed || null,
         pressing: entry.pressing.trim() || null,
         country: entry.country.trim() || null,
@@ -803,6 +840,14 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
             />
             <input
               type="text"
+              list="record-genres"
+              style={{ maxWidth: "140px" }}
+              placeholder="Genre"
+              value={entry.genre}
+              onChange={(e) => setEntry({ ...entry, genre: e.target.value })}
+            />
+            <input
+              type="text"
               style={{ maxWidth: "90px" }}
               placeholder="Country"
               value={entry.country}
@@ -861,6 +906,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
               <span className="game-info-line">
                 {[
                   a.format,
+                  a.genre,
                   a.speed && `${a.speed} RPM`,
                   a.release_year,
                   a.country,

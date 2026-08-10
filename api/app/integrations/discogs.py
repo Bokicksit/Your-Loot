@@ -125,6 +125,9 @@ class DiscogsClient:
                 p for p in fmt_parts
                 if p.lower() not in {"vinyl", "lp", "album", "cd", "cassette"}
             ) or None,
+            # Discogs files a release under several at once; the first is the
+            # one it leads with, and the one a crate divider would say
+            "genre": next((g for g in (hit.get("genre") or []) if isinstance(g, str)), None),
             "release_year": int(year) if str(year).isdigit() else None,
             "country": hit.get("country") or None,
             "barcode": None,  # the caller already knows what was scanned
