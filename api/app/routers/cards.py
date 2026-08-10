@@ -12,6 +12,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.tcgdex import tcgdex_client
 from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, User, Wanted
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/api/cards", tags=["cards"])
 MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
 
 
-def card_to_out(item: CollectionItem, uid: int) -> CardOut:
+def card_to_out(item: CollectionItem, uid: int, tags=()) -> CardOut:
     return CardOut(
         id=item.id,
         title=item.title,
@@ -32,6 +33,8 @@ def card_to_out(item: CollectionItem, uid: int) -> CardOut:
         attrs=item.card_attrs,
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in, not looked up: one query for the page beats one per row
+        tags=list(tags),
     )
 
 
@@ -99,7 +102,11 @@ def search_cards(
         .unique()
         .all()
     )
-    return CardListOut(total=len(items), items=[card_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return CardListOut(
+        total=len(items),
+        items=[card_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.get("/sets")
@@ -177,6 +184,7 @@ def list_cards(
     dex_no: int | None = None,
     collection: bool = True,
     include_binder: bool = False,
+    tag: str | None = None,
     sort: str = Query("dex", pattern="^(dex|title|set|number|rarity|added|oldest)$"),
     limit: int = Query(120, le=300),
     offset: int = 0,
@@ -201,6 +209,8 @@ def list_cards(
     if dex_no is not None:
         # every card of one Pokémon — what the Pokédex offers as replacements
         filters.append(CardAttrs.national_dex_no == dex_no)
+    if tag:
+        filters.append(tagged(user.id, "cards", tag, CollectionItem.id))
     if collection:
         owned_q = select(Owned.id).where(
             Owned.item_id == CollectionItem.id, Owned.user_id == user.id
@@ -254,7 +264,11 @@ def list_cards(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return CardListOut(total=total, items=[card_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return CardListOut(
+        total=total,
+        items=[card_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.get("/tcgdex/search")
@@ -319,7 +333,7 @@ def add_from_tcgdex(card_id: str, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return card_to_out(item, user.id)
+    return card_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.post("", response_model=CardOut, status_code=201)
@@ -347,7 +361,7 @@ def create_card(body: CardCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return card_to_out(item, user.id)
+    return card_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=CardOut)
@@ -383,7 +397,7 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db),
         item.card_attrs.layer = classify_layer(data["rarity"])
     db.commit()
     db.refresh(item)
-    return card_to_out(item, user.id)
+    return card_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)

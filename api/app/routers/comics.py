@@ -9,6 +9,7 @@ from app.integrations.comicvine import comicvine_client
 from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted, User
 from app.search import contains
 from app.sorting import leading_number
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.comics import (
     ComicAttrsOut,
@@ -26,7 +27,7 @@ ATTR_FIELDS = (
 )
 
 
-def comic_to_out(item: CollectionItem, uid: int) -> ComicOut:
+def comic_to_out(item: CollectionItem, uid: int, tags=()) -> ComicOut:
     a = item.comic_attrs
     return ComicOut(
         id=item.id,
@@ -36,6 +37,8 @@ def comic_to_out(item: CollectionItem, uid: int) -> ComicOut:
         attrs=ComicAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in, not looked up: one query for the page beats one per row
+        tags=list(tags),
     )
 
 
@@ -152,6 +155,7 @@ def list_comics(
     search: str | None = None,
     series: str | None = None,
     publisher: str | None = None,
+    tag: str | None = None,
     sort: str = Query("series", pattern="^(series|title|publisher|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
@@ -176,6 +180,8 @@ def list_comics(
     if publisher:
         filters.append(ComicAttrs.publisher == publisher)
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    if tag:
+        filters.append(tagged(user.id, "comics", tag, CollectionItem.id))
     # for both is what include_wanted_only means.
     filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
@@ -212,7 +218,11 @@ def list_comics(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return ComicListOut(total=total, items=[comic_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return ComicListOut(
+        total=total,
+        items=[comic_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.post("", response_model=ComicOut, status_code=201)
@@ -231,7 +241,7 @@ def create_comic(body: ComicCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return comic_to_out(item, user.id)
+    return comic_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=ComicOut)
@@ -249,7 +259,7 @@ def update_comic(item_id: int, body: ComicUpdate, db: Session = Depends(get_db),
             setattr(item.comic_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return comic_to_out(item, user.id)
+    return comic_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)

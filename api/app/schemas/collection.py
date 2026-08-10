@@ -20,9 +20,14 @@ class WantedItemOut(BaseModel):
     info_line: str = ""
     info_text: str | None = None
     wanted: WantedOut
+    # your own words for this item, carried onto the wanted list because a
+    # label like "want to play" is most of the point of still hunting it
+    tags: list[str] = []
 
 
 class ItemStatusOut(BaseModel):
     item_id: int
     owned: list[OwnedOut]
     wanted: WantedOut | None = None
+    # your own words for this item, in this collection only
+    tags: list[str] = []

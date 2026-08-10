@@ -8,6 +8,7 @@ from app.db import get_db
 from app.integrations import libretro
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted, User
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
 from app.search import contains
@@ -16,7 +17,7 @@ from app.sorting import year_from_title
 router = APIRouter(prefix="/api/games", tags=["games"])
 
 
-def game_to_out(item: CollectionItem, uid: int) -> GameOut:
+def game_to_out(item: CollectionItem, uid: int, tags=()) -> GameOut:
     a = item.game_attrs
     return GameOut(
         id=item.id,
@@ -41,6 +42,8 @@ def game_to_out(item: CollectionItem, uid: int) -> GameOut:
         ),
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in, not looked up: one query for the page beats one per row
+        tags=list(tags),
     )
 
 
@@ -124,6 +127,7 @@ def list_games(
     search: str | None = None,
     platform_id: int | None = None,
     is_hardware: bool | None = None,
+    tag: str | None = None,
     sort: str = Query("title", pattern="^(title|platform|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
@@ -144,6 +148,8 @@ def list_games(
     if is_hardware is not None:
         filters.append(GameAttrs.is_hardware == is_hardware)
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    if tag:
+        filters.append(tagged(user.id, ("hardware" if is_hardware else "games"), tag, CollectionItem.id))
     # for both is what include_wanted_only means.
     filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
 
@@ -170,7 +176,11 @@ def list_games(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return GameListOut(total=total, items=[game_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return GameListOut(
+        total=total,
+        items=[game_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.post("", response_model=GameOut, status_code=201)
@@ -213,7 +223,7 @@ def create_game(body: GameCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return game_to_out(item, user.id)
+    return game_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=GameOut)
@@ -237,7 +247,7 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db),
             setattr(item.game_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return game_to_out(item, user.id)
+    return game_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)

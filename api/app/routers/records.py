@@ -12,6 +12,7 @@ from app.integrations.musicbrainz import musicbrainz_client
 from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted, User
 from app.search import contains
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.records import (
     RecordAttrsOut,
@@ -29,7 +30,7 @@ ATTR_FIELDS = (
 )
 
 
-def record_to_out(item: CollectionItem, uid: int) -> RecordOut:
+def record_to_out(item: CollectionItem, uid: int, tags=()) -> RecordOut:
     a = item.record_attrs
     return RecordOut(
         id=item.id,
@@ -39,6 +40,9 @@ def record_to_out(item: CollectionItem, uid: int) -> RecordOut:
         attrs=RecordAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in rather than looked up: a listing serialises a hundred of
+        # these, and one query for the page beats a hundred for the rows
+        tags=list(tags),
     )
 
 
@@ -194,6 +198,8 @@ def record_facets(db: Session = Depends(get_db),
         "artists": facet(RecordAttrs.artist),
         "labels": facet(RecordAttrs.label),
         "formats": facet(RecordAttrs.format),
+        # tags are not here on purpose: every collection reads them from
+        # /api/tags, which is the one place their counts are worked out
     }
 
 
@@ -205,6 +211,7 @@ def list_records(
     artist: str | None = None,
     label: str | None = None,
     format: str | None = None,
+    tag: str | None = None,
     sort: str = Query("artist", pattern="^(artist|title|label|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
@@ -230,6 +237,8 @@ def list_records(
         filters.append(RecordAttrs.label == label)
     if format:
         filters.append(RecordAttrs.format == format)
+    if tag:
+        filters.append(tagged(user.id, "records", tag, CollectionItem.id))
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
     # for both is what include_wanted_only means.
     filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
@@ -259,7 +268,11 @@ def list_records(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return RecordListOut(total=total, items=[record_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return RecordListOut(
+        total=total,
+        items=[record_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.post("", response_model=RecordOut, status_code=201)
@@ -279,7 +292,7 @@ def create_record(body: RecordCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return record_to_out(item, user.id)
+    return record_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=RecordOut)
@@ -297,7 +310,7 @@ def update_record(item_id: int, body: RecordUpdate, db: Session = Depends(get_db
             setattr(item.record_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return record_to_out(item, user.id)
+    return record_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)

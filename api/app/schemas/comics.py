@@ -23,6 +23,8 @@ class ComicOut(BaseModel):
     attrs: ComicAttrsOut
     owned: list[OwnedOut] = []
     wanted: WantedOut | None = None
+    # your own words for this item, in this collection only
+    tags: list[str] = []
 
 
 class ComicListOut(BaseModel):

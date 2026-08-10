@@ -7,6 +7,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.tmdb import tmdb_client
 from app.models import CollectionItem, Module, MovieAttrs, Owned, Wanted, User
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.movies import (
     MovieAttrsOut,
@@ -21,7 +22,7 @@ from app.sorting import year_from_title
 router = APIRouter(prefix="/api/movies", tags=["movies"])
 
 
-def movie_to_out(item: CollectionItem, uid: int) -> MovieOut:
+def movie_to_out(item: CollectionItem, uid: int, tags=()) -> MovieOut:
     a = item.movie_attrs
     return MovieOut(
         id=item.id,
@@ -38,6 +39,8 @@ def movie_to_out(item: CollectionItem, uid: int) -> MovieOut:
         ),
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in, not looked up: one query for the page beats one per row
+        tags=list(tags),
     )
 
 
@@ -88,6 +91,7 @@ def list_movies(
     user: User = Depends(current_user),
     search: str | None = None,
     format: str | None = None,
+    tag: str | None = None,
     sort: str = Query("title", pattern="^(title|format|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
@@ -107,6 +111,8 @@ def list_movies(
         filters.append(MovieAttrs.format == format)
 
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    if tag:
+        filters.append(tagged(user.id, "movies", tag, CollectionItem.id))
     # for both is what include_wanted_only means.
     filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
 
@@ -134,7 +140,11 @@ def list_movies(
     items = (
         db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
     )
-    return MovieListOut(total=total, items=[movie_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return MovieListOut(
+        total=total,
+        items=[movie_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.post("", response_model=MovieOut, status_code=201)
@@ -160,7 +170,7 @@ def create_movie(body: MovieCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return movie_to_out(item, user.id)
+    return movie_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=MovieOut)
@@ -178,7 +188,7 @@ def update_movie(item_id: int, body: MovieUpdate, db: Session = Depends(get_db),
             setattr(item.movie_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return movie_to_out(item, user.id)
+    return movie_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)

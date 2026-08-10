@@ -9,6 +9,7 @@ from app.models.item import CollectionItem, Module
 from app.models.movies import MovieAttrs
 from app.models.records import RecordAttrs
 from app.models.settings import Setting
+from app.models.tags import ItemTag, Tag, tag_key
 from app.models.users import ItemOverride, User
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "DexSlot",
     "GameAttrs",
     "ItemOverride",
+    "ItemTag",
     "LegoAttrs",
     "Module",
     "MovieAttrs",
@@ -27,6 +29,8 @@ __all__ = [
     "Platform",
     "RecordAttrs",
     "Setting",
+    "Tag",
     "User",
     "Wanted",
+    "tag_key",
 ]

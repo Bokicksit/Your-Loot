@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.auth import current_user
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, User, Wanted
+from app.tagging import tags_for, tags_of
 from app.tenancy import my_copies, my_want, owns
 from app.schemas.collection import ItemStatusOut, WantedItemOut
 from app.schemas.common import OwnedCreate, WantedCreate
@@ -19,9 +20,15 @@ def _get_item(db: Session, item_id: int) -> CollectionItem:
     return item
 
 
-def _status(item: CollectionItem, uid: int) -> ItemStatusOut:
+def _status(db: Session, item: CollectionItem, uid: int) -> ItemStatusOut:
+    """Carries the tags as well as the copies. Adding a copy returns this,
+    and a client that refreshed its row from a reply with no tags in it would
+    blank the labels it was showing a moment ago."""
     return ItemStatusOut(
-        item_id=item.id, owned=my_copies(item, uid), wanted=my_want(item, uid)
+        item_id=item.id,
+        owned=my_copies(item, uid),
+        wanted=my_want(item, uid),
+        tags=tags_of(db, uid, item.id),
     )
 
 
@@ -63,7 +70,7 @@ def add_owned(
         _enforce_single_binder(db, item, owned.id, user.id)
     db.commit()
     db.refresh(item)
-    return _status(item, user.id)
+    return _status(db, item, user.id)
 
 
 @router.patch("/items/{item_id}/owned/{owned_id}", response_model=ItemStatusOut)
@@ -87,7 +94,7 @@ def update_owned(
         _enforce_single_binder(db, item, owned.id, user.id)
     db.commit()
     db.refresh(item)
-    return _status(item, user.id)
+    return _status(db, item, user.id)
 
 
 @router.delete("/items/{item_id}/owned/{owned_id}", response_model=ItemStatusOut)
@@ -106,7 +113,7 @@ def remove_owned(
     db.delete(owned)
     db.commit()
     db.refresh(item)
-    return _status(item, user.id)
+    return _status(db, item, user.id)
 
 
 @router.post("/items/{item_id}/wanted", response_model=ItemStatusOut)
@@ -121,7 +128,7 @@ def add_wanted(
         db.add(Wanted(item_id=item.id, user_id=user.id, **body.model_dump()))
         db.commit()
         db.refresh(item)
-    return _status(item, user.id)
+    return _status(db, item, user.id)
 
 
 @router.delete("/items/{item_id}/wanted", response_model=ItemStatusOut)
@@ -145,7 +152,7 @@ def remove_wanted(
             return ItemStatusOut(item_id=item_id, owned=[], wanted=None)
         db.commit()
         db.refresh(item)
-    return _status(item, user.id)
+    return _status(db, item, user.id)
 
 
 def _detail(item: CollectionItem) -> str:
@@ -398,11 +405,13 @@ def wanted_list(
         return item.module
 
     rows = db.scalars(q).unique().all()
+    tag_map = tags_for(db, user.id, [w.item.id for w in rows])
     out = []
     for w in rows:
         line, text = _info(w.item)
         out.append(
             WantedItemOut(
+                tags=tag_map.get(w.item.id, []),
                 item_id=w.item.id,
                 module=_ui_module(w.item),
                 title=w.item.title,

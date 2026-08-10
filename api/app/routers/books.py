@@ -9,6 +9,7 @@ from app.integrations.openlibrary import openlibrary_client
 from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted, User
 from app.search import contains
+from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.books import (
     BookAttrsOut,
@@ -26,7 +27,7 @@ ATTR_FIELDS = (
 )
 
 
-def book_to_out(item: CollectionItem, uid: int) -> BookOut:
+def book_to_out(item: CollectionItem, uid: int, tags=()) -> BookOut:
     a = item.book_attrs
     return BookOut(
         id=item.id,
@@ -36,6 +37,8 @@ def book_to_out(item: CollectionItem, uid: int) -> BookOut:
         attrs=BookAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
         owned=my_copies(item, uid),
         wanted=my_want(item, uid),
+        # passed in, not looked up: one query for the page beats one per row
+        tags=list(tags),
     )
 
 
@@ -152,6 +155,7 @@ def list_books(
     search: str | None = None,
     author: str | None = None,
     format: str | None = None,
+    tag: str | None = None,
     sort: str = Query("title", pattern="^(title|author|series|year|added|oldest)$"),
     include_wanted_only: bool = False,
     limit: int = Query(100, le=200),
@@ -174,6 +178,8 @@ def list_books(
     if format:
         filters.append(BookAttrs.format == format)
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
+    if tag:
+        filters.append(tagged(user.id, "books", tag, CollectionItem.id))
     # for both is what include_wanted_only means.
     filters.append(on_my_shelf(user.id, CollectionItem.id, include_wanted_only))
     if filters:
@@ -201,7 +207,11 @@ def list_books(
 
     total = db.scalar(count_q) or 0
     items = db.scalars(q.order_by(*order).limit(limit).offset(offset)).unique().all()
-    return BookListOut(total=total, items=[book_to_out(i, user.id) for i in items])
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return BookListOut(
+        total=total,
+        items=[book_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
 
 
 @router.post("", response_model=BookOut, status_code=201)
@@ -220,7 +230,7 @@ def create_book(body: BookCreate, db: Session = Depends(get_db),
     db.add(item)
     db.commit()
     db.refresh(item)
-    return book_to_out(item, user.id)
+    return book_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.patch("/{item_id}", response_model=BookOut)
@@ -238,7 +248,7 @@ def update_book(item_id: int, body: BookUpdate, db: Session = Depends(get_db),
             setattr(item.book_attrs, field, data[field])
     db.commit()
     db.refresh(item)
-    return book_to_out(item, user.id)
+    return book_to_out(item, user.id, tags_of(db, user.id, item.id))
 
 
 @router.delete("/{item_id}", status_code=204)
