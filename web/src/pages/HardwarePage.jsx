@@ -10,7 +10,12 @@ import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
-import { cleanGameTitle } from "../upc.js";
+// cleanTitle, not cleanGameTitle: the game cleaner cuts a title at the first
+// platform name, which is right for "Zelda for Nintendo Switch" and ruinous
+// here, where the platform name IS the product — it turned "Super Nintendo
+// SNES Console" into "Super". This one strips brackets and condition words
+// and leaves the name alone.
+import { cleanTitle } from "../upc.js";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
@@ -76,11 +81,50 @@ export default function HardwarePage() {
   });
   const [form, setForm] = useState(blankForm);
   const [art, setArt] = useState([]); // retailer photos from a scanned box
+  const [results, setResults] = useState(null); // null = nothing searched yet
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
 
   // A boxed console or controller carries a UPC like any other product, so the
   // same lookup games and movies use fills the name and offers photos of the
   // actual box. Loose retro hardware has no barcode — that stays typed in.
+  // The same retail database the scanner reads, asked by name instead of by
+  // number. Retro hardware is not in any games catalogue — IGDB knows the
+  // Zelda cartridge and nothing about the console — but a shop has sold one,
+  // and a shop listing carries a photograph of the actual unit.
+  //
+  // Explicit, never automatic: it shares the barcode service's daily budget,
+  // and typing a name is not on its own a request to spend one.
+  const nameSearch = async () => {
+    const term = form.title.trim();
+    if (term.length < 3 || searching) return;
+    setSearching(true);
+    setResults(null); // clear the old hits so the status stands alone
+    try {
+      const { items, exhausted } = await api.productSearch(term);
+      if (exhausted) alert("The lookup service is out of requests for today.");
+      setResults(items || []);
+    } catch (e) {
+      alert(e.message);
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // A pick fills the name and offers its photographs; everything else about a
+  // console — model, serial, whether it works — is on the unit in your hands.
+  const pickResult = (r) => {
+    const shots = (r.images || []).map((url) => ({ url, kind: "box" }));
+    setArt(shots);
+    setForm((f) => ({
+      ...f,
+      title: cleanTitle(r.title) || r.title,
+      image_url: shots[0]?.url || f.image_url,
+    }));
+    setResults(null);
+  };
+
   const onBarcode = async (code) => {
     try {
       const res = await api.barcodeLookup(code);
@@ -93,7 +137,7 @@ export default function HardwarePage() {
       setArt(boxArt);
       setForm((f) => ({
         ...f,
-        title: cleanGameTitle(raw) || raw,
+        title: cleanTitle(raw) || raw,
         image_url: boxArt[0]?.url || f.image_url,
       }));
     } catch (e) {
@@ -132,6 +176,7 @@ export default function HardwarePage() {
   const openForm = () => {
     setForm(blankForm());
     setArt([]);
+    setResults(null);
     setShowForm(true);
   };
 
@@ -240,8 +285,10 @@ export default function HardwarePage() {
         <ViewToggle module="hardware" />
       </div>
 
-      {/* no online catalogue knows retro hardware, so there is nothing to
-          search and no reason to make you step through a search first */}
+      {/* No games catalogue knows retro hardware, so this asks the retail
+          database the scanner uses — by name when you have no box to scan.
+          Still one step: the search is a shortcut on the form, not a gate
+          in front of it. */}
       <AddSheet open={showForm} title="Add hardware" onClose={closeForm}>
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
@@ -253,8 +300,50 @@ export default function HardwarePage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
+            <button
+              type="button"
+              className="ghost icon"
+              title="Search shop listings by name"
+              onClick={nameSearch}
+              disabled={searching || form.title.trim().length < 3}
+            >
+              <Icon id="scan" />
+            </button>
             <BarcodeScan onCode={onBarcode} />
           </div>
+          {searching && (
+            <p className="empty" style={{ padding: "var(--s-3)" }}>Looking…</p>
+          )}
+          {results !== null && !searching && (
+            <>
+              {results.length === 0 ? (
+                <p className="empty" style={{ padding: "var(--s-3)" }}>
+                  Nothing found by that name — the fields below still work.
+                </p>
+              ) : (
+                <div className="grid pick-grid">
+                  {results.slice(0, 8).map((r, i) => (
+                    <div
+                      key={i}
+                      className="tile pick square"
+                      onClick={() => pickResult(r)}
+                      title="Use this listing's name and photos"
+                    >
+                      {r.images?.[0] ? (
+                        <img src={r.images[0]} alt={r.title} loading="lazy" />
+                      ) : (
+                        <div className="placeholder" data-label="no photo" />
+                      )}
+                      <div className="tile-info">
+                        <strong>{r.title}</strong>
+                        <small>{r.brand || "—"}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           <div className="form-row">
             <select
               value={form.platform_id}
