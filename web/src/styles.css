@@ -2572,3 +2572,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   z-index: 2;
 }
 .cam-top .chip { background: rgba(11, 10, 14, .72); backdrop-filter: blur(6px); }
+
+/* A duplicate notice. Deliberately quiet — it is telling you something true,
+   not asking permission, and a second copy is an ordinary thing to own. */
+.dupe-note {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  color: var(--gold-bright);
+  background: var(--gold-wash);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  font-size: var(--f-2);
+  line-height: 1.5;
+}

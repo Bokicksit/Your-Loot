@@ -47,24 +47,25 @@ const copyLabel = (o) =>
     .filter(Boolean)
     .join(" · ");
 
-// Shared wording, so every collection asks the same question the same way.
-// Returns false only if the person says no.
-async function confirmDuplicate(scope, title) {
+// Shared wording, so every collection says this the same way. It is a notice,
+// not a gate: a second copy of a game is an ordinary thing to own, and the
+// only person who knows whether this one is a duplicate or a spare is holding
+// it. Returns a sentence to show, or null.
+async function duplicateNotice(scope, title) {
+  if (!title.trim()) return null;
   let matches = [];
   try {
     ({ matches } = await api.duplicates(scope, title));
   } catch {
-    return true; // the check failing must never block an add
+    return null; // the check failing must never be in anybody's way
   }
-  if (!matches.length) return true;
+  if (!matches.length) return null;
   const m = matches[0];
   const copies = m.copies === 1 ? "1 copy" : `${m.copies} copies`;
-  return confirm(
-    `${m.title} is already in this collection` +
-      (m.detail ? ` — ${m.detail}` : "") +
-      `, with ${copies}.
-
-Add another?`
+  return (
+    `You already have ${m.title}` +
+    (m.detail ? ` — ${m.detail}` : "") +
+    `, with ${copies}. Adding this makes another.`
   );
 }
 
@@ -79,6 +80,8 @@ export default function LegoPage() {
   // bumped whenever tags change, so the filter re-reads its counts
   const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("lego", "sort", "title");
+  // Shown while you fill the form in, not thrown at you on save.
+  const [dupe, setDupe] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -108,6 +111,15 @@ export default function LegoPage() {
       if (themeFilter && !f.themes.some((t) => t.value === themeFilter)) setThemeFilter("");
     });
   };
+
+  useEffect(() => {
+    if (!showForm) return setDupe(null);
+    const t = setTimeout(
+      () => duplicateNotice("lego", form.title).then(setDupe),
+      350
+    );
+    return () => clearTimeout(t);
+  }, [showForm, form.title]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -197,10 +209,6 @@ export default function LegoPage() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      // Ask before making a second one. Two identical rows take a moment
-      // to create and a while to notice.
-      if (!(await confirmDuplicate("lego", form.title))) return;
-
       const created = await api.addLego({
         title: form.title,
         set_number: form.set_number.trim() || null,
@@ -448,6 +456,7 @@ export default function LegoPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {dupe && <p className="dupe-note">{dupe}</p>}
           {/* last of the fields: a tag is what you think of once the rest
               is filled in */}
           <div className="form-row">

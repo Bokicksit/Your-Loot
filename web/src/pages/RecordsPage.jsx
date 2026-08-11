@@ -52,24 +52,25 @@ const gradePair = (o) =>
     ? ""
     : `${o.condition || "?"}/${o.sleeve_condition || "?"}`;
 
-// Shared wording, so every collection asks the same question the same way.
-// Returns false only if the person says no.
-async function confirmDuplicate(scope, title) {
+// Shared wording, so every collection says this the same way. It is a notice,
+// not a gate: a second copy of a game is an ordinary thing to own, and the
+// only person who knows whether this one is a duplicate or a spare is holding
+// it. Returns a sentence to show, or null.
+async function duplicateNotice(scope, title) {
+  if (!title.trim()) return null;
   let matches = [];
   try {
     ({ matches } = await api.duplicates(scope, title));
   } catch {
-    return true; // the check failing must never block an add
+    return null; // the check failing must never be in anybody's way
   }
-  if (!matches.length) return true;
+  if (!matches.length) return null;
   const m = matches[0];
   const copies = m.copies === 1 ? "1 copy" : `${m.copies} copies`;
-  return confirm(
-    `${m.title} is already in this collection` +
-      (m.detail ? ` — ${m.detail}` : "") +
-      `, with ${copies}.
-
-Add another?`
+  return (
+    `You already have ${m.title}` +
+    (m.detail ? ` — ${m.detail}` : "") +
+    `, with ${copies}. Adding this makes another.`
   );
 }
 
@@ -87,6 +88,8 @@ export default function RecordsPage() {
   // bumped whenever tags change, so the filter re-reads its counts
   const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("records", "sort", "artist");
+  // Shown while you fill the form in, not thrown at you on save.
+  const [dupe, setDupe] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -122,6 +125,15 @@ export default function RecordsPage() {
       if (gone(f.genres || [], genreFilter)) setGenreFilter("");
     });
   };
+
+  useEffect(() => {
+    if (!showForm) return setDupe(null);
+    const t = setTimeout(
+      () => duplicateNotice("records", form.title).then(setDupe),
+      350
+    );
+    return () => clearTimeout(t);
+  }, [showForm, form.title]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -207,10 +219,6 @@ export default function RecordsPage() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      // Ask before making a second one. Two identical rows take a moment
-      // to create and a while to notice.
-      if (!(await confirmDuplicate("records", form.title))) return;
-
       const created = await api.addRecord({
         title: form.title,
         artist: form.artist.trim() || null,
@@ -548,6 +556,7 @@ export default function RecordsPage() {
               onChange={(url) => setForm({ ...form, image_url: url })}
             />
           </div>
+          {dupe && <p className="dupe-note">{dupe}</p>}
           {/* last of the fields, because a tag is the one thing here you
               think of after everything else is filled in */}
           <div className="form-row">
