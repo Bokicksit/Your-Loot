@@ -66,26 +66,32 @@ export function BrandMark({ size = 22 }) {
       width={size}
       height={size}
       aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
     >
-      <rect x="16" y="18" width="88" height="84" rx="8" strokeWidth="5" />
-      <path d="M16 60 H104" strokeWidth="5" />
-      <rect x="35" y="25" width="22" height="32" rx="3" strokeWidth="3.5" />
-      <path d="M35 31 H57 M35 51 H57" strokeWidth="2.6" />
-      <path d="M42 37 V47 H52" strokeWidth="3" />
-      <circle cx="76" cy="41" r="15" strokeWidth="3.5" />
-      <circle cx="76" cy="41" r="7" strokeWidth="2.6" />
-      <circle cx="76" cy="41" r="1.4" strokeWidth="2.8" />
-      <circle cx="46" cy="81" r="15" strokeWidth="4" />
-      <circle cx="46" cy="81" r="5.5" strokeWidth="3" />
-      <g transform="rotate(-8 76 81)">
-        <rect x="64" y="64" width="24" height="33" rx="3" strokeWidth="3.5" />
-        <rect x="68" y="68" width="16" height="25" rx="1.5" strokeWidth="2.6" />
-        <path d="M71 75 H81 M76 75 V86" strokeWidth="2.6" />
-      </g>
+      <defs>
+        <linearGradient id="ylCubeMark" x1="0" y1="0" x2="1" y2="0.7">
+          <stop offset="0" stopColor="#8b46f0" />
+          <stop offset="0.5" stopColor="#7c4dff" />
+          <stop offset="1" stopColor="#3b82f6" />
+        </linearGradient>
+        {/* The icon files paint the seams in the brand background, which is
+            right in a launcher and wrong here — the top bar is a lighter
+            shade, so a painted seam would read as a dark line across the
+            cube. Cutting them as transparency instead lets whatever is behind
+            the mark show through, on either bar and at any size. */}
+        <mask id="ylCubeMarkCut" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120">
+          <rect width="120" height="120" fill="#000" />
+          <g strokeLinejoin="round" strokeLinecap="round">
+            <path d="M60 12 L106 39 L60 66 L14 39 Z" fill="#fff" stroke="#fff" strokeWidth="7" />
+            <path d="M14 39 L60 66 L60 110 L14 83 Z" fill="#fff" stroke="#fff" strokeWidth="7" />
+            <path d="M106 39 L60 66 L60 110 L106 83 Z" fill="#fff" stroke="#fff" strokeWidth="7" />
+            <path d="M14 39 L60 66 L106 39" fill="none" stroke="#000" strokeWidth="10" />
+            <path d="M60 66 V110" fill="none" stroke="#000" strokeWidth="10" />
+            <rect x="45" y="39" width="30" height="35" rx="8" fill="#000" stroke="#000" strokeWidth="10" />
+            <path d="M55 48 V66 H68" fill="none" stroke="#fff" strokeWidth="7" />
+          </g>
+        </mask>
+      </defs>
+      <rect width="120" height="120" fill="url(#ylCubeMark)" mask="url(#ylCubeMarkCut)" />
     </svg>
   );
 }
