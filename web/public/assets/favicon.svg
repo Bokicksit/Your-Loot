@@ -1,11 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="64" height="64">
+  <defs>
+    <linearGradient id="ylCube" x1="0" y1="0" x2="1" y2="0.7">
+      <stop offset="0" stop-color="#8b46f0"></stop>
+      <stop offset="0.5" stop-color="#7c4dff"></stop>
+      <stop offset="1" stop-color="#3b82f6"></stop>
+    </linearGradient>
+  </defs>
   <rect width="120" height="120" rx="20" fill="#0b0a0e"></rect>
-  <g transform="translate(60 60) scale(1.02) translate(-60 -60)">
-    <g fill="none" stroke="#f2b73c" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="16" y="18" width="88" height="84" rx="8" stroke-width="6"></rect>
-      <path d="M24 90 H96" stroke-width="6"></path>
-      <rect x="36" y="26" width="48" height="54" rx="4" stroke-width="6"></rect>
-      <path d="M50 40 V64 H72" stroke-width="9"></path>
-    </g>
+  <g transform="translate(60 61) scale(1) translate(-60 -61)">
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M60 12 L106 39 L60 66 L14 39 Z" fill="url(#ylCube)" stroke="url(#ylCube)" stroke-width="7"></path>
+    <path d="M14 39 L60 66 L60 110 L14 83 Z" fill="url(#ylCube)" stroke="url(#ylCube)" stroke-width="7"></path>
+    <path d="M106 39 L60 66 L60 110 L106 83 Z" fill="url(#ylCube)" stroke="url(#ylCube)" stroke-width="7"></path>
+    <path d="M14 39 L60 66 L106 39" fill="none" stroke="#0b0a0e" stroke-width="10"></path>
+    <path d="M60 66 V110" fill="none" stroke="#0b0a0e" stroke-width="10"></path>
+    <rect x="45" y="39" width="30" height="35" rx="8" fill="#0b0a0e" stroke="#0b0a0e" stroke-width="10"></rect>
+    <path d="M55 48 V66 H68" fill="none" stroke="url(#ylCube)" stroke-width="7"></path>
+  </g>
   </g>
 </svg>

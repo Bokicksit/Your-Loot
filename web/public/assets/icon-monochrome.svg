@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="512" height="512">
+  <mask id="ylMono" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120">
+    <rect width="120" height="120" fill="#000"></rect>
+    <g stroke-linejoin="round" stroke-linecap="round">
+      <path d="M60 12 L106 39 L60 66 L14 39 Z" fill="#fff" stroke="#fff" stroke-width="7"></path>
+      <path d="M14 39 L60 66 L60 110 L14 83 Z" fill="#fff" stroke="#fff" stroke-width="7"></path>
+      <path d="M106 39 L60 66 L60 110 L106 83 Z" fill="#fff" stroke="#fff" stroke-width="7"></path>
+      <path d="M14 39 L60 66 L106 39" fill="none" stroke="#000" stroke-width="10"></path>
+      <path d="M60 66 V110" fill="none" stroke="#000" stroke-width="10"></path>
+      <rect x="45" y="39" width="30" height="35" rx="8" fill="#000" stroke="#000" stroke-width="10"></rect>
+      <path d="M55 48 V66 H68" fill="none" stroke="#fff" stroke-width="7"></path>
+    </g>
+  </mask>
+  <rect width="120" height="120" fill="#000000" mask="url(#ylMono)"></rect>
+</svg>

@@ -17,7 +17,7 @@
 
 // Bump when a precached file changes. The favicon lives in the shell cache,
 // so a new icon with the old version would keep serving the old one.
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL = `loot-shell-${VERSION}`;
 const RUNTIME = `loot-runtime-${VERSION}`;
 

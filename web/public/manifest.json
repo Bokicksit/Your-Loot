@@ -9,7 +9,10 @@
   "orientation": "portrait",
   "background_color": "#0b0a0e",
   "theme_color": "#0b0a0e",
-  "categories": ["utilities", "lifestyle"],
+  "categories": [
+    "utilities",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/assets/icon-512.svg",
@@ -22,6 +25,12 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
+    },
+    {
+      "src": "/assets/icon-monochrome.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
     },
     {
       "src": "/assets/apple-touch-icon.svg",
