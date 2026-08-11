@@ -38,6 +38,31 @@ const EMPTY_FORM = {
   condition: "Good",
 };
 
+// A keyword search of a shop database is a search of everything that shop
+// sells, so "game boy advance" returns mostly cartridges — every GBA game has
+// "Game Boy Advance" written on it. The database's own category is no help:
+// it files Crash Bandicoot under "Video Game Consoles".
+//
+// So the listings are ranked rather than filtered. Ranked, because this data
+// is messy enough that a hard rule would eventually hide the one console in a
+// page of games; the machines come first and the cartridges are still there
+// underneath if the guess was wrong.
+const HARDWARE_WORDS =
+  /(console|system|handheld|controller|gamepad|joystick|dock|charger|adapter|power supply|cable|unit|bundle|refurb\w*|oem)/i;
+// AGS-001, SCPH-70012, HDH-001 — a cartridge does not have one of these
+const HARDWARE_MODEL = /[A-Z]{2,4}-[A-Z0-9]{3,7}/;
+const SOFTWARE_CATEGORY = /video game software|games?\s*>/i;
+
+function hardwareScore(r) {
+  const t = r.title || "";
+  let score = 0;
+  if (HARDWARE_WORDS.test(t)) score += 2;
+  if (HARDWARE_MODEL.test(t)) score += 2;
+  if (r.model && !/^\d{11,14}$/.test(r.model)) score += 1;
+  if (SOFTWARE_CATEGORY.test(r.category || "")) score -= 3;
+  return score;
+}
+
 // The listing's own model field when the seller filled it in, else the
 // SCPH-70012 / SNS-001 shape out of the title. Letters-then-digits with a
 // hyphen is specific enough not to catch "Model 2" or a year, and it is how
@@ -124,9 +149,14 @@ export default function HardwarePage() {
     setSearching(true);
     setResults(null); // clear the old hits so the status stands alone
     try {
-      const { items, exhausted } = await api.productSearch(term);
+      const { items, exhausted } = await api.productSearch(term, false);
       if (exhausted) alert("The lookup service is out of requests for today.");
-      setResults(items || []);
+      // stable sort: equal scores keep the order the shop returned them in
+      const ranked = (items || [])
+        .map((r, i) => ({ r, i, score: hardwareScore(r) }))
+        .sort((a, b) => b.score - a.score || a.i - b.i)
+        .map((x) => x.r);
+      setResults(ranked);
     } catch (e) {
       alert(e.message);
       setResults([]);

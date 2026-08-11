@@ -84,7 +84,7 @@ def lookup(code: str) -> list[dict]:
     ]
 
 
-def search(keyword: str, limit: int = 8) -> list[dict]:
+def search(keyword: str, limit: int = 8, require_images: bool = True) -> list[dict]:
     """Retail listings matching a name — the route to a photograph of the case
     for something added by title rather than scanned.
 
@@ -108,9 +108,17 @@ def search(keyword: str, limit: int = 8) -> list[dict]:
     out = []
     for it in resp.json().get("items", [])[:limit]:
         images = _images(it)
-        if not images:
-            continue  # a listing with no picture is no use here
+        # Callers looking for artwork have nothing to gain from a listing
+        # without any, but one looking for the *product* does: the two Game
+        # Boy Advance consoles in a search for "game boy advance" both come
+        # back photo-less, and dropping them left only cartridges.
+        if not images and require_images:
+            continue
         out.append({"title": it.get("title", ""), "brand": it.get("brand") or None,
                     "model": it.get("model") or it.get("mpn") or None,
+                    # Passed on but not trusted: this database files Crash
+                    # Bandicoot under "Video Game Consoles". A caller can use
+                    # it as one signal among several, never as the answer.
+                    "category": it.get("category") or None,
                     "images": images})
     return out

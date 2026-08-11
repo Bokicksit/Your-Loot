@@ -30,7 +30,10 @@ def barcode(code: str = Query(pattern=r"^\d{8,14}$")):
 
 
 @router.get("/products")
-def products(q: str = Query(min_length=3, max_length=120)):
+def products(
+    q: str = Query(min_length=3, max_length=120),
+    require_images: bool = True,
+):
     """Retail listings by name, for their photographs of the actual packaging.
 
     Answers with an empty list rather than an error when the free tier is
@@ -38,7 +41,7 @@ def products(q: str = Query(min_length=3, max_length=120)):
     without it, and failing the whole add for it would be absurd.
     """
     try:
-        return {"items": upc_search(q)}
+        return {"items": upc_search(q, require_images=require_images)}
     except BarcodeError as e:
         if e.status == 429:
             return {"items": [], "exhausted": True}

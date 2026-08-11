@@ -110,7 +110,12 @@ export const api = {
   tmdbSearch: (q) =>
     request(`/api/movies/tmdb/search?q=${encodeURIComponent(q)}`),
   barcodeLookup: (code) => request(`/api/lookup/barcode?code=${code}`),
-  productSearch: (q) => request(`/api/lookup/products?q=${encodeURIComponent(q)}`),
+  // requireImages=false when you are after the product rather than its
+  // picture — plenty of real hardware listings carry no photo at all
+  productSearch: (q, requireImages = true) =>
+    request(
+      `/api/lookup/products?${new URLSearchParams({ q, require_images: requireImages })}`
+    ),
   // Retailer image hosts rot and some block hotlinking, so a chosen box-art
   // photo is copied to our own storage. TMDB/IGDB CDNs are stable and stay
   // hotlinked. Falls back to the original URL if the copy fails — a picture
