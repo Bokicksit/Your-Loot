@@ -74,6 +74,10 @@ def lookup(code: str) -> list[dict]:
         {
             "title": it.get("title", ""),
             "brand": it.get("brand") or None,
+            # SCPH-70012, SNS-001 — printed on the underside of the machine and
+            # the one thing that tells two grey boxes apart. `mpn` when the
+            # seller filled that in instead.
+            "model": it.get("model") or it.get("mpn") or None,
             "images": _images(it),
         }
         for it in resp.json().get("items", [])[:5]
@@ -107,5 +111,6 @@ def search(keyword: str, limit: int = 8) -> list[dict]:
         if not images:
             continue  # a listing with no picture is no use here
         out.append({"title": it.get("title", ""), "brand": it.get("brand") or None,
+                    "model": it.get("model") or it.get("mpn") or None,
                     "images": images})
     return out

@@ -38,6 +38,23 @@ const EMPTY_FORM = {
   condition: "Good",
 };
 
+// The listing's own model field when the seller filled it in, else the
+// SCPH-70012 / SNS-001 shape out of the title. Letters-then-digits with a
+// hyphen is specific enough not to catch "Model 2" or a year, and it is how
+// Sony, Nintendo and Sega all number their hardware.
+const MODEL_IN_TITLE = /([A-Z]{2,4}-[A-Z0-9]{3,7})/;
+
+// Sellers put whatever they like in the model field — one PS2 listing had the
+// product's own barcode in it. A bare run of 11-14 digits is a UPC or an EAN,
+// never a model number, so it is ignored in favour of reading the title.
+const LOOKS_LIKE_A_BARCODE = /^\d{11,14}$/;
+
+function modelFrom(r) {
+  const listed = (r.model || "").trim();
+  if (listed && listed.length <= 50 && !LOOKS_LIKE_A_BARCODE.test(listed)) return listed;
+  return (r.title || "").match(MODEL_IN_TITLE)?.[1] || "";
+}
+
 // Hardware: consoles + accessories. Same data module as games under the hood
 // (is_hardware=true), its own tab and per-unit fields up here.
 // Shared wording, so every collection asks the same question the same way.
@@ -96,7 +113,13 @@ export default function HardwarePage() {
   // Explicit, never automatic: it shares the barcode service's daily budget,
   // and typing a name is not on its own a request to spend one.
   const nameSearch = async () => {
-    const term = form.title.trim();
+    // Both, when both are known. A model number is the most specific thing
+    // about a console — SNS-001 is one revision of the SNES and SNS-101 is
+    // another — and a shop that lists it usually puts it in the title, so it
+    // narrows a search that "Super Nintendo" alone floods.
+    const term = [form.title.trim(), form.model_number.trim()]
+      .filter(Boolean)
+      .join(" ");
     if (term.length < 3 || searching) return;
     setSearching(true);
     setResults(null); // clear the old hits so the status stands alone
@@ -120,6 +143,9 @@ export default function HardwarePage() {
     setForm((f) => ({
       ...f,
       title: cleanTitle(r.title) || r.title,
+      // Never overwrite one you typed: you read yours off the actual machine,
+      // and a listing is describing some other person's.
+      model_number: f.model_number.trim() || modelFrom(r) || "",
       image_url: shots[0]?.url || f.image_url,
     }));
     setResults(null);
