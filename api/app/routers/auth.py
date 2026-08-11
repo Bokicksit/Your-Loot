@@ -1,7 +1,10 @@
 """Signing in, and everything that surrounds it."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -10,12 +13,13 @@ from app.auth import (
     hash_password,
     multi_user,
     needs_setup,
+    new_token,
     owner_locked,
     require_admin,
     verify_password,
 )
 from app.db import get_db
-from app.models import User
+from app.models import ApiToken, User
 from app.ratelimit import client_key, logins
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -222,3 +226,70 @@ def remove_user(
     # of those tables cascades on user_id
     db.delete(user)
     db.commit()
+
+
+# --- Bearer tokens ---------------------------------------------------------
+# For clients that cannot hold a cookie: a phone app, a script, another
+# machine. The web UI keeps its session and never touches these.
+
+
+class TokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+
+
+@router.get("/tokens")
+def list_tokens(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Your own tokens. The values are not here and cannot be — only their
+    first few characters, which is enough to tell two of them apart."""
+    rows = db.scalars(
+        select(ApiToken).where(ApiToken.user_id == user.id).order_by(ApiToken.id.desc())
+    ).all()
+    return {
+        "tokens": [
+            {
+                "id": t.id,
+                "name": t.name,
+                "prefix": t.prefix,
+                "created_at": t.created_at,
+                "last_used_at": t.last_used_at,
+                "revoked_at": t.revoked_at,
+            }
+            for t in rows
+        ]
+    }
+
+
+@router.post("/tokens", status_code=201)
+def create_token(
+    body: TokenCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Mint one. The reply carries the only copy of the value that will ever
+    exist — it is hashed on the way in, so nothing here can show it again."""
+    raw, digest, prefix = new_token()
+    row = ApiToken(
+        user_id=user.id, name=body.name.strip(), token_hash=digest, prefix=prefix
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"id": row.id, "name": row.name, "prefix": row.prefix, "token": raw}
+
+
+@router.delete("/tokens/{token_id}", status_code=204)
+def revoke_token(
+    token_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Withdraw it. The row stays, timestamped: that this token worked until
+    Tuesday and was then withdrawn is worth being able to see."""
+    row = db.get(ApiToken, token_id)
+    # somebody else's token is not yours to revoke, and "not found" says less
+    # about their account than "not yours" would
+    if row is None or row.user_id != user.id:
+        raise HTTPException(404, "token not found")
+    if row.revoked_at is None:
+        row.revoked_at = datetime.utcnow()
+        db.commit()

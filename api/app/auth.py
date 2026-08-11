@@ -11,17 +11,19 @@ list to grow, and for an app this size "sign out everywhere" is not worth a
 schema for.
 """
 
+import hashlib
 import secrets
+from datetime import datetime, timedelta
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import engine, get_db
-from app.models import User
+from app.models import ApiToken, User
 
 OWNER_ID = 1  # the row migration 0018 seeded from the existing install
 
@@ -105,8 +107,65 @@ def needs_setup(db: Session) -> bool:
     )
 
 
+# Tokens are shown once and stored only as a hash, so this is the only way
+# back from a presented token to a row.
+TOKEN_PREFIX = "ylt_"
+
+
+def hash_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def new_token() -> tuple[str, str, str]:
+    """(raw, hash, prefix). The raw value is the caller's only copy."""
+    raw = TOKEN_PREFIX + secrets.token_urlsafe(32)
+    return raw, hash_token(raw), raw[:12]
+
+
+def _bearer(request: Request) -> str | None:
+    header = request.headers.get("authorization") or ""
+    scheme, _, value = header.partition(" ")
+    return value.strip() if scheme.lower() == "bearer" and value.strip() else None
+
+
+def user_from_token(request: Request, db: Session) -> User | None:
+    """Whoever holds this token, or None if there is no usable one.
+
+    Returns None rather than raising on every failure: a bad token should fall
+    through to the cookie path and end at the same "sign in" as anything else,
+    not produce a different error that tells an attacker which half was wrong.
+    """
+    raw = _bearer(request)
+    if not raw:
+        return None
+    row = db.scalar(
+        select(ApiToken).where(
+            ApiToken.token_hash == hash_token(raw), ApiToken.revoked_at.is_(None)
+        )
+    )
+    if row is None:
+        return None
+    # Written at most hourly. Knowing a token is still in use is worth having;
+    # a database write on every single request to record it is not.
+    now = datetime.utcnow()
+    if row.last_used_at is None or now - row.last_used_at > timedelta(hours=1):
+        row.last_used_at = now
+        db.commit()
+    return db.get(User, row.user_id)
+
+
 def current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    """The signed-in user, or the owner when this install has only one."""
+    """The signed-in user, or the owner when this install has only one.
+
+    A bearer token is tried first, because a client that sends one is telling
+    you which account it means — and in single-user mode with no password set,
+    the cookie path answers "the owner" to everybody, which would quietly
+    ignore the token rather than honour it.
+    """
+    holder = user_from_token(request, db)
+    if holder is not None:
+        return holder
+
     if not multi_user():
         owner = db.get(User, OWNER_ID)
         if owner is None:
