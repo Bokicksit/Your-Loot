@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.auth import session_secret
-from app.config import settings
+from app.config import origin_list, settings
 from app.routers import (
     auth,
     backup,
@@ -38,10 +38,15 @@ app.add_middleware(
     max_age=60 * 60 * 24 * 30,
 )
 
-# nginx fronts this in deployment; permissive CORS is for `npm run dev` only
+# Named origins rather than "*", which was both too permissive and useless:
+# a browser refuses to send credentials to a wildcard origin, so the old
+# setting could never have supported a real cross-origin client anyway.
+# Same-origin needs no entry here at all — nginx serves both halves in
+# production, and that path never reaches CORS.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origin_list(),
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

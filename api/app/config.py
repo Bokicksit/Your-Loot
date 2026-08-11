@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     # "single" signs every request in as the owner and shows no login screen,
     # which is what a one-person install wants and what every existing install
     # keeps doing. "multi" turns on accounts.
+    # Origins allowed to call this API from a browser, comma-separated.
+    # Empty means same-origin only, which is what nginx serves in production
+    # and what every existing install has effectively had. Set it when the UI
+    # is served from somewhere else — a phone app, or a browser on another
+    # machine pointed at this server.
+    allowed_origins: str = ""
+
     auth_mode: str = "single"
     # Cookie signing. Generated and stored on first start when left empty, so
     # nothing is required to self-host; set it if you run more than one API
@@ -32,3 +39,18 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def origin_list() -> list[str]:
+    """`allowed_origins` as a list, always including the dev server.
+
+    The Vite dev server is here rather than in the default value so that
+    setting one origin does not silently stop `npm run dev` from working —
+    forgetting it would look like the API breaking rather than a config
+    change.
+    """
+    named = [o.strip().rstrip("/") for o in settings.allowed_origins.split(",") if o.strip()]
+    return named + [o for o in DEV_ORIGINS if o not in named]
+
+
+DEV_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]

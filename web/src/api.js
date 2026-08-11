@@ -19,11 +19,52 @@ export function errorMessage(body, res) {
   return `${res.status} ${res.statusText}`;
 }
 
-// Thin fetch wrapper. Same-origin paths — nginx (prod) or vite (dev) proxies /api.
+// Where the API lives. Empty means "wherever this page came from", which is
+// every browser install: nginx serves the UI and the API from one origin and
+// the request never leaves it. A client that is not served by the API — a
+// phone app, or a browser on another machine — sets this instead.
+//
+// Read from localStorage rather than baked in at build time so one build can
+// point anywhere, which is the whole point of it being settable.
+export const apiBase = () => localStorage.getItem("loot.apiBase") || "";
+export const setApiBase = (url) => {
+  const clean = (url || "").trim().replace(/\/+$/, "");
+  if (clean) localStorage.setItem("loot.apiBase", clean);
+  else localStorage.removeItem("loot.apiBase");
+};
+
+// A token, for when there is no cookie to hold — see /api/auth/tokens.
+export const apiToken = () => localStorage.getItem("loot.apiToken") || "";
+export const setApiToken = (t) => {
+  if (t) localStorage.setItem("loot.apiToken", t);
+  else localStorage.removeItem("loot.apiToken");
+};
+
+/** Absolute when a base is set, unchanged when it isn't. */
+export const url = (path) => apiBase() + path;
+
+/** Credentials for a cross-origin call: the cookie cannot travel, so a token
+ *  goes in a header instead. Same-origin keeps using the cookie and adds
+ *  nothing. */
+function authHeaders() {
+  const t = apiToken();
+  return t ? { Authorization: `bearer ${t}` } : {};
+}
+
+// Thin fetch wrapper. Same-origin by default — nginx (prod) or vite (dev)
+// proxies /api — and absolute once a base URL is set.
 async function request(path, options = {}) {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
+  const res = await fetch(url(path), {
+    // the cookie only travels cross-origin if it is asked for, and only then
+    // when the server names this origin
+    credentials: "include",
     ...options,
+    // last, so a caller cannot drop the auth header by passing its own
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...(options.headers || {}),
+    },
   });
   if (res.status === 401 && !path.startsWith("/api/auth/")) {
     // A session that expired mid-use. Every screen would otherwise show its
@@ -70,7 +111,12 @@ export const api = {
     const fd = new FormData();
     fd.append("file", file);
     // no Content-Type header: the browser sets the multipart boundary
-    const res = await fetch("/api/images", { method: "POST", body: fd });
+    const res = await fetch(url("/api/images"), {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      headers: authHeaders(),
+    });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
       throw new Error(errorMessage(b, res));
@@ -191,7 +237,12 @@ export const api = {
     const fd = new FormData();
     fd.append("file", file);
     // no Content-Type header: the browser sets the multipart boundary
-    const res = await fetch("/api/backup/restore", { method: "POST", body: fd });
+    const res = await fetch(url("/api/backup/restore"), {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      headers: authHeaders(),
+    });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
       throw new Error(errorMessage(b, res));
