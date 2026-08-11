@@ -2473,3 +2473,87 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .wanted-list.as-tiles > li > .row-buttons {
   justify-self: end;
 }
+
+/* Guided camera — a live view with a frame to square an item against, so the
+   cropper has less to undo. Full-screen on purpose: lining something up in a
+   thumbnail is guesswork. */
+.cam-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+}
+.cam-stage { position: relative; flex: 1; overflow: hidden; }
+.cam-video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+/* The frame matches what the capture actually keeps — same ratio, same 86%.
+   A guide that didn't would be worse than none. */
+.cam-guide {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 0.72;
+  /* Sized from whichever side is the tight one. A landscape stage runs out of
+     height first, so height leads and width follows the ratio; a portrait one
+     runs out of width. Driving both at once lets max-height clamp the height
+     while the width stays put, which silently breaks the ratio — and a frame
+     whose shape does not match the crop is worse than no frame. */
+  height: 86%;
+  width: auto;
+  border: 1px solid rgba(242, 183, 60, .35);
+  border-radius: 2px;
+  pointer-events: none;
+  transition: opacity .2s var(--ease);
+}
+@media (orientation: portrait) {
+  .cam-guide { width: 86%; height: auto; }
+}
+.cam-guide.square { aspect-ratio: 1; }
+.cam-guide.waiting { opacity: 0; }
+
+/* Corners carry the weight — a solid box hides the thing you're aiming at. */
+.cam-corner {
+  position: absolute;
+  width: 26px; height: 26px;
+  border: 3px solid var(--gold);
+  border-radius: 3px;
+}
+.cam-corner.tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+.cam-corner.tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+.cam-corner.bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+.cam-corner.br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+
+/* Thirds: squaring an edge against a line beats squaring it against nothing. */
+.cam-third { position: absolute; background: rgba(242, 183, 60, .18); }
+.cam-third.v { top: 0; bottom: 0; left: 50%; width: 1px; }
+.cam-third.h { left: 0; right: 0; top: 50%; height: 1px; }
+
+.cam-error {
+  position: absolute;
+  left: var(--s-4); right: var(--s-4); top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: var(--s-3);
+  text-align: center;
+  color: var(--text);
+  background: rgba(0, 0, 0, .72);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  font-size: var(--f-2);
+}
+
+.cam-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  padding-bottom: max(var(--s-3), env(safe-area-inset-bottom));
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+}
+.cam-hint { flex: 1; text-align: center; font-size: var(--f-2); color: var(--text-dim); }
+.cam-shutter { width: 56px; height: 56px; border-radius: var(--r-pill); }
+.cam-shutter svg.i { width: 24px; height: 24px; }

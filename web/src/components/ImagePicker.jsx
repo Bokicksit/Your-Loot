@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "./Icons.jsx";
+import GuidedCamera from "./GuidedCamera.jsx";
 import PhotoCrop from "./PhotoCrop.jsx";
 
 // Mirrors MAX_BYTES in api/app/routers/images.py. Checked here too so an
@@ -27,6 +28,13 @@ export default function ImagePicker({
   const [link, setLink] = useState("");
   const inputRef = useRef(null);
   const cameraRef = useRef(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  // getUserMedia is refused outside a secure context, so on a plain-http LAN
+  // this simply is not offered and the native camera still is.
+  const canGuide =
+    typeof window !== "undefined" &&
+    window.isSecureContext &&
+    !!navigator.mediaDevices?.getUserMedia;
 
   // The ✕ sits next to buttons that only add things, and it takes the picture
   // with one tap and no undo. Ask first.
@@ -129,6 +137,18 @@ export default function ImagePicker({
           <Icon id="camera" />
           Take photo
         </button>
+        {canGuide && (
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy}
+            title={`Line the ${label.toLowerCase()} up against a frame first`}
+            onClick={() => setGuideOpen(true)}
+          >
+            <Icon id="target" />
+            Line up
+          </button>
+        )}
         <button
           type="button"
           className="ghost icon"
@@ -137,6 +157,12 @@ export default function ImagePicker({
         >
           <Icon id="link" />
         </button>
+        <GuidedCamera
+          open={guideOpen}
+          square={square}
+          onCapture={(file) => choose(file)}
+          onClose={() => setGuideOpen(false)}
+        />
         {value && removable && (
           <button
             type="button"
