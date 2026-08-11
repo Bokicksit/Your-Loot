@@ -33,6 +33,7 @@ const EMPTY_FORM = {
   parent_id: "",
   image_url: null,
   tags: [],
+  notes: "",
   own: true,
   completeness: "loose", // consoles are usually out of box
   condition: "Good",
@@ -255,6 +256,7 @@ export default function HardwarePage() {
         working: form.working,
         parent_id: form.parent_id ? Number(form.parent_id) : null,
         image_url: await api.localiseImage(form.image_url),
+        notes: form.notes.trim() || null,
       });
       // after the create, because a tag needs something to hang on
       if (form.tags.length) {
@@ -481,6 +483,15 @@ export default function HardwarePage() {
             />
           </div>
           <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
             <button
               type="button"
               className={`toggle ${form.own ? "on" : ""}`}
@@ -590,7 +601,6 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      notes: o.notes || "",
       completeness: o.completeness || "loose",
       condition: o.condition || "Good",
     });
@@ -613,6 +623,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
       parent_id: a.parent_id ? String(a.parent_id) : "",
       image_url: hw.image_url,
       tags: hw.tags || [],
+      notes: hw.notes || "",
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -631,6 +642,7 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
         working: entry.working,
         parent_id: entry.parent_id ? Number(entry.parent_id) : null,
         image_url: await api.localiseImage(entry.image_url),
+        notes: entry.notes.trim() || null,
       });
       // Staged with the rest of the form, so Cancel discards a tag the
       // same way it discards a retyped title.
@@ -749,6 +761,8 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
             <EbayLink title={hw.title} terms={[a.model_number, a.platform_name]} />
           </div>
           <TagChips tags={hw.tags} />
+          {/* your own words about the thing, not about one copy */}
+          {hw.notes && <p className="game-summary">{hw.notes}</p>}
           {children.length > 0 && (
             <p className="game-summary">
               Connected gear: {children.map((c) => c.title).join(", ")}
@@ -775,15 +789,6 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
               <option key={c}>{c}</option>
             ))}
           </select>
-          {/* per copy, not per item: which of the two is signed, and
-              which one came from your dad */}
-          <input
-            type="text"
-            className="grow"
-            placeholder="Note"
-            value={editVals.notes || ""}
-            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
-          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>
@@ -868,6 +873,13 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
               id={hw.id}
               value={entry.tags}
               onChange={(tags) => setEntry({ ...entry, tags })}
+            />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={entry.notes}
+              onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
             />
           </div>
           <div className="form-row">

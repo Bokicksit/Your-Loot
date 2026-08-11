@@ -32,6 +32,7 @@ const EMPTY_FORM = {
   blurb: null,
   image_url: null,
   tags: [],
+  notes: "",
   own: true,
   condition: "VF",
   grader: "",
@@ -265,6 +266,7 @@ export default function ComicsPage() {
         barcode: form.barcode.trim() || null,
         blurb: form.blurb,
         image_url: form.image_url,
+        notes: form.notes.trim() || null,
       });
       // after the create, because a tag needs something to hang on
       if (form.tags.length) {
@@ -609,6 +611,15 @@ export default function ComicsPage() {
               onChange={(tags) => setForm({ ...form, tags })}
             />
           </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -712,7 +723,6 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      notes: o.notes || "",
       condition: o.condition || "VF",
       grader: o.grader || "",
       grade: o.grade || "",
@@ -724,9 +734,6 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
         condition: editVals.condition,
         grader: editVals.grader || null,
         grade: editVals.grader ? editVals.grade || null : null,
-        // named explicitly here, unlike the pages that send editVals whole —
-        // leaving it out would drop the note silently on save
-        notes: editVals.notes?.trim() || null,
       });
       setEditing(null);
       return s;
@@ -763,6 +770,7 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
       creators: a.creators || "",
       image_url: comic.image_url,
       tags: comic.tags || [],
+      notes: comic.notes || "",
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -783,6 +791,7 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
         volume_year: entry.volume_year ? Number(entry.volume_year) : null,
         cover_year: entry.cover_year ? Number(entry.cover_year) : null,
         image_url: await api.localiseImage(entry.image_url),
+        notes: entry.notes.trim() || null,
       });
       // Staged with the rest of the form, so Cancel discards a tag the
       // same way it discards a retyped title.
@@ -938,6 +947,13 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
               value={entry.tags}
               onChange={(tags) => setEntry({ ...entry, tags })}
             />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={entry.notes}
+              onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
+            />
           </div>
           <div className="form-row">
             <ImagePicker
@@ -991,6 +1007,8 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
             <EbayLink title={comic.title} terms={[a.variant]} />
           </div>
           <TagChips tags={comic.tags} />
+          {/* your own words about the thing, not about one copy */}
+          {comic.notes && <p className="game-summary">{comic.notes}</p>}
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>
       )}
@@ -1036,15 +1054,6 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
               ))}
             </select>
           )}
-          {/* per copy, not per item: which of the two is signed, and
-              which one came from your dad */}
-          <input
-            type="text"
-            className="grow"
-            placeholder="Note"
-            value={editVals.notes || ""}
-            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
-          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>

@@ -44,6 +44,7 @@ const EMPTY_FORM = {
   blurb: null,
   image_url: null,
   tags: [],
+  notes: "",
   own: true,
   completeness: "With jacket",
   condition: "Very Good",
@@ -221,6 +222,7 @@ export default function BooksPage() {
         // a jacket borrowed from a shop listing outlives the listing this way;
         // Open Library's own covers are stable and stay linked
         image_url: await api.localiseImage(form.image_url),
+        notes: form.notes.trim() || null,
         blurb: form.blurb || null,
       });
       // after the create, because a tag needs something to hang on
@@ -466,6 +468,15 @@ export default function BooksPage() {
               onChange={(tags) => setForm({ ...form, tags })}
             />
           </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -553,7 +564,6 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      notes: o.notes || "",
       completeness: o.completeness || "With jacket",
       condition: o.condition || "Very Good",
     });
@@ -596,6 +606,7 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
       publish_year: a.publish_year ?? "",
       image_url: book.image_url,
       tags: book.tags || [],
+      notes: book.notes || "",
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -616,6 +627,7 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
         series: entry.series.trim() || null,
         publish_year: entry.publish_year ? Number(entry.publish_year) : null,
         image_url: await api.localiseImage(entry.image_url),
+        notes: entry.notes.trim() || null,
       });
       // Staged with the rest of the form, so Cancel discards a tag the
       // same way it discards a retyped title.
@@ -774,6 +786,13 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
               value={entry.tags}
               onChange={(tags) => setEntry({ ...entry, tags })}
             />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={entry.notes}
+              onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
+            />
           </div>
           <div className="form-row">
             <ImagePicker
@@ -826,6 +845,8 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
             <EbayLink title={book.title} terms={[a.author]} />
           </div>
           <TagChips tags={book.tags} />
+          {/* your own words about the thing, not about one copy */}
+          {book.notes && <p className="game-summary">{book.notes}</p>}
           {a.blurb && <p className="game-summary">{a.blurb}</p>}
         </span>
       )}
@@ -848,15 +869,6 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
               <option key={c}>{c}</option>
             ))}
           </select>
-          {/* per copy, not per item: which of the two is signed, and
-              which one came from your dad */}
-          <input
-            type="text"
-            className="grow"
-            placeholder="Note"
-            value={editVals.notes || ""}
-            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
-          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>

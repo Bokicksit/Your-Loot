@@ -36,6 +36,7 @@ const EMPTY_FORM = {
   tracklist: null,
   image_url: null,
   tags: [],
+  notes: "",
   own: true,
   condition: DEFAULT_VINYL_GRADE,
   sleeve_condition: DEFAULT_VINYL_GRADE,
@@ -226,6 +227,7 @@ export default function RecordsPage() {
         tracklist: form.tracklist || null,
         // a sleeve photo from a shop listing outlives the listing this way
         image_url: await api.localiseImage(form.image_url),
+        notes: form.notes.trim() || null,
       });
       // after the create, because a tag needs something to hang on
       if (form.tags.length) {
@@ -555,6 +557,15 @@ export default function RecordsPage() {
               onChange={(tags) => setForm({ ...form, tags })}
             />
           </div>
+          <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
           <div className="form-row wrap">
             <button
               type="button"
@@ -653,7 +664,6 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      notes: o.notes || "",
       condition: o.condition || DEFAULT_VINYL_GRADE,
       sleeve_condition: o.sleeve_condition || DEFAULT_VINYL_GRADE,
     });
@@ -698,6 +708,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
       country: a.country || "",
       image_url: record.image_url,
       tags: record.tags || [],
+      notes: record.notes || "",
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -721,6 +732,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
         // blank clears the year rather than storing 0
         release_year: entry.release_year ? Number(entry.release_year) : null,
         image_url: await api.localiseImage(entry.image_url),
+        notes: entry.notes.trim() || null,
       });
       // Staged with the rest of the form rather than saved on the spot, so
       // Cancel discards a tag the same way it discards a retyped title.
@@ -896,6 +908,13 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
               value={entry.tags}
               onChange={(tags) => setEntry({ ...entry, tags })}
             />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={entry.notes}
+              onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
+            />
           </div>
           <div className="form-row">
             <ImagePicker
@@ -956,6 +975,8 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
               writes the moment you type in it does not belong on a panel with
               nothing to confirm it. */}
           <TagChips tags={record.tags} />
+          {/* your own words about the thing, not about one copy */}
+          {record.notes && <p className="game-summary">{record.notes}</p>}
           {a.tracklist && (
             <ol className="tracklist">
               {a.tracklist.split("\n").map((line, i) => (
@@ -990,15 +1011,6 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
               </option>
             ))}
           </select>
-          {/* per copy, not per item: which of the two is signed, and
-              which one came from your dad */}
-          <input
-            type="text"
-            className="grow"
-            placeholder="Note"
-            value={editVals.notes || ""}
-            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
-          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>

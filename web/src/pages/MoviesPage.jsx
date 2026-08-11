@@ -32,6 +32,7 @@ const EMPTY_FORM = {
   overview: null,
   image_url: null,
   tags: [],
+  notes: "",
   tmdb_id: null,
   own: true,
   completeness: "CIB",
@@ -249,6 +250,7 @@ export default function MoviesPage() {
         genre: form.genre || null,
         overview: form.overview,
         image_url: await api.localiseImage(form.image_url),
+        notes: form.notes.trim() || null,
         tmdb_id: form.tmdb_id,
       });
       // after the create, because a tag needs something to hang on
@@ -482,6 +484,15 @@ export default function MoviesPage() {
             />
           </div>
           <div className="form-row">
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
             <button
               type="button"
               className={`toggle ${form.own ? "on" : ""}`}
@@ -591,7 +602,6 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
   const openEdit = (o) => {
     setEditing(o.id);
     setEditVals({
-      notes: o.notes || "",
       completeness: o.completeness || "CIB",
       condition: o.condition || "Good",
     });
@@ -612,6 +622,7 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
       genre: movie.attrs.genre || "",
       image_url: movie.image_url,
       tags: movie.tags || [],
+      notes: movie.notes || "",
     };
     entryInit.current = vals;
     setEntry(vals);
@@ -629,6 +640,7 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
         region_code: entry.region_code || null,
         genre: entry.genre || null,
         image_url: await api.localiseImage(entry.image_url),
+        notes: entry.notes.trim() || null,
       });
       // Staged with the rest of the form, so Cancel discards a tag the
       // same way it discards a retyped title.
@@ -751,6 +763,8 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
             />
           </div>
           <TagChips tags={movie.tags} />
+          {/* your own words about the thing, not about one copy */}
+          {movie.notes && <p className="game-summary">{movie.notes}</p>}
           {movie.attrs.overview && (
             <p className="game-summary">{movie.attrs.overview}</p>
           )}
@@ -810,6 +824,13 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
               value={entry.tags}
               onChange={(tags) => setEntry({ ...entry, tags })}
             />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Note (optional)"
+              value={entry.notes}
+              onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
+            />
           </div>
           <div className="form-row">
             <ImagePicker
@@ -849,15 +870,6 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
               <option key={c}>{c}</option>
             ))}
           </select>
-          {/* per copy, not per item: which of the two is signed, and
-              which one came from your dad */}
-          <input
-            type="text"
-            className="grow"
-            placeholder="Note"
-            value={editVals.notes || ""}
-            onChange={(e) => setEditVals({ ...editVals, notes: e.target.value })}
-          />
           <button className="primary icon" onClick={saveEdit} disabled={busy} title="Save">
             <Icon id="check" />
           </button>
