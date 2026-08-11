@@ -20,11 +20,21 @@ import { Icon } from "./Icons.jsx";
 
 const FRAME_INSET = 0.86; // the frame fills most of the view, not all of it
 
-export default function GuidedCamera({ open, square = false, onCapture, onClose }) {
+export default function GuidedCamera({
+  open,
+  square = false,
+  onCapture,
+  onClose,
+  onUseNative,
+}) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [error, setError] = useState(null);
   const [ready, setReady] = useState(false);
+  // Off turns this into an ordinary camera: no frame drawn, and the whole
+  // view captured rather than the frame's worth of it. The drawing and the
+  // crop are the same decision, so one switch governs both.
+  const [guides, setGuides] = useState(true);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +96,9 @@ export default function GuidedCamera({ open, square = false, onCapture, onClose 
   const capture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return;
-    const { x, y, w, h } = frameIn(video.videoWidth, video.videoHeight);
+    const { x, y, w, h } = guides
+      ? frameIn(video.videoWidth, video.videoHeight)
+      : { x: 0, y: 0, w: video.videoWidth, h: video.videoHeight };
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(w);
     canvas.height = Math.round(h);
@@ -111,7 +123,9 @@ export default function GuidedCamera({ open, square = false, onCapture, onClose 
         {/* Drawn over the video rather than composed into it: this is a
             viewfinder marking, and it must never end up in the picture. */}
         <div
-          className={`cam-guide ${square ? "square" : ""} ${ready ? "" : "waiting"}`}
+          className={`cam-guide ${square ? "square" : ""} ${
+            ready && guides ? "" : "waiting"
+          }`}
           aria-hidden="true"
         >
           <span className="cam-corner tl" />
@@ -124,12 +138,34 @@ export default function GuidedCamera({ open, square = false, onCapture, onClose 
         {error && <p className="cam-error">{error}</p>}
       </div>
 
+      <div className="cam-top">
+        <button
+          type="button"
+          className={`chip ${guides ? "active" : ""}`}
+          onClick={() => setGuides(!guides)}
+          aria-pressed={guides}
+        >
+          <Icon id="target" />
+          Guides
+        </button>
+        {onUseNative && (
+          <button type="button" className="chip" onClick={onUseNative}>
+            <Icon id="camera" />
+            Phone camera
+          </button>
+        )}
+      </div>
+
       <div className="cam-bar">
         <button type="button" className="ghost" onClick={onClose}>
           Cancel
         </button>
         <span className="cam-hint">
-          {error ? "" : "Line the edges up with the frame"}
+          {error
+            ? ""
+            : guides
+              ? "Line the edges up with the frame"
+              : "Guides off — the whole view is kept"}
         </span>
         <button
           type="button"

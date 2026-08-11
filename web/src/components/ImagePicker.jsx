@@ -127,28 +127,20 @@ export default function ImagePicker({
           <Icon id="upload" />
           {busy ? "Working…" : "Upload photo"}
         </button>
+        {/* One camera button. Where a live view is possible it opens with
+            guides on; where it is not — plain http, no permission — it hands
+            off to the phone exactly as it always did. Which one you got is
+            not a question worth asking somebody. */}
         <button
           type="button"
           className="ghost"
           disabled={busy}
           title={`Take a ${label.toLowerCase()} now`}
-          onClick={() => cameraRef.current?.click()}
+          onClick={() => (canGuide ? setGuideOpen(true) : cameraRef.current?.click())}
         >
           <Icon id="camera" />
           Take photo
         </button>
-        {canGuide && (
-          <button
-            type="button"
-            className="ghost"
-            disabled={busy}
-            title={`Line the ${label.toLowerCase()} up against a frame first`}
-            onClick={() => setGuideOpen(true)}
-          >
-            <Icon id="target" />
-            Line up
-          </button>
-        )}
         <button
           type="button"
           className="ghost icon"
@@ -162,6 +154,10 @@ export default function ImagePicker({
           square={square}
           onCapture={(file) => choose(file)}
           onClose={() => setGuideOpen(false)}
+          onUseNative={() => {
+            setGuideOpen(false);
+            cameraRef.current?.click();
+          }}
         />
         {value && removable && (
           <button
