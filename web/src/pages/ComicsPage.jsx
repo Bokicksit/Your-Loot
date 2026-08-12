@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
+import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
@@ -86,12 +87,20 @@ export default function ComicsPage() {
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
+  const [art, setArt] = useState([]); // retailer photos of the actual package
   const [results, setResults] = useState(null);
   const [runs, setRuns] = useState(null); // which run a scanned barcode belongs to
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
+
+  // one entry per url, newest kept out of the way of what is already there
+  const mergeArt = (extra) =>
+    setArt((prev) => {
+      const seen = new Set(prev.map((a) => a.url));
+      return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
+    });
 
   const load = () => {
     const params = { sort };
@@ -232,6 +241,38 @@ export default function ComicsPage() {
     lookup(params);
   };
 
+  const CATALOG_ART = /comicvine|gamespot/i;
+  const lastLookup = useRef(null);
+  const autoArt = useRef(null);
+
+  // Retailer photographs of the actual package, the same ones a barcode scan
+  // brings back. A catalogue picture is the publisher's artwork; a shop
+  // listing is somebody's photo of the thing in a box — which is what you
+  // own, and often the only way to tell one edition from another.
+  //
+  // Only ever offered, never forced: it takes the slot from a catalogue image
+  // or from its own last suggestion, and leaves anything you picked alone.
+  const findRetailArt = async (...parts) => {
+    const term = parts.filter(Boolean).join(" ").trim();
+    if (term.length < 3 || term === lastLookup.current) return;
+    lastLookup.current = term;
+    try {
+      const { items } = await api.productSearch(term);
+      const shots = (items || []).flatMap((i) => i.images).slice(0, 6);
+      if (!shots.length) return;
+      mergeArt(shots.map((url) => ({ url, kind: "box" })));
+      setForm((f) => {
+        const ours =
+          !f.image_url || CATALOG_ART.test(f.image_url) || f.image_url === autoArt.current;
+        if (!ours) return f;
+        autoArt.current = shots[0];
+        return { ...f, image_url: shots[0] };
+      });
+    } catch {
+      /* artwork is a bonus; an entry saves fine without it */
+    }
+  };
+
   const pickResult = (r) => {
     setForm((f) => ({
       ...f,
@@ -243,6 +284,7 @@ export default function ComicsPage() {
       blurb: r.blurb || null,
       image_url: r.image_url || null,
     }));
+    findRetailArt(r.title, form.series);
     setResults(null);
     setStep("details");
   };
@@ -250,6 +292,10 @@ export default function ComicsPage() {
   const openForm = () => {
     setForm(EMPTY_FORM);
     setResults(null);
+    // last time's shop photos are about last time's thing
+    setArt([]);
+    lastLookup.current = null;
+    autoArt.current = null;
     setStep("search");
     setShowForm(true);
   };
@@ -603,6 +649,11 @@ export default function ComicsPage() {
               onChange={(e) => setForm({ ...form, creators: e.target.value })}
             />
           </div>
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
           <div className="form-row">
             <ImagePicker
               value={form.image_url}

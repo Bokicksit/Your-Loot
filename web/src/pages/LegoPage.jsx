@@ -92,6 +92,13 @@ export default function LegoPage() {
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
 
+  // one entry per url, newest kept out of the way of what is already there
+  const mergeArt = (extra) =>
+    setArt((prev) => {
+      const seen = new Set(prev.map((a) => a.url));
+      return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
+    });
+
   const load = () => {
     const params = { sort };
     if (search) params.search = search;
@@ -179,6 +186,38 @@ export default function LegoPage() {
     lookup({ q: form.title.trim() });
   };
 
+  const CATALOG_ART = /rebrickable/i;
+  const lastLookup = useRef(null);
+  const autoArt = useRef(null);
+
+  // Retailer photographs of the actual package, the same ones a barcode scan
+  // brings back. A catalogue picture is the publisher's artwork; a shop
+  // listing is somebody's photo of the thing in a box — which is what you
+  // own, and often the only way to tell one edition from another.
+  //
+  // Only ever offered, never forced: it takes the slot from a catalogue image
+  // or from its own last suggestion, and leaves anything you picked alone.
+  const findRetailArt = async (...parts) => {
+    const term = parts.filter(Boolean).join(" ").trim();
+    if (term.length < 3 || term === lastLookup.current) return;
+    lastLookup.current = term;
+    try {
+      const { items } = await api.productSearch(term);
+      const shots = (items || []).flatMap((i) => i.images).slice(0, 6);
+      if (!shots.length) return;
+      mergeArt(shots.map((url) => ({ url, kind: "box" })));
+      setForm((f) => {
+        const ours =
+          !f.image_url || CATALOG_ART.test(f.image_url) || f.image_url === autoArt.current;
+        if (!ours) return f;
+        autoArt.current = shots[0];
+        return { ...f, image_url: shots[0] };
+      });
+    } catch {
+      /* artwork is a bonus; an entry saves fine without it */
+    }
+  };
+
   const pickResult = (r) => {
     setForm((f) => ({
       ...f,
@@ -189,6 +228,7 @@ export default function LegoPage() {
       piece_count: r.piece_count || "",
       image_url: r.image_url || null,
     }));
+    findRetailArt(r.title, form.set_number);
     setResults(null);
     setStep("details");
   };
@@ -444,6 +484,11 @@ export default function LegoPage() {
           </div>
           {/* photos of the actual box from the scanned barcode, alongside
               Rebrickable's set image — which is the built model, not the box */}
+          <ArtOptions
+            options={art}
+            value={form.image_url}
+            onChange={(url) => setForm({ ...form, image_url: url })}
+          />
           <ArtOptions
             options={art}
             value={form.image_url}
