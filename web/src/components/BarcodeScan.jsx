@@ -19,9 +19,11 @@ const ZXING_FORMATS = [
   BarcodeFormat.UPC_A,
   BarcodeFormat.UPC_E,
   BarcodeFormat.CODE_128,
+  // service and serial labels, which are not product barcodes at all
+  BarcodeFormat.CODE_39,
   BarcodeFormat.ITF,
 ];
-const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "itf"];
+const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf"];
 const HINTS = new Map([[DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS]]);
 
 // Opt-in, for comics. A comic's main barcode is the same on every issue of a
@@ -75,7 +77,20 @@ async function nativeFormats() {
   }
 }
 
-export default function BarcodeScan({ onCode, supplement = false }) {
+export default function BarcodeScan({
+  onCode,
+  supplement = false,
+  // What this particular button is pointed at. The decoder does not care —
+  // a serial label is a Code 128 like any other — but the person holding the
+  // phone does, and a scanner that says "barcode" while they aim at a serial
+  // is asking them to guess whether it will work.
+  title = "Scan a barcode",
+  hint,
+  // Product barcodes are digits and worth cleaning up; a serial is not. It
+  // carries letters, and stripping them would hand back a number that looks
+  // plausible and belongs to nothing.
+  numeric = true,
+}) {
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState("");
   const [camError, setCamError] = useState(null);
@@ -242,11 +257,11 @@ export default function BarcodeScan({ onCode, supplement = false }) {
   };
 
   const submitManual = () => {
-    const digits = manual.replace(/\D/g, "");
-    if (digits.length < (supplement ? 5 : 8)) return;
+    const value = numeric ? manual.replace(/\D/g, "") : manual.trim();
+    if (value.length < (numeric ? (supplement ? 5 : 8) : 3)) return;
     setOpen(false);
     setManual("");
-    onCode(digits);
+    onCode(value);
   };
 
   const modal = (
@@ -283,9 +298,9 @@ export default function BarcodeScan({ onCode, supplement = false }) {
         <div className="form-row" style={{ width: "100%" }}>
           <input
             type="text"
-            inputMode="numeric"
+            inputMode={numeric ? "numeric" : "text"}
             className="grow"
-            placeholder="UPC/EAN digits"
+            placeholder={numeric ? "UPC/EAN digits" : "Type it instead"}
             value={manual}
             onChange={(e) => setManual(e.target.value)}
             onKeyDown={(e) => {
@@ -309,7 +324,7 @@ export default function BarcodeScan({ onCode, supplement = false }) {
 
   return (
     <>
-      <button type="button" className="ghost icon" title="Scan barcode" onClick={start}>
+      <button type="button" className="ghost icon" title={title} onClick={start}>
         <Icon id="scan" />
       </button>
       {open && createPortal(modal, document.body)}

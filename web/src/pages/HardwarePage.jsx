@@ -445,6 +445,16 @@ export default function HardwarePage() {
               value={form.serial_number}
               onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
             />
+            {/* The label on the underside is a barcode too — usually Code 128,
+                which this already reads. Its own button, because a scan next
+                to the name means a product and a scan next to the serial
+                means this, and guessing between them would be worse than
+                either. */}
+            <BarcodeScan
+              onCode={(code) => setForm((f) => ({ ...f, serial_number: code }))}
+              title="Scan the serial number"
+              numeric={false}
+            />
           </div>
           <div className="form-row">
             <select
@@ -851,6 +861,11 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
               placeholder="Serial"
               value={entry.serial_number}
               onChange={(e) => setEntry({ ...entry, serial_number: e.target.value })}
+            />
+            <BarcodeScan
+              onCode={(code) => setEntry((v) => ({ ...v, serial_number: code }))}
+              title="Scan the serial number"
+              numeric={false}
             />
           </div>
           <div className="form-row">
