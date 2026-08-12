@@ -198,6 +198,8 @@ export default function HardwarePage() {
       setForm((f) => ({
         ...f,
         title: cleanTitle(raw) || raw,
+        // the scan carried this all along and was dropping it on the floor
+        model_number: f.model_number.trim() || modelFrom(res.titles[0]) || "",
         image_url: boxArt[0]?.url || f.image_url,
       }));
     } catch (e) {
@@ -373,7 +375,7 @@ export default function HardwarePage() {
               onClick={nameSearch}
               disabled={searching || form.title.trim().length < 3}
             >
-              <Icon id="scan" />
+              <Icon id="search" />
             </button>
             <BarcodeScan onCode={onBarcode} />
           </div>

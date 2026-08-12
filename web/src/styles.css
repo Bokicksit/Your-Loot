@@ -2585,3 +2585,28 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   font-size: var(--f-2);
   line-height: 1.5;
 }
+
+/* A select cannot shrink below its longest option without clipping the text,
+   and the arrow eats 28px of it before the words start. `.form-row > *` sets
+   min-width:0 so a flex item can shrink at all, which is right for inputs and
+   wrong here: three of these in a row on a phone left "Near Mint" showing as
+   "Nea". They get a floor, and the row wraps instead of crushing them.
+
+   Written as `.form-row > select` rather than `select` on purpose — the rule
+   it has to beat is a child selector, so a bare element selector loses. */
+.form-row > select,
+.copy-edit > select,
+.entry-edit > select { min-width: 8.5rem; }
+
+@media (max-width: 560px) {
+  .form-row,
+  .copy-edit,
+  .acquire-edit { flex-wrap: wrap; }
+  /* the filter bar has its own sizing and the same problem: four of these
+     across a phone left "All systems" reading "All syste". The row already
+     wraps, so giving them a floor costs a line and fixes the clipping. */
+  select.chip-select { min-width: 9rem; }
+  /* on a narrow screen a select may as well have the row to itself */
+  .form-row > select,
+  .copy-edit > select { flex: 1 1 8.5rem; }
+}
