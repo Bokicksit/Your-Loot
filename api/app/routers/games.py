@@ -197,7 +197,19 @@ def create_game(body: GameCreate, db: Session = Depends(get_db),
             )
         )
         if existing:
-            raise HTTPException(409, f"'{existing.title}' is already in your catalog")
+            # Hand back the row that is already there rather than refusing.
+            # This used to be a 409, which read as "you have this" but asked
+            # the catalogue, not you — and the catalogue is deliberately shared.
+            # So it fired when somebody else owned the game, and it kept firing
+            # after you deleted your own copy, because deleting a copy leaves
+            # the catalogue entry standing.
+            #
+            # UNIQUE(source, external_id) means there can only ever be one row
+            # for an IGDB id, which is the point: one catalogue entry, a copy
+            # each. The caller adds its owned record to whatever comes back, so
+            # returning this gets a second copy, a re-add after a delete, and a
+            # second person's first copy all right by doing nothing special.
+            return game_to_out(existing, user.id, tags_of(db, user.id, existing.id))
     item = CollectionItem(
         module=Module.games.value,
         source="igdb" if body.igdb_id is not None else "manual",
