@@ -31,10 +31,11 @@ export function useTileView(module) {
 export function useMaxCols() {
   const cap = () => {
     const w = typeof window === "undefined" ? 1280 : window.innerWidth;
-    // three fits on a portrait phone at about 110px a tile, which is
-    // small but still a recognisable cover — and two vs three is exactly
-    // the choice worth having on the screen the app is used on most.
-    if (w < 620) return 3;
+    // Four fits on a portrait phone at about 85px a tile. That is small, but
+    // the tile drops to a cover and a name at four, so it is a wall of
+    // artwork rather than four squashed rows — and on the screen this app is
+    // used on most, that is the view worth being able to reach.
+    if (w < 620) return 4;
     if (w < 900) return 4;
     return 6;
   };

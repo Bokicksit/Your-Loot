@@ -390,13 +390,18 @@ export default function GamesPage() {
   return (
     <div>
       <div className="toolbar">
-        <input
-          type="search"
-          placeholder="Search games…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <span className="count">{total}</span>
+        {/* the magnifier and the count live inside the field, so the row
+            spends its width on the field rather than on furniture */}
+        <label className="searchbox">
+          <Icon id="search" />
+          <input
+            type="search"
+            placeholder="Search games…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <span className="count">{total}</span>
+        </label>
         <button className="primary" onClick={openForm} title="Add to library">
           <Icon id="plus" />
           Add

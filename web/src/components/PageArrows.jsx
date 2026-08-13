@@ -50,12 +50,12 @@ export default function PageArrows() {
   return (
     <div className="page-arrows" aria-hidden="false">
       {!state.atTop && (
-        <button type="button" onClick={() => go(-1)} title="Up a page" aria-label="Up a page">
+        <button className="up" type="button" onClick={() => go(-1)} title="Up a page" aria-label="Up a page">
           <Icon id="back" />
         </button>
       )}
       {!state.atEnd && (
-        <button type="button" onClick={() => go(1)} title="Down a page" aria-label="Down a page">
+        <button className="down" type="button" onClick={() => go(1)} title="Down a page" aria-label="Down a page">
           <Icon id="back" />
         </button>
       )}
