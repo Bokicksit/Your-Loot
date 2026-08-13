@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
+import { useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useSettings } from "../settings.jsx";
 
 // One card per Pokémon — the binder mirror. A slot's occupant is either the
@@ -15,6 +16,14 @@ export default function PokedexPage() {
   const [entries, setEntries] = useState([]);
   const [filter, setFilter] = useState("all"); // all|missing|upgrade|final
   const [rarityFilter, setRarityFilter] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilters = [filter === "all" ? "" : filter, rarityFilter].filter(Boolean).length;
+  // plain state here, not stored preferences — nothing to batch
+  const clearFilters = () => {
+    setFilter("all");
+    setRarityFilter("");
+  };
+
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
   // the slot and its detail panel are siblings, and which is open lives on
@@ -26,10 +35,12 @@ export default function PokedexPage() {
   );
   // binder density lives in Settings so it applies on every device
   const { settings, save } = useSettings();
-  const cols = settings?.dex_cols || 4;
+  // was a 3/4/5 chip row here and a duplicate of it in Settings; it is the
+  // same slider every other grid uses now, and floors at three because a
+  // dex slot below that is mostly whitespace
+  const [cols] = useTileCols("pokedex", 3);
   const navigate = useNavigate();
 
-  const pickCols = (n) => save({ dex_cols: n });
 
   // jump straight to the Cards add flow, pre-searched for this Pokémon —
   // the usual next step when a slot is empty or wants an upgrade
@@ -163,48 +174,67 @@ export default function PokedexPage() {
         </span>
       </div>
       <div className="chip-row">
-        {[
-          ["all", "All"],
-          ["missing", `Missing (${counts.missing})`],
-          ["upgrade", `Needs upgrade (${counts.upgrade})`],
-          ["final", `The one (${counts.final})`],
-        ].map(([k, label]) => (
-          <button
-            key={k}
-            className={`chip ${filter === k ? "active" : ""}`}
-            onClick={() => setFilter(k)}
-          >
-            {label}
-          </button>
-        ))}
-        {rarities.length > 0 && (
-          <select
-            className="chip-select"
-            title="Filter by Pokédex-card rarity"
-            value={rarityFilter}
-            onChange={(e) => setRarityFilter(e.target.value)}
-          >
-            <option value="">All rarities</option>
-            {rarities.map(([r, n]) => (
-              <option key={r} value={r}>
-                {r} ({n})
-              </option>
-            ))}
-          </select>
-        )}
-        <span className="col-picker" style={{ marginLeft: "auto" }}>
-          {[3, 4, 5].map((n) => (
-            <button
-              key={n}
-              className={`chip ${cols === n ? "active" : ""}`}
-              title={`${n} per row`}
-              onClick={() => pickCols(n)}
-            >
-              {n}
-            </button>
-          ))}
-        </span>
+        {/* One button rather than a line that scrolls past the edge. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters"
+        >
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
+        <TileDensity module="pokedex" min={3} />
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Show</span>
+            <span className="sheet-chips">
+            {[
+              ["all", "All"],
+              ["missing", `Missing (${counts.missing})`],
+              ["upgrade", `Needs upgrade (${counts.upgrade})`],
+              ["final", `The one (${counts.final})`],
+            ].map(([k, label]) => (
+              <button
+                key={k}
+                className={`chip ${filter === k ? "active" : ""}`}
+                onClick={() => setFilter(k)}
+              >
+                {label}
+              </button>
+            ))}
+            </span>
+          </label>
+          <label>
+            <span>Rarity</span>
+          {rarities.length > 0 && (
+            <select
+              className="chip-select"
+              title="Filter by Pokédex-card rarity"
+              value={rarityFilter}
+              onChange={(e) => setRarityFilter(e.target.value)}
+            >
+              <option value="">All rarities</option>
+              {rarities.map(([r, n]) => (
+                <option key={r} value={r}>
+                  {r} ({n})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
 
       <div
         className={`dex-grid cols-${cols}`}
