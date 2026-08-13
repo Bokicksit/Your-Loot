@@ -67,9 +67,11 @@ export function useInlineDensity() {
 
 /** Tiles per row, per collection. Three is what the grid used to settle on by
  *  itself, so a slider nobody touches changes nothing. */
-export function useTileCols(module, min = 2) {
+export function useTileCols(module, min = 2, ceiling) {
   const [stored, setStored] = useListPref(module, "tileCols", Math.max(3, min));
-  const max = useMaxCols();
+  // a caller may want fewer than the screen could take — the dex tops out at
+  // five because a sixth slot is narrower than the number printed on it
+  const max = Math.min(useMaxCols(), ceiling ?? Infinity);
   // clamped both ways: a stored 2 from before a floor was raised must not
   // render a column count the slider can no longer express
   const cols = Math.min(Math.max(Number(stored) || 3, min), Math.max(min, max));
@@ -78,8 +80,8 @@ export function useTileCols(module, min = 2) {
 
 /** The slider. Only worth showing when there are tiles to space out, so the
  *  pages render it beside the toggle and only in tile mode. */
-export function TileDensity({ module, min = 2 }) {
-  const [cols, setCols, max] = useTileCols(module, min);
+export function TileDensity({ module, min = 2, max: ceiling }) {
+  const [cols, setCols, max] = useTileCols(module, min, ceiling);
   // the track is filled up to the thumb rather than uniformly grey, so the
   // control reads as a quantity instead of a position
   const fill = ((cols - min) / Math.max(1, max - min)) * 100;

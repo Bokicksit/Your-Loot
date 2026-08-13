@@ -17,12 +17,11 @@ export default function PokedexPage() {
   const [filter, setFilter] = useState("all"); // all|missing|upgrade|final
   const [rarityFilter, setRarityFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const activeFilters = [filter === "all" ? "" : filter, rarityFilter].filter(Boolean).length;
+  // the status chips show their own state in the rail, so the badge counts
+  // only what the button is hiding
+  const activeFilters = [rarityFilter].filter(Boolean).length;
   // plain state here, not stored preferences — nothing to batch
-  const clearFilters = () => {
-    setFilter("all");
-    setRarityFilter("");
-  };
+  const clearFilters = () => setRarityFilter("");
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
@@ -38,7 +37,7 @@ export default function PokedexPage() {
   // was a 3/4/5 chip row here and a duplicate of it in Settings; it is the
   // same slider every other grid uses now, and floors at three because a
   // dex slot below that is mostly whitespace
-  const [cols] = useTileCols("pokedex", 3);
+  const [cols] = useTileCols("pokedex", 3, 5);
   const navigate = useNavigate();
 
 
@@ -174,6 +173,23 @@ export default function PokedexPage() {
         </span>
       </div>
       <div className="chip-row">
+        {/* These stay out here. Missing / needs upgrade / the one is how a
+            binder is actually used — it is the question the page exists to
+            answer, not a refinement of it, and a tap away is one too many. */}
+        {[
+          ["all", "All"],
+          ["missing", `Missing (${counts.missing})`],
+          ["upgrade", `Needs upgrade (${counts.upgrade})`],
+          ["final", `The one (${counts.final})`],
+        ].map(([k, label]) => (
+          <button
+            key={k}
+            className={`chip ${filter === k ? "active" : ""}`}
+            onClick={() => setFilter(k)}
+          >
+            {label}
+          </button>
+        ))}
         {/* One button rather than a line that scrolls past the edge. */}
         <button
           type="button"
@@ -187,29 +203,10 @@ export default function PokedexPage() {
           {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
         </button>
         <span className="rail-spacer" />
-        <TileDensity module="pokedex" min={3} />
+        <TileDensity module="pokedex" min={3} max={5} />
       </div>
       {filtersOpen && (
         <div className="filter-sheet">
-          <label>
-            <span>Show</span>
-            <span className="sheet-chips">
-            {[
-              ["all", "All"],
-              ["missing", `Missing (${counts.missing})`],
-              ["upgrade", `Needs upgrade (${counts.upgrade})`],
-              ["final", `The one (${counts.final})`],
-            ].map(([k, label]) => (
-              <button
-                key={k}
-                className={`chip ${filter === k ? "active" : ""}`}
-                onClick={() => setFilter(k)}
-              >
-                {label}
-              </button>
-            ))}
-            </span>
-          </label>
           <label>
             <span>Rarity</span>
           {rarities.length > 0 && (
