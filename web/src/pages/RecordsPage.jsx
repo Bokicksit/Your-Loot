@@ -10,7 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 // "Vinyl box set", not "Box set": in a records collection a box set is almost
@@ -81,6 +81,7 @@ export default function RecordsPage() {
   const [facets, setFacets] = useState({ artists: [], labels: [], formats: [], genres: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("records");
+  const [tileCols] = useTileCols("records");
   const [artistFilter, setArtistFilter] = useListPref("records", "artistFilter", "");
   const [labelFilter, setLabelFilter] = useListPref("records", "labelFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("records", "formatFilter", "");
@@ -416,6 +417,7 @@ export default function RecordsPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="records" />}
         <ViewToggle module="records" />
       </div>
 
@@ -680,7 +682,10 @@ export default function RecordsPage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {records.map((r) => (
           <RecordRow
             key={r.id}

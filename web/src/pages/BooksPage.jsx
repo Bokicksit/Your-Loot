@@ -9,7 +9,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useListPref, useSettings } from "../settings.jsx";
 
 // Graphic Novel and Omnibus sit here rather than in Comics because that's
@@ -88,6 +88,7 @@ export default function BooksPage() {
   const [facets, setFacets] = useState({ authors: [], formats: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("books");
+  const [tileCols] = useTileCols("books");
   const [authorFilter, setAuthorFilter] = useListPref("books", "authorFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("books", "formatFilter", "");
   const [tagFilter, setTagFilter] = useListPref("books", "tagFilter", "");
@@ -373,6 +374,7 @@ export default function BooksPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="books" />}
         <ViewToggle module="books" />
       </div>
 
@@ -587,7 +589,10 @@ export default function BooksPage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {books.map((b) => (
           <BookRow key={b.id} book={b} onChange={patchBook} onReload={load}
             onTagsChanged={() => setTagsChanged((n) => n + 1)} />

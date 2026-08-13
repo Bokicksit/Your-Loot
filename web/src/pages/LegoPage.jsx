@@ -17,7 +17,7 @@ import {
   shortFor,
   withUnknown,
 } from "../vocab.js";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
@@ -75,6 +75,7 @@ export default function LegoPage() {
   const [facets, setFacets] = useState({ themes: [], years: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("lego");
+  const [tileCols] = useTileCols("lego");
   const [themeFilter, setThemeFilter] = useListPref("lego", "themeFilter", "");
   const [tagFilter, setTagFilter] = useListPref("lego", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -343,6 +344,7 @@ export default function LegoPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="lego" />}
         <ViewToggle module="lego" />
       </div>
 
@@ -596,7 +598,10 @@ export default function LegoPage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {sets.map((s) => (
           <LegoRow key={s.id} set={s} onChange={patchSet} onReload={load}
             onTagsChanged={() => setTagsChanged((n) => n + 1)} />

@@ -16,7 +16,7 @@ import { useSettings, useListPref } from "../settings.jsx";
 // SNES Console" into "Super". This one strips brackets and condition words
 // and leaves the name alone.
 import { cleanTitle } from "../upc.js";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -111,6 +111,7 @@ export default function HardwarePage() {
   const [platforms, setPlatforms] = useState([]);
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("hardware");
+  const [tileCols] = useTileCols("hardware");
   const [platformFilter, setPlatformFilter] = useListPref("hardware", "platformFilter", "");
   const [tagFilter, setTagFilter] = useListPref("hardware", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -350,6 +351,7 @@ export default function HardwarePage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="hardware" />}
         <ViewToggle module="hardware" />
       </div>
 
@@ -560,7 +562,10 @@ export default function HardwarePage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {rows.map((h) => (
           <HardwareRow
             key={h.id}

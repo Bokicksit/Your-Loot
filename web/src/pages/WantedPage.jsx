@@ -13,7 +13,7 @@ import {
   VINYL_GRADES,
 } from "../vocab.js";
 import { useEnabledModules, useListPref } from "../settings.jsx";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { TagChips, TagFilter } from "../components/Tags.jsx";
 
 const MODULE_ICONS = {
@@ -112,6 +112,7 @@ export default function WantedPage() {
   const [openInfo, setOpenInfo] = useState(null); // item_id with info expanded
   const [sort, setSort] = useListPref("wanted", "sort", "added");
   const [tiles] = useTileView("wanted");
+  const [tileCols] = useTileCols("wanted");
   // a row is two sibling <li>s, and which one is open lives here rather than in
   // the row, so there's nothing to hang a ref on — the rows are tagged instead
   const stillInside = (t) => {
@@ -257,6 +258,7 @@ export default function WantedPage() {
           <option value="title">A–Z</option>
           <option value="module">By collection</option>
         </select>
+        {tiles && <TileDensity module="wanted" />}
         <ViewToggle module="wanted" />
       </div>
       {facets.length > 0 && (
@@ -285,7 +287,10 @@ export default function WantedPage() {
           <p>Tap the star on any card, game, or movie and it lands here.</p>
         </div>
       )}
-      <ul className={`wanted-list ${tiles ? "as-tiles" : ""}`}>
+      <ul
+        className={`wanted-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {shown.map((r) => (
           <Fragment key={r.item_id}>
             <li data-row={r.item_id}>

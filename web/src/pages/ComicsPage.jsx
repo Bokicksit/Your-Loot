@@ -17,7 +17,7 @@ import {
   labelFor,
   withUnknown,
 } from "../vocab.js";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
@@ -76,6 +76,7 @@ export default function ComicsPage() {
   const [facets, setFacets] = useState({ series: [], publishers: [] });
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("comics");
+  const [tileCols] = useTileCols("comics");
   const [seriesFilter, setSeriesFilter] = useListPref("comics", "seriesFilter", "");
   const [publisherFilter, setPublisherFilter] = useListPref("comics", "publisherFilter", "");
   const [tagFilter, setTagFilter] = useListPref("comics", "tagFilter", "");
@@ -417,6 +418,7 @@ export default function ComicsPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="comics" />}
         <ViewToggle module="comics" />
       </div>
 
@@ -747,7 +749,10 @@ export default function ComicsPage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {comics.map((c) => (
           <ComicRow key={c.id} comic={c} onChange={patchComic} onReload={load}
             onTagsChanged={() => setTagsChanged((n) => n + 1)} />

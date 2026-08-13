@@ -2610,3 +2610,86 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .form-row > select,
   .copy-edit > select { flex: 1 1 8.5rem; }
 }
+
+/* ---- Tiles per row -------------------------------------------------------
+
+   The grid used to pick its own column count from a minimum tile width, which
+   is fine until you want six across on a desk and three on a laptop. An
+   explicit count is set from the slider; the width follows from it.
+
+   Everything below is about what has to go as the tiles get smaller. A tile
+   at six across is a postage stamp, and text that does not fit does not
+   inform — it just makes a mess of the picture. So detail is dropped in the
+   order it stops being readable, and none of it is lost: the opened
+   description carries all of it whatever the grid is doing. */
+.game-list.as-tiles,
+.wanted-list.as-tiles {
+  grid-template-columns: repeat(var(--tile-cols, 3), minmax(0, 1fr));
+}
+
+/* Four across: the second line of detail goes, the title stays. */
+.as-tiles.cols-4 .game-text small,
+.as-tiles.cols-4 .game-info-line { display: none; }
+.as-tiles.cols-4 .game-text strong { font-size: var(--f-2); }
+.as-tiles.cols-4 .game-row { padding: 6px; }
+
+/* Five: the copy chips go too. What you own is a question for the panel. */
+.as-tiles.cols-5 .game-text small,
+.as-tiles.cols-5 .game-info-line,
+.as-tiles.cols-5 .chip.copy,
+.as-tiles.cols-5 .copy-step { display: none; }
+.as-tiles.cols-5 .game-text strong {
+  font-size: var(--f-1);
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+.as-tiles.cols-5 .game-row { padding: 5px; gap: 4px; }
+
+/* Six: the cover and nothing else but its name, clamped to two lines. */
+.as-tiles.cols-6 .game-text small,
+.as-tiles.cols-6 .game-info-line,
+.as-tiles.cols-6 .chip.copy,
+.as-tiles.cols-6 .copy-step,
+.as-tiles.cols-6 .row-buttons { display: none; }
+.as-tiles.cols-6 .game-text strong {
+  font-size: 10px;
+  letter-spacing: 0;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.as-tiles.cols-6 .game-row { padding: 4px; gap: 3px; }
+
+/* The slider itself, sitting with the layout toggle it belongs to. */
+.tile-density {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-2);
+  height: 34px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+.tile-density input[type="range"] { width: 74px; accent-color: var(--gold); }
+.tile-density-n {
+  min-width: 1ch;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  color: var(--text-dim);
+}
+
+/* A safety net under the JS clamp. The column count is chosen in script and
+   set as a variable, but the property itself is set here — so a media query
+   can still have the last word if the script has not caught up, which is the
+   case for a phone rotated while the page is open.
+
+   Below 420px the slider is hidden anyway and two is the only readable
+   answer, so forcing it costs nothing and guarantees a pocket-sized screen
+   never renders six 60px tiles. */
+@media (max-width: 420px) {
+  .game-list.as-tiles,
+  .wanted-list.as-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

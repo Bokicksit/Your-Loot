@@ -10,7 +10,7 @@ import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
@@ -67,6 +67,7 @@ export default function MoviesPage() {
   const [formats, setFormats] = useState([]); // in-collection formats w/ counts
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("movies");
+  const [tileCols] = useTileCols("movies");
   const [formatFilter, setFormatFilter] = useListPref("movies", "formatFilter", "");
   const [tagFilter, setTagFilter] = useListPref("movies", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -368,6 +369,7 @@ export default function MoviesPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
+        {tiles && <TileDensity module="movies" />}
         <ViewToggle module="movies" />
       </div>
 
@@ -559,7 +561,10 @@ export default function MoviesPage() {
         </div>
       )}
 
-      <div className={`game-list ${tiles ? "as-tiles" : ""}`}>
+      <div
+        className={`game-list ${tiles ? `as-tiles cols-${tileCols}` : ""}`}
+        style={tiles ? { "--tile-cols": tileCols } : undefined}
+      >
         {movies.map((m) => (
           <MovieRow key={m.id} movie={m} onChange={patchMovie} onReload={load}
             onTagsChanged={() => setTagsChanged((n) => n + 1)} />
