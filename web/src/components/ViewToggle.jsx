@@ -35,8 +35,12 @@ export function useMaxCols() {
     // the tile drops to a cover and a name at four, so it is a wall of
     // artwork rather than four squashed rows — and on the screen this app is
     // used on most, that is the view worth being able to reach.
-    if (w < 620) return 4;
-    if (w < 900) return 4;
+    if (w < 560) return 4;
+    // The old steps were 620 and 900, which were guesses and too cautious: at
+    // 800px six covers are 133px apiece, comfortably readable, and the ceiling
+    // was still holding them at four. Sized from what a tile actually needs —
+    // about 120px — rather than from familiar breakpoints.
+    if (w < 760) return 5;
     return 6;
   };
   const [max, setMax] = useState(cap);

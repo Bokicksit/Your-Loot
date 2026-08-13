@@ -448,9 +448,12 @@ export default function CardsPage({ initialView = "collection" }) {
         >
           Pokédex cards
         </button>
-        {/* One button rather than a line that scrolls past the edge. The
-            Pokédex switch stays out here — it changes what the shelf is,
-            not which part of it you are looking at. */}
+      </div>
+
+      {/* Its own row, as on the binder. The Pokédex switch above changes
+          what the shelf *is* and is read at a glance; these are settings
+          for how it is drawn, and sharing a line made both harder to find. */}
+      <div className="chip-row">
         <button
           type="button"
           className={`chip ${activeFilters ? "active" : ""}`}
