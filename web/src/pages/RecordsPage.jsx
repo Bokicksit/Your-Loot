@@ -11,7 +11,7 @@ import ImagePicker from "../components/ImagePicker.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
 import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
-import { useListPref } from "../settings.jsx";
+import { useListPref, useSettings } from "../settings.jsx";
 
 // "Vinyl box set", not "Box set": in a records collection a box set is almost
 // always wax, and saying so is what keeps a price check off the CD edition.
@@ -92,6 +92,31 @@ export default function RecordsPage() {
   const [sort, setSort] = useListPref("records", "sort", "artist");
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sorting is not a filter and is deliberately not counted — it never hides
+  // anything, and a badge that said "1" for the order you always use would
+  // be telling you something is on when nothing is
+  const activeFilters = [formatFilter, artistFilter, genreFilter, labelFilter, tagFilter]
+    .filter(Boolean).length;
+  // One write, not five. Each useListPref setter rebuilds the whole prefs
+  // object from the copy it captured on render, so five in a row each undo
+  // the one before and the last to land restores everything else — clearing
+  // five filters left four of them on.
+  const { settings: allSettings, save: saveSettings } = useSettings();
+  const clearFilters = () =>
+    saveSettings({
+      list_prefs: {
+        ...(allSettings?.list_prefs || {}),
+        records: {
+          ...(allSettings?.list_prefs?.records || {}),
+          formatFilter: "",
+          artistFilter: "",
+          genreFilter: "",
+          labelFilter: "",
+          tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -346,84 +371,97 @@ export default function RecordsPage() {
         ))}
       </datalist>
       <div className="chip-row">
-        {facets.formats.length > 0 && (
-          <select
-            className="chip-select"
-            value={formatFilter}
-            onChange={(e) => setFormatFilter(e.target.value)}
-          >
-            <option value="">All formats</option>
-            {facets.formats.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.value} ({f.count})
-              </option>
-            ))}
-          </select>
-        )}
-        {facets.artists.length > 0 && (
-          <select
-            className="chip-select"
-            value={artistFilter}
-            onChange={(e) => setArtistFilter(e.target.value)}
-          >
-            <option value="">All artists</option>
-            {facets.artists.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.value} ({a.count})
-              </option>
-            ))}
-          </select>
-        )}
-        {facets.genres?.length > 0 && (
-          <select
-            className="chip-select"
-            value={genreFilter}
-            onChange={(e) => setGenreFilter(e.target.value)}
-          >
-            <option value="">All genres</option>
-            {facets.genres.map((g) => (
-              <option key={g.value} value={g.value}>
-                {g.value} ({g.count})
-              </option>
-            ))}
-          </select>
-        )}
-        {facets.labels.length > 0 && (
-          <select
-            className="chip-select"
-            value={labelFilter}
-            onChange={(e) => setLabelFilter(e.target.value)}
-          >
-            <option value="">All labels</option>
-            {facets.labels.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.value} ({l.count})
-              </option>
-            ))}
-          </select>
-        )}
-        <TagFilter
-          scope="records"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: "auto" }}
+        {/* Six controls in a scrolling line meant the ones past the edge were
+            never found. They fold into one button, which says how many are
+            doing something — the row keeps only what changes how the shelf is
+            drawn, which is a different kind of decision. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="artist">By artist</option>
-          <option value="title">A–Z</option>
-          <option value="label">By label</option>
-          <option value="year">By year</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="records" />
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          {facets.formats.length > 0 && (
+            <label>
+              <span>Format</span>
+              <select value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
+                <option value="">All formats</option>
+                {facets.formats.map((f) => (
+                  <option key={f.value} value={f.value}>{f.value} ({f.count})</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {facets.artists.length > 0 && (
+            <label>
+              <span>Artist</span>
+              <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)}>
+                <option value="">All artists</option>
+                {facets.artists.map((a) => (
+                  <option key={a.value} value={a.value}>{a.value} ({a.count})</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {facets.genres?.length > 0 && (
+            <label>
+              <span>Genre</span>
+              <select value={genreFilter} onChange={(e) => setGenreFilter(e.target.value)}>
+                <option value="">All genres</option>
+                {facets.genres.map((g) => (
+                  <option key={g.value} value={g.value}>{g.value} ({g.count})</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {facets.labels.length > 0 && (
+            <label>
+              <span>Label</span>
+              <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)}>
+                <option value="">All labels</option>
+                {facets.labels.map((l) => (
+                  <option key={l.value} value={l.value}>{l.value} ({l.count})</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            <span>Tag</span>
+            <TagFilter
+              scope="records"
+              value={tagFilter}
+              onChange={setTagFilter}
+              reloadKey={tagsChanged}
+            />
+          </label>
+          <label>
+            <span>Sort</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="artist">By artist</option>
+              <option value="title">A–Z</option>
+              <option value="label">By label</option>
+              <option value="year">By year</option>
+              <option value="added">Last added</option>
+              <option value="oldest">First added</option>
+            </select>
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && <TileDensity module="records" />}

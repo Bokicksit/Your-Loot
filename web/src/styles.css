@@ -2892,3 +2892,54 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    in here at all any more — sticky-positioned inside a sideways-scrolling
    line, it slid straight over the filter next to it. */
 .chip-row > .viewseg { position: sticky; right: 0; }
+
+/* ---- folded filters (records, on trial) -------------------------------- */
+
+/* A count on the button, so a filter left on somewhere out of sight still
+   announces itself. Without it, folding controls away hides the fact that
+   they are doing something. */
+.chip-n {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--gold-ink);
+  color: var(--gold-bright);
+  font-family: var(--font-num);
+  font-size: 9.5px;
+  font-weight: var(--w-bold);
+}
+.chip.active .chip-n { background: rgba(0, 0, 0, .28); color: var(--gold-ink); }
+
+.filter-sheet {
+  display: grid;
+  gap: var(--s-2);
+  margin: calc(var(--s-2) * -1) 0 var(--s-3);
+  padding: var(--s-3);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+/* label above control on a phone, beside it once there is room to pair them */
+.filter-sheet > label {
+  display: grid;
+  gap: 4px;
+}
+.filter-sheet > label > span {
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.filter-sheet select,
+.filter-sheet .chip-select { width: 100%; min-width: 0; }
+.filter-sheet > button.ghost { justify-self: start; margin-top: var(--s-1); }
+
+@media (min-width: 620px) {
+  .filter-sheet { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
+  .filter-sheet > button.ghost { grid-column: 1 / -1; }
+}
