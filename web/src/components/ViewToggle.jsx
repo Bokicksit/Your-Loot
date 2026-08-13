@@ -58,7 +58,11 @@ export function useMaxCols() {
  */
 export function useInlineDensity() {
   const max = useMaxCols();
-  return max >= 6; // the same 900px the six-across ceiling uses
+  // 620px, the same width the four-across ceiling uses. 900 was picked to be
+  // safe and was simply wrong: on a folded filter row the slider fits beside
+  // the toggle with room to spare long before then, and leaving it on a row
+  // of its own wasted a whole line to one control.
+  return max >= 4;
 }
 
 /** Tiles per row, per collection. Three is what the grid used to settle on by

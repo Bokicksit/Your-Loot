@@ -2746,12 +2746,19 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    flexible: inside the rail it must not stretch to swallow the free space,
    and it is not sticky, so there is nothing for a filter to slide under. */
 .chip-row > .density {
-  flex: none;
-  width: 140px;
+  /* Grows into whatever the rail has left rather than sitting at a fixed
+     140px with empty space beside it — a slider is easier to land on the
+     value you want the longer its track is. Capped so it cannot dominate a
+     row of small controls, and floored so it stays usable. */
+  flex: 1 1 auto;
+  min-width: 130px;
+  max-width: 360px;
   margin-bottom: 0;
   padding-right: 0;
   margin-left: var(--s-2);
 }
+/* the toggle keeps its place at the end; the slider takes the slack before it */
+.chip-row > .rail-spacer { min-width: var(--s-2); }
 .density > svg.i { flex: none; width: 15px; height: 15px; stroke-width: 1.7; color: var(--text-mute); }
 .density > input[type="range"] {
   flex: 1 1 auto;
@@ -2952,4 +2959,14 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 @media (min-width: 620px) {
   .filter-sheet { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
   .filter-sheet > button.ghost { grid-column: 1 / -1; }
+}
+
+/* On a narrow rail the icon and the "3 UP" label cost about 60px between
+   them, which is most of the track. The number is the part worth keeping —
+   it is the answer to the question the control asks — so the icon goes and
+   the label loses its padding, and the track gets the difference. */
+@media (max-width: 560px) {
+  .chip-row > .density { gap: var(--s-2); }
+  .chip-row > .density > svg.i { display: none; }
+  .chip-row > .density > .density-val { min-width: 0; letter-spacing: .02em; }
 }
