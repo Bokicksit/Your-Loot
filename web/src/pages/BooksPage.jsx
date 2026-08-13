@@ -379,9 +379,11 @@ export default function BooksPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="books" />}
         <ViewToggle module="books" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="books" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a book" onClose={closeForm}>
         <div className="form-row">

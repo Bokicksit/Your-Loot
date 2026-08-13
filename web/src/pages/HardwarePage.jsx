@@ -356,9 +356,11 @@ export default function HardwarePage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="hardware" />}
         <ViewToggle module="hardware" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="hardware" />}
 
       {/* No games catalogue knows retro hardware, so this asks the retail
           database the scanner uses — by name when you have no box to scan.

@@ -422,9 +422,11 @@ export default function RecordsPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="records" />}
         <ViewToggle module="records" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="records" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a record" onClose={closeForm}>
           <div className="form-row">

@@ -349,9 +349,11 @@ export default function LegoPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="lego" />}
         <ViewToggle module="lego" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="lego" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a set" onClose={closeForm}>
           <div className="form-row">

@@ -9,7 +9,7 @@ import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
-import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
 const GRADERS = ["Raw", "PSA", "BGS", "CGC", "TAG", "ACE"];
@@ -31,7 +31,9 @@ export default function CardsPage({ initialView = "collection" }) {
   // bumped whenever tags change, so the filter re-reads its counts
   const [tagsChanged, setTagsChanged] = useState(0);
   const [sort, setSort] = useListPref("cards", "sort", "dex");
-  const cardCols = settings?.card_cols || 3;
+  // was a three-option picker buried in Settings; it is the same slider as
+  // every other collection now, in the place you are actually looking
+  const [cardCols] = useTileCols("cards", 3);
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
@@ -478,6 +480,7 @@ export default function CardsPage({ initialView = "collection" }) {
         </select>
         <ViewToggle module="cards" />
       </div>
+      {tiles && <TileDensity module="cards" min={3} />}
 
       {/* Cards keep one step on purpose: picking a result opens its own
           panel directly under that card, so the search and the details are

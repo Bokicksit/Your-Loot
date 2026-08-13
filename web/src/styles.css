@@ -2739,8 +2739,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  flex: 1 1 12rem;
-  min-width: 9rem;
+  margin-bottom: var(--s-3);
+  padding-right: var(--s-2);
 }
 .density > svg.i { flex: none; width: 15px; height: 15px; stroke-width: 1.7; color: var(--text-mute); }
 .density > input[type="range"] {
@@ -2888,6 +2888,7 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .chip-row::-webkit-scrollbar { display: none; }
 .chip-row > * { flex: none; }
-/* the sort select and the layout toggle keep to the end of the rail */
-.chip-row > .viewseg,
-.chip-row > .density { position: sticky; right: 0; }
+/* the layout toggle keeps to the end of the rail. The density slider is not
+   in here at all any more — sticky-positioned inside a sideways-scrolling
+   line, it slid straight over the filter next to it. */
+.chip-row > .viewseg { position: sticky; right: 0; }

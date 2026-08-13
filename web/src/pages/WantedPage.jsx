@@ -258,9 +258,11 @@ export default function WantedPage() {
           <option value="title">A–Z</option>
           <option value="module">By collection</option>
         </select>
-        {tiles && <TileDensity module="wanted" />}
         <ViewToggle module="wanted" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="wanted" />}
       {facets.length > 0 && (
         <div className="chip-row">
           <button

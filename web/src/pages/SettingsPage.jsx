@@ -112,20 +112,6 @@ export default function SettingsPage() {
           </span>
         </div>
         <div className="form-row">
-          <span className="settings-label">Cards per row</span>
-          <span className="col-picker">
-            {[3, 4, 5].map((n) => (
-              <button
-                key={n}
-                className={`chip ${settings.card_cols === n ? "active" : ""}`}
-                onClick={() => flash({ card_cols: n })}
-              >
-                {n}
-              </button>
-            ))}
-          </span>
-        </div>
-        <div className="form-row">
           <span className="settings-label">Show Pokédex cards in the card list</span>
           <button
             className={`toggle ${settings.show_binder_in_collection ? "on" : ""}`}

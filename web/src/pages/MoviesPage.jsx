@@ -374,9 +374,11 @@ export default function MoviesPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="movies" />}
         <ViewToggle module="movies" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="movies" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a film" onClose={closeForm}>
         <div className="form-row">

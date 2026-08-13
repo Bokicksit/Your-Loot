@@ -440,9 +440,11 @@ export default function GamesPage() {
           <option value="added">Last added</option>
           <option value="oldest">First added</option>
         </select>
-        {tiles && <TileDensity module="games" />}
         <ViewToggle module="games" />
       </div>
+      {/* its own row, not a chip in the rail — inside a line that
+          scrolls sideways it slid under the filter beside it */}
+      {tiles && <TileDensity module="games" />}
 
       <AddSheet
         open={showForm && step === "search"}

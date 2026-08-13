@@ -50,25 +50,28 @@ export function useMaxCols() {
 
 /** Tiles per row, per collection. Three is what the grid used to settle on by
  *  itself, so a slider nobody touches changes nothing. */
-export function useTileCols(module) {
-  const [stored, setStored] = useListPref(module, "tileCols", 3);
+export function useTileCols(module, min = 2) {
+  const [stored, setStored] = useListPref(module, "tileCols", Math.max(3, min));
   const max = useMaxCols();
-  return [Math.min(Number(stored) || 3, max), setStored, max];
+  // clamped both ways: a stored 2 from before a floor was raised must not
+  // render a column count the slider can no longer express
+  const cols = Math.min(Math.max(Number(stored) || 3, min), Math.max(min, max));
+  return [cols, setStored, Math.max(min, max), min];
 }
 
 /** The slider. Only worth showing when there are tiles to space out, so the
  *  pages render it beside the toggle and only in tile mode. */
-export function TileDensity({ module }) {
-  const [cols, setCols, max] = useTileCols(module);
+export function TileDensity({ module, min = 2 }) {
+  const [cols, setCols, max] = useTileCols(module, min);
   // the track is filled up to the thumb rather than uniformly grey, so the
   // control reads as a quantity instead of a position
-  const fill = ((cols - 2) / Math.max(1, max - 2)) * 100;
+  const fill = ((cols - min) / Math.max(1, max - min)) * 100;
   return (
     <div className="density">
       <Icon id="tiles" />
       <input
         type="range"
-        min="2"
+        min={min}
         max={max}
         step="1"
         value={cols}
