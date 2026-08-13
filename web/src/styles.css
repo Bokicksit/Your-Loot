@@ -2900,8 +2900,15 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   padding-block: 3px;
+  /* the last thing in the rail should not sit flush against the edge — with
+     the slider in here that was the number, pressed into the margin */
+  padding-right: var(--s-2);
   -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+  /* No fade on the trailing edge. It was there to say "more this way",
+     but it fades whatever ends near the edge whether or not the rail
+     scrolls — and once the slider moved in here, it was eating the knob
+     and the number beside it. A chip cut off by the edge already says
+     there is more; a faded slider just looks broken. */
 }
 .chip-row::-webkit-scrollbar { display: none; }
 .chip-row > * { flex: none; }
