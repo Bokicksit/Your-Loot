@@ -10,7 +10,12 @@ import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { cleanTitle, detectEdition, detectFormat, firstHits, queryLadder } from "../upc.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const FORMATS = ["4K UHD", "Blu-ray", "DVD", "VHS"];
@@ -68,6 +73,7 @@ export default function MoviesPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("movies");
   const [tileCols] = useTileCols("movies");
+  const inlineDensity = useInlineDensity();
   const [formatFilter, setFormatFilter] = useListPref("movies", "formatFilter", "");
   const [tagFilter, setTagFilter] = useListPref("movies", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -375,10 +381,11 @@ export default function MoviesPage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="movies" />
+        {tiles && inlineDensity && <TileDensity module="movies" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="movies" />}
+      {tiles && !inlineDensity && <TileDensity module="movies" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a film" onClose={closeForm}>
         <div className="form-row">

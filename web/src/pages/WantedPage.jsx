@@ -13,7 +13,12 @@ import {
   VINYL_GRADES,
 } from "../vocab.js";
 import { useEnabledModules, useListPref } from "../settings.jsx";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { TagChips, TagFilter } from "../components/Tags.jsx";
 
 const MODULE_ICONS = {
@@ -113,6 +118,7 @@ export default function WantedPage() {
   const [sort, setSort] = useListPref("wanted", "sort", "added");
   const [tiles] = useTileView("wanted");
   const [tileCols] = useTileCols("wanted");
+  const inlineDensity = useInlineDensity();
   // a row is two sibling <li>s, and which one is open lives here rather than in
   // the row, so there's nothing to hang a ref on — the rows are tagged instead
   const stillInside = (t) => {
@@ -259,10 +265,11 @@ export default function WantedPage() {
           <option value="module">By collection</option>
         </select>
         <ViewToggle module="wanted" />
+        {tiles && inlineDensity && <TileDensity module="wanted" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="wanted" />}
+      {tiles && !inlineDensity && <TileDensity module="wanted" />}
       {facets.length > 0 && (
         <div className="chip-row">
           <button

@@ -17,7 +17,12 @@ import {
   shortFor,
   withUnknown,
 } from "../vocab.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
@@ -76,6 +81,7 @@ export default function LegoPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("lego");
   const [tileCols] = useTileCols("lego");
+  const inlineDensity = useInlineDensity();
   const [themeFilter, setThemeFilter] = useListPref("lego", "themeFilter", "");
   const [tagFilter, setTagFilter] = useListPref("lego", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -350,10 +356,11 @@ export default function LegoPage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="lego" />
+        {tiles && inlineDensity && <TileDensity module="lego" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="lego" />}
+      {tiles && !inlineDensity && <TileDensity module="lego" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a set" onClose={closeForm}>
           <div className="form-row">

@@ -10,7 +10,12 @@ import { Icon } from "../components/Icons.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { useListPref, useSettings } from "../settings.jsx";
 
 // "Vinyl box set", not "Box set": in a records collection a box set is almost
@@ -82,6 +87,7 @@ export default function RecordsPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("records");
   const [tileCols] = useTileCols("records");
+  const inlineDensity = useInlineDensity();
   const [artistFilter, setArtistFilter] = useListPref("records", "artistFilter", "");
   const [labelFilter, setLabelFilter] = useListPref("records", "labelFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("records", "formatFilter", "");
@@ -388,6 +394,7 @@ export default function RecordsPage() {
         </button>
         <span className="rail-spacer" />
         <ViewToggle module="records" />
+        {tiles && inlineDensity && <TileDensity module="records" />}
       </div>
       {filtersOpen && (
         <div className="filter-sheet">
@@ -464,7 +471,7 @@ export default function RecordsPage() {
       )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="records" />}
+      {tiles && !inlineDensity && <TileDensity module="records" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a record" onClose={closeForm}>
           <div className="form-row">

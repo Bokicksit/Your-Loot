@@ -12,7 +12,12 @@ import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
 import { cleanGameTitle, firstHits, queryLadder } from "../upc.js";
 import { GAME_COMPLETENESS, labelFor, shortFor, withUnknown } from "../vocab.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -105,6 +110,7 @@ export default function GamesPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("games");
   const [tileCols] = useTileCols("games");
+  const inlineDensity = useInlineDensity();
   const [platformFilter, setPlatformFilter] = useListPref("games", "platformFilter", ""); // system; genre later
   const [usedPlatforms, setUsedPlatforms] = useState([]); // only what's in the collection
   const [tagFilter, setTagFilter] = useListPref("games", "tagFilter", "");
@@ -441,10 +447,11 @@ export default function GamesPage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="games" />
+        {tiles && inlineDensity && <TileDensity module="games" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="games" />}
+      {tiles && !inlineDensity && <TileDensity module="games" />}
 
       <AddSheet
         open={showForm && step === "search"}

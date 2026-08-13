@@ -17,7 +17,12 @@ import {
   labelFor,
   withUnknown,
 } from "../vocab.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { useListPref } from "../settings.jsx";
 
 const EMPTY_FORM = {
@@ -77,6 +82,7 @@ export default function ComicsPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("comics");
   const [tileCols] = useTileCols("comics");
+  const inlineDensity = useInlineDensity();
   const [seriesFilter, setSeriesFilter] = useListPref("comics", "seriesFilter", "");
   const [publisherFilter, setPublisherFilter] = useListPref("comics", "publisherFilter", "");
   const [tagFilter, setTagFilter] = useListPref("comics", "tagFilter", "");
@@ -424,10 +430,11 @@ export default function ComicsPage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="comics" />
+        {tiles && inlineDensity && <TileDensity module="comics" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="comics" />}
+      {tiles && !inlineDensity && <TileDensity module="comics" />}
 
       <AddSheet open={showForm && step === "search"} title="Find an issue" onClose={closeForm}>
           {/* three fields plus the scan button is too much for a phone on one

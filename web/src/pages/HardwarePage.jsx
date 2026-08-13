@@ -16,7 +16,12 @@ import { useSettings, useListPref } from "../settings.jsx";
 // SNES Console" into "Super". This one strips brackets and condition words
 // and leaves the name alone.
 import { cleanTitle } from "../upc.js";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 const CONDITIONS = ["Mint", "Good", "Fair", "Poor"];
@@ -112,6 +117,7 @@ export default function HardwarePage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("hardware");
   const [tileCols] = useTileCols("hardware");
+  const inlineDensity = useInlineDensity();
   const [platformFilter, setPlatformFilter] = useListPref("hardware", "platformFilter", "");
   const [tagFilter, setTagFilter] = useListPref("hardware", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
@@ -357,10 +363,11 @@ export default function HardwarePage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="hardware" />
+        {tiles && inlineDensity && <TileDensity module="hardware" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="hardware" />}
+      {tiles && !inlineDensity && <TileDensity module="hardware" />}
 
       {/* No games catalogue knows retro hardware, so this asks the retail
           database the scanner uses — by name when you have no box to scan.

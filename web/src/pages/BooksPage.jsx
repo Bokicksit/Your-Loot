@@ -9,7 +9,12 @@ import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
-import ViewToggle, { useTileView, useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  useTileView,
+  useTileCols,
+  useInlineDensity,
+  TileDensity,
+} from "../components/ViewToggle.jsx";
 import { useListPref, useSettings } from "../settings.jsx";
 
 // Graphic Novel and Omnibus sit here rather than in Comics because that's
@@ -89,6 +94,7 @@ export default function BooksPage() {
   const [search, setSearch] = useState("");
   const [tiles] = useTileView("books");
   const [tileCols] = useTileCols("books");
+  const inlineDensity = useInlineDensity();
   const [authorFilter, setAuthorFilter] = useListPref("books", "authorFilter", "");
   const [formatFilter, setFormatFilter] = useListPref("books", "formatFilter", "");
   const [tagFilter, setTagFilter] = useListPref("books", "tagFilter", "");
@@ -380,10 +386,11 @@ export default function BooksPage() {
           <option value="oldest">First added</option>
         </select>
         <ViewToggle module="books" />
+        {tiles && inlineDensity && <TileDensity module="books" />}
       </div>
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
-      {tiles && <TileDensity module="books" />}
+      {tiles && !inlineDensity && <TileDensity module="books" />}
 
       <AddSheet open={showForm && step === "search"} title="Find a book" onClose={closeForm}>
         <div className="form-row">

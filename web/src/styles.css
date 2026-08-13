@@ -2742,6 +2742,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   margin-bottom: var(--s-3);
   padding-right: var(--s-2);
 }
+/* Beside the toggle when the rail has room for it. Fixed width rather than
+   flexible: inside the rail it must not stretch to swallow the free space,
+   and it is not sticky, so there is nothing for a filter to slide under. */
+.chip-row > .density {
+  flex: none;
+  width: 140px;
+  margin-bottom: 0;
+  padding-right: 0;
+  margin-left: var(--s-2);
+}
 .density > svg.i { flex: none; width: 15px; height: 15px; stroke-width: 1.7; color: var(--text-mute); }
 .density > input[type="range"] {
   flex: 1 1 auto;

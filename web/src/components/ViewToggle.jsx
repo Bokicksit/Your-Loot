@@ -48,6 +48,19 @@ export function useMaxCols() {
   return max;
 }
 
+
+/** Is there room to put the slider beside the layout toggle?
+ *
+ *  It wants about 150px of its own, and the rail already carries the filters.
+ *  Below this the rail is scrolling sideways, and a control docked inside a
+ *  line that scrolls is how the slider ended up sitting on top of a filter in
+ *  the first place — so it takes the row underneath instead.
+ */
+export function useInlineDensity() {
+  const max = useMaxCols();
+  return max >= 6; // the same 900px the six-across ceiling uses
+}
+
 /** Tiles per row, per collection. Three is what the grid used to settle on by
  *  itself, so a slider nobody touches changes nothing. */
 export function useTileCols(module, min = 2) {
