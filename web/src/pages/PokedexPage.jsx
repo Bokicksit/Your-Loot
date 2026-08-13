@@ -173,9 +173,6 @@ export default function PokedexPage() {
         </span>
       </div>
       <div className="chip-row">
-        {/* These stay out here. Missing / needs upgrade / the one is how a
-            binder is actually used — it is the question the page exists to
-            answer, not a refinement of it, and a tap away is one too many. */}
         {[
           ["all", "All"],
           ["missing", `Missing (${counts.missing})`],
@@ -190,7 +187,12 @@ export default function PokedexPage() {
             {label}
           </button>
         ))}
-        {/* One button rather than a line that scrolls past the edge. */}
+      </div>
+
+      {/* Its own row. The chips above are the question the page answers and
+          are read constantly; these two are settings for how it is drawn,
+          and sharing a line made both harder to find. */}
+      <div className="chip-row">
         <button
           type="button"
           className={`chip ${activeFilters ? "active" : ""}`}

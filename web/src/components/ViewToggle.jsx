@@ -69,9 +69,12 @@ export function useInlineDensity() {
  *  itself, so a slider nobody touches changes nothing. */
 export function useTileCols(module, min = 2, ceiling) {
   const [stored, setStored] = useListPref(module, "tileCols", Math.max(3, min));
-  // a caller may want fewer than the screen could take — the dex tops out at
-  // five because a sixth slot is narrower than the number printed on it
-  const max = Math.min(useMaxCols(), ceiling ?? Infinity);
+  // A caller that names its own ceiling gets it outright rather than having it
+  // clamped against the screen rule. That rule is sized for covers, and a dex
+  // slot is a small numbered square — five of them fit where five box arts
+  // would not, which is why the old picker offered 3/4/5 at any width.
+  const screenMax = useMaxCols();
+  const max = ceiling ?? screenMax;
   // clamped both ways: a stored 2 from before a floor was raised must not
   // render a column count the slider can no longer express
   const cols = Math.min(Math.max(Number(stored) || 3, min), Math.max(min, max));
