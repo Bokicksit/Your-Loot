@@ -103,6 +103,25 @@ export default function BooksPage() {
   const [sort, setSort] = useListPref("books", "sort", "title");
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort is not counted: it never hides anything, and a badge for the
+  // order you always use would announce a problem that is not there
+  const activeFilters = [formatFilter, authorFilter, tagFilter].filter(Boolean).length;
+  // One write. Each useListPref setter rebuilds the whole prefs object
+  // from its render-time copy, so several in a row undo each other.
+  const { settings: allSettings, save: saveSettings } = useSettings();
+  const clearFilters = () =>
+    saveSettings({
+      list_prefs: {
+        ...(allSettings?.list_prefs || {}),
+        books: {
+          ...(allSettings?.list_prefs?.books || {}),
+            formatFilter: "",
+            authorFilter: "",
+            tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -337,57 +356,95 @@ export default function BooksPage() {
       </div>
 
       <div className="chip-row">
-        {facets.formats.length > 0 && (
-          <select
-            className="chip-select"
-            value={formatFilter}
-            onChange={(e) => setFormatFilter(e.target.value)}
-          >
-            <option value="">All formats</option>
-            {facets.formats.map((f) => (
-              <option key={f.format} value={f.format}>
-                {f.format} ({f.count})
-              </option>
-            ))}
-          </select>
-        )}
-        {facets.authors.length > 0 && (
-          <select
-            className="chip-select"
-            value={authorFilter}
-            onChange={(e) => setAuthorFilter(e.target.value)}
-          >
-            <option value="">All authors</option>
-            {facets.authors.map((a) => (
-              <option key={a.author} value={a.author}>
-                {a.author} ({a.count})
-              </option>
-            ))}
-          </select>
-        )}
-        <TagFilter
-          scope="books"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: "auto" }}
+        {/* One button rather than a line of controls that scrolls past
+            the edge — the ones out of sight were never found. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="title">A–Z</option>
-          <option value="author">By author</option>
-          <option value="series">By series</option>
-          <option value="year">By year</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="books" />
         {tiles && inlineDensity && <TileDensity module="books" />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Format</span>
+          {facets.formats.length > 0 && (
+            <select
+              className="chip-select"
+              value={formatFilter}
+              onChange={(e) => setFormatFilter(e.target.value)}
+            >
+              <option value="">All formats</option>
+              {facets.formats.map((f) => (
+                <option key={f.format} value={f.format}>
+                  {f.format} ({f.count})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          <label>
+            <span>Author</span>
+
+          {facets.authors.length > 0 && (
+            <select
+              className="chip-select"
+              value={authorFilter}
+              onChange={(e) => setAuthorFilter(e.target.value)}
+            >
+              <option value="">All authors</option>
+              {facets.authors.map((a) => (
+                <option key={a.author} value={a.author}>
+                  {a.author} ({a.count})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          <label>
+            <span>Tag</span>
+
+          <TagFilter
+            scope="books"
+            value={tagFilter}
+            onChange={setTagFilter}
+            reloadKey={tagsChanged}
+          />
+          </label>
+          <label>
+            <span>Sort</span>
+
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ marginLeft: "auto" }}
+          >
+            <option value="title">A–Z</option>
+            <option value="author">By author</option>
+            <option value="series">By series</option>
+            <option value="year">By year</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="books" />}

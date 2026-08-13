@@ -2977,3 +2977,12 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .chip-row > .density > svg.i { display: none; }
   .chip-row > .density > .density-val { min-width: 0; letter-spacing: .02em; }
 }
+
+/* Some sheet rows hold a row of chips rather than one select — Movies filters
+   by format that way, and the chips wrap inside their own row instead of
+   stretching. */
+.filter-sheet .sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}

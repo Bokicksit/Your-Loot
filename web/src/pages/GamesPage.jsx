@@ -119,6 +119,24 @@ export default function GamesPage() {
   const [sort, setSort] = useListPref("games", "sort", "title"); // title | platform | added
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort is not counted: it never hides anything, and a badge for the
+  // order you always use would announce a problem that is not there
+  const activeFilters = [platformFilter, tagFilter].filter(Boolean).length;
+  // One write. Each useListPref setter rebuilds the whole prefs object
+  // from its render-time copy, so several in a row undo each other.
+  const { settings: allSettings, save: saveSettings } = useSettings();
+  const clearFilters = () =>
+    saveSettings({
+      list_prefs: {
+        ...(allSettings?.list_prefs || {}),
+        games: {
+          ...(allSettings?.list_prefs?.games || {}),
+            platformFilter: "",
+            tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const { settings } = useSettings();
@@ -415,40 +433,72 @@ export default function GamesPage() {
       </div>
 
       <div className="chip-row">
-        <select
-          className="chip-select"
-          title="Filter by system"
-          value={platformFilter}
-          onChange={(e) => setPlatformFilter(e.target.value)}
+        {/* One button rather than a line that scrolls past the edge —
+            the controls out of sight were never found. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="">All systems</option>
-          {usedPlatforms.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.abbreviation || p.name} ({p.count})
-            </option>
-          ))}
-        </select>
-        <TagFilter
-          scope="games"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="title">A–Z</option>
-          <option value="platform">By system</option>
-          <option value="year">By year</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="games" />
         {tiles && inlineDensity && <TileDensity module="games" />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>System</span>
+          <select
+            className="chip-select"
+            title="Filter by system"
+            value={platformFilter}
+            onChange={(e) => setPlatformFilter(e.target.value)}
+          >
+            <option value="">All systems</option>
+            {usedPlatforms.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.abbreviation || p.name} ({p.count})
+              </option>
+            ))}
+          </select>
+          </label>
+          <label>
+            <span>Sort</span>
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
+            <option value="title">A–Z</option>
+            <option value="platform">By system</option>
+            <option value="year">By year</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          <label>
+            <span>Tag</span>
+          <TagFilter
+            scope="games"
+            value={tagFilter}
+            onChange={setTagFilter}
+            reloadKey={tagsChanged}
+          />
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="games" />}

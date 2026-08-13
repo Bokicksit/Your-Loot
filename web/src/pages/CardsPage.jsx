@@ -72,6 +72,22 @@ export default function CardsPage({ initialView = "collection" }) {
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort is not counted: it never hides anything
+  const activeFilters = [setFilter, rarityFilter, tagFilter].filter(Boolean).length;
+  // One write — separate useListPref setters each undo the last
+  const clearFilters = () =>
+    save({
+      list_prefs: {
+        ...(settings?.list_prefs || {}),
+        cards: {
+          ...(settings?.list_prefs?.cards || {}),
+          setFilter: "",
+          rarityFilter: "",
+          tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", number: "", set: "" });
   const [results, setResults] = useState(null);
@@ -432,61 +448,92 @@ export default function CardsPage({ initialView = "collection" }) {
         >
           Pokédex cards
         </button>
-        {(facets.sets.length > 0 || facets.rarities.length > 0) && (
-          <>
-            <select
-            className="chip-select"
-            title="Filter by set"
-            value={setFilter}
-            onChange={(e) => setSetFilter(e.target.value)}
-          >
-            <option value="">All sets</option>
-            {facets.sets.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.name} ({s.count})
-              </option>
-            ))}
-          </select>
-          <select
-            className="chip-select"
-            title="Filter by rarity"
-            value={rarityFilter}
-            onChange={(e) => setRarityFilter(e.target.value)}
-          >
-            <option value="">All rarities</option>
-            {facets.rarities.map((r) => (
-              <option key={r.rarity} value={r.rarity}>
-                {r.rarity} ({r.count})
-              </option>
-            ))}
-            </select>
-          </>
-        )}
-        {/* outside the facet guard: sorting is worth having even on a
-            collection too small to have anything to filter by */}
-        <TagFilter
-          scope="cards"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
+        {/* One button rather than a line that scrolls past the edge. The
+            Pokédex switch stays out here — it changes what the shelf is,
+            not which part of it you are looking at. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="dex">By Pokédex no.</option>
-          <option value="title">A–Z</option>
-          <option value="set">By set</option>
-          <option value="number">By card number</option>
-          <option value="rarity">By rarity</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="cards" />
         {tiles && inlineDensity && <TileDensity module="cards" min={3} />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Set and rarity</span>
+          {(facets.sets.length > 0 || facets.rarities.length > 0) && (
+            <>
+              <select
+              className="chip-select"
+              title="Filter by set"
+              value={setFilter}
+              onChange={(e) => setSetFilter(e.target.value)}
+            >
+              <option value="">All sets</option>
+              {facets.sets.map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.name} ({s.count})
+                </option>
+              ))}
+            </select>
+            <select
+              className="chip-select"
+              title="Filter by rarity"
+              value={rarityFilter}
+              onChange={(e) => setRarityFilter(e.target.value)}
+            >
+              <option value="">All rarities</option>
+              {facets.rarities.map((r) => (
+                <option key={r.rarity} value={r.rarity}>
+                  {r.rarity} ({r.count})
+                </option>
+              ))}
+              </select>
+            </>
+          )}
+          </label>
+          <label>
+            <span>Tag</span>
+          <TagFilter
+            scope="cards"
+            value={tagFilter}
+            onChange={setTagFilter}
+            reloadKey={tagsChanged}
+          />
+          </label>
+          <label>
+            <span>Sort</span>
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
+            <option value="dex">By Pokédex no.</option>
+            <option value="title">A–Z</option>
+            <option value="set">By set</option>
+            <option value="number">By card number</option>
+            <option value="rarity">By rarity</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {tiles && !inlineDensity && <TileDensity module="cards" min={3} />}
 
       {/* Cards keep one step on purpose: picking a result opens its own

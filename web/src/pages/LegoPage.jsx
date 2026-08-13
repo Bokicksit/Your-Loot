@@ -23,7 +23,7 @@ import ViewToggle, {
   useInlineDensity,
   TileDensity,
 } from "../components/ViewToggle.jsx";
-import { useListPref } from "../settings.jsx";
+import { useListPref, useSettings } from "../settings.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -89,6 +89,24 @@ export default function LegoPage() {
   const [sort, setSort] = useListPref("lego", "sort", "title");
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort is not counted: it never hides anything, and a badge for the
+  // order you always use would announce a problem that is not there
+  const activeFilters = [themeFilter, tagFilter].filter(Boolean).length;
+  // One write. Each useListPref setter rebuilds the whole prefs object
+  // from its render-time copy, so several in a row undo each other.
+  const { settings: allSettings, save: saveSettings } = useSettings();
+  const clearFilters = () =>
+    saveSettings({
+      list_prefs: {
+        ...(allSettings?.list_prefs || {}),
+        lego: {
+          ...(allSettings?.list_prefs?.lego || {}),
+            themeFilter: "",
+            tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -320,44 +338,76 @@ export default function LegoPage() {
       </div>
 
       <div className="chip-row">
-        {facets.themes.length > 0 && (
-          <select
-            className="chip-select"
-            value={themeFilter}
-            onChange={(e) => setThemeFilter(e.target.value)}
-          >
-            <option value="">All themes</option>
-            {facets.themes.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.value} ({t.count})
-              </option>
-            ))}
-          </select>
-        )}
-        <TagFilter
-          scope="lego"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: "auto" }}
+        {/* One button rather than a line that scrolls past the edge —
+            the controls out of sight were never found. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="title">A–Z</option>
-          <option value="theme">By theme</option>
-          <option value="number">By set number</option>
-          <option value="year">By year</option>
-          <option value="pieces">By piece count</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="lego" />
         {tiles && inlineDensity && <TileDensity module="lego" />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Theme</span>
+          {facets.themes.length > 0 && (
+            <select
+              className="chip-select"
+              value={themeFilter}
+              onChange={(e) => setThemeFilter(e.target.value)}
+            >
+              <option value="">All themes</option>
+              {facets.themes.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.value} ({t.count})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          <label>
+            <span>Tag</span>
+          <TagFilter
+            scope="lego"
+            value={tagFilter}
+            onChange={setTagFilter}
+            reloadKey={tagsChanged}
+          />
+          </label>
+          <label>
+            <span>Sort</span>
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ marginLeft: "auto" }}
+          >
+            <option value="title">A–Z</option>
+            <option value="theme">By theme</option>
+            <option value="number">By set number</option>
+            <option value="year">By year</option>
+            <option value="pieces">By piece count</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="lego" />}

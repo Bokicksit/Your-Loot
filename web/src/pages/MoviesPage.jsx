@@ -81,6 +81,10 @@ export default function MoviesPage() {
   const [sort, setSort] = useListPref("movies", "sort", "title"); // title | format | added
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort lives in the rail here rather than the sheet, and is not counted:
+  // it never hides anything
+  const activeFilters = [formatFilter, tagFilter].filter(Boolean).length;
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -346,43 +350,72 @@ export default function MoviesPage() {
       </div>
 
       <div className="chip-row">
+        {/* One button rather than a line that scrolls past the edge —
+            the controls out of sight were never found. */}
         <button
-          className={`chip ${formatFilter === "" ? "active" : ""}`}
-          onClick={() => setFormatFilter("")}
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          All
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
         </button>
-        {formats.map((f) => (
-          <button
-            key={f.format}
-            className={`chip ${formatFilter === f.format ? "active" : ""}`}
-            onClick={() => setFormatFilter(f.format)}
-          >
-            {f.format} ({f.count})
-          </button>
-        ))}
-        <TagFilter
-          scope="movies"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: "auto" }}
-        >
-          <option value="title">A–Z</option>
-          <option value="format">By format</option>
-          <option value="year">By year</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+        <span className="rail-spacer" />
         <ViewToggle module="movies" />
         {tiles && inlineDensity && <TileDensity module="movies" />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Format</span>
+            <span className="sheet-chips">
+            <button
+              className={`chip ${formatFilter === "" ? "active" : ""}`}
+              onClick={() => setFormatFilter("")}
+            >
+              All
+            </button>
+            {formats.map((f) => (
+              <button
+                key={f.format}
+                className={`chip ${formatFilter === f.format ? "active" : ""}`}
+                onClick={() => setFormatFilter(f.format)}
+              >
+                {f.format} ({f.count})
+              </button>
+            ))}
+            </span>
+          </label>
+          <label>
+            <span>Sort</span>
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ marginLeft: "auto" }}
+          >
+            <option value="title">A–Z</option>
+            <option value="format">By format</option>
+            <option value="year">By year</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          <label>
+            <span>Tag</span>
+            <TagFilter
+              scope="movies"
+              value={tagFilter}
+              onChange={setTagFilter}
+              reloadKey={tagsChanged}
+            />
+          </label>
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="movies" />}

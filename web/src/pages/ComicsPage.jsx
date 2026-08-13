@@ -23,7 +23,7 @@ import ViewToggle, {
   useInlineDensity,
   TileDensity,
 } from "../components/ViewToggle.jsx";
-import { useListPref } from "../settings.jsx";
+import { useListPref, useSettings } from "../settings.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -91,6 +91,25 @@ export default function ComicsPage() {
   const [sort, setSort] = useListPref("comics", "sort", "series");
   // Shown while you fill the form in, not thrown at you on save.
   const [dupe, setDupe] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // sort is not counted: it never hides anything, and a badge for the
+  // order you always use would announce a problem that is not there
+  const activeFilters = [seriesFilter, publisherFilter, tagFilter].filter(Boolean).length;
+  // One write. Each useListPref setter rebuilds the whole prefs object
+  // from its render-time copy, so several in a row undo each other.
+  const { settings: allSettings, save: saveSettings } = useSettings();
+  const clearFilters = () =>
+    saveSettings({
+      list_prefs: {
+        ...(allSettings?.list_prefs || {}),
+        comics: {
+          ...(allSettings?.list_prefs?.comics || {}),
+            seriesFilter: "",
+            publisherFilter: "",
+            tagFilter: "",
+        },
+      },
+    });
   const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState("search"); // search -> details
   const [form, setForm] = useState(EMPTY_FORM);
@@ -381,57 +400,95 @@ export default function ComicsPage() {
       </div>
 
       <div className="chip-row">
-        {facets.series.length > 0 && (
-          <select
-            className="chip-select"
-            value={seriesFilter}
-            onChange={(e) => setSeriesFilter(e.target.value)}
-          >
-            <option value="">All series</option>
-            {facets.series.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.value} ({s.count})
-              </option>
-            ))}
-          </select>
-        )}
-        {facets.publishers.length > 0 && (
-          <select
-            className="chip-select"
-            value={publisherFilter}
-            onChange={(e) => setPublisherFilter(e.target.value)}
-          >
-            <option value="">All publishers</option>
-            {facets.publishers.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.value} ({p.count})
-              </option>
-            ))}
-          </select>
-        )}
-        <TagFilter
-          scope="comics"
-          value={tagFilter}
-          onChange={setTagFilter}
-          reloadKey={tagsChanged}
-        />
-        <select
-          className="chip-select"
-          title="Sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: "auto" }}
+        {/* One button rather than a line of controls that scrolls past
+            the edge — the ones out of sight were never found. */}
+        <button
+          type="button"
+          className={`chip ${activeFilters ? "active" : ""}`}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          title="Filters and sorting"
         >
-          <option value="series">By series &amp; issue</option>
-          <option value="title">A–Z</option>
-          <option value="publisher">By publisher</option>
-          <option value="year">By cover year</option>
-          <option value="added">Last added</option>
-          <option value="oldest">First added</option>
-        </select>
+          <Icon id="sliders" />
+          Filters
+          {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        <span className="rail-spacer" />
         <ViewToggle module="comics" />
         {tiles && inlineDensity && <TileDensity module="comics" />}
       </div>
+      {filtersOpen && (
+        <div className="filter-sheet">
+          <label>
+            <span>Series</span>
+          {facets.series.length > 0 && (
+            <select
+              className="chip-select"
+              value={seriesFilter}
+              onChange={(e) => setSeriesFilter(e.target.value)}
+            >
+              <option value="">All series</option>
+              {facets.series.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.value} ({s.count})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          <label>
+            <span>Publisher</span>
+
+          {facets.publishers.length > 0 && (
+            <select
+              className="chip-select"
+              value={publisherFilter}
+              onChange={(e) => setPublisherFilter(e.target.value)}
+            >
+              <option value="">All publishers</option>
+              {facets.publishers.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.value} ({p.count})
+                </option>
+              ))}
+            </select>
+          )}
+          </label>
+          <label>
+            <span>Tag</span>
+
+          <TagFilter
+            scope="comics"
+            value={tagFilter}
+            onChange={setTagFilter}
+            reloadKey={tagsChanged}
+          />
+          </label>
+          <label>
+            <span>Sort</span>
+
+          <select
+            className="chip-select"
+            title="Sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ marginLeft: "auto" }}
+          >
+            <option value="series">By series &amp; issue</option>
+            <option value="title">A–Z</option>
+            <option value="publisher">By publisher</option>
+            <option value="year">By cover year</option>
+            <option value="added">Last added</option>
+            <option value="oldest">First added</option>
+          </select>
+          </label>
+          {activeFilters > 0 && (
+            <button type="button" className="ghost" onClick={clearFilters}>
+              Clear {activeFilters === 1 ? "filter" : "all filters"}
+            </button>
+          )}
+        </div>
+      )}
       {/* its own row, not a chip in the rail — inside a line that
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="comics" />}
