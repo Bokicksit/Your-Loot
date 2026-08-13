@@ -31,7 +31,9 @@ export function useTileView(module) {
 export function useMaxCols() {
   const cap = () => {
     const w = typeof window === "undefined" ? 1280 : window.innerWidth;
-    if (w < 420) return 2;
+    // three fits on a portrait phone at about 110px a tile, which is
+    // small but still a recognisable cover — and two vs three is exactly
+    // the choice worth having on the screen the app is used on most.
     if (w < 620) return 3;
     if (w < 900) return 4;
     return 6;
@@ -57,9 +59,12 @@ export function useTileCols(module) {
  *  pages render it beside the toggle and only in tile mode. */
 export function TileDensity({ module }) {
   const [cols, setCols, max] = useTileCols(module);
-  if (max < 3) return null; // a phone in portrait has one sensible answer
+  // the track is filled up to the thumb rather than uniformly grey, so the
+  // control reads as a quantity instead of a position
+  const fill = ((cols - 2) / Math.max(1, max - 2)) * 100;
   return (
-    <label className="tile-density" title="Tiles per row">
+    <div className="density">
+      <Icon id="tiles" />
       <input
         type="range"
         min="2"
@@ -67,10 +72,11 @@ export function TileDensity({ module }) {
         step="1"
         value={cols}
         onChange={(e) => setCols(Number(e.target.value))}
+        style={{ "--fill": `${fill}%` }}
         aria-label="Tiles per row"
       />
-      <span className="tile-density-n">{cols}</span>
-    </label>
+      <span className="density-val">{cols} up</span>
+    </div>
   );
 }
 
@@ -82,11 +88,14 @@ export function TileDensity({ module }) {
  *  legible without opening anything. Which one is right depends on the
  *  collection and the moment, so it's a per-collection preference rather than
  *  one setting for the whole app.
+ *
+ *  Drawn as one segmented pill rather than two loose buttons: they are two
+ *  halves of a single choice, and gold on the active half says which.
  */
 export default function ViewToggle({ module }) {
   const [tiles, setTiles] = useTileView(module);
   return (
-    <div className="view-toggle" role="group" aria-label="Layout">
+    <div className="viewseg" role="group" aria-label="Layout">
       <button
         type="button"
         className={tiles ? "on" : ""}

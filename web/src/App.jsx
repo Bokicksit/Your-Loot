@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { BrandMark, Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+import PageArrows from "./components/PageArrows.jsx";
 import SignIn from "./components/SignIn.jsx";
 import { MODULES, SettingsProvider, useEnabledModules, useSettings } from "./settings.jsx";
 import HomePage from "./pages/HomePage.jsx";
@@ -170,6 +171,7 @@ function Shell() {
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
+      <PageArrows />
 
       <TabBar />
       {settings?.needs_onboarding && <Onboarding />}

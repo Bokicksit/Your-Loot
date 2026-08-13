@@ -2690,6 +2690,123 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    answer, so forcing it costs nothing and guarantees a pocket-sized screen
    never renders six 60px tiles. */
 @media (max-width: 420px) {
-  .game-list.as-tiles,
-  .wanted-list.as-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .game-list.as-tiles.cols-4,
+  .game-list.as-tiles.cols-5,
+  .game-list.as-tiles.cols-6,
+  .wanted-list.as-tiles.cols-4,
+  .wanted-list.as-tiles.cols-5,
+  .wanted-list.as-tiles.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ---- toolbar, from the design ------------------------------------------ */
+
+/* Two halves of one choice rather than two loose buttons, gold on the half
+   that is on. Deliberately not sticky — the toolbar stays where it is. */
+.viewseg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line-soft);
+}
+.viewseg button {
+  appearance: none;
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-mute);
+  cursor: pointer;
+  transition: color .16s var(--ease), background .16s var(--ease);
+}
+.viewseg button svg.i { width: 17px; height: 17px; stroke-width: 1.7; }
+.viewseg button:hover { color: var(--text-dim); }
+.viewseg button.on { color: var(--gold); background: var(--gold-wash); }
+
+/* The track fills up to the thumb, so it reads as a quantity rather than a
+   position on a line. */
+.density {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: 1 1 12rem;
+  min-width: 9rem;
+}
+.density > svg.i { flex: none; width: 15px; height: 15px; stroke-width: 1.7; color: var(--text-mute); }
+.density > input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.density > input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold) 0 var(--fill, 50%), var(--line) var(--fill, 50%) 100%);
+}
+.density > input[type="range"]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--line); }
+.density > input[type="range"]::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--gold); }
+.density > input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 15px; height: 15px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 3px solid var(--bg-0);
+  box-shadow: 0 0 0 1px var(--gold-line);
+}
+.density > input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 3px solid var(--bg-0);
+  box-shadow: 0 0 0 1px var(--gold-line);
+}
+.density > .density-val {
+  flex: none;
+  min-width: 34px;
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* ---- a screen at a time ------------------------------------------------ */
+.page-arrows {
+  position: fixed;
+  right: max(var(--s-3), env(safe-area-inset-right));
+  bottom: calc(var(--bar-h, 58px) + env(safe-area-inset-bottom) + var(--s-4));
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.page-arrows button {
+  appearance: none;
+  width: 34px; height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--text-mute);
+  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.page-arrows button:hover { color: var(--gold); border-color: var(--gold-line); }
+.page-arrows button svg.i { width: 15px; height: 15px; }
+/* the back chevron points left; one turned up, one turned down */
+.page-arrows button:first-child svg.i { transform: rotate(90deg); }
+.page-arrows button:last-child svg.i { transform: rotate(-90deg); }
+.page-arrows button:only-child svg.i { transform: rotate(-90deg); }
