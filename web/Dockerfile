@@ -2,7 +2,11 @@
 # only emits static files, which are the same bytes whatever CPU runs the
 # browser, so there is nothing to gain from running npm under QEMU emulation
 # for the arm64 image and several minutes per build to lose.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS build
+#
+# 22 rather than 20: Vite 7 wants Node ^20.19 || >=22.12, and 20 left support
+# in April. Nothing here is served — this stage only produces the dist folder
+# the nginx stage below copies.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json* ./
 RUN npm install

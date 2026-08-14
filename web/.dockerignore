@@ -1,0 +1,15 @@
+# The build stage runs `npm install` and then `COPY . .`, so without this the
+# host's node_modules lands on top of the one just installed. On this machine
+# that meant a Windows esbuild binary inside a Linux image — "Host version
+# 0.21.5 does not match binary version 0.28.2" — but the quieter failure is
+# worse: when the two happen to be compatible the image builds fine and ships
+# a bundle compiled from whatever the developer had lying around rather than
+# from the lockfile.
+#
+# CI never saw it, because a fresh checkout has no node_modules to copy.
+node_modules
+dist
+
+# not part of the bundle, and only the build stage would read them
+Dockerfile
+.dockerignore

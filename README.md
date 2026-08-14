@@ -230,7 +230,8 @@ docker compose -f compose.dev.yaml up --build
 ```
 Builds from source instead of pulling images, exposes the API on :8000
 (interactive docs at `/docs`), and skips the first-run seed. Frontend-only
-work: `cd web && npm install && npm run dev`.
+work: `cd web && npm install && npm run dev` — that one needs Node 20.19+ or
+22+ on your machine, which Vite requires. The Docker build carries its own.
 
 **Stack:** FastAPI + SQLAlchemy + Alembic + Postgres, React + Vite, nginx.
 One `collection_item` table shared by every module, with per-module attribute
