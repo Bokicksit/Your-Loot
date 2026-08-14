@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -29,18 +29,3 @@ class CardAttrs(Base):
     set_abbr: Mapped[str | None] = mapped_column(String(10))  # printed code: MEW, JTG
 
     item = relationship("CollectionItem", back_populates="card_attrs")
-
-
-class DexSlot(Base):
-    """Per-dex binder flag: happy=True means 'the current occupant stays even
-    if it isn't an IR/SIR' — the keeper-card case."""
-
-    __tablename__ = "dex_slots"
-
-    # a binder each: the slot belongs to whoever filled it
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"),
-        primary_key=True, server_default="1",
-    )
-    dex_no: Mapped[int] = mapped_column(primary_key=True)
-    happy: Mapped[bool] = mapped_column(default=False, server_default="false")

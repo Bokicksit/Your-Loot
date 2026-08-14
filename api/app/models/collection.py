@@ -37,8 +37,6 @@ class Owned(TimestampMixin, Base):
     # cards only: the number on the slab label. Belongs to the copy, not the
     # card — two people can own the same Charizard, one cert each.
     cert_number: Mapped[str | None] = mapped_column(String(20))
-    # cards only: this specific copy sits in the Pokédex binder (opt-in)
-    in_binder: Mapped[bool] = mapped_column(default=False, server_default="false")
     # cards only: YOUR copy's print style + promo stamp — the catalog row is
     # the same card whether you pulled the reverse holo or the plain one
     variant: Mapped[str | None] = mapped_column(String(20))  # Non-Holo/Reverse Holo/Holo
@@ -46,6 +44,30 @@ class Owned(TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
     item = relationship("CollectionItem", back_populates="owned")
+
+    # Which binders this copy is filed in — none, one, or several. selectin
+    # rather than lazy loading: the card list returns up to 300 items and a
+    # query per copy would be hundreds of round trips, where this is one more
+    # for the whole page. BinderSlot pulls its binder in on the same join.
+    # No delete-orphan here. A slot belongs to its binder, not to the copy
+    # sitting in it, and emptying a slot is not the same as removing it —
+    # orphan cascade turned "take this card out" into "forget this slot ever
+    # existed", taking the keeper flag with it. Binder owns that cascade; the
+    # database handles the copy going away.
+    binder_slots = relationship(
+        "BinderSlot", back_populates="owned", lazy="selectin"
+    )
+
+    @property
+    def in_binder(self) -> bool:
+        """Is this copy in the Pokédex?
+
+        There used to be a column saying so, back when there was one binder
+        and the question had one answer. It is derived now, because storing it
+        as well as the slot would be two records of the same fact and they
+        would eventually disagree.
+        """
+        return any(s.binder is not None and s.binder.kind == "dex" for s in self.binder_slots)
 
 
 class Wanted(TimestampMixin, Base):

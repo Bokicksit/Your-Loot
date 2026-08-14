@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.auth import current_user
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, User, Wanted
+from app import binders
 from app.tagging import tags_for, tags_of
 from app.tenancy import my_copies, my_want, owns
 from app.schemas.collection import ItemStatusOut, WantedItemOut
@@ -32,27 +33,20 @@ def _status(db: Session, item: CollectionItem, uid: int) -> ItemStatusOut:
     )
 
 
-def _enforce_single_binder(db: Session, item: CollectionItem, keep_owned_id: int, uid: int):
-    """A binder holds ONE card per Pokémon: flagging a copy in_binder unflags
-    any other binder copy sharing the same dex number (the physical swap)."""
+def _file_in_dex(db: Session, item: CollectionItem, owned_id: int, uid: int):
+    """Put a copy in the Pokédex, or take it out.
+
+    The old version of this had to hunt down and unflag any rival copy sharing
+    the dex number, because one boolean could not express "this slot is
+    taken". A slot is a row now and the unique index does that work, so all
+    that is left is knowing which slot: the card's dex number.
+    """
     if item.module != Module.cards.value or not item.card_attrs:
         return
     dex = item.card_attrs.national_dex_no
     if dex is None:
-        return
-    others = db.scalars(
-        select(Owned)
-        .join(CollectionItem, CollectionItem.id == Owned.item_id)
-        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
-        .where(
-            Owned.user_id == uid,
-            Owned.in_binder,
-            Owned.id != keep_owned_id,
-            CardAttrs.national_dex_no == dex,
-        )
-    ).all()
-    for o in others:
-        o.in_binder = False
+        return  # a card with no species has no slot to sit in
+    binders.file_copy(db, binders.dex_binder(db, uid), str(dex), owned_id)
 
 
 @router.post("/items/{item_id}/owned", response_model=ItemStatusOut)
@@ -63,11 +57,13 @@ def add_owned(
     user: User = Depends(current_user),
 ):
     item = _get_item(db, item_id)
-    owned = Owned(item_id=item.id, user_id=user.id, **body.model_dump())
+    fields = body.model_dump()
+    wants_binder = fields.pop("in_binder", False)
+    owned = Owned(item_id=item.id, user_id=user.id, **fields)
     db.add(owned)
-    if body.in_binder:
+    if wants_binder:
         db.flush()
-        _enforce_single_binder(db, item, owned.id, user.id)
+        _file_in_dex(db, item, owned.id, user.id)
     db.commit()
     db.refresh(item)
     return _status(db, item, user.id)
@@ -88,10 +84,17 @@ def update_owned(
     if not owned or owned.item_id != item.id or owned.user_id != user.id:
         raise HTTPException(404, "owned record not found")
     data = body.model_dump(exclude_unset=True)
+    # in_binder is no longer a column — it is the Pokédex asked about by its
+    # old name, so it is applied rather than assigned
+    to_binder = data.pop("in_binder", None)
     for k, v in data.items():
         setattr(owned, k, v)
-    if data.get("in_binder"):
-        _enforce_single_binder(db, item, owned.id, user.id)
+    if to_binder is True:
+        _file_in_dex(db, item, owned.id, user.id)
+    elif to_binder is False:
+        dex = binders.dex_binder(db, user.id, create=False)
+        if dex is not None:
+            binders.unfile(db, owned.id, dex.id)
     db.commit()
     db.refresh(item)
     return _status(db, item, user.id)
@@ -110,6 +113,12 @@ def remove_owned(
     # rather than "not yours" keeps their collection none of your business
     if not owned or owned.item_id != item.id or owned.user_id != user.id:
         raise HTTPException(404, "owned record not found")
+    # Take it out of its binders first. The foreign key would empty the slots
+    # on its own, but that leaves a row behind saying nothing — an empty slot
+    # with no keeper flag is not a slot anybody asked to remember. The ones
+    # carrying a flag survive, which is the same rule as pulling a card out by
+    # hand.
+    binders.unfile(db, owned.id)
     db.delete(owned)
     db.commit()
     db.refresh(item)

@@ -11,7 +11,10 @@ from app.cards_util import classify_layer
 from app.auth import current_user
 from app.db import get_db
 from app.integrations.tcgdex import tcgdex_client
-from app.models import CardAttrs, CollectionItem, DexSlot, Module, Owned, User, Wanted
+from app import binders
+from app.models import (
+    BinderSlot, CardAttrs, CollectionItem, Module, Owned, User, Wanted,
+)
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import my_copies, my_want, on_my_shelf
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
@@ -151,7 +154,7 @@ def card_facets(db: Session = Depends(get_db),
         Owned.item_id == CardAttrs.item_id, Owned.user_id == user.id
     )
     if not include_binder:
-        owned_q = owned_q.where(~Owned.in_binder)
+        owned_q = owned_q.where(~binders.filed_anywhere())
     owned_exists = owned_q.exists()
     sets = [
         {"code": c, "name": n, "count": cnt}
@@ -216,7 +219,7 @@ def list_cards(
             Owned.item_id == CollectionItem.id, Owned.user_id == user.id
         )
         if not include_binder:
-            owned_q = owned_q.where(~Owned.in_binder)
+            owned_q = owned_q.where(~binders.filed_anywhere())
         filters.append(owned_q.exists())
     if filters:
         q = q.where(*filters)
@@ -430,12 +433,7 @@ def set_happy(
 ):
     """'Happy with it' — this dex slot's keeper card stays even without an
     IR/SIR, so the binder stops flagging it for upgrade."""
-    slot = db.get(DexSlot, (user.id, dex_no))
-    if slot is None:
-        slot = DexSlot(user_id=user.id, dex_no=dex_no, happy=body.happy)
-        db.add(slot)
-    else:
-        slot.happy = body.happy
+    binders.set_happy(db, binders.dex_binder(db, user.id), str(dex_no), body.happy)
     db.commit()
     return {"dex_no": dex_no, "happy": body.happy}
 
@@ -444,17 +442,19 @@ def set_happy(
 def pokedex(db: Session = Depends(get_db),
     user: User = Depends(current_user)):
     """The binder: one entry per national dex number, ONE occupant each (the
-    copy flagged in_binder). `final` = this is the desired card for that
+    copy filed in that slot). `final` = this is the desired card for that
     Pokémon; otherwise it's a placeholder awaiting an upgrade."""
+    shelf = binders.dex_binder(db, user.id)
     owned_cards = (
         db.scalars(
             _base_query().where(
                 CardAttrs.national_dex_no.is_not(None),
                 select(Owned.id)
+                .join(BinderSlot, BinderSlot.owned_id == Owned.id)
                 .where(
                     Owned.item_id == CollectionItem.id,
                     Owned.user_id == user.id,
-                    Owned.in_binder,
+                    BinderSlot.binder_id == shelf.id,
                 )
                 .exists(),
             )
@@ -490,17 +490,24 @@ def pokedex(db: Session = Depends(get_db),
             names[dex] = title
 
     final = {
-        s.dex_no
-        for s in db.scalars(
-            select(DexSlot).where(DexSlot.user_id == user.id, DexSlot.happy)
-        ).all()
+        int(k)
+        for (k,) in db.execute(
+            select(BinderSlot.slot_key).where(
+                BinderSlot.binder_id == shelf.id, BinderSlot.happy
+            )
+        )
+        if k and k.isdigit()
     }
 
     def card_out(item):
         if item is None:
             return None
         a = item.card_attrs
-        binder_copy = next((o for o in item.owned if o.in_binder), None)
+        binder_copy = next(
+            (o for o in item.owned
+             if any(sl.binder_id == shelf.id for sl in o.binder_slots)),
+            None,
+        )
         return {
             "id": item.id,
             # the binder copy itself, so the UI can pull it out of the binder
