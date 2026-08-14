@@ -10,6 +10,7 @@ from app.config import origin_list, settings
 from app.routers import (
     auth,
     backup,
+    binders,
     books,
     cards,
     collection,
@@ -66,6 +67,7 @@ app.include_router(backup.router)
 app.include_router(settings_router.router)
 app.include_router(lookup.router)
 app.include_router(tags.router)
+app.include_router(binders.router)
 app.include_router(share.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)

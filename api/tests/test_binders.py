@@ -179,3 +179,190 @@ def test_the_pokedex_is_not_shared(owner):
             assert _dex(owner)[1022]["card"] is None, "their card is in my binder"
         finally:
             other.delete(f"/api/cards/{item}")
+
+
+# --- the other two kinds ---------------------------------------------------
+#
+# A dex slot is filled by choosing; a set slot is filled by owning. That
+# difference is the one thing most likely to be quietly broken by a later
+# change, so most of what follows is about it.
+
+
+# The test stack seeds no catalogue — 20,000 cards is a slow start and no
+# other test wants them — so a set binder has no set to be about. These make
+# a small one directly in the database, which also lets the ordering test use
+# numbers chosen to break a naive sort rather than whatever a real set
+# happens to contain.
+SET_NUMBERS = ["1", "2", "9", "10", "11", "101", "5a", "TG1", "TG10"]
+IN_PRINTED_ORDER = ["1", "2", "5a", "9", "10", "11", "101", "TG1", "TG10"]
+
+
+@pytest.fixture
+def a_set(owner):
+    """A set of nine cards in the catalogue, gone again afterwards."""
+    from sqlalchemy import delete, select
+
+    from app.db import SessionLocal
+    from app.models import CardAttrs, CollectionItem, Module
+
+    mark = uuid.uuid4().hex[:6]
+    code = f"tst{mark}"
+    db = SessionLocal()
+    try:
+        for n in SET_NUMBERS:
+            item = CollectionItem(
+                module=Module.cards.value, title=f"Test {code} {n}", source="manual"
+            )
+            item.card_attrs = CardAttrs(
+                set_code=code, set_name=f"Test Set {mark}", card_number=n,
+                set_total=len(SET_NUMBERS),
+            )
+            db.add(item)
+        db.commit()
+        yield code
+    finally:
+        ids = [
+            i for (i,) in db.execute(
+                select(CollectionItem.id)
+                .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+                .where(CardAttrs.set_code == code)
+            ).all()
+        ]
+        if ids:
+            db.execute(delete(CollectionItem).where(CollectionItem.id.in_(ids)))
+            db.commit()
+        db.close()
+
+
+@pytest.fixture
+def a_set_binder(owner, a_set):
+    r = owner.post(
+        "/api/binders", json={"name": f"Set {a_set}", "kind": "set", "set_code": a_set}
+    )
+    r.raise_for_status()
+    binder = r.json()["id"]
+    yield binder, a_set, len(SET_NUMBERS)
+    owner.delete(f"/api/binders/{binder}")
+
+
+def test_a_set_binder_is_filled_by_owning_not_by_filing(owner, a_set_binder):
+    """Nobody is going to hand-file two hundred cards to find out which ones
+    are missing. Owning the card fills its slot."""
+    binder, code, count = a_set_binder
+    before = owner.get(f"/api/binders/{binder}").json()
+    assert before["binder"]["filled"] == 0, "a fresh set binder should be empty"
+
+    gap = next(e for e in before["entries"] if e["state"] == "missing")
+    card = owner.get(
+        "/api/cards", params={"set_code": code, "collection": False, "limit": 300}
+    ).json()
+    target = next(i for i in card["items"] if (i["attrs"]["card_number"] or "") == gap["key"])
+    # note: no filing step at all — owning it is the whole action
+    owner.post(f"/api/items/{target['id']}/owned", json={"condition": "NM"}).raise_for_status()
+
+    after = owner.get(f"/api/binders/{binder}").json()
+    assert after["binder"]["filled"] == before["binder"]["filled"] + 1
+    filled = next(e for e in after["entries"] if e["key"] == gap["key"])
+    assert filled["state"] != "missing", "owning the card did not fill its slot"
+
+
+def test_a_set_binder_holds_the_whole_set_in_printed_order(owner, a_set_binder):
+    """Every card, secret rares included, and 10 comes after 9 rather than
+    after 1 — the numbers are text and sort like text unless told otherwise."""
+    binder, code, count = a_set_binder
+    entries = owner.get(f"/api/binders/{binder}").json()["entries"]
+    assert len(entries) == count
+    # 10 after 9 rather than after 1, 5a beside 5, and the TG subset at the
+    # end where it is printed
+    assert [e["key"] for e in entries] == IN_PRINTED_ORDER
+
+
+def test_one_binder_per_set(owner, a_set_binder):
+    binder, code, _ = a_set_binder
+    again = owner.post(
+        "/api/binders", json={"name": "again", "kind": "set", "set_code": code}
+    )
+    assert again.status_code == 409
+    assert code in again.json()["detail"] or "already" in again.json()["detail"]
+
+
+def test_a_set_binder_needs_a_set_we_know(owner):
+    r = owner.post(
+        "/api/binders", json={"name": "x", "kind": "set", "set_code": "no-such-set"}
+    )
+    assert r.status_code == 404
+
+
+def test_a_custom_binder_keeps_the_order_you_put_things_in(owner):
+    mark = uuid.uuid4().hex[:6]
+    items = [_card(owner, f"Test Custom {mark} {n}", 1000 + n) for n in range(3)]
+    r = owner.post("/api/binders", json={"name": f"Custom {mark}", "kind": "custom"})
+    binder = r.json()["id"]
+    try:
+        added = owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [o for _, o in items]}
+        ).json()
+        assert [e["label"] for e in added["entries"]] == ["1", "2", "3"]
+        first_order = [e["name"] for e in added["entries"]]
+
+        slot_ids = [int(e["key"]) for e in added["entries"]]
+        flipped = owner.put(
+            f"/api/binders/{binder}/order", json={"slot_ids": list(reversed(slot_ids))}
+        ).json()
+        assert [e["name"] for e in flipped["entries"]] == list(reversed(first_order))
+
+        owner.delete(f"/api/binders/{binder}/slots/{slot_ids[0]}").raise_for_status()
+        left = owner.get(f"/api/binders/{binder}").json()
+        assert len(left["entries"]) == 2
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        for item, _ in items:
+            owner.delete(f"/api/cards/{item}")
+
+
+def test_a_card_can_be_in_two_binders_at_once(owner):
+    """The whole reason the slot table exists. If filing a card in one binder
+    took it out of another, nobody could build a second binder without
+    dismantling the Pokédex."""
+    mark = uuid.uuid4().hex[:6]
+    item, owned = _card(owner, f"Test Both {mark}", 1021)
+    r = owner.post("/api/binders", json={"name": f"Both {mark}", "kind": "custom"})
+    binder = r.json()["id"]
+    try:
+        _file(owner, item, owned)                     # into the Pokédex
+        owner.post(f"/api/binders/{binder}/cards", json={"owned_ids": [owned]})
+
+        assert _dex(owner)[1021]["card"]["owned_id"] == owned, "left the Pokédex"
+        custom = owner.get(f"/api/binders/{binder}").json()
+        assert [e["card"]["owned_id"] for e in custom["entries"]] == [owned]
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        owner.delete(f"/api/cards/{item}")
+
+
+def test_the_pokedex_cannot_be_deleted(owner):
+    """Emptying it is a choice; losing it is not one worth offering."""
+    shelf = owner.get("/api/binders").json()["binders"]
+    dex = next((b for b in shelf if b["kind"] == "dex"), None)
+    if dex is None:
+        pytest.skip("nothing filed yet, so there is no Pokédex row")
+    assert owner.delete(f"/api/binders/{dex['id']}").status_code == 409
+
+
+def test_binders_are_not_shared(owner):
+    me = owner.get("/api/auth/me").json()
+    if not me.get("multi_user"):
+        pytest.skip("single-user install: there is nobody else")
+    mark = uuid.uuid4().hex[:6]
+    email = f"binder-peek-{mark}@example.com"
+    owner.post("/api/auth/users", json={"email": email, "password": "other-password-2"})
+    r = owner.post("/api/binders", json={"name": f"Mine {mark}", "kind": "custom"})
+    binder = r.json()["id"]
+    try:
+        with httpx.Client(base_url=BASE, timeout=30) as other:
+            other.post("/api/auth/login", json={"email": email, "password": "other-password-2"})
+            assert other.get(f"/api/binders/{binder}").status_code == 404
+            assert other.delete(f"/api/binders/{binder}").status_code == 404
+            assert not other.get("/api/binders").json()["binders"]
+    finally:
+        owner.delete(f"/api/binders/{binder}")
