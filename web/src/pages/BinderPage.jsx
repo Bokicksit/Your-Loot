@@ -431,6 +431,13 @@ function Rename({ binder, onDone, onCover }) {
       )}
       {error && <p className="error">{error}</p>}
       <span className="settings-label">Cover</span>
+      <p className="settings-note">
+        A photo of the real binder, or any picture — upload one, take one, or
+        paste a link. It shows beside the name on your shelf.
+      </p>
+      <ImagePicker
+        label="Cover"
+        value={binder.image_url}
         onChange={async (url) => {
           await api.editBinder(binder.id, { image_url: url || "" });
           onCover?.();

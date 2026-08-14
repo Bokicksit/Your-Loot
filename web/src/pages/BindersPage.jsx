@@ -92,22 +92,26 @@ export default function BindersPage() {
           <Icon id="plus" />
           Binder of your own
         </button>
-        <span className="rail-spacer" />
+      </div>
+
+      {/* Its own row, as everywhere else in this app: the two above make a
+          binder, these two decide how the shelf is drawn. Together they wanted
+          505px of a phone's 343 and the auto-margin put the toggle on top of a
+          button. */}
+      <div className="chip-row">
         <ViewToggle module="binders" />
         {shelf?.length > 1 && (
-          <>
-            <button
-              className={`chip ${arranging ? "active" : ""}`}
-              onClick={() => {
-                setArranging(!arranging);
-                setLifted(null);
-                setAdding(null);
-              }}
-            >
-              <Icon id="sliders" />
-              {arranging ? "Done" : "Arrange"}
-            </button>
-          </>
+          <button
+            className={`chip ${arranging ? "active" : ""}`}
+            onClick={() => {
+              setArranging(!arranging);
+              setLifted(null);
+              setAdding(null);
+            }}
+          >
+            <Icon id="sliders" />
+            {arranging ? "Done" : "Arrange"}
+          </button>
         )}
       </div>
 
