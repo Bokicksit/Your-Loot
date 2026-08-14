@@ -162,11 +162,6 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
-  binderSlotHappy: (id, key, happy) =>
-    request(`/api/binders/${id}/slots/${encodeURIComponent(key)}/happy`, {
-      method: "PUT",
-      body: JSON.stringify({ happy }),
-    }),
 
   pokedex: () => request("/api/cards/pokedex"),
   dexHappy: (dexNo, happy) =>

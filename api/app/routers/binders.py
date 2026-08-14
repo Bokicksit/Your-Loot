@@ -303,6 +303,11 @@ def slot_happy(
     user: User = Depends(current_user),
 ):
     b = _mine(db, binder_id, user)
+    # "The one" is a Pokédex idea: it settles which of the several cards that
+    # could fill a slot actually does. A set slot names one exact card and a
+    # custom slot holds the one you chose, so neither has anything to settle.
+    if b.kind != engine.DEX:
+        raise HTTPException(409, "only the Pokédex has cards to choose between")
     engine.set_happy(db, b, key, body.happy)
     db.commit()
     return {"key": key, "happy": body.happy}

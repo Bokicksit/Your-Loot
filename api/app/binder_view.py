@@ -257,8 +257,11 @@ def _set_entries(db: Session, binder, user_id: int):
                 # it wants
                 "art": item.image_url,
                 "card": card,
-                "final": bool(s and s.happy),
-                "state": "missing" if copy is None else ("one" if s and s.happy else "have"),
+                # No keeper flag here. "The one" answers "which of my six
+                # Charizards lives in this slot", and a set slot has no such
+                # question — it names one exact card.
+                "final": False,
+                "state": "missing" if copy is None else "have",
             }
 
 
@@ -282,8 +285,9 @@ def _custom_entries(db: Session, binder, user_id: int):
             "name": item.title if item else None,
             "art": item.image_url if item else None,
             "card": card,
-            "final": bool(s.happy),
-            "state": "missing" if copy is None else ("one" if s.happy else "have"),
+            # nor here: a custom slot holds the card you put in it
+            "final": False,
+            "state": "missing" if copy is None else "have",
         }
 
 

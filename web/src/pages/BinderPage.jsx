@@ -176,11 +176,6 @@ export default function BinderPage() {
     }
   };
 
-  const toggleHappy = async (e) => {
-    await api.binderSlotHappy(binder.id, e.key, !e.final);
-    load();
-  };
-
   const scrap = async () => {
     if (!window.confirm(`Delete the binder “${binder.name}”? The cards stay in your collection.`))
       return;
@@ -359,15 +354,6 @@ export default function BinderPage() {
                   </p>
                 )}
                 <div className="form-row wrap">
-                  {e.card && (
-                    <button
-                      className={`toggle ${e.final ? "on" : ""}`}
-                      onClick={() => toggleHappy(e)}
-                      title="The copy you want here"
-                    >
-                      {e.final ? "The one" : "Mark as the one"}
-                    </button>
-                  )}
                   {/* A set binder knows exactly which card the slot wants, so
                       it can be filled here. The other kinds cannot: a dex slot
                       takes any card of that species and a custom binder takes

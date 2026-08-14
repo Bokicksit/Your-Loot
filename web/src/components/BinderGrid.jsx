@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-import { Icon } from "./Icons.jsx";
 
 /** The row of chips that says which shelf of cards you are looking at.
  *
@@ -87,11 +86,6 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
               {abbrevRarity(entry.card.rarity)}
             </span>
           )
-        )}
-        {entry.final && entry.card && (
-          <span className="pip-happy" title="The one">
-            <Icon id="check" />
-          </span>
         )}
       </span>
     </button>
