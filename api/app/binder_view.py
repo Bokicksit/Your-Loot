@@ -246,6 +246,11 @@ def _set_entries(db: Session, binder, user_id: int):
                 "variant": variant,
                 "printing": row.label if row else None,
                 "rarity_mark": rarity_mark(a.rarity if a else None),
+                # A set slot names one exact card, and says so whether or not
+                # you own it — which is what lets an empty slot be filled in
+                # place instead of sending you off to search for something the
+                # binder already knew.
+                "item_id": item.id,
                 "name": item.title,
                 # the art shows whether or not you own it — a set binder is a
                 # list of what exists, and the gap should look like the card

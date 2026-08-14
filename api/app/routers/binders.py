@@ -36,6 +36,9 @@ class BinderEdit(BaseModel):
 class SlotFill(BaseModel):
     owned_id: int | None = None  # null empties the slot
     item_id: int | None = None
+    # which printing's slot, on a master binder — "" is the only slot the
+    # other kinds have
+    variant: str = ""
 
 
 class HappyUpdate(BaseModel):
@@ -276,14 +279,17 @@ def fill_slot(
     """Put a copy in a slot, or empty it."""
     b = _mine(db, binder_id, user)
     if body.owned_id is None:
-        s = engine.slot(db, b, key)
+        s = engine.slot(db, b, key, body.variant)
         if s is not None and s.owned_id is not None:
             engine.unfile(db, s.owned_id, b.id)
         db.commit()
         return render(db, b, user.id)
 
     copy = _my_copy(db, body.owned_id, user)
-    engine.file_copy(db, b, key, copy.id, item_id=body.item_id or copy.item_id)
+    engine.file_copy(
+        db, b, key, copy.id,
+        item_id=body.item_id or copy.item_id, variant=body.variant,
+    )
     db.commit()
     return render(db, b, user.id)
 

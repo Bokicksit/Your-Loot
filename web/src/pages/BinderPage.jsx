@@ -28,6 +28,7 @@ export default function BinderPage() {
   const [lifted, setLifted] = useState(null); // the card in your hand
   const [cols] = useTileCols("binder", 3, 6);
   const [sort, setSort] = useState("order");
+  const [adding, setAdding] = useState(null);   // the slot being filled
 
   useDismiss(
     open !== null,
@@ -132,6 +133,47 @@ export default function BinderPage() {
     if (lifted === null) setLifted(e.key);
     else if (lifted === e.key) setLifted(null);
     else place(e.key);
+  };
+
+  /** "I have this one" — the whole of adding a card, on a set binder.
+   *
+   *  A set slot names one exact card, and the binder is looking at it. There
+   *  is nothing to search for and nothing to choose, so sending somebody to
+   *  the Cards page to type the name of a card the app is already showing
+   *  them would be asking them to do the computer's job.
+   *
+   *  It goes into the collection proper, because that is what owning a card
+   *  means here — a binder slot is a view of a copy, never a place a copy
+   *  lives on its own.
+   */
+  const addToSlot = async (e) => {
+    setAdding(e.key + e.variant);
+    try {
+      const res = await api.addOwned(e.item_id, {});
+      const copy = res.owned?.[res.owned.length - 1];
+      // pin it to this printing's slot rather than letting it fall into the
+      // first free one — you pressed a particular box
+      if (copy && e.variant) {
+        await api.binderFillSlot(binder.id, e.key, {
+          owned_id: copy.id, item_id: e.item_id, variant: e.variant,
+        });
+      }
+      load();
+    } finally {
+      setAdding(null);
+    }
+  };
+
+  const removeFromSlot = async (e) => {
+    const what = e.printing ? `${e.name} (${e.printing})` : e.name;
+    if (!window.confirm(`Remove ${what} from your collection?`)) return;
+    setAdding(e.key + e.variant);
+    try {
+      await api.removeOwned(e.card.id, e.card.owned_id);
+      load();
+    } finally {
+      setAdding(null);
+    }
   };
 
   const toggleHappy = async (e) => {
@@ -326,7 +368,31 @@ export default function BinderPage() {
                       {e.final ? "The one" : "Mark as the one"}
                     </button>
                   )}
-                  {!e.card && e.name && (
+                  {/* A set binder knows exactly which card the slot wants, so
+                      it can be filled here. The other kinds cannot: a dex slot
+                      takes any card of that species and a custom binder takes
+                      whatever you choose, and both of those are a search. */}
+                  {binder.kind === "set" && !e.card && e.item_id && (
+                    <button
+                      className="primary"
+                      disabled={adding === e.key + e.variant}
+                      onClick={() => addToSlot(e)}
+                    >
+                      <Icon id="plus" />
+                      {adding === e.key + e.variant ? "…" : "I have this"}
+                    </button>
+                  )}
+                  {binder.kind === "set" && e.card && (
+                    <button
+                      className="ghost"
+                      disabled={adding === e.key + e.variant}
+                      onClick={() => removeFromSlot(e)}
+                    >
+                      <Icon id="trash" />
+                      Remove
+                    </button>
+                  )}
+                  {binder.kind !== "set" && !e.card && e.name && (
                     <button
                       className="ghost"
                       onClick={() => navigate(`/cards?add=${encodeURIComponent(e.name)}`)}

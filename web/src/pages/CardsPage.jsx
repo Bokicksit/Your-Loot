@@ -106,11 +106,20 @@ export default function CardsPage({ initialView = "collection" }) {
   });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Where to go when this is done. Set only when the Pokédex sent us here,
+  // and consumed on the way out — arriving at Cards by any other route should
+  // leave you on Cards.
+  const [returnTo, setReturnTo] = useState(null);
 
   const closeForm = () => {
     setShowForm(false);
     setResults(null);
     setManual(null);
+    if (returnTo) {
+      const to = returnTo;
+      setReturnTo(null);
+      navigate(`/pokedex?at=${to}`);
+    }
   };
 
   const load = () => {
@@ -176,6 +185,7 @@ export default function CardsPage({ initialView = "collection" }) {
   useEffect(() => {
     const name = searchParams.get("add");
     if (!name) return;
+    setReturnTo(searchParams.get("from"));
     setView("collection"); // the results are on the collection tab
     setShowForm(true);
     setForm((f) => ({ ...f, name, number: "", set: "" }));

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
@@ -41,17 +41,64 @@ export default function PokedexPage() {
   const navigate = useNavigate();
 
 
-  // jump straight to the Cards add flow, pre-searched for this Pokémon —
-  // the usual next step when a slot is empty or wants an upgrade
-  const findCards = (e, name) => {
+  // Jump straight to the Cards add flow, pre-searched for this Pokémon — the
+  // usual next step when a slot is empty or wants an upgrade. The dex number
+  // travels with it so the way back lands on the slot you left rather than at
+  // the top of a thousand of them.
+  const findCards = (e, name, dexNo) => {
     e.stopPropagation();
-    if (name) navigate(`/cards?add=${encodeURIComponent(name)}`);
+    if (name) {
+      const back = dexNo ? `&from=${dexNo}` : "";
+      navigate(`/cards?add=${encodeURIComponent(name)}${back}`);
+    }
   };
 
   const load = () => api.pokedex().then((d) => setEntries(d.entries));
   useEffect(() => {
     load();
   }, []);
+
+  /** Come back to the slot you left.
+   *
+   *  Waits for the slots to exist — the binder is a thousand of them and the
+   *  page renders before they arrive, so scrolling on mount would scroll an
+   *  empty page. Centred rather than aligned to the top, because the slot you
+   *  were looking at was in the middle of the screen when you left it.
+   */
+  const [params, setParams] = useSearchParams();
+  const at = params.get("at");
+  useEffect(() => {
+    if (!at || !entries.length) return;
+    // Keep trying until it lands. Two things go wrong with a single attempt:
+    // a thousand slots take more than a frame to commit, so the element is
+    // often not there yet; and the grid settles its column count afterwards,
+    // which moves the row out from under a scroll that already happened — the
+    // first version missed by thirty slots.
+    //
+    // "Landed" means the slot is on screen, not that it is centred: a slot is
+    // taller than the viewport on a phone, so asking for its middle to sit at
+    // the viewport's middle is a test that can never pass.
+    let tries = 0;
+    const timer = setInterval(() => {
+      const slot = document.querySelector(`[data-slot="${CSS.escape(at)}"]`);
+      if (slot) {
+        slot.scrollIntoView({ block: "center", behavior: "auto" });
+        const r = slot.getBoundingClientRect();
+        // A viewport of zero is not a viewport — nothing can intersect it, so
+        // the test would never pass and the poll would spin until it expired.
+        const h = Math.max(window.innerHeight || 0, 1);
+        if (r.bottom > 0 && r.top < h) {
+          clearInterval(timer);
+          setParams({}, { replace: true });
+          return;
+        }
+      }
+      // about a second and a half, then give up and leave the page where it
+      // is — arriving at the top is a disappointment, not a fault
+      if (++tries > 30) clearInterval(timer);
+    }, 50);
+    return () => clearInterval(timer);
+  }, [at, entries.length]);
 
   const status = (e) => (e.card ? (e.final ? "final" : "upgrade") : "missing");
 
@@ -262,7 +309,7 @@ export default function PokedexPage() {
               <span
                 className={`name ${e.name ? "linked" : ""}`}
                 title={e.name ? `Find ${e.name} cards` : undefined}
-                onClick={(ev) => findCards(ev, e.name)}
+                onClick={(ev) => findCards(ev, e.name, e.dex_no)}
               >
                 {e.name || "—"}
               </span>
@@ -292,7 +339,7 @@ export default function PokedexPage() {
                     type="button"
                     className="ghost"
                     style={{ marginLeft: "auto" }}
-                    onClick={(ev) => findCards(ev, e.name)}
+                    onClick={(ev) => findCards(ev, e.name, e.dex_no)}
                   >
                     Find {e.name} cards
                   </button>
@@ -372,7 +419,7 @@ export default function PokedexPage() {
                             <button
                               type="button"
                               className="ghost"
-                              onClick={(ev) => findCards(ev, e.name)}
+                              onClick={(ev) => findCards(ev, e.name, e.dex_no)}
                             >
                               Find {e.name} cards
                             </button>

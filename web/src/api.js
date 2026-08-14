@@ -157,6 +157,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ slot_ids: slotIds }),
     }),
+  binderFillSlot: (id, key, body) =>
+    request(`/api/binders/${id}/slots/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   binderSlotHappy: (id, key, happy) =>
     request(`/api/binders/${id}/slots/${encodeURIComponent(key)}/happy`, {
       method: "PUT",
