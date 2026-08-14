@@ -3063,11 +3063,12 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .binder-card {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   /* the cover spans the rows beside the text rather than sitting above it —
      a shelf reads left to right, and a stack of banners does not scan */
   grid-template-columns: auto 1fr;
   align-items: center;
+  column-gap: var(--s-3);
   padding: var(--s-3);
   border: 1px solid var(--line);
   border-radius: var(--r-2);
@@ -3087,30 +3088,65 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .binder-cover {
   grid-column: 1;
   grid-row: 1 / -1;
-  height: 64px;
+  height: 72px;
   width: auto;
-  min-width: 40px;
-  max-width: 104px;
+  min-width: 44px;
+  max-width: 108px;
   object-fit: contain;
   border-radius: var(--r-1);
   background: var(--bg-3);
 }
-.binder-card strong { font-size: var(--f-3); }
+/* A binder with no cover still needs a front. The hue is set on the element
+   from the binder's kind, so the colour repeats what the label says — and the
+   tile is the same height as a real cover, so a shelf of mixed ones still
+   lines up. */
+.binder-cover.filler {
+  width: 56px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(152deg,
+      oklch(34% 0.055 var(--h)) 0%,
+      oklch(23% 0.045 calc(var(--h) + 22)) 100%);
+}
+.binder-card strong {
+  font-size: var(--f-4);
+  font-weight: var(--w-med);
+  letter-spacing: -.01em;
+  line-height: 1.25;
+  /* Two lines, not one with an ellipsis. "Scarlet & Violet Black Star
+     Promos" is 248px of name in a 164px column, and cutting it leaves
+     "Scarlet & Violet Black S…" — which is most of the set names in this
+     hobby reduced to the half they share. Grid keeps every card in a row the
+     same height, so wrapping costs nothing but the space it uses. */
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 .binder-kind {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--f-1);
-  letter-spacing: .1em;
+  font: 500 var(--f-1)/1 var(--font-num);
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--text-mute);
 }
-.binder-kind > svg.i { width: 14px; height: 14px; }
-.binder-count { font-size: var(--f-2); color: var(--text-mute); }
-.binder-count em { font-style: normal; color: var(--gold); }
-/* how full, at a glance — the number is exact, this is for scanning */
+.binder-kind > svg.i { width: 13px; height: 13px; }
+/* the count is the thing you came to read, so it is set like a number and
+   not like a caption */
+.binder-count {
+  font: 500 var(--f-4)/1.2 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+.binder-count em { font-style: normal; font-size: var(--f-2); color: var(--text-mute); }
+/* how full, at a glance — the number above is exact, this is for scanning */
 .binder-bar {
-  height: 4px;
+  height: 3px;
+  margin-top: 2px;
   border-radius: 999px;
   background: var(--bg-3);
   overflow: hidden;
@@ -3118,7 +3154,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .binder-bar > span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #b57d18, var(--gold));
+  border-radius: 999px;
+  background: var(--gold);
 }
 
 /* the set picker: a long list, so each row has to be readable at a glance */

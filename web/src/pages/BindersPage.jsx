@@ -4,6 +4,23 @@ import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
 
+/** A binder with no cover still needs a front.
+ *
+ *  The hue comes from the kind first — a set binder is jade, a master set
+ *  blue, one of your own violet, the Pokédex gold — so the colour repeats
+ *  what the label says instead of being decoration. A little of the name is
+ *  mixed in on top, so two set binders are not identical twins on the shelf.
+ */
+const KIND_HUE = { dex: 75, set: 165, master: 255, custom: 305 };
+
+function fillerHue(binder) {
+  const base = KIND_HUE[binder.kind === "set" && binder.master ? "master" : binder.kind] ?? 300;
+  let n = 0;
+  for (const ch of binder.name || "") n = (n * 31 + ch.charCodeAt(0)) % 1000;
+  return base + (n % 34) - 17;
+}
+
+
 /** The shelf: every binder you keep, and the way to start another.
  *
  *  Two kinds can be made here. A **set** binder is a whole set with a slot
@@ -67,12 +84,18 @@ export default function BindersPage() {
       <div className="binder-shelf">
         {(shelf || []).map((b) => (
           <Link key={b.id} to={`/binders/${b.id}`} className="binder-card">
-            {b.image_url && (
+            {b.image_url ? (
               // Not lazy. A shelf holds a handful of covers and they are all
               // near the top, so deferring them saves nothing — and the width
               // is computed from the image's own proportions, which the
               // browser cannot know until it has actually loaded one.
               <img className="binder-cover" src={b.image_url} alt="" />
+            ) : (
+              <span
+                className="binder-cover filler"
+                style={{ "--h": fillerHue(b) }}
+                aria-hidden="true"
+              />
             )}
             <span className="binder-kind">
               <Icon id={b.kind === "dex" ? "ball" : b.kind === "set" ? "card" : "star"} />
@@ -80,7 +103,7 @@ export default function BindersPage() {
                 ? "Pokédex"
                 : b.kind === "set"
                 ? b.master ? "Master set" : "Set"
-                : "Yours"}
+                : "Custom"}
             </span>
             <strong>{b.name}</strong>
             <span className="binder-count">
@@ -89,7 +112,7 @@ export default function BindersPage() {
                   universe you are working through. */}
               {b.kind === "custom"
                 ? `${b.total} ${b.total === 1 ? "card" : "cards"}`
-                : `${b.filled} of ${b.total}`}
+                : `${b.filled} / ${b.total}`}
               {b.kind !== "custom" && b.missing > 0 && <em> · {b.missing} missing</em>}
             </span>
             {b.kind !== "custom" && (
