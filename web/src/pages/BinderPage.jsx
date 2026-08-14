@@ -167,7 +167,11 @@ export default function BinderPage() {
             {arranging ? "Done" : "Arrange"}
           </button>
         )}
-        <button className="ghost" onClick={() => setRenaming(!renaming)} title="Rename">
+        <button
+          className={`ghost ${renaming ? "on" : ""}`}
+          onClick={() => setRenaming(!renaming)}
+          title="Rename this binder or give it a cover"
+        >
           <Icon id="pencil" />
         </button>
         <button className="ghost" onClick={scrap} title="Delete this binder">
@@ -201,6 +205,12 @@ export default function BinderPage() {
             {label}
           </button>
         ))}
+      </div>
+
+      {/* Its own row, as on the Pokédex. Sharing a line with the filter chips
+          pushed it 49px off the right edge of a phone — the "3 up" label was
+          not on screen at all and the slider had to be scrolled to. */}
+      <div className="chip-row">
         <span className="rail-spacer" />
         <TileDensity module="binder" min={3} max={6} />
       </div>
@@ -348,6 +358,11 @@ function Rename({ binder, onDone, onCover }) {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <span className="settings-label">Cover</span>
+      <p className="settings-note">
+        A photo of the real binder, or any picture — upload one, take one, or
+        paste a link. It shows beside the name on your shelf.
+      </p>
       <ImagePicker
         label="Cover"
         value={binder.image_url}
