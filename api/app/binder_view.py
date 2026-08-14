@@ -200,6 +200,7 @@ def render(db: Session, binder, user_id: int) -> dict:
             "kind": binder.kind,
             "set_code": binder.set_code,
             "master": binder.master,
+            "image_url": binder.image_url,
             "total": len(entries),
             "filled": filled,
             "missing": len(entries) - filled,

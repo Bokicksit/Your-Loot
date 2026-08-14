@@ -67,6 +67,9 @@ export default function BindersPage() {
       <div className="binder-shelf">
         {(shelf || []).map((b) => (
           <Link key={b.id} to={`/binders/${b.id}`} className="binder-card">
+            {b.image_url && (
+              <img className="binder-cover" src={b.image_url} alt="" loading="lazy" />
+            )}
             <span className="binder-kind">
               <Icon id={b.kind === "dex" ? "ball" : b.kind === "set" ? "card" : "star"} />
               {b.kind === "dex" ? "Pokédex" : b.kind === "set" ? "Set" : "Yours"}

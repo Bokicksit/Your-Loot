@@ -46,6 +46,9 @@ class Binder(TimestampMixin, Base):
     # set binders only: which set, and whether every printing gets its own slot
     set_code: Mapped[str | None] = mapped_column(String(30))
     master: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # the cover: a photo of the real binder, or the art of whatever it is
+    # about. A shelf of names and nothing else is hard to read at a glance.
+    image_url: Mapped[str | None] = mapped_column(String(500))
 
     slots = relationship(
         "BinderSlot", back_populates="binder", cascade="all, delete-orphan"

@@ -20,8 +20,13 @@ class BinderCreate(BaseModel):
     set_code: str | None = None
 
 
-class BinderRename(BaseModel):
-    name: str = Field(min_length=1, max_length=60)
+class BinderEdit(BaseModel):
+    """Both optional: the cover can be set without retyping the name, and
+    cleared by sending an empty string rather than by omitting it, which means
+    "leave it alone"."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=60)
+    image_url: str | None = Field(default=None, max_length=500)
 
 
 class SlotFill(BaseModel):
@@ -105,7 +110,7 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
             have = filled.get(b.id, 0)
         out.append({
             "id": b.id, "name": b.name, "kind": b.kind,
-            "set_code": b.set_code, "master": b.master,
+            "set_code": b.set_code, "master": b.master, "image_url": b.image_url,
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
     return {"binders": out}
@@ -141,7 +146,8 @@ def create_binder(
     )
     db.add(b)
     db.commit()
-    return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code}
+    return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code,
+            "image_url": b.image_url}
 
 
 @router.get("/{binder_id}")
@@ -154,16 +160,20 @@ def read_binder(
 
 
 @router.patch("/{binder_id}")
-def rename_binder(
+def edit_binder(
     binder_id: int,
-    body: BinderRename,
+    body: BinderEdit,
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
     b = _mine(db, binder_id, user)
-    b.name = body.name.strip()
+    fields = body.model_dump(exclude_unset=True)
+    if "name" in fields and fields["name"]:
+        b.name = fields["name"].strip()
+    if "image_url" in fields:
+        b.image_url = (fields["image_url"] or "").strip() or None
     db.commit()
-    return {"id": b.id, "name": b.name}
+    return {"id": b.id, "name": b.name, "image_url": b.image_url}
 
 
 @router.delete("/{binder_id}", status_code=204)

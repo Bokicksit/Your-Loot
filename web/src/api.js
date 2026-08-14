@@ -135,8 +135,8 @@ export const api = {
   binderSets: () => request("/api/binders/sets/available"),
   createBinder: (body) =>
     request("/api/binders", { method: "POST", body: JSON.stringify(body) }),
-  renameBinder: (id, name) =>
-    request(`/api/binders/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  editBinder: (id, body) =>
+    request(`/api/binders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteBinder: (id) => request(`/api/binders/${id}`, { method: "DELETE" }),
   binderAddCards: (id, ownedIds) =>
     request(`/api/binders/${id}/cards`, {

@@ -2892,6 +2892,17 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    for "earlier" and "later" is a coin toss every time */
 .ghost.flip > svg.i { transform: scaleX(-1); }
 
+/* Five controls in a 343px row left the search field 105px wide — narrower
+   than the word you would type into it. Below 560 the field takes its own
+   line and the buttons drop beneath it, pushed right, which is also where a
+   thumb expects them. */
+.binder-actions { display: inline-flex; gap: var(--s-2); align-items: center; }
+@media (max-width: 560px) {
+  .toolbar:has(.binder-actions) { flex-wrap: wrap; }
+  .toolbar:has(.binder-actions) > .searchbox { flex: 1 0 100%; }
+  .binder-actions { margin-left: auto; }
+}
+
 /* arranging: the grid becomes a surface you move cards around on, so every
    slot has to look like a target and the one in your hand has to look like it
    left the page */
@@ -2941,6 +2952,10 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .binder-card {
   display: grid;
   gap: 5px;
+  /* the cover spans the rows beside the text rather than sitting above it —
+     a shelf reads left to right, and a stack of banners does not scan */
+  grid-template-columns: auto 1fr;
+  align-items: center;
   padding: var(--s-3);
   border: 1px solid var(--line);
   border-radius: var(--r-2);
@@ -2950,6 +2965,16 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   transition: border-color .16s var(--ease), background .16s var(--ease);
 }
 .binder-card:hover { border-color: var(--gold-line); background: var(--bg-3); }
+.binder-card > :not(.binder-cover) { grid-column: 2; }
+.binder-cover {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 46px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--r-1);
+  background: var(--bg-3);
+}
 .binder-card strong { font-size: var(--f-3); }
 .binder-kind {
   display: inline-flex;

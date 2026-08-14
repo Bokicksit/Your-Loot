@@ -451,3 +451,29 @@ def test_the_order_is_an_insert_not_a_swap(owner):
         owner.delete(f"/api/binders/{binder}")
         for item, _ in made:
             owner.delete(f"/api/cards/{item}")
+
+
+def test_a_binder_can_carry_a_cover(owner):
+    """And setting the name later must not take it off again — the edit is a
+    patch, and a field nobody mentioned is a field nobody wants changed."""
+    mark = uuid.uuid4().hex[:6]
+    binder = owner.post(
+        "/api/binders", json={"name": f"Cover {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        art = "/images/whatever.jpg"
+        r = owner.patch(f"/api/binders/{binder}", json={"image_url": art})
+        assert r.json()["image_url"] == art
+
+        shelf = owner.get("/api/binders").json()["binders"]
+        assert next(b for b in shelf if b["id"] == binder)["image_url"] == art
+        assert owner.get(f"/api/binders/{binder}").json()["binder"]["image_url"] == art
+
+        renamed = owner.patch(f"/api/binders/{binder}", json={"name": f"Renamed {mark}"})
+        assert renamed.json()["image_url"] == art, "renaming took the cover off"
+        assert renamed.json()["name"] == f"Renamed {mark}"
+
+        # an empty string is how you take it off; omitting it is not
+        assert owner.patch(f"/api/binders/{binder}", json={"image_url": ""}).json()["image_url"] is None
+    finally:
+        owner.delete(f"/api/binders/{binder}")

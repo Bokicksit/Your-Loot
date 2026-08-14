@@ -5,6 +5,7 @@ import { Icon } from "../components/Icons.jsx";
 import { BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
 import { TileDensity, useTileCols } from "../components/ViewToggle.jsx";
 import useDismiss from "../useDismiss.js";
+import ImagePicker from "../components/ImagePicker.jsx";
 
 /** One binder — a set, or one you built yourself.
  *
@@ -145,6 +146,7 @@ export default function BinderPage() {
             {binder.filled}/{binder.total}
           </span>
         </label>
+        <span className="binder-actions">
         {isCustom && (
           <button className="primary" onClick={() => setPicking(!picking)}>
             <Icon id="plus" />
@@ -171,11 +173,13 @@ export default function BinderPage() {
         <button className="ghost" onClick={scrap} title="Delete this binder">
           <Icon id="trash" />
         </button>
+        </span>
       </div>
 
       {renaming && (
         <Rename
           binder={binder}
+          onCover={load}
           onDone={() => {
             setRenaming(false);
             load();
@@ -315,12 +319,19 @@ export default function BinderPage() {
   );
 }
 
-function Rename({ binder, onDone }) {
+/** Name and cover.
+ *
+ *  The cover saves as soon as it is chosen rather than waiting for the form:
+ *  ImagePicker has already uploaded the file or copied the link by then, so
+ *  leaving without pressing Save would strand a picture on the server that
+ *  nothing points at.
+ */
+function Rename({ binder, onDone, onCover }) {
   const [name, setName] = useState(binder.name);
   const save = async (e) => {
     e.preventDefault();
     if (name.trim() && name.trim() !== binder.name) {
-      await api.renameBinder(binder.id, name.trim());
+      await api.editBinder(binder.id, { name: name.trim() });
     }
     onDone();
   };
@@ -337,6 +348,14 @@ function Rename({ binder, onDone }) {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <ImagePicker
+        label="Cover"
+        value={binder.image_url}
+        onChange={async (url) => {
+          await api.editBinder(binder.id, { image_url: url || "" });
+          onCover?.();
+        }}
+      />
       <button type="submit" className="primary">
         <Icon id="check" />
         Save
