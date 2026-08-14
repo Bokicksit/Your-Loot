@@ -22,6 +22,7 @@ export default function BinderPage() {
   const [open, setOpen] = useState(null);
   const [error, setError] = useState(null);
   const [renaming, setRenaming] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [cols] = useTileCols("binder", 3, 6);
 
   useDismiss(
@@ -111,6 +112,12 @@ export default function BinderPage() {
             {binder.filled}/{binder.total}
           </span>
         </label>
+        {isCustom && (
+          <button className="primary" onClick={() => setPicking(!picking)}>
+            <Icon id="plus" />
+            Add cards
+          </button>
+        )}
         <button className="ghost" onClick={() => setRenaming(!renaming)} title="Rename">
           <Icon id="pencil" />
         </button>
@@ -147,10 +154,19 @@ export default function BinderPage() {
         <TileDensity module="binder" min={3} max={6} />
       </div>
 
-      {isCustom && entries.length === 0 && (
+      {isCustom && picking && (
+        <AddCards
+          binder={binder}
+          already={entries.map((e) => e.card?.owned_id).filter(Boolean)}
+          onAdded={load}
+          onClose={() => setPicking(false)}
+        />
+      )}
+
+      {isCustom && entries.length === 0 && !picking && (
         <p className="empty">
-          Nothing in here yet. Open a card in your collection and add it to this
-          binder, or use the button on the Cards page.
+          Nothing in here yet — press <strong>Add cards</strong> and pick from
+          what you own.
         </p>
       )}
 
@@ -269,5 +285,109 @@ function Rename({ binder, onDone }) {
         Save
       </button>
     </form>
+  );
+}
+
+/** Pick from what you own.
+ *
+ *  A copy, not a card: you might own three of the same Charizard and put a
+ *  different one in each binder, so the thing being filed has to be the
+ *  physical copy. Copies already in this binder are shown greyed rather than
+ *  hidden — a list that silently omits what you are looking for reads as a
+ *  search that failed.
+ */
+function AddCards({ binder, already, onAdded, onClose }) {
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [added, setAdded] = useState([]);
+  const [error, setError] = useState(null);
+  const inBinder = new Set([...already, ...added]);
+
+  useEffect(() => {
+    let live = true;
+    const t = setTimeout(() => {
+      api
+        // include_binder, because the cards worth filing are usually the ones
+        // already on display somewhere
+        .cards({ search: q.trim(), include_binder: true, limit: 60 })
+        .then((d) => live && setRows(d.items))
+        .catch((e) => live && setError(e.message));
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [q]);
+
+  const copies = (rows || []).flatMap((card) =>
+    (card.owned || []).map((o) => ({ card, owned: o })),
+  );
+
+  const add = async (ownedId) => {
+    setBusy(ownedId);
+    setError(null);
+    try {
+      await api.binderAddCards(binder.id, [ownedId]);
+      setAdded((a) => [...a, ownedId]);
+      onAdded();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="filter-sheet">
+      <label>
+        <span>Add to “{binder.name}”</span>
+        <input
+          type="search"
+          className="grow"
+          autoFocus
+          placeholder="Search your cards…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </label>
+      {error && <p className="error">{error}</p>}
+      {rows === null ? (
+        <p className="empty">Loading…</p>
+      ) : (
+        <div className="set-picker">
+          {copies.map(({ card, owned }) => {
+            const inIt = inBinder.has(owned.id);
+            return (
+              <button
+                key={owned.id}
+                type="button"
+                className="set-row"
+                disabled={inIt || busy === owned.id}
+                onClick={() => add(owned.id)}
+              >
+                <span className="set-name">
+                  {card.title}
+                  {card.attrs?.card_number && <em> #{card.attrs.card_number}</em>}
+                </span>
+                <span className="set-meta">
+                  {card.attrs?.set_name || ""}
+                  {owned.condition && ` · ${owned.condition}`}
+                  {inIt && <strong> · in this binder</strong>}
+                </span>
+              </button>
+            );
+          })}
+          {copies.length === 0 && (
+            <p className="empty">
+              {q.trim() ? "Nothing of yours matches that." : "No cards owned yet."}
+            </p>
+          )}
+        </div>
+      )}
+      <button type="button" className="ghost" onClick={onClose}>
+        Done
+      </button>
+    </div>
   );
 }
