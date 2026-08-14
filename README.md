@@ -58,6 +58,16 @@ entered by hand with your own photo.
 binder: one card per Pokémon, marked either *the one* or *will upgrade*.
 Filter by what's missing, what wants upgrading, and by rarity.
 
+**Binders** — as many as you keep, in two more kinds. A **set binder** is a
+whole set with a slot per card, drawn from the offline catalogue: no importing,
+and no filing either, because owning the card fills its slot. It shows the art
+of the ones you don't own too, so a gap looks like the card it wants. A
+**binder of your own** holds whatever you choose, in the order you choose —
+nothing but Charizards, or the ones you'll trade — arranged by picking a card
+up and tapping where it goes. Each one takes a cover, and one card can be in
+several binders at once: your best Charizard belongs in the Pokédex, in the
+Celebrations binder and in the Charizard binder, all at the same time.
+
 <p align="center">
   <img src="docs/screenshots/cards.jpg" alt="A card collection four across" width="46%">
   <img src="docs/screenshots/pokedex.jpg" alt="The Pokédex binder, part filled" width="46%">
