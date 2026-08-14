@@ -415,3 +415,39 @@ def test_taking_a_copy_out_of_a_custom_binder_removes_the_page(owner):
     finally:
         owner.delete(f"/api/binders/{binder}")
         owner.delete(f"/api/cards/{item}")
+
+
+def test_the_order_is_an_insert_not_a_swap(owner):
+    """Moving a card to another position slides everything between along, the
+    way it works when you take a page out and put it back further forward.
+    Swapping the two would leave the card that was there stranded at the far
+    end, which is not what anybody means by "move this here"."""
+    mark = uuid.uuid4().hex[:6]
+    made = [_card(owner, f"Test Order {mark} {n}", 1010 + n) for n in range(5)]
+    binder = owner.post(
+        "/api/binders", json={"name": f"Order {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [o for _, o in made]}
+        ).raise_for_status()
+        keys = [e["key"] for e in owner.get(f"/api/binders/{binder}").json()["entries"]]
+        assert len(keys) == 5
+
+        # take the fourth and put it second
+        moved = keys[3]
+        wanted = [keys[0], moved, keys[1], keys[2], keys[4]]
+        owner.put(
+            f"/api/binders/{binder}/order", json={"slot_ids": [int(k) for k in wanted]}
+        ).raise_for_status()
+
+        after = [e["key"] for e in owner.get(f"/api/binders/{binder}").json()["entries"]]
+        assert after == wanted, "the binder did not keep the order it was given"
+        assert after.index(moved) == 1
+        # and the labels are the positions, renumbered
+        labels = [e["label"] for e in owner.get(f"/api/binders/{binder}").json()["entries"]]
+        assert labels == ["1", "2", "3", "4", "5"]
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        for item, _ in made:
+            owner.delete(f"/api/cards/{item}")

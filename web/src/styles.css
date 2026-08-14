@@ -2892,6 +2892,21 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    for "earlier" and "later" is a coin toss every time */
 .ghost.flip > svg.i { transform: scaleX(-1); }
 
+/* arranging: the grid becomes a surface you move cards around on, so every
+   slot has to look like a target and the one in your hand has to look like it
+   left the page */
+.dex-grid.arranging .dex-slot { cursor: pointer; }
+.dex-grid.arranging .dex-slot:hover { outline: 2px dashed var(--gold-line); outline-offset: -2px; }
+.dex-slot.lifted {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+  transform: scale(.94);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .5);
+}
+@media (prefers-reduced-motion: reduce) { .dex-slot.lifted { transform: none; } }
+.arrange-hint { margin: 0 0 var(--s-2); color: var(--gold); }
+.ghost.on { color: var(--gold); border-color: var(--gold-line); }
+
 /* a copy's binders, on the card itself — the thought usually arrives while
    you are looking at the card, not while you are looking at the binder */
 .copy-binders { position: relative; display: inline-flex; }

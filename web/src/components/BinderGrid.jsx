@@ -36,15 +36,16 @@ const abbrevRarity = (r) =>
  *  different features. What differs between them is what fills a slot and
  *  what you can do to it, which is the caller's business, not this one's.
  */
-export function BinderSlotTile({ entry, open, onToggle, onName }) {
+export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arranging }) {
   const state = entry.state; // missing | upgrade | have | one
   const cls = state === "missing" ? "unowned" : state === "upgrade" ? "partial" : "owned";
   const art = entry.card?.image_url || entry.art;
 
   return (
     <button
-      className={`dex-slot ${cls}`}
-      aria-expanded={open}
+      className={`dex-slot ${cls} ${lifted ? "lifted" : ""}`}
+      aria-expanded={arranging ? undefined : open}
+      aria-pressed={arranging ? !!lifted : undefined}
       data-slot={entry.key}
       onClick={onToggle}
     >
@@ -57,9 +58,9 @@ export function BinderSlotTile({ entry, open, onToggle, onName }) {
         <span className="placeholder" data-label="" />
       )}
       <span
-        className={`name ${onName ? "linked" : ""}`}
-        title={onName && entry.name ? `Find ${entry.name} cards` : undefined}
-        onClick={onName ? (ev) => onName(ev, entry.name) : undefined}
+        className={`name ${onName && !arranging ? "linked" : ""}`}
+        title={onName && entry.name && !arranging ? `Find ${entry.name} cards` : undefined}
+        onClick={onName && !arranging ? (ev) => onName(ev, entry.name) : undefined}
       >
         {entry.name || "—"}
       </span>

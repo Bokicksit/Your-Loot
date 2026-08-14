@@ -23,6 +23,8 @@ export default function BinderPage() {
   const [error, setError] = useState(null);
   const [renaming, setRenaming] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [arranging, setArranging] = useState(false);
+  const [lifted, setLifted] = useState(null); // the card in your hand
   const [cols] = useTileCols("binder", 3, 6);
 
   useDismiss(
@@ -83,6 +85,37 @@ export default function BinderPage() {
     load();
   };
 
+  /** Two taps to move a card anywhere: one to lift it, one to say where.
+   *
+   *  Not drag-and-drop. This is a grid that is usually read on a phone, where
+   *  dragging means fighting the scroll and hitting a target the size of a
+   *  fingernail; and a binder of thirty is thirty positions to drag across.
+   *  Tapping twice costs the same whether the card moves one place or twenty.
+   */
+  const place = async (targetKey) => {
+    const ids = entries.map((e) => Number(e.key));
+    const from = ids.indexOf(Number(lifted));
+    const to = ids.indexOf(Number(targetKey));
+    setLifted(null);
+    if (from < 0 || to < 0 || from === to) return;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    // redraw before the round trip: the tap should feel like it landed
+    setData({ ...data, entries: ids.map((i) => entries.find((e) => Number(e.key) === i)) });
+    await api.binderReorder(binder.id, ids);
+    load();
+  };
+
+  const tapSlot = (e) => {
+    if (!arranging) {
+      setOpen(open === e.key ? null : e.key);
+      return;
+    }
+    if (lifted === null) setLifted(e.key);
+    else if (lifted === e.key) setLifted(null);
+    else place(e.key);
+  };
+
   const toggleHappy = async (e) => {
     await api.binderSlotHappy(binder.id, e.key, !e.final);
     load();
@@ -116,6 +149,20 @@ export default function BinderPage() {
           <button className="primary" onClick={() => setPicking(!picking)}>
             <Icon id="plus" />
             Add cards
+          </button>
+        )}
+        {isCustom && entries.length > 1 && (
+          <button
+            className={`ghost ${arranging ? "on" : ""}`}
+            onClick={() => {
+              setArranging(!arranging);
+              setLifted(null);
+              setOpen(null);
+            }}
+            title="Change the order"
+          >
+            <Icon id="sliders" />
+            {arranging ? "Done" : "Arrange"}
           </button>
         )}
         <button className="ghost" onClick={() => setRenaming(!renaming)} title="Rename">
@@ -170,8 +217,16 @@ export default function BinderPage() {
         </p>
       )}
 
+      {arranging && (
+        <p className="settings-note arrange-hint">
+          {lifted === null
+            ? "Tap a card to pick it up."
+            : "Now tap where it should go — or tap it again to put it back."}
+        </p>
+      )}
+
       <div
-        className={`dex-grid cols-${cols}`}
+        className={`dex-grid cols-${cols} ${arranging ? "arranging" : ""}`}
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {shown.map((e) => (
@@ -179,7 +234,9 @@ export default function BinderPage() {
             <BinderSlotTile
               entry={e}
               open={open === e.key}
-              onToggle={() => setOpen(open === e.key ? null : e.key)}
+              lifted={lifted === e.key}
+              arranging={arranging}
+              onToggle={() => tapSlot(e)}
             />
             {open === e.key && (
               <div className="dex-detail" data-slot={e.key}>
