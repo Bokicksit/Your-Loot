@@ -366,3 +366,52 @@ def test_binders_are_not_shared(owner):
             assert not other.get("/api/binders").json()["binders"]
     finally:
         owner.delete(f"/api/binders/{binder}")
+
+
+def test_a_copy_says_which_binders_it_is_in(owner):
+    """The card list shows it, so filing a card from there can be a toggle
+    rather than a guess — and so putting one somewhere new visibly does not
+    take it out of anywhere old."""
+    mark = uuid.uuid4().hex[:6]
+    item, owned = _card(owner, f"Test Where {mark}", 1020)
+    a = owner.post("/api/binders", json={"name": f"A {mark}", "kind": "custom"}).json()["id"]
+    b = owner.post("/api/binders", json={"name": f"B {mark}", "kind": "custom"}).json()["id"]
+    try:
+        def ids():
+            row = owner.get(
+                "/api/cards", params={"search": f"Test Where {mark}", "include_binder": True}
+            ).json()["items"][0]
+            return set(next(o for o in row["owned"] if o["id"] == owned)["binder_ids"])
+
+        assert ids() == set()
+        owner.post(f"/api/binders/{a}/cards", json={"owned_ids": [owned]}).raise_for_status()
+        owner.post(f"/api/binders/{b}/cards", json={"owned_ids": [owned]}).raise_for_status()
+        _file(owner, item, owned)  # and the Pokédex as well
+        assert {a, b} <= ids(), "a copy in two binders reports only some of them"
+
+        # taken out by naming the copy, not its slot
+        owner.delete(f"/api/binders/{a}/cards/{owned}").raise_for_status()
+        assert a not in ids() and b in ids(), "removing from one emptied the other"
+        assert _dex(owner)[1020]["card"]["owned_id"] == owned, "and it left the Pokédex"
+    finally:
+        owner.delete(f"/api/binders/{a}")
+        owner.delete(f"/api/binders/{b}")
+        owner.delete(f"/api/cards/{item}")
+
+
+def test_taking_a_copy_out_of_a_custom_binder_removes_the_page(owner):
+    """A custom slot only exists because you put something there, so emptying
+    it would leave a blank page in the binder rather than closing the gap."""
+    mark = uuid.uuid4().hex[:6]
+    item, owned = _card(owner, f"Test Page {mark}", 1019)
+    binder = owner.post(
+        "/api/binders", json={"name": f"Pages {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        owner.post(f"/api/binders/{binder}/cards", json={"owned_ids": [owned]})
+        assert len(owner.get(f"/api/binders/{binder}").json()["entries"]) == 1
+        owner.delete(f"/api/binders/{binder}/cards/{owned}").raise_for_status()
+        assert owner.get(f"/api/binders/{binder}").json()["entries"] == []
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        owner.delete(f"/api/cards/{item}")

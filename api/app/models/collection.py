@@ -69,6 +69,16 @@ class Owned(TimestampMixin, Base):
         """
         return any(s.binder is not None and s.binder.kind == "dex" for s in self.binder_slots)
 
+    @property
+    def binder_ids(self) -> list[int]:
+        """Every binder this copy is filed in.
+
+        The card list shows it so you can tell at a glance where a copy lives
+        without opening each binder to look — and so putting one somewhere new
+        does not quietly move it out of somewhere old.
+        """
+        return sorted({s.binder_id for s in self.binder_slots})
+
 
 class Wanted(TimestampMixin, Base):
     __tablename__ = "wanted"

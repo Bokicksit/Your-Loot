@@ -2892,6 +2892,27 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    for "earlier" and "later" is a coin toss every time */
 .ghost.flip > svg.i { transform: scaleX(-1); }
 
+/* a copy's binders, on the card itself — the thought usually arrives while
+   you are looking at the card, not while you are looking at the binder */
+.copy-binders { position: relative; display: inline-flex; }
+.copy-binders > button.on { color: var(--gold); }
+.binder-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+.binder-menu small { color: var(--text-mute); }
+.binder-menu .toggle { width: 100%; justify-content: flex-start; }
+
 /* ---- the binder shelf -------------------------------------------------- */
 
 /* Wide cards rather than a grid of thumbnails: a binder has no cover, and

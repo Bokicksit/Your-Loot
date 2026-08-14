@@ -12,7 +12,8 @@ class OwnedOut(BaseModel):
     grader: str | None = None  # cards: PSA/BGS/CGC/… (null = raw)
     grade: str | None = None
     cert_number: str | None = None  # cards: the slab label number
-    in_binder: bool = False  # cards: this copy occupies a binder slot
+    in_binder: bool = False  # cards: this copy is in the Pokédex
+    binder_ids: list[int] = []  # cards: every binder it is filed in
     variant: str | None = None  # cards: Non-Holo/Reverse Holo/Holo
     stamp: str | None = None  # cards: promo stamp text
     notes: str | None = None

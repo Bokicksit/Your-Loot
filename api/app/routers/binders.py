@@ -262,6 +262,35 @@ def remove_slot(
     db.commit()
 
 
+@router.delete("/{binder_id}/cards/{owned_id}", status_code=204)
+def remove_card(
+    binder_id: int,
+    owned_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Take a copy out, named by the copy rather than by its slot.
+
+    The card list knows which binders a copy is in but not which slot of each,
+    and asking it to find out first would be a round trip to learn something
+    the server already knows.
+    """
+    b = _mine(db, binder_id, user)
+    _my_copy(db, owned_id, user)
+    if b.kind == engine.CUSTOM:
+        # here the slot *is* the entry, so emptying it would leave a blank page
+        for s in db.scalars(
+            select(BinderSlot).where(
+                BinderSlot.binder_id == b.id, BinderSlot.owned_id == owned_id
+            )
+        ).all():
+            s.owned = None
+            db.delete(s)
+    else:
+        engine.unfile(db, owned_id, b.id)
+    db.commit()
+
+
 @router.put("/{binder_id}/order")
 def reorder(
     binder_id: int,

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
@@ -402,6 +402,7 @@ export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
                 <strong>{chipLabel(o)}</strong>
                 {o.stamp && <small>{o.stamp} stamp</small>}
               </span>
+              <CopyBinders copy={o} onChange={onReload} />
               <button className="ghost icon" onClick={() => openEdit(o)} title="Edit copy">
                 <Icon id="pencil" />
               </button>
@@ -570,5 +571,69 @@ export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
       </div>
     )}
     </>
+  );
+}
+
+/** Which of your binders this copy is in, and a way to change it.
+ *
+ *  Here rather than only on the binder page because the thought usually
+ *  arrives the other way round: you are looking at a card and realise it
+ *  belongs in the Trades binder. Filing it in one does not take it out of any
+ *  other — that is the point of the whole feature — so this is a set of
+ *  toggles rather than a choice of one.
+ *
+ *  Set binders are not offered. Owning the card is what fills a slot there,
+ *  so there is nothing to put in by hand.
+ */
+function CopyBinders({ copy, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [shelf, setShelf] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const inIt = new Set(copy.binder_ids || []);
+
+  useEffect(() => {
+    if (open && shelf === null) {
+      api.binders().then((d) => setShelf(d.binders.filter((b) => b.kind === "custom")));
+    }
+  }, [open, shelf]);
+
+  const toggle = async (b) => {
+    setBusy(b.id);
+    try {
+      if (inIt.has(b.id)) await api.binderRemoveCard(b.id, copy.id);
+      else await api.binderAddCards(b.id, [copy.id]);
+      onChange?.();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <span className="copy-binders">
+      <button
+        className={`ghost icon ${inIt.size ? "on" : ""}`}
+        onClick={() => setOpen(!open)}
+        title={inIt.size ? `In ${inIt.size} binder${inIt.size === 1 ? "" : "s"}` : "Put in a binder"}
+      >
+        <Icon id="card" />
+        {inIt.size > 0 && <em className="chip-mult">{inIt.size}</em>}
+      </button>
+      {open && (
+        <span className="binder-menu">
+          {shelf === null && <small>Loading…</small>}
+          {shelf?.length === 0 && <small>No binders of your own yet.</small>}
+          {(shelf || []).map((b) => (
+            <button
+              key={b.id}
+              className={`toggle ${inIt.has(b.id) ? "on" : ""}`}
+              disabled={busy === b.id}
+              onClick={() => toggle(b)}
+            >
+              {b.name}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }

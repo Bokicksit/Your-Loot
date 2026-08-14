@@ -143,6 +143,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ owned_ids: ownedIds }),
     }),
+  binderRemoveCard: (id, ownedId) =>
+    request(`/api/binders/${id}/cards/${ownedId}`, { method: "DELETE" }),
   binderRemoveSlot: (id, slotId) =>
     request(`/api/binders/${id}/slots/${slotId}`, { method: "DELETE" }),
   binderReorder: (id, slotIds) =>
