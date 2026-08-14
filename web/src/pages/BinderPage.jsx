@@ -191,18 +191,21 @@ export default function BinderPage() {
         />
       )}
 
-      <div className="chip-row">
+      {/* One of three, always — which is what a segmented track says and a row
+          of separate buttons only implies. */}
+      <div className="segmented">
         {[
-          ["all", `All (${binder.total})`],
-          ["missing", `Missing (${binder.missing})`],
-          ["have", `Have (${binder.filled})`],
-        ].map(([k, label]) => (
+          ["all", "All", binder.total],
+          ["missing", "Missing", binder.missing],
+          ["have", "Have", binder.filled],
+        ].map(([k, label, n]) => (
           <button
             key={k}
             className={`chip ${filter === k ? "active" : ""}`}
             onClick={() => setFilter(k)}
           >
             {label}
+            <span className="seg-n">{n}</span>
           </button>
         ))}
       </div>

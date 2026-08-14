@@ -1922,7 +1922,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 
    Restyled in place: the markup is still the NavLinks it was, so every
    behaviour and every route is untouched. */
-.view-switch {
+.view-switch,
+.segmented {
   margin-bottom: var(--s-3);
   display: inline-flex;
   gap: 2px;
@@ -1934,7 +1935,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   overflow: visible;
   max-width: 100%;
 }
-.view-switch > .chip {
+.view-switch > .chip,
+.segmented > .chip {
   flex: 1 1 auto;
   justify-content: center;
   border: 0;
@@ -1943,15 +1945,28 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   color: var(--text-mute);
   white-space: nowrap;
 }
-.view-switch > .chip:hover { background: rgba(255, 255, 255, .03); color: var(--text-dim); }
-.view-switch > .chip.active {
+.view-switch > .chip:hover,
+.segmented > .chip:hover { background: rgba(255, 255, 255, .03); color: var(--text-dim); }
+.view-switch > .chip.active,
+.segmented > .chip.active {
   background: var(--bg-3);
   color: var(--text);
   box-shadow: var(--shadow-1);
 }
+/* the count rides along with its label rather than sitting in brackets —
+   set in the number face, dimmed, and tabular so the track does not twitch
+   as the numbers change under a filter */
+.segmented .seg-n {
+  margin-left: 6px;
+  font: 500 var(--f-1)/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-mute);
+}
+.segmented > .chip.active .seg-n { color: var(--text-dim); }
 /* the gold fill the chips use elsewhere would shout here — this control is
    read constantly and never acted on twice */
-.view-switch > .chip.active::after { display: none; }
+.view-switch > .chip.active::after,
+.segmented > .chip.active::after { display: none; }
 
 /* ============================ first-run modal ============================ */
 
