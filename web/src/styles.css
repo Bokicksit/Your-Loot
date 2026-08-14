@@ -19,37 +19,45 @@
    * a surface read as the same material under more light, and what made the
    * old ramp drift purple in the middle and grey at the ends.
    *
-   * The ink used to be cool (hue ~300) against warm gold. It is faintly warm
-   * now, hue 70, at a chroma low enough that you would not call it brown —
-   * the neutrals lean a few degrees toward the accent so they read as chosen
-   * rather than as whatever grey came first.
+   * The ink stays cool — hue 295, the display-case blue-violet this app has
+   * always had against its warm gold. A warm ramp was tried and read wrong:
+   * the contrast between cool ink and warm accent is the whole look, and
+   * harmonising them threw it away.
+   *
+   * The lightness ladder is the original one, measured off the old hexes, so
+   * this is the same room with the lamp straightened rather than a new room.
+   * What changed is that hue and chroma now step evenly instead of wandering
+   * between 288 and 305.
    */
-  --background:     oklch(13.5% 0.005 70);  /* app background */
-  --surface:        oklch(17.5% 0.006 70);  /* panel / card */
-  --surface-raised: oklch(21.5% 0.007 70);  /* raised panel, bars */
-  --surface-input:  oklch(26% 0.008 70);    /* inputs, selects, chips */
-  --surface-hover:  oklch(30% 0.009 70);
-  --border:         oklch(33% 0.009 70);    /* visible border */
-  --border-soft:    oklch(23% 0.007 70);    /* hairline / dividers */
+  --background:     oklch(14.8% 0.010 295);  /* app background */
+  --surface:        oklch(18.4% 0.013 295);  /* panel / card */
+  --surface-raised: oklch(22.3% 0.016 295);  /* raised panel, bars */
+  --surface-input:  oklch(26.4% 0.020 295);  /* inputs, selects, chips */
+  --surface-hover:  oklch(29.8% 0.023 295);
+  --border:         oklch(31.0% 0.024 295);  /* visible border */
+  --border-soft:    oklch(24.5% 0.018 295);  /* hairline / dividers */
 
-  --foreground:     oklch(95% 0.004 80);
-  --muted:          oklch(72% 0.008 75);
-  --faint:          oklch(56% 0.009 75);
+  --foreground:     oklch(94.4% 0.017 300);
+  --muted:          oklch(72.3% 0.025 300);
+  /* the one number not carried over: the faint label was 53.4% and sat at
+     3.28:1 on a raised panel, under the 3:1 floor for anything you are
+     expected to read. This is the same colour, lifted until it clears. */
+  --faint:          oklch(56.0% 0.032 297);
 
-  /* The accent is the one thing that does not move. It is the brand — it is
-   * in the mark — and it is already the right colour. */
-  --primary:        oklch(81% 0.142 78);
-  --primary-bright: oklch(89% 0.105 82);
-  --primary-deep:   oklch(60% 0.115 70);
-  --primary-ink:    oklch(22% 0.045 62);    /* text on gold fills */
-  --primary-wash:   oklch(81% 0.142 78 / 0.13);
-  --primary-line:   oklch(81% 0.142 78 / 0.5);
-  --primary-glow:   oklch(81% 0.142 78 / 0.3);
+  /* The accents do not move at all — these are the original hexes to the
+   * decimal, written in oklch so the file speaks one language. */
+  --primary:        oklch(81.3% 0.1486 81.6);
+  --primary-bright: oklch(89.6% 0.1112 84.5);
+  --primary-deep:   oklch(63.1% 0.1261 75.5);
+  --primary-ink:    oklch(23.8% 0.0436 78.4);   /* text on gold fills */
+  --primary-wash:   oklch(81.3% 0.1486 81.6 / 0.12);
+  --primary-line:   oklch(81.3% 0.1486 81.6 / 0.55);
+  --primary-glow:   oklch(81.3% 0.1486 81.6 / 0.30);
 
-  --success:        oklch(79% 0.125 168);
-  --success-wash:   oklch(79% 0.125 168 / 0.13);
-  --destructive:      oklch(67% 0.175 25);
-  --destructive-wash: oklch(67% 0.175 25 / 0.14);
+  --success:        oklch(80.0% 0.1349 165.0);
+  --success-wash:   oklch(80.0% 0.1349 165.0 / 0.12);
+  --destructive:      oklch(68.6% 0.1725 27.5);
+  --destructive-wash: oklch(68.6% 0.1725 27.5 / 0.13);
 
   /* ---- the names the rest of this file already uses --------------------
    * Aliases, not copies. Change a value above and it changes everywhere.  */
