@@ -7,31 +7,76 @@
    ============================================================ */
 
 :root {
-  /* ---- palette: display-case dark (warm gold on cool ink) ---- */
-  --bg-0:        #0b0a0e;   /* app background */
-  --bg-1:        #131119;   /* panel / card — brand 'surface' */
-  --bg-2:        #1b1a22;   /* raised panel, bars */
-  --bg-3:        #242331;   /* inputs, selects, chips */
-  --bg-4:        #2d2b3b;   /* hover on inputs */
-  --line:        #302e3d;   /* visible border */
-  --line-soft:   #201f29;   /* hairline / dividers */
+  /* ---- the palette, in oklch -------------------------------------------
+   *
+   * Named the way Watermelon UI (and shadcn under it) names things, so a
+   * component lifted from there inherits this without translation. The old
+   * names are kept below as aliases rather than found-and-replaced across
+   * three thousand lines: one definition, two vocabularies, no drift.
+   *
+   * oklch because these are a ramp, not seven unrelated hexes. Same hue and
+   * chroma the whole way up, lightness stepping evenly — which is what makes
+   * a surface read as the same material under more light, and what made the
+   * old ramp drift purple in the middle and grey at the ends.
+   *
+   * The ink used to be cool (hue ~300) against warm gold. It is faintly warm
+   * now, hue 70, at a chroma low enough that you would not call it brown —
+   * the neutrals lean a few degrees toward the accent so they read as chosen
+   * rather than as whatever grey came first.
+   */
+  --background:     oklch(13.5% 0.005 70);  /* app background */
+  --surface:        oklch(17.5% 0.006 70);  /* panel / card */
+  --surface-raised: oklch(21.5% 0.007 70);  /* raised panel, bars */
+  --surface-input:  oklch(26% 0.008 70);    /* inputs, selects, chips */
+  --surface-hover:  oklch(30% 0.009 70);
+  --border:         oklch(33% 0.009 70);    /* visible border */
+  --border-soft:    oklch(23% 0.007 70);    /* hairline / dividers */
 
-  --text:        #efeaf6;   /* brand text: cool, not the warm cream it was */
-  --text-dim:    #a8a2b3;
-  --text-mute:   #6e6980;
+  --foreground:     oklch(95% 0.004 80);
+  --muted:          oklch(72% 0.008 75);
+  --faint:          oklch(56% 0.009 75);
 
-  --gold:        #f2b73c;   /* the loot accent */
-  --gold-bright: #ffd784;
-  --gold-deep:   #b57d18;
-  --gold-ink:    #2a1c04;   /* text on gold fills */
-  --gold-wash:   rgba(242, 183, 60, 0.12);
-  --gold-line:   rgba(242, 183, 60, 0.55);
-  --gold-glow:   rgba(242, 183, 60, 0.30);
+  /* The accent is the one thing that does not move. It is the brand — it is
+   * in the mark — and it is already the right colour. */
+  --primary:        oklch(81% 0.142 78);
+  --primary-bright: oklch(89% 0.105 82);
+  --primary-deep:   oklch(60% 0.115 70);
+  --primary-ink:    oklch(22% 0.045 62);    /* text on gold fills */
+  --primary-wash:   oklch(81% 0.142 78 / 0.13);
+  --primary-line:   oklch(81% 0.142 78 / 0.5);
+  --primary-glow:   oklch(81% 0.142 78 / 0.3);
 
-  --jade:        #58d9a8;   /* complete / owned counts */
-  --jade-wash:   rgba(88, 217, 168, 0.12);
-  --danger:      #f2685c;
-  --danger-wash: rgba(242, 104, 92, 0.13);
+  --success:        oklch(79% 0.125 168);
+  --success-wash:   oklch(79% 0.125 168 / 0.13);
+  --destructive:      oklch(67% 0.175 25);
+  --destructive-wash: oklch(67% 0.175 25 / 0.14);
+
+  /* ---- the names the rest of this file already uses --------------------
+   * Aliases, not copies. Change a value above and it changes everywhere.  */
+  --bg-0: var(--background);
+  --bg-1: var(--surface);
+  --bg-2: var(--surface-raised);
+  --bg-3: var(--surface-input);
+  --bg-4: var(--surface-hover);
+  --line: var(--border);
+  --line-soft: var(--border-soft);
+
+  --text: var(--foreground);
+  --text-dim: var(--muted);
+  --text-mute: var(--faint);
+
+  --gold: var(--primary);
+  --gold-bright: var(--primary-bright);
+  --gold-deep: var(--primary-deep);
+  --gold-ink: var(--primary-ink);
+  --gold-wash: var(--primary-wash);
+  --gold-line: var(--primary-line);
+  --gold-glow: var(--primary-glow);
+
+  --jade: var(--success);
+  --jade-wash: var(--success-wash);
+  --danger: var(--destructive);
+  --danger-wash: var(--destructive-wash);
 
   /* ---- type ---- */
   --font: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -48,6 +93,11 @@
   /* ---- space / shape / motion ---- */
   --s-1: 4px;  --s-2: 8px;  --s-3: 12px;  --s-4: 16px;  --s-5: 22px;  --s-6: 32px;
   --r-1: 6px;  --r-2: 10px; --r-3: 16px;  --r-pill: 999px;
+  /* Watermelon's base radius is .625rem, which is the 10px this already
+     used — so the scale needed no moving, only a name it answers to. */
+  --radius-sm: var(--r-1);
+  --radius: var(--r-2);
+  --radius-lg: var(--r-3);
   --tap: 40px;
   --bar-h: 58px;
   --shadow-1: 0 1px 2px rgba(0,0,0,.5);
