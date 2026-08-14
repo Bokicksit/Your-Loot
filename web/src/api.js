@@ -233,6 +233,27 @@ export const api = {
   comicVineSearch: (params) =>
     request(`/api/comics/search?${new URLSearchParams(params)}`),
   backupUrl: "/api/backup",
+  /** A share comes back as a file rather than JSON, and carries a count of the
+   *  covers that could not be fetched — so it can't go through `request`,
+   *  which reads the body as JSON and drops the headers. A plain <a download>
+   *  can't do it either: that sends no Authorization header, so it would fail
+   *  outright against a remote base URL. */
+  share: async (scope, images = true) => {
+    const res = await fetch(url(`/api/share/${scope}?images=${images}`), {
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(errorMessage(body, res));
+    }
+    const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
+    return {
+      blob: await res.blob(),
+      failed: Number(res.headers.get("X-Share-Images-Failed") || 0),
+      filename: name ? name[1] : `yourloot-${scope}.html`,
+    };
+  },
   restoreBackup: async (file) => {
     const fd = new FormData();
     fd.append("file", file);

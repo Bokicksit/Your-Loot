@@ -20,6 +20,7 @@ from app.routers import (
     lookup,
     movies,
     records,
+    share,
     tags,
 )
 from app.routers import settings as settings_router
@@ -65,6 +66,7 @@ app.include_router(backup.router)
 app.include_router(settings_router.router)
 app.include_router(lookup.router)
 app.include_router(tags.router)
+app.include_router(share.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.image_dir), name="images")

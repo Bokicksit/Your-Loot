@@ -142,6 +142,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <ShareCard enabled={enabled} />
       <LockCard />
       <BackupCard />
 
@@ -151,6 +152,114 @@ export default function SettingsPage() {
 }
 
 const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
+
+const SIZE = (b) =>
+  b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`;
+
+/** Sharing is an export, not a link.
+ *
+ *  A link would need this server to be reachable from wherever the other
+ *  person is, and most of these installs sit on a home network behind a
+ *  router that has never been asked to forward anything. A file is sent the
+ *  same way as any other file, works offline, and stops existing when they
+ *  delete it — no public URL left listening after you have forgotten about
+ *  it.
+ */
+function ShareCard({ enabled }) {
+  const [images, setImages] = useState(true);
+  const [busy, setBusy] = useState(null);
+  const [note, setNote] = useState(null);
+  const [error, setError] = useState(null);
+
+  const scopes = [
+    ...MODULES.filter((m) => enabled.includes(m.key)).map((m) => ({
+      key: m.key,
+      label: m.label,
+      icon: m.icon,
+    })),
+    // the binder is a view of the cards, so it follows them on and off
+    ...(enabled.includes("cards")
+      ? [{ key: "pokedex", label: "Pokédex binder", icon: "card" }]
+      : []),
+    { key: "wanted", label: "Wanted list", icon: "star" },
+  ];
+
+  const download = async (scope, label) => {
+    setBusy(scope);
+    setError(null);
+    setNote(null);
+    try {
+      const { blob, failed, filename } = await api.share(scope, images);
+      // A blob URL rather than a direct link: the request needs its auth
+      // header, so the file is already in hand by the time we save it.
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(href);
+      setNote(
+        `${label} — ${SIZE(blob.size)}` +
+          (failed ? `, but ${failed} cover${failed === 1 ? "" : "s"} could not be fetched` : ""),
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section className="settings-card">
+      <h3>Share a collection</h3>
+      <p>
+        One HTML file holding a plain list — cover, title, and what shape it's
+        in. Send it however you'd send a photo. It opens in any browser, works
+        with no signal, and needs nothing installed at the other end.
+      </p>
+      <p className="settings-note">
+        It's a copy, so it doesn't change when your collection does, and
+        whoever has it keeps it. Your notes, tags, serial numbers and grading
+        certificates are never in it.
+      </p>
+      <div className="form-row">
+        <span className="settings-label">Include cover art</span>
+        <button className={`toggle ${images ? "on" : ""}`} onClick={() => setImages(!images)}>
+          {images ? "Included" : "Text only"}
+        </button>
+      </div>
+      <p className="settings-note">
+        {images
+          ? "Pictures are shrunk and packed inside the file — a shelf is tens of KB, a full Pokédex binder about 2 MB."
+          : "Names and details only. A full Pokédex binder comes to about 200 KB."}
+      </p>
+      <div className="form-row wrap">
+        {scopes.map((s) => (
+          <button
+            key={s.key}
+            className="ghost"
+            disabled={!!busy}
+            onClick={() => download(s.key, s.label)}
+          >
+            <Icon id={busy === s.key ? "save" : s.icon} />
+            {busy === s.key ? "Building…" : s.label}
+          </button>
+        ))}
+      </div>
+      {note && (
+        <p className="settings-note">
+          <Icon id="check" /> {note}
+        </p>
+      )}
+      {error && (
+        <p className="error">
+          <Icon id="alert" />
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
 
 /** Radarr and Sonarr put this in settings rather than in a config file, and
  *  they're right to: turning the lock on is a decision you make once you've

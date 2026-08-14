@@ -117,6 +117,13 @@ accounts, where everyone gets their own copies, wanted list, binder and
 Pokédex off one shared catalog. Passwords are argon2id, sessions are signed
 http-only cookies, and repeated wrong guesses are throttled.
 
+**Share a collection** — any shelf, the wanted list, or the binder, as a single
+HTML file with the cover art packed inside it. Send it like a photo: it opens in
+any browser, needs nothing installed, and works with no signal. It's an export
+rather than a link, so nothing on your network has to be reachable from outside,
+and it carries a plain list — cover, title, condition. Your notes, tags, serial
+numbers and grading certificates stay here.
+
 **Backup & restore** — Settings gives you a one-click zip of the whole
 install: every item, every copy, the wanted list, the binder, your settings,
 and your uploaded photos. Restoring replaces everything from that file. It's
