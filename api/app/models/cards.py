@@ -58,4 +58,9 @@ class CardPrinting(Base):
     kind: Mapped[str] = mapped_column(String(10), nullable=False)  # normal|reverse|holo
     foil: Mapped[str | None] = mapped_column(String(20))
     stamp: Mapped[str | None] = mapped_column(String(30))
+    size: Mapped[str | None] = mapped_column(String(20))
+    # Written down rather than worked out from the code. A set that invents a
+    # foil should name it correctly without anybody editing this app.
+    label: Mapped[str | None] = mapped_column(String(80))
+    short: Mapped[str | None] = mapped_column(String(24))
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

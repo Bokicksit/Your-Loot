@@ -157,7 +157,7 @@ def learn_printings(db: Session, set_code: str, set_name: str | None) -> dict:
     """
     from app.integrations.tcgdex import tcgdex_client
     from app.models import CardAttrs, CardPrinting, CollectionItem
-    from app.printings import code_for
+    from app.printings import code_for, label_for, short_for
 
     tcg_id = tcgdex_client.set_id_for(set_name or "", set_code)
     if not tcg_id:
@@ -181,15 +181,19 @@ def learn_printings(db: Session, set_code: str, set_name: str | None) -> dict:
         db.execute(delete(CardPrinting).where(CardPrinting.item_id == item_id))
         seen = set()
         for n, v in enumerate(variants):
-            code = code_for(v.get("type"), v.get("foil"), v.get("stamp"), v.get("size"))
+            kind, foil = v.get("type"), v.get("foil")
+            stamps, size = v.get("stamp"), v.get("size")
+            code = code_for(kind, foil, stamps, size)
             # the same combination twice on one card is a duplicate, not a
             # second box on the checklist
             if code in seen:
                 continue
             seen.add(code)
             db.add(CardPrinting(
-                item_id=item_id, code=code, kind=(v.get("type") or "holo"),
-                foil=v.get("foil"), stamp=",".join(v.get("stamp") or []) or None,
+                item_id=item_id, code=code, kind=(kind or "holo"), foil=foil,
+                stamp=",".join(stamps or []) or None, size=size,
+                label=label_for(kind, foil, stamps, size),
+                short=short_for(kind, foil, stamps, size),
                 position=n,
             ))
             written += 1

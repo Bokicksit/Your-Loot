@@ -151,9 +151,15 @@ def test_your_words_are_not_on_anybody_elses_shelf(people):
     assert a_word in _tags(alice, "games") and b_word not in _tags(alice, "games")
     assert b_word in _tags(bob, "games") and a_word not in _tags(bob, "games")
 
+    # Asked for by name rather than taken off the first page. The list is
+    # sorted by title and capped, so "Shared …" drifts off the end as the
+    # database fills — the same fragility that made the tenancy suite fail one
+    # run in two, and for the same reason.
     for who, mine, theirs in ((alice, a_word, b_word), (bob, b_word, a_word)):
-        row = next(i for i in who.get("/api/games", params={"limit": 200}).json()["items"]
-                   if i["id"] == shared)
+        found = who.get(
+            "/api/games", params={"search": f"Shared {mark}", "limit": 200}
+        ).json()["items"]
+        row = next(i for i in found if i["id"] == shared)
         assert row["tags"] == [mine], f"sees {row['tags']}, should see only {mine!r}"
         assert not who.get("/api/games", params={"tag": theirs, "limit": 100}).json()["items"], \
             "filtering by the other person's tag returned rows"

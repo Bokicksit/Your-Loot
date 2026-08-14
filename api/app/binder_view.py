@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.binders import CUSTOM, DEX, SET
 from app.models import BinderSlot, CardAttrs, CardPrinting, CollectionItem, Module, Owned
-from app.printings import label as printing_label, rarity_mark, short as printing_short
+from app.printings import rarity_mark
 
 MAX_DEX = 1025
 
@@ -228,20 +228,23 @@ def _set_entries(db: Session, binder, user_id: int):
         num = (a.card_number if a else None) or ""
         mine = [o for o in item.owned if o.user_id == user_id]
 
-        printings = _printings(printings_by_item.get(item.id), binder.master)
+        rows = printings_by_item.get(item.id)
+        printings = _printings(rows, binder.master)
+        by_code = {r.code: r for r in (rows or [])}
         placed = _place_copies(mine, printings, slots, num)
 
         for variant in printings:
             s = slots.get((num, variant))
+            row = by_code.get(variant)
             copy = placed.get(variant)
             card = _card_out(item, copy) if copy else None
             yield {
                 "key": num,
                 # the standard print has no suffix, so it must not pick up the
                 # space that would have separated one
-                "label": " ".join(x for x in (num, printing_short(variant)) if x),
+                "label": " ".join(x for x in (num, (row.short if row else "")) if x),
                 "variant": variant,
-                "printing": printing_label(variant) if variant else None,
+                "printing": row.label if row else None,
                 "rarity_mark": rarity_mark(a.rarity if a else None),
                 "name": item.title,
                 # the art shows whether or not you own it — a set binder is a

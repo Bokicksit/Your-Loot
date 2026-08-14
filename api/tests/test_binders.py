@@ -516,13 +516,17 @@ def a_set_with_printings(owner, a_set):
             .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
             .where(CardAttrs.set_code == a_set)
         ).all()
-        from app.printings import code_for
+        # built the same way the real fetch builds them, so the fixture cannot
+        # drift from what a learned set actually looks like
+        from app.printings import code_for, label_for, short_for
 
         for item_id, number in rows:
             for n, (kind, foil) in enumerate(plan.get(number, [])):
                 db.add(CardPrinting(
                     item_id=item_id, code=code_for(kind, foil, None, None),
                     kind=kind, foil=foil, position=n,
+                    label=label_for(kind, foil, None, None),
+                    short=short_for(kind, foil, None, None),
                 ))
         db.commit()
         yield a_set

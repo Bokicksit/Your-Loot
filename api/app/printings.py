@@ -47,9 +47,25 @@ STAMP_SHORT = {"set-logo": "LOGO", "snowflake": "SNOW", "30th-pokeday": "30TH"}
 PREMIUM = {"pokeball", "masterball"}
 
 
+def _slug(value: str, n: int = 6) -> str:
+    """A short, stable code for something nobody has named yet.
+
+    Six characters, because a code has twenty to live in and may have to hold
+    a kind, a foil, a stamp and a size at once.
+    """
+    keep = "".join(ch for ch in (value or "").lower() if ch.isalnum())
+    return keep[:n] or "x"
+
+
+def _humanise(value: str) -> str:
+    return (value or "").replace("-", " ").replace("_", " ").strip()
+
+
 def _parts(kind, foil, stamps, size):
     foil = (foil or "").lower() or None
-    stamp = next((s for s in (stamps or []) if s in STAMP_CODE), None)
+    # any stamp, not only the ones already named: a printing we cannot name is
+    # still a printing, and merging it into the plain one loses a slot
+    stamp = next(iter(stamps or []), None)
     jumbo = (size or "").lower() == "jumbo"
     return (kind or "holo").lower(), foil, stamp, jumbo
 
@@ -62,10 +78,10 @@ def code_for(kind=None, foil=None, stamps=None, size=None) -> str:
     """
     kind, foil, stamp, jumbo = _parts(kind, foil, stamps, size)
     out = KIND_CODE.get(kind, "h")
-    if foil in FOIL_CODE:
-        out += f"-{FOIL_CODE[foil]}"
+    if foil:
+        out += f"-{FOIL_CODE.get(foil) or _slug(foil)}"
     if stamp:
-        out += f"-{STAMP_CODE[stamp]}"
+        out += f"-{STAMP_CODE.get(stamp) or _slug(stamp)}"
     if jumbo:
         out += "-jmb"
     return out
@@ -78,9 +94,10 @@ def label_for(kind=None, foil=None, stamps=None, size=None) -> str:
         base = f"Premium parallel — {FOIL_LABEL[foil]}"
     else:
         base = KIND_LABEL.get(kind, "Holo")
-        if foil in FOIL_LABEL:
-            base += f", {FOIL_LABEL[foil]}"
-    extra = [x for x in (STAMP_LABEL.get(stamp), "jumbo" if jumbo else None) if x]
+        if foil:
+            base += f", {FOIL_LABEL.get(foil) or _humanise(foil) + ' foil'}"
+    stamp_label = STAMP_LABEL.get(stamp) or (f"{_humanise(stamp)} stamp" if stamp else None)
+    extra = [x for x in (stamp_label, "jumbo" if jumbo else None) if x]
     return base + (", " + ", ".join(extra) if extra else "")
 
 
@@ -89,14 +106,14 @@ def short_for(kind=None, foil=None, stamps=None, size=None) -> str:
     nothing — it is the one you assume, and a label on it would be noise."""
     kind, foil, stamp, jumbo = _parts(kind, foil, stamps, size)
     bits = []
-    if foil in FOIL_SHORT:
-        bits.append(FOIL_SHORT[foil])
+    if foil:
+        bits.append(FOIL_SHORT.get(foil) or _slug(foil, 6).upper())
     elif kind == "reverse":
         bits.append("PAR")
     elif kind == "holo":
         bits.append("HOLO")
     if stamp:
-        bits.append(STAMP_SHORT[stamp])
+        bits.append(STAMP_SHORT.get(stamp) or _slug(stamp, 6).upper())
     if jumbo:
         bits.append("JUMBO")
     return " ".join(bits)
