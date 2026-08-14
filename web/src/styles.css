@@ -2888,6 +2888,85 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   color: var(--text-mute);
 }
 
+/* the same arrow, pointing the other way — two identical glyphs side by side
+   for "earlier" and "later" is a coin toss every time */
+.ghost.flip > svg.i { transform: scaleX(-1); }
+
+/* ---- the binder shelf -------------------------------------------------- */
+
+/* Wide cards rather than a grid of thumbnails: a binder has no cover, and
+   what you actually want off this page is how full each one is. */
+.binder-shelf {
+  display: grid;
+  gap: var(--s-2);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  margin-top: var(--s-3);
+}
+.binder-card {
+  display: grid;
+  gap: 5px;
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .16s var(--ease), background .16s var(--ease);
+}
+.binder-card:hover { border-color: var(--gold-line); background: var(--bg-3); }
+.binder-card strong { font-size: var(--f-3); }
+.binder-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--f-1);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.binder-kind > svg.i { width: 14px; height: 14px; }
+.binder-count { font-size: var(--f-2); color: var(--text-mute); }
+.binder-count em { font-style: normal; color: var(--gold); }
+/* how full, at a glance — the number is exact, this is for scanning */
+.binder-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.binder-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #b57d18, var(--gold));
+}
+
+/* the set picker: a long list, so each row has to be readable at a glance */
+.set-picker {
+  display: grid;
+  gap: 2px;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: var(--s-2) 0;
+}
+.set-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.set-row:hover:not(:disabled) { border-color: var(--gold-line); background: var(--bg-3); }
+.set-row:disabled { opacity: .5; cursor: default; }
+.set-name { font-size: var(--f-3); }
+.set-name em { font-style: normal; color: var(--text-mute); }
+.set-meta { font-size: var(--f-1); color: var(--text-mute); }
+.set-meta strong { color: var(--gold); font-weight: 600; }
+.set-meta em { font-style: normal; }
+
 /* ---- the dice ---------------------------------------------------------- */
 
 /* Square, and quieter than either of its neighbours. It sits between the field

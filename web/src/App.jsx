@@ -22,6 +22,8 @@ import RecordsPage from "./pages/RecordsPage.jsx";
 import LegoPage from "./pages/LegoPage.jsx";
 import ComicsPage from "./pages/ComicsPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
+import BindersPage from "./pages/BindersPage.jsx";
+import BinderPage from "./pages/BinderPage.jsx";
 
 const PATHS = {
   cards: "/cards",
@@ -94,8 +96,9 @@ function PageTitle() {
       </h2>
     );
   }
-  // the Pokédex is a view of Cards, not a collection in its own right
-  const key = pathname.startsWith("/pokedex")
+  // the Pokédex and the binders are views of Cards, not collections in their
+  // own right
+  const key = pathname.startsWith("/pokedex") || pathname.startsWith("/binders")
     ? "cards"
     : Object.keys(PATHS).find((k) => pathname.startsWith(PATHS[k]));
   const module = MODULES.find((m) => m.key === key);
@@ -167,6 +170,14 @@ function Shell() {
           <Route
             path="/comics"
             element={<RequireModule moduleKey="comics"><ComicsPage /></RequireModule>}
+          />
+          <Route
+            path="/binders"
+            element={<RequireModule moduleKey="cards"><BindersPage /></RequireModule>}
+          />
+          <Route
+            path="/binders/:id"
+            element={<RequireModule moduleKey="cards"><BinderPage /></RequireModule>}
           />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>

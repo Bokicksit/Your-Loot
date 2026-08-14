@@ -127,6 +127,35 @@ export const api = {
     request(`/api/cards/facets?${new URLSearchParams(params)}`),
   cardsSearch: (params) =>
     request(`/api/cards/search?${new URLSearchParams(params)}`),
+  // Binders. The Pokédex is one of these too — it keeps its own endpoints
+  // above because its slots are filled by choosing between the cards you own,
+  // which the other kinds never have to do.
+  binders: () => request("/api/binders"),
+  binder: (id) => request(`/api/binders/${id}`),
+  binderSets: () => request("/api/binders/sets/available"),
+  createBinder: (body) =>
+    request("/api/binders", { method: "POST", body: JSON.stringify(body) }),
+  renameBinder: (id, name) =>
+    request(`/api/binders/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  deleteBinder: (id) => request(`/api/binders/${id}`, { method: "DELETE" }),
+  binderAddCards: (id, ownedIds) =>
+    request(`/api/binders/${id}/cards`, {
+      method: "POST",
+      body: JSON.stringify({ owned_ids: ownedIds }),
+    }),
+  binderRemoveSlot: (id, slotId) =>
+    request(`/api/binders/${id}/slots/${slotId}`, { method: "DELETE" }),
+  binderReorder: (id, slotIds) =>
+    request(`/api/binders/${id}/order`, {
+      method: "PUT",
+      body: JSON.stringify({ slot_ids: slotIds }),
+    }),
+  binderSlotHappy: (id, key, happy) =>
+    request(`/api/binders/${id}/slots/${encodeURIComponent(key)}/happy`, {
+      method: "PUT",
+      body: JSON.stringify({ happy }),
+    }),
+
   pokedex: () => request("/api/cards/pokedex"),
   dexHappy: (dexNo, happy) =>
     request(`/api/cards/pokedex/${dexNo}/happy`, {

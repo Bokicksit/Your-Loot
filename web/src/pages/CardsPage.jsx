@@ -5,6 +5,7 @@ import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
 import { TagFilter } from "../components/Tags.jsx";
 import AddSheet, { Searching } from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { BinderSwitch } from "../components/BinderGrid.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
@@ -391,22 +392,11 @@ export default function CardsPage({ initialView = "collection" }) {
   const panelAfter =
     pickedIdx < 0 ? -1 : Math.min(Math.floor(pickedIdx / cols) * cols + cols - 1, results.length - 1);
 
-  const viewSwitch = (
-    <div className="chip-row view-switch">
-      {[
-        ["collection", "Collection"],
-        ["binder", "Pokédex"],
-      ].map(([k, label]) => (
-        <button
-          key={k}
-          className={`chip ${view === k ? "active" : ""}`}
-          onClick={() => setView(k)}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
+  // The same control the binder pages use, so the three shelves cannot drift
+  // into looking like three features. It navigates rather than setting state;
+  // /cards and /pokedex are already routes, and a binder is a link you send
+  // somebody.
+  const viewSwitch = <BinderSwitch active={view === "binder" ? "pokedex" : "collection"} />;
 
   if (view === "binder") {
     return (
