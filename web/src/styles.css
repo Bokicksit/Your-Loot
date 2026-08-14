@@ -2888,6 +2888,46 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   color: var(--text-mute);
 }
 
+/* ---- the dice ---------------------------------------------------------- */
+
+/* Square, and quieter than either of its neighbours. It sits between the field
+   and Add — both of which are why you opened the page — so it earns its place
+   by staying out of the way until the day you can't decide. */
+.dice {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--bg-2);
+  color: var(--text-mute);
+  transition: color .16s var(--ease), border-color .16s var(--ease),
+              background .16s var(--ease);
+}
+.dice:hover:not(:disabled),
+.dice:focus-visible {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: var(--bg-3);
+}
+.dice:disabled { opacity: .65; }
+.dice > svg.i { width: 19px; height: 19px; }
+/* one turn, landing where it started — a die that keeps spinning is a
+   spinner, and this is over in half a second */
+.dice.rolling > svg.i { animation: dice-roll .5s var(--ease); }
+@keyframes dice-roll {
+  from { transform: rotate(0) scale(1); }
+  60%  { transform: rotate(220deg) scale(.86); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice.rolling > svg.i { animation: none; }
+}
+
 /* ---- filter rail ------------------------------------------------------- */
 
 /* One line that scrolls sideways instead of wrapping. A wrapping row of

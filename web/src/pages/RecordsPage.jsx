@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { ShuffleButton } from "../components/Shuffle.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import { DEFAULT_VINYL_GRADE, VINYL_GRADES } from "../vocab.js";
@@ -140,14 +141,19 @@ export default function RecordsPage() {
       return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
     });
 
+  // Everything that narrows the list except what is typed. The dice takes
+  // these and not the search box — filling that box is what a roll *does*, so
+  // rolling from it would hand back the same item forever.
+  const filters = { sort };
+  if (artistFilter) filters.artist = artistFilter;
+  if (labelFilter) filters.label = labelFilter;
+  if (formatFilter) filters.format = formatFilter;
+  if (genreFilter) filters.genre = genreFilter;
+  if (tagFilter) filters.tag = tagFilter;
+
   const load = () => {
-    const params = { sort };
+    const params = { ...filters };
     if (search) params.search = search;
-    if (artistFilter) params.artist = artistFilter;
-    if (labelFilter) params.label = labelFilter;
-    if (formatFilter) params.format = formatFilter;
-    if (genreFilter) params.genre = genreFilter;
-    if (tagFilter) params.tag = tagFilter;
     api
       .records(params)
       .then((d) => {
@@ -363,6 +369,7 @@ export default function RecordsPage() {
           />
           <span className="count">{total}</span>
         </label>
+        <ShuffleButton fetcher={api.records} params={filters} onPick={setSearch} noun="a record" />
         <button className="primary" onClick={openForm} title="Add a record">
           <Icon id="plus" />
           Add

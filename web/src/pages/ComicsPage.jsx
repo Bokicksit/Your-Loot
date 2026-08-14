@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { comicQuery } from "../upc.js";
@@ -128,12 +129,17 @@ export default function ComicsPage() {
       return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
     });
 
+  // Everything that narrows the list except what is typed. The dice takes
+  // these and not the search box — filling that box is what a roll *does*, so
+  // rolling from it would hand back the same item forever.
+  const filters = { sort };
+  if (tagFilter) filters.tag = tagFilter;
+  if (seriesFilter) filters.series = seriesFilter;
+  if (publisherFilter) filters.publisher = publisherFilter;
+
   const load = () => {
-    const params = { sort };
+    const params = { ...filters };
     if (search) params.search = search;
-    if (tagFilter) params.tag = tagFilter;
-    if (seriesFilter) params.series = seriesFilter;
-    if (publisherFilter) params.publisher = publisherFilter;
     api
       .comics(params)
       .then((d) => {
@@ -393,6 +399,7 @@ export default function ComicsPage() {
           />
           <span className="count">{total}</span>
         </label>
+        <ShuffleButton fetcher={api.comics} params={filters} onPick={setSearch} noun="an issue" />
         <button className="primary" onClick={openForm} title="Add an issue">
           <Icon id="plus" />
           Add

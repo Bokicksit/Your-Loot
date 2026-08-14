@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import ViewToggle, {
@@ -139,12 +140,17 @@ export default function BooksPage() {
       return [...prev, ...extra.filter((a) => a.url && !seen.has(a.url))];
     });
 
+  // Everything that narrows the list except what is typed. The dice takes
+  // these and not the search box — filling that box is what a roll *does*, so
+  // rolling from it would hand back the same item forever.
+  const filters = { sort };
+  if (tagFilter) filters.tag = tagFilter;
+  if (authorFilter) filters.author = authorFilter;
+  if (formatFilter) filters.format = formatFilter;
+
   const load = () => {
-    const params = { sort };
+    const params = { ...filters };
     if (search) params.search = search;
-    if (tagFilter) params.tag = tagFilter;
-    if (authorFilter) params.author = authorFilter;
-    if (formatFilter) params.format = formatFilter;
     api
       .books(params)
       .then((d) => {
@@ -349,6 +355,7 @@ export default function BooksPage() {
           />
           <span className="count">{total}</span>
         </label>
+        <ShuffleButton fetcher={api.books} params={filters} onPick={setSearch} noun="a book" />
         <button className="primary" onClick={openForm} title="Add a book">
           <Icon id="plus" />
           Add

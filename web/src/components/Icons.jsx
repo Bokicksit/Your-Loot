@@ -38,6 +38,9 @@ export function IconDefs() {
         <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 3.5L5.5 13.4h5.4l-.9 7.1 7.7-9.9h-5.4z" /></symbol>
         <symbol id="i-comic" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.4"></rect> <path d="M7.6 7.8h8.8v4.9h-4.9l-2.9 2.9v-2.9H7.6z"></path></symbol>
         <symbol id="i-tiles" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></symbol>
+        {/* five pips rather than one or two: at this size a die needs enough
+            of them to stop reading as a plain rounded square */}
+        <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.4"></rect> <circle cx="8.5" cy="8.5" r="1.15" fill="currentColor" stroke="none"></circle> <circle cx="15.5" cy="8.5" r="1.15" fill="currentColor" stroke="none"></circle> <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"></circle> <circle cx="8.5" cy="15.5" r="1.15" fill="currentColor" stroke="none"></circle> <circle cx="15.5" cy="15.5" r="1.15" fill="currentColor" stroke="none"></circle></symbol>
         <symbol id="i-list" viewBox="0 0 24 24"><rect x="3.5" y="5" width="5" height="5" rx="1.2" /><rect x="3.5" y="14" width="5" height="5" rx="1.2" /><path d="M11.5 6.6h9M11.5 9.4h6M11.5 15.6h9M11.5 18.4h6" /></symbol>
       </defs>
     </svg>

@@ -7,6 +7,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import { useSettings, useListPref } from "../settings.jsx";
@@ -165,12 +166,16 @@ export default function GamesPage() {
     api.platforms().then(setPlatforms);
   }, []);
 
+  // Everything that narrows the list except what is typed. The dice takes
+  // these and not the search box — filling that box is what a roll *does*, so
+  // rolling from it would hand back the same item forever.
+  const filters = { sort, is_hardware: false }; // hardware lives on its own tab
+  if (tagFilter) filters.tag = tagFilter;
+  if (platformFilter) filters.platform_id = platformFilter;
+
   const load = () => {
-    // hardware lives on its own tab now — this page is games only
-    const params = { sort, is_hardware: false };
+    const params = { ...filters };
     if (search) params.search = search;
-    if (tagFilter) params.tag = tagFilter;
-    if (platformFilter) params.platform_id = platformFilter;
     api
       .games(params)
       .then((d) => {
@@ -426,6 +431,7 @@ export default function GamesPage() {
           />
           <span className="count">{total}</span>
         </label>
+        <ShuffleButton fetcher={api.games} params={filters} onPick={setSearch} noun="a game" />
         <button className="primary" onClick={openForm} title="Add to library">
           <Icon id="plus" />
           Add
