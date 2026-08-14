@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -6,6 +7,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import { api } from "./api.js";
 import { BrandMark, Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import PageArrows from "./components/PageArrows.jsx";
@@ -111,6 +113,22 @@ function PageTitle() {
   );
 }
 
+/** The version, quietly, in the corner it belongs in.
+ *
+ *  It was only ever visible at the bottom of Settings, which is a strange
+ *  place to have to go to answer "did my update land". Set in the number face
+ *  and dimmed to the point of being furniture — it is for the one moment you
+ *  need it, not for reading.
+ */
+function BuildTag() {
+  const [v, setV] = useState("");
+  useEffect(() => {
+    api.health().then((h) => setV(h.version)).catch(() => {});
+  }, []);
+  return v ? <span className="build-tag">{v}</span> : null;
+}
+
+
 function Shell() {
   const { settings } = useSettings();
   const name = settings?.owner_name;
@@ -124,6 +142,7 @@ function Shell() {
             {name ? `${name}’s` : "Your"} <em>Loot</em>
           </h1>
         </Link>
+        <BuildTag />
       </header>
 
       <main className="content">

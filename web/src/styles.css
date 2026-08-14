@@ -183,6 +183,15 @@ svg.i.filled { fill: currentColor; stroke: none; }
   border-bottom: 1px solid var(--line-soft);
   box-shadow: 0 1px 0 rgba(255,255,255,.02), var(--shadow-1);
 }
+/* the build, in the corner. Furniture, not information — dimmed until you
+   are the one person who came looking for it. */
+.build-tag {
+  margin-left: auto;
+  font: 500 var(--f-1)/1 var(--font-num);
+  letter-spacing: .12em;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
 .topbar h1,
 .topbar .brand {
   margin: 0;
@@ -1657,6 +1666,14 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   font-size: var(--f-6);
   letter-spacing: -.02em;
 }
+/* how much there is, under what it is */
+.home-sub {
+  margin: calc(-1 * var(--s-3)) 0 0;
+  text-align: center;
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
 .home-tiles {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1897,7 +1914,44 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   letter-spacing: .08em;
   color: var(--jade);
 }
-.view-switch { margin-bottom: var(--s-3); }
+/* The three shelves of cards — Collection, Pokédex, Binders — as one control
+   rather than three loose chips. They are exclusive: you are always in
+   exactly one, and a segmented track says that where a row of separate
+   buttons only implies it. The track is the frame, the raised segment is
+   where you are.
+
+   Restyled in place: the markup is still the NavLinks it was, so every
+   behaviour and every route is untouched. */
+.view-switch {
+  margin-bottom: var(--s-3);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  /* it is a control, not a rail — nothing here scrolls sideways */
+  overflow: visible;
+  max-width: 100%;
+}
+.view-switch > .chip {
+  flex: 1 1 auto;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-pill);
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+.view-switch > .chip:hover { background: rgba(255, 255, 255, .03); color: var(--text-dim); }
+.view-switch > .chip.active {
+  background: var(--bg-3);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+}
+/* the gold fill the chips use elsewhere would shout here — this control is
+   read constantly and never acted on twice */
+.view-switch > .chip.active::after { display: none; }
 
 /* ============================ first-run modal ============================ */
 

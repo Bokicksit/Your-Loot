@@ -10,6 +10,10 @@ const PATHS = {
   movies: "/movies", books: "/books", records: "/records",
   lego: "/lego", comics: "/comics",
 };
+// small numbers read better as words; past a dozen they stop being a count
+// you can see at a glance and become a figure
+const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
+               "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const UNIT = {
   cards: "card", games: "title", hardware: "item", movies: "disc", books: "book",
   records: "record", lego: "set", comics: "issue",
@@ -43,9 +47,22 @@ export default function HomePage() {
   // both separately now, and this asks for what it means.
   const count = (key) => (stats?.[key] ? stats[key].items : null);
 
+  // "Eight shelves · 1,043 things" — the two numbers that say how much there
+  // is, under the line that says what it is. Words for the small number
+  // because eight shelves reads better than 8, numerals for the big one
+  // because nobody wants "one thousand and forty-three".
+  const totalThings = shown.reduce((n, m) => n + (count(m.key) || 0), 0);
+  const shelfWord = WORDS[shown.length] || shown.length;
+
   return (
     <div className="home">
       <h2>{tagline}</h2>
+      {stats && (
+        <p className="home-sub">
+          {shelfWord} {shown.length === 1 ? "shelf" : "shelves"}
+          {totalThings > 0 && <> · {totalThings.toLocaleString()} things</>}
+        </p>
+      )}
 
       <div className="home-tiles">
         {shown.map((m) => (
