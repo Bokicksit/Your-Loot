@@ -76,7 +76,11 @@ export default function BindersPage() {
             )}
             <span className="binder-kind">
               <Icon id={b.kind === "dex" ? "ball" : b.kind === "set" ? "card" : "star"} />
-              {b.kind === "dex" ? "Pokédex" : b.kind === "set" ? "Set" : "Yours"}
+              {b.kind === "dex"
+                ? "Pokédex"
+                : b.kind === "set"
+                ? b.master ? "Master set" : "Set"
+                : "Yours"}
             </span>
             <strong>{b.name}</strong>
             <span className="binder-count">
@@ -107,6 +111,7 @@ function AddSetBinder({ onDone, onCancel }) {
   const [sets, setSets] = useState(null);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const [master, setMaster] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -125,7 +130,12 @@ function AddSetBinder({ onDone, onCancel }) {
     setBusy(true);
     setError(null);
     try {
-      await api.createBinder({ name: s.name, kind: "set", set_code: s.code });
+      await api.createBinder({
+        name: master ? `${s.name} — master` : s.name,
+        kind: "set",
+        set_code: s.code,
+        master,
+      });
       onDone();
     } catch (e) {
       setError(e.message);
@@ -147,6 +157,21 @@ function AddSetBinder({ onDone, onCancel }) {
           onChange={(e) => setQ(e.target.value)}
         />
       </label>
+      <div className="form-row">
+        <span className="settings-label">Master set</span>
+        <button
+          type="button"
+          className={`toggle ${master ? "on" : ""}`}
+          onClick={() => setMaster(!master)}
+        >
+          {master ? "Every printing" : "One per card"}
+        </button>
+      </div>
+      <p className="settings-note">
+        {master
+          ? "A slot for each way a card was printed — plain, reverse holo, holo — so a set is only complete when you have them all. The printings are looked up when the binder is made, which takes a moment."
+          : "One slot per card in the set, whichever way it was printed."}
+      </p>
       {error && <p className="error">{error}</p>}
       {sets === null ? (
         <p className="empty">Loading sets…</p>
@@ -157,9 +182,9 @@ function AddSetBinder({ onDone, onCancel }) {
               key={s.code}
               type="button"
               className="set-row"
-              disabled={busy || s.has_binder}
+              disabled={busy || (master ? s.has_master : s.has_binder)}
               onClick={() => make(s)}
-              title={s.has_binder ? "You already have a binder for this set" : ""}
+              title={(master ? s.has_master : s.has_binder) ? "You already have this binder" : ""}
             >
               <span className="set-name">
                 {s.name}
@@ -168,7 +193,7 @@ function AddSetBinder({ onDone, onCancel }) {
               <span className="set-meta">
                 {s.year || ""} · {s.cards} cards
                 {s.owned > 0 && <strong> · you own {s.owned}</strong>}
-                {s.has_binder && <em> · already made</em>}
+                {(master ? s.has_master : s.has_binder) && <em> · already made</em>}
               </span>
             </button>
           ))}

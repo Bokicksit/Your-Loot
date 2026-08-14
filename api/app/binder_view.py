@@ -43,6 +43,81 @@ def natural_key(number: str | None):
     return tuple((0, int(p)) if p.isdigit() else (1, p.lower()) for p in parts)
 
 
+# TCGdex names the printings normal/reverse/holo; this app has always called
+# them Non-Holo, Reverse Holo and Holo on the copy itself. One vocabulary has
+# to give, and it is not the one already written on people's records.
+VARIANT_LABEL = {"normal": "", "reverse": "RH", "holo": "Holo"}
+VARIANT_COPY = {"normal": "Non-Holo", "reverse": "Reverse Holo", "holo": "Holo"}
+
+
+def _printings(attrs, master: bool) -> list[str]:
+    """The slots one card earns.
+
+    A plain set binder gives every card one, whatever it was printed as. A
+    master binder gives it one per printing — but only where we know the
+    printings. Where nobody has asked TCGdex, or TCGdex does not carry the
+    card, the flags are null and it falls back to a single slot: not knowing
+    of a reverse holo is not the same as knowing there is one.
+    """
+    if not master or attrs is None or attrs.has_normal is None:
+        return [""]
+    kinds = [
+        k for k, on in (
+            ("normal", attrs.has_normal),
+            ("reverse", attrs.has_reverse),
+            ("holo", attrs.has_holo),
+        ) if on
+    ]
+    return kinds or [""]
+
+
+def _place_copies(mine, printings, slots, num) -> dict:
+    """Decide which of your copies sits in which printing's slot.
+
+    The obvious rule — a copy fills the slot matching the print style written
+    on it — is wrong here, and quietly. Of 943 card copies on the install this
+    was written against, 823 have no print style recorded at all, and a
+    handful record one the card was never printed in. Under a strict match a
+    master binder told its owner he had 24 of a set he had 34 of: every
+    unrecorded copy fell through, and a card you own showed as a gap.
+
+    A binder must never do that. So: copies that name their printing take that
+    slot, anything pinned to a slot by hand takes precedence over both, and
+    whatever is left fills the remaining slots in order. Every copy you own
+    lands somewhere, and the count matches what is in your hands.
+    """
+    placed: dict[str, Owned] = {}
+    left = list(mine)
+
+    # a copy pinned to a slot by hand wins outright — it is the one decision
+    # here that somebody actually made
+    for v in printings:
+        s = slots.get((num, v))
+        if s and s.owned_id:
+            pin = next((o for o in left if o.id == s.owned_id), None)
+            if pin:
+                placed[v] = pin
+                left.remove(pin)
+
+    # then the ones that say what they are
+    for v in printings:
+        if v in placed or not v:
+            continue
+        want = VARIANT_COPY[v].casefold()
+        hit = next((o for o in left if (o.variant or "").strip().casefold() == want), None)
+        if hit:
+            placed[v] = hit
+            left.remove(hit)
+
+    # then everything else, in order, so nothing you own goes unshown
+    for v in printings:
+        if v in placed:
+            continue
+        if left:
+            placed[v] = left.pop(0)
+    return placed
+
+
 def _card_out(item: CollectionItem, copy: Owned | None):
     if item is None:
         return None
@@ -143,23 +218,32 @@ def _set_entries(db: Session, binder, user_id: int):
 
     slots = _slots_of(db, binder.id)
     for item in cards:
-        num = (item.card_attrs.card_number if item.card_attrs else None) or ""
-        s = slots.get((num, ""))
+        a = item.card_attrs
+        num = (a.card_number if a else None) or ""
         mine = [o for o in item.owned if o.user_id == user_id]
-        # the pinned copy if one was chosen, else any copy you own
-        copy = next((o for o in mine if s and o.id == s.owned_id), None) or (mine[0] if mine else None)
-        card = _card_out(item, copy) if copy else None
-        yield {
-            "key": num,
-            "label": num,
-            "name": item.title,
-            # the art shows whether or not you own it — a set binder is a list
-            # of what exists, and the gap should look like the card it wants
-            "art": item.image_url,
-            "card": card,
-            "final": bool(s and s.happy),
-            "state": "missing" if copy is None else ("one" if s and s.happy else "have"),
-        }
+
+        printings = _printings(a, binder.master)
+        placed = _place_copies(mine, printings, slots, num)
+
+        for variant in printings:
+            s = slots.get((num, variant))
+            copy = placed.get(variant)
+            card = _card_out(item, copy) if copy else None
+            yield {
+                "key": num,
+                # the plain printing has no suffix, so it must not pick up the
+                # space that would have separated one
+                "label": " ".join(x for x in (num, VARIANT_LABEL.get(variant, "")) if x),
+                "variant": variant,
+                "name": item.title,
+                # the art shows whether or not you own it — a set binder is a
+                # list of what exists, and the gap should look like the card
+                # it wants
+                "art": item.image_url,
+                "card": card,
+                "final": bool(s and s.happy),
+                "state": "missing" if copy is None else ("one" if s and s.happy else "have"),
+            }
 
 
 def _custom_entries(db: Session, binder, user_id: int):

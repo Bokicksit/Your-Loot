@@ -9,6 +9,8 @@ server-side fetch is refused. TCGdex publishes the same card data for exactly
 this purpose.
 """
 
+from concurrent.futures import ThreadPoolExecutor
+
 import httpx
 
 API_URL = "https://api.tcgdex.net/v2/en"
@@ -102,6 +104,62 @@ class TCGdexClient:
             # photo the collector takes themselves
             "image_url": f"{d['image']}/high.png" if d.get("image") else None,
         }
+
+    # --- printings, for master-set binders ---------------------------------
+
+    def set_id_for(self, name: str, code: str | None = None) -> str | None:
+        """Their id for a set we know by name.
+
+        The two catalogues do not agree on set ids and only sometimes collide:
+        Celebrations is `cel25` in both, while Prismatic Evolutions is
+        `sv8pt5` in the dump and `sv08.5` here. The printed name is the one
+        thing they do share, so that is what this matches on, with the code
+        tried first for the sets where it happens to line up.
+        """
+        sets = httpx.get(f"{API_URL}/sets", timeout=20, follow_redirects=True)
+        sets.raise_for_status()
+        rows = sets.json()
+        if code:
+            for s in rows:
+                if (s.get("id") or "").lower() == code.lower():
+                    return s["id"]
+        want = (name or "").strip().casefold()
+        for s in rows:
+            if (s.get("name") or "").strip().casefold() == want:
+                return s["id"]
+        return None
+
+    def printings_in_set(self, set_id: str, workers: int = 8) -> dict[str, dict]:
+        """Every card's printings, keyed by its printed number.
+
+        One request per card — the set listing carries only id, name, number
+        and image — so it runs on a small pool over one connection. A set is
+        180-odd cards and this is asked once, the first time somebody makes a
+        master binder of it.
+        """
+        listing = httpx.get(
+            f"{API_URL}/sets/{set_id.strip()}", timeout=20, follow_redirects=True
+        )
+        listing.raise_for_status()
+        cards = listing.json().get("cards", [])
+
+        out: dict[str, dict] = {}
+        limits = httpx.Limits(max_connections=workers)
+        with httpx.Client(timeout=20, follow_redirects=True, limits=limits) as client:
+            def one(card):
+                try:
+                    r = client.get(f"{API_URL}/cards/{card['id']}")
+                    r.raise_for_status()
+                    return card.get("localId"), r.json().get("variants") or {}
+                except Exception:
+                    # one card the API stumbles on must not cost the whole set
+                    return card.get("localId"), None
+
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                for number, variants in pool.map(one, cards):
+                    if number and variants is not None:
+                        out[str(number)] = variants
+        return out
 
 
 tcgdex_client = TCGdexClient()

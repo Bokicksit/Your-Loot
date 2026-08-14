@@ -9,7 +9,7 @@ What is left here is the vocabulary: get me this person's Pokédex, file this
 copy in that slot, take it out, mark it as the one.
 """
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Binder, BinderSlot, Owned
@@ -126,3 +126,55 @@ def purge_owned(db: Session, owned_id: int) -> None:
 
 def clear_binder(db: Session, binder_id: int) -> None:
     db.execute(delete(BinderSlot).where(BinderSlot.binder_id == binder_id))
+
+
+# --- master sets -----------------------------------------------------------
+
+
+def printings_known(db: Session, set_code: str) -> bool:
+    """Has anybody asked TCGdex about this set yet?"""
+    from app.models import CardAttrs
+
+    unknown = db.scalar(
+        select(func.count()).select_from(CardAttrs).where(
+            CardAttrs.set_code == set_code, CardAttrs.has_normal.is_(None)
+        )
+    )
+    return not unknown
+
+
+def learn_printings(db: Session, set_code: str, set_name: str | None) -> dict:
+    """Fetch and keep which printings each card in a set exists in.
+
+    Once per set, the first time somebody makes a master binder of it. A card
+    TCGdex does not carry — the dump has sets and promos it does not — keeps
+    its nulls and gets one slot, which is the honest fallback: we do not know
+    of another printing, so we do not invent one.
+    """
+    from app.integrations.tcgdex import tcgdex_client
+    from app.models import CardAttrs
+
+    tcg_id = tcgdex_client.set_id_for(set_name or "", set_code)
+    if not tcg_id:
+        return {"matched": False, "set": set_code, "learned": 0, "unmatched": 0}
+
+    found = tcgdex_client.printings_in_set(tcg_id)
+    # their numbers are zero-padded ("001"), the dump's are not ("1")
+    by_number = {k.lstrip("0") or k: v for k, v in found.items()}
+
+    rows = db.scalars(select(CardAttrs).where(CardAttrs.set_code == set_code)).all()
+    learned = 0
+    for a in rows:
+        key = (a.card_number or "").lstrip("0") or (a.card_number or "")
+        v = by_number.get(key) or by_number.get(a.card_number or "")
+        if v is None:
+            continue
+        a.has_normal = bool(v.get("normal"))
+        a.has_reverse = bool(v.get("reverse"))
+        a.has_holo = bool(v.get("holo"))
+        learned += 1
+    db.commit()
+    return {
+        "matched": True, "set": set_code, "tcgdex_id": tcg_id,
+        "learned": learned, "unmatched": len(rows) - learned,
+    }

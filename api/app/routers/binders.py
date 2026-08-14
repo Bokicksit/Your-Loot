@@ -18,6 +18,8 @@ class BinderCreate(BaseModel):
     name: str = Field(min_length=1, max_length=60)
     kind: str = Field(pattern="^(set|custom)$")  # the dex one already exists
     set_code: str | None = None
+    # set binders only: a slot per printing rather than per card
+    master: bool = False
 
 
 class BinderEdit(BaseModel):
@@ -82,9 +84,18 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
             .group_by(BinderSlot.binder_id)
         ).all()
     )
-    # a set binder counts what you own of the set, not what you filed
+    # A set binder counts what you own of the set, not what you filed. A
+    # master one counts printings, and the arithmetic for that lives in the
+    # renderer — the shelf saying "0 of 25" while the binder itself shows 42
+    # slots is the kind of disagreement nobody can explain later. Sets are a
+    # few hundred rows and a shelf holds a handful of binders, so rendering
+    # them is cheaper than keeping a second copy of the rule.
     set_totals, set_owned = {}, {}
     for b in (x for x in rows if x.kind == engine.SET):
+        if b.master:
+            counted = render(db, b, user.id)["binder"]
+            set_totals[b.id], set_owned[b.id] = counted["total"], counted["filled"]
+            continue
         set_totals[b.id] = db.scalar(
             select(func.count()).select_from(CardAttrs)
             .where(CardAttrs.set_code == b.set_code)
@@ -134,7 +145,8 @@ def create_binder(
         clash = db.scalar(
             select(Binder).where(
                 Binder.user_id == user.id, Binder.kind == engine.SET,
-                Binder.set_code == body.set_code, Binder.master.is_(False),
+                Binder.set_code == body.set_code,
+                Binder.master.is_(bool(body.master)),
             )
         )
         if clash:
@@ -143,11 +155,29 @@ def create_binder(
     b = Binder(
         user_id=user.id, name=body.name.strip(), kind=body.kind,
         set_code=body.set_code if body.kind == engine.SET else None,
+        master=bool(body.master) and body.kind == engine.SET,
     )
     db.add(b)
     db.commit()
+
+    # A master binder needs to know which printings each card exists in, and
+    # only TCGdex knows. Asked once per set, here, so the binder is right the
+    # first time it is opened rather than filling in later.
+    learned = None
+    if b.master and not engine.printings_known(db, b.set_code):
+        name = db.scalar(
+            select(CardAttrs.set_name).where(CardAttrs.set_code == b.set_code).limit(1)
+        )
+        try:
+            learned = engine.learn_printings(db, b.set_code, name)
+        except Exception as exc:
+            # The binder is made and usable — every card falls back to one
+            # slot until this succeeds. Losing the binder over a third party
+            # being slow would be the worse answer.
+            learned = {"matched": False, "error": str(exc)[:200]}
+
     return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code,
-            "image_url": b.image_url}
+            "image_url": b.image_url, "master": b.master, "printings": learned}
 
 
 @router.get("/{binder_id}")
@@ -330,6 +360,26 @@ def reorder(
     return render(db, b, user.id)
 
 
+@router.post("/{binder_id}/printings")
+def refresh_printings(
+    binder_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Ask TCGdex again which printings this set has.
+
+    For the set it could not match the first time, or one that has grown since
+    — a set gains secret rares after release more often than you would think.
+    """
+    b = _mine(db, binder_id, user)
+    if b.kind != engine.SET:
+        raise HTTPException(409, "only a set binder has printings to look up")
+    name = db.scalar(
+        select(CardAttrs.set_name).where(CardAttrs.set_code == b.set_code).limit(1)
+    )
+    return engine.learn_printings(db, b.set_code, name)
+
+
 @router.get("/sets/available")
 def sets_available(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """Sets you could make a binder of, newest first, with how many of each
@@ -344,13 +394,15 @@ def sets_available(db: Session = Depends(get_db), user: User = Depends(current_u
             .group_by(CardAttrs.set_code)
         ).all()
     )
-    taken = {
-        c for (c,) in db.execute(
-            select(Binder.set_code).where(
-                Binder.user_id == user.id, Binder.kind == engine.SET
-            )
-        ).all()
-    }
+    # one binder per set *per mode*, so the picker has to know which of the
+    # two you already have rather than just that you have one
+    taken, taken_master = set(), set()
+    for code, is_master in db.execute(
+        select(Binder.set_code, Binder.master).where(
+            Binder.user_id == user.id, Binder.kind == engine.SET
+        )
+    ).all():
+        (taken_master if is_master else taken).add(code)
     rows = db.execute(
         select(
             CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr,
@@ -368,7 +420,8 @@ def sets_available(db: Session = Depends(get_db), user: User = Depends(current_u
             {
                 "code": code, "name": name, "abbr": abbr, "year": year,
                 "cards": cards, "printed": printed,
-                "owned": have.get(code, 0), "has_binder": code in taken,
+                "owned": have.get(code, 0),
+                "has_binder": code in taken, "has_master": code in taken_master,
             }
             for code, name, abbr, year, cards, printed in rows
         ]

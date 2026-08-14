@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -27,5 +27,12 @@ class CardAttrs(Base):
     set_total: Mapped[int | None] = mapped_column()  # printed size: "91/108" -> 108
     set_year: Mapped[int | None] = mapped_column()  # set release year (from dump)
     set_abbr: Mapped[str | None] = mapped_column(String(10))  # printed code: MEW, JTG
+    # Which printings this card exists in — for master-set binders, where a
+    # card with a reverse holo gets a slot for each. Null means nobody has
+    # asked TCGdex about this set yet, which is not the same as "no reverse
+    # exists" and must not be read as it.
+    has_normal: Mapped[bool | None] = mapped_column(Boolean)
+    has_reverse: Mapped[bool | None] = mapped_column(Boolean)
+    has_holo: Mapped[bool | None] = mapped_column(Boolean)
 
     item = relationship("CollectionItem", back_populates="card_attrs")

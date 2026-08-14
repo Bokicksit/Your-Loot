@@ -477,3 +477,148 @@ def test_a_binder_can_carry_a_cover(owner):
         assert owner.patch(f"/api/binders/{binder}", json={"image_url": ""}).json()["image_url"] is None
     finally:
         owner.delete(f"/api/binders/{binder}")
+
+
+# --- master sets -----------------------------------------------------------
+#
+# These seed the printing flags directly rather than asking TCGdex. The
+# lookup is one function and a network call; what is worth protecting is what
+# the binder does with the answer, and a suite that goes over the internet to
+# find out fails on a train.
+
+
+@pytest.fixture
+def a_set_with_printings(owner, a_set):
+    """The nine-card set, told which printings each card exists in."""
+    from sqlalchemy import select, update
+
+    from app.db import SessionLocal
+    from app.models import CardAttrs
+
+    db = SessionLocal()
+    try:
+        rows = db.scalars(
+            select(CardAttrs).where(CardAttrs.set_code == a_set)
+        ).all()
+        # 1 and 2: plain + reverse. 9: holo only. 10: plain only.
+        # The rest are left unknown on purpose — that is the common case for
+        # any set nobody has looked up, and it must not invent printings.
+        plan = {
+            "1": (True, True, False),
+            "2": (True, True, False),
+            "9": (False, False, True),
+            "10": (True, False, False),
+        }
+        for a in rows:
+            got = plan.get(a.card_number)
+            if got:
+                a.has_normal, a.has_reverse, a.has_holo = got
+        db.commit()
+        yield a_set
+    finally:
+        db.close()
+
+
+def test_a_master_binder_gives_each_printing_its_own_slot(owner, a_set_with_printings):
+    code = a_set_with_printings
+    plain = owner.post(
+        "/api/binders", json={"name": f"P {code}", "kind": "set", "set_code": code}
+    ).json()["id"]
+    master = owner.post(
+        "/api/binders",
+        json={"name": f"M {code}", "kind": "set", "set_code": code, "master": True},
+    ).json()["id"]
+    try:
+        p = owner.get(f"/api/binders/{plain}").json()
+        m = owner.get(f"/api/binders/{master}").json()
+
+        assert p["binder"]["total"] == len(SET_NUMBERS)
+        # 1 and 2 gain a reverse; 9 and 10 keep one; the unlisted five are
+        # unknown and keep one each
+        assert m["binder"]["total"] == len(SET_NUMBERS) + 2
+
+        labels = [e["label"] for e in m["entries"]]
+        assert "1" in labels and "1 RH" in labels
+        # a card nobody looked up is one slot, not three
+        assert labels.count("5a") == 1
+    finally:
+        owner.delete(f"/api/binders/{plain}")
+        owner.delete(f"/api/binders/{master}")
+
+
+def test_a_master_binder_never_hides_a_card_you_own(owner, a_set_with_printings):
+    """The bug this rule exists for.
+
+    Most copies have no print style recorded — 823 of 943 on the install this
+    was written against — and a few record one the card was never printed in.
+    Matching strictly made those copies match no slot at all, so a master
+    binder reported 24 of a set its owner had 34 of. Every copy has to land
+    somewhere.
+    """
+    code = a_set_with_printings
+    cards = owner.get(
+        "/api/cards", params={"set_code": code, "collection": False, "limit": 50}
+    ).json()["items"]
+    # card 9 exists only as a holo; own it with nothing recorded, which is
+    # what almost every copy looks like
+    nine = next(c for c in cards if (c["attrs"]["card_number"] or "") == "9")
+    owner.post(f"/api/items/{nine['id']}/owned", json={"condition": "NM"}).raise_for_status()
+    # and card 1, recorded as a printing it does not have
+    one = next(c for c in cards if (c["attrs"]["card_number"] or "") == "1")
+    owner.post(
+        f"/api/items/{one['id']}/owned", json={"condition": "NM", "variant": "Holo"}
+    ).raise_for_status()
+
+    master = owner.post(
+        "/api/binders",
+        json={"name": f"M2 {code}", "kind": "set", "set_code": code, "master": True},
+    ).json()["id"]
+    try:
+        m = owner.get(f"/api/binders/{master}").json()
+        filled = [e for e in m["entries"] if e["card"]]
+        assert len(filled) == 2, "a card you own is showing as a gap"
+        # and no copy is shown in two places at once
+        ids = [e["card"]["owned_id"] for e in filled]
+        assert len(set(ids)) == len(ids)
+    finally:
+        owner.delete(f"/api/binders/{master}")
+
+
+def test_plain_and_master_are_different_binders(owner, a_set):
+    """Both are allowed for one set — they answer different questions — but
+    not two of the same."""
+    a = owner.post(
+        "/api/binders", json={"name": "one", "kind": "set", "set_code": a_set}
+    )
+    b = owner.post(
+        "/api/binders",
+        json={"name": "two", "kind": "set", "set_code": a_set, "master": True},
+    )
+    assert a.status_code == 201 and b.status_code == 201
+    try:
+        again = owner.post(
+            "/api/binders",
+            json={"name": "three", "kind": "set", "set_code": a_set, "master": True},
+        )
+        assert again.status_code == 409
+    finally:
+        owner.delete(f"/api/binders/{a.json()['id']}")
+        owner.delete(f"/api/binders/{b.json()['id']}")
+
+
+def test_the_shelf_and_the_binder_agree(owner, a_set_with_printings):
+    """A shelf saying 0 of 25 beside a binder showing 42 slots is the kind of
+    disagreement nobody can explain later."""
+    code = a_set_with_printings
+    master = owner.post(
+        "/api/binders",
+        json={"name": f"M3 {code}", "kind": "set", "set_code": code, "master": True},
+    ).json()["id"]
+    try:
+        shelf = next(
+            b for b in owner.get("/api/binders").json()["binders"] if b["id"] == master
+        )
+        page = owner.get(f"/api/binders/{master}").json()["binder"]
+        assert (shelf["total"], shelf["filled"]) == (page["total"], page["filled"])
+    finally:
+        owner.delete(f"/api/binders/{master}")
