@@ -14,10 +14,14 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 MODULES = [
     "cards", "games", "hardware", "movies", "books", "records", "lego", "comics",
 ]
-# Things that can be drawn as tiles. The wanted list is a view, not a
-# collection — it can't be turned on or off — but it has the same two layouts,
-# so it belongs in this list and nowhere else.
-VIEWS = MODULES + ["wanted"]
+# Things that can be drawn as tiles. The wanted list and a binder are views
+# rather than collections — neither can be turned on or off — but both have
+# the same two layouts, so they belong in this list and nowhere else.
+#
+# An entry may be negated: "!binder" means "this one is a list". That is only
+# needed for the views which default to tiles, where the name being absent
+# already means "never chosen" and cannot also mean "turned off".
+VIEWS = MODULES + ["wanted", "binder"]
 # stored as comma-separated strings in the key/value settings table
 DEFAULTS = {
     "owner_name": None,          # None = never set, drives first-run onboarding
@@ -96,7 +100,7 @@ def _current(db: Session, user_id: int) -> SettingsOut:
         enabled_modules=enabled or MODULES,
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
-        tile_modules=[m for m in _csv(raw["tile_modules"]) if m in VIEWS],
+        tile_modules=[m for m in _csv(raw["tile_modules"]) if m.lstrip("!") in VIEWS],
         list_prefs=_prefs(raw["list_prefs"]),
         show_binder_in_collection=str(raw["show_binder_in_collection"]).lower() == "true",
         default_region=raw["default_region"] or "NTSC-U",
@@ -125,7 +129,7 @@ def update_settings(
             value = json.dumps(value, separators=(",", ":"))
         elif isinstance(value, list):
             allowed = VIEWS if key == "tile_modules" else MODULES
-            value = ",".join(v for v in value if v in allowed)
+            value = ",".join(v for v in value if v.lstrip("!") in allowed)
         elif isinstance(value, bool):
             value = "true" if value else "false"
         elif value is not None:

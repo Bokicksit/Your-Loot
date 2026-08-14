@@ -4,19 +4,37 @@ import { useSettings, useListPref } from "../settings.jsx";
 
 /** Modules that render as tiles. Cards started that way and everything else
  *  started as rows, so that's the default — a toggle nobody touches leaves the
- *  app exactly as it was. */
+ *  app exactly as it was.
+ *
+ *  A binder is on that list because it has never been anything but a grid:
+ *  giving it a toggle should offer a list, not quietly switch it to one. */
+const TILES_BY_DEFAULT = new Set(["cards", "binder"]);
+
+/** A module that defaults to tiles needs its *off* state written down.
+ *
+ *  The list only ever recorded which modules are tiled, so "not in the list"
+ *  meant both "never chosen" and "turned off" — fine while cards was the only
+ *  default, because cards was always written in. Adding the binder broke it:
+ *  every existing install has a list that predates the binder, so it read as
+ *  "turned off" and the binder would have silently become a list the first
+ *  time somebody loaded it.
+ *
+ *  So switching one of these off stores `!binder`. Old lists are untouched
+ *  and still mean what they meant.
+ */
+const off = (module) => `!${module}`;
+
 export function useTileView(module) {
   const { settings, save } = useSettings();
   // settings is null until the first load resolves; assume the default rather
   // than flashing the wrong layout and reflowing once it arrives
-  const list = settings?.tile_modules ?? (module === "cards" ? [module] : []);
-  const tiles = list.includes(module);
-  const setTiles = (on) =>
-    save({
-      tile_modules: on
-        ? [...new Set([...list, module])]
-        : list.filter((m) => m !== module),
-    });
+  const list = settings?.tile_modules ?? [];
+  const tiles = list.includes(module)
+    || (TILES_BY_DEFAULT.has(module) && !list.includes(off(module)));
+  const setTiles = (on) => {
+    const without = list.filter((m) => m !== module && m !== off(module));
+    save({ tile_modules: on ? [...without, module] : [...without, off(module)] });
+  };
   return [tiles, setTiles];
 }
 

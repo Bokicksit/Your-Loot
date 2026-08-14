@@ -3030,6 +3030,46 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .binder-actions { margin-left: auto; }
 }
 
+/* ---- the binder as a list ---------------------------------------------
+ *
+ * Same slots, same buttons, same handlers — laid on their side. A grid of
+ * card art answers "what does my binder look like"; a list answers "what am
+ * I missing", because names in a column can be read down at a glance where a
+ * wall of thumbnails cannot.
+ *
+ * The detail panel keeps its full width in both, so opening a slot works the
+ * same either way.
+ */
+.dex-grid.as-list { grid-template-columns: 1fr; gap: var(--s-1); }
+.dex-grid.as-list .dex-slot {
+  grid-template-columns: 34px 44px 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+}
+.dex-grid.as-list .dex-slot img,
+.dex-grid.as-list .dex-slot .placeholder {
+  width: 44px;
+  grid-column: 2;
+  grid-row: 1;
+}
+.dex-grid.as-list .dex-no {
+  grid-column: 1; grid-row: 1;
+  font-size: var(--f-2);
+  text-align: right;
+}
+.dex-grid.as-list .name {
+  grid-column: 3; grid-row: 1;
+  font-size: var(--f-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dex-grid.as-list .layer-pips {
+  grid-column: 4; grid-row: 1;
+  justify-content: flex-end;
+}
+/* the detail panel is a row of its own, full width, in both layouts */
+.dex-grid.as-list .dex-detail { grid-column: 1 / -1; }
+
 /* arranging: the grid becomes a surface you move cards around on, so every
    slot has to look like a target and the one in your hand has to look like it
    left the page */

@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
-import { TileDensity, useTileCols } from "../components/ViewToggle.jsx";
+import ViewToggle, {
+  TileDensity,
+  useTileCols,
+  useTileView,
+} from "../components/ViewToggle.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -27,6 +31,8 @@ export default function BinderPage() {
   const [arranging, setArranging] = useState(false);
   const [lifted, setLifted] = useState(null); // the card in your hand
   const [cols] = useTileCols("binder", 3, 6);
+  const [tiles] = useTileView("binder");
+  const [sort, setSort] = useState("order");
 
   useDismiss(
     open !== null,
@@ -58,6 +64,20 @@ export default function BinderPage() {
   const { binder, entries } = data;
   const isCustom = binder.kind === "custom";
 
+  // Sorting looks at the binder differently; it does not rearrange it. That
+  // distinction matters most on a custom binder, where the order *is* the
+  // binder — so Arrange is only offered while you are looking at it in its
+  // own order, rather than letting you drag a card into a position that the
+  // sort would immediately move it out of.
+  const byName = (a, b) => (a.name || "").localeCompare(b.name || "");
+  const sorters = {
+    order: null,
+    name: byName,
+    set: (a, b) =>
+      (a.card?.set_name || "￿").localeCompare(b.card?.set_name || "￿") ||
+      byName(a, b),
+  };
+
   const shown = entries.filter((e) => {
     if (filter === "missing" && e.card) return false;
     if (filter === "have" && !e.card) return false;
@@ -69,6 +89,8 @@ export default function BinderPage() {
       (e.key || "").toLowerCase().includes(q)
     );
   });
+
+  const ordered = sorters[sort] ? [...shown].sort(sorters[sort]) : shown;
 
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
@@ -153,7 +175,7 @@ export default function BinderPage() {
             Add cards
           </button>
         )}
-        {isCustom && entries.length > 1 && (
+        {isCustom && entries.length > 1 && sort === "order" && (
           <button
             className={`ghost ${arranging ? "on" : ""}`}
             onClick={() => {
@@ -214,8 +236,19 @@ export default function BinderPage() {
           pushed it 49px off the right edge of a phone — the "3 up" label was
           not on screen at all and the slider had to be scrolled to. */}
       <div className="chip-row">
+        <select
+          className="chip-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          title="How to lay the binder out — this does not change its order"
+        >
+          <option value="order">{isCustom ? "Binder order" : "Card number"}</option>
+          <option value="name">A–Z</option>
+          {isCustom && <option value="set">By set</option>}
+        </select>
         <span className="rail-spacer" />
-        <TileDensity module="binder" min={3} max={6} />
+        <ViewToggle module="binder" />
+        {tiles && <TileDensity module="binder" min={3} max={6} />}
       </div>
 
       {isCustom && picking && (
@@ -243,10 +276,10 @@ export default function BinderPage() {
       )}
 
       <div
-        className={`dex-grid cols-${cols} ${arranging ? "arranging" : ""}`}
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        className={`dex-grid ${tiles ? `cols-${cols}` : "as-list"} ${arranging ? "arranging" : ""}`}
+        style={tiles ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}
       >
-        {shown.map((e) => (
+        {ordered.map((e) => (
           <Fragment key={e.key}>
             <BinderSlotTile
               entry={e}
