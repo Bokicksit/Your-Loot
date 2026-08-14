@@ -1,7 +1,7 @@
 from app.models.base import Base
 from app.models.books import BookAttrs
 from app.models.binders import Binder, BinderSlot
-from app.models.cards import CardAttrs
+from app.models.cards import CardAttrs, CardPrinting
 from app.models.collection import Owned, Wanted
 from app.models.comics import ComicAttrs
 from app.models.lego import LegoAttrs
@@ -21,6 +21,7 @@ __all__ = [
     "BinderSlot",
     "BookAttrs",
     "CardAttrs",
+    "CardPrinting",
     "CollectionItem",
     "ComicAttrs",
     "GameAttrs",

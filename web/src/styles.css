@@ -3186,6 +3186,20 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   background: var(--gold);
 }
 
+/* The rarity symbol as the card prints it. Tones rather than one colour,
+   because a double rare and an ultra rare are both two stars and the colour
+   is the only thing that separates them — on the card as much as here. */
+.rarity-mark {
+  flex: none;
+  letter-spacing: -0.08em;   /* two stars should read as a pair, not a queue */
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-dim);
+}
+.rarity-mark.silver { color: #cfd3dc; }
+.rarity-mark.gold   { color: var(--gold); }
+.rarity-mark.pink   { color: #f2679e; }
+
 /* ---- the shelf as tiles ------------------------------------------------
  *
  * The rows answer "how far through each one am I" — the covers are small and

@@ -129,7 +129,7 @@ class TCGdexClient:
                 return s["id"]
         return None
 
-    def printings_in_set(self, set_id: str, workers: int = 8) -> dict[str, dict]:
+    def printings_in_set(self, set_id: str, workers: int = 8) -> dict[str, list]:
         """Every card's printings, keyed by its printed number.
 
         One request per card — the set listing carries only id, name, number
@@ -150,7 +150,10 @@ class TCGdexClient:
                 try:
                     r = client.get(f"{API_URL}/cards/{card['id']}")
                     r.raise_for_status()
-                    return card.get("localId"), r.json().get("variants") or {}
+                    # variants_detailed, not variants: the flags collapse the
+                    # three parallels into one "reverse", and telling a Poké
+                    # Ball parallel from a Master Ball one is the whole point
+                    return card.get("localId"), r.json().get("variants_detailed") or []
                 except Exception:
                     # one card the API stumbles on must not cost the whole set
                     return card.get("localId"), None

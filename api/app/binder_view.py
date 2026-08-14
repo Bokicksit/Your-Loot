@@ -24,7 +24,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.binders import CUSTOM, DEX, SET
-from app.models import BinderSlot, CardAttrs, CollectionItem, Module, Owned
+from app.models import BinderSlot, CardAttrs, CardPrinting, CollectionItem, Module, Owned
+from app.printings import label as printing_label, rarity_mark, short as printing_short
 
 MAX_DEX = 1025
 
@@ -43,32 +44,25 @@ def natural_key(number: str | None):
     return tuple((0, int(p)) if p.isdigit() else (1, p.lower()) for p in parts)
 
 
-# TCGdex names the printings normal/reverse/holo; this app has always called
-# them Non-Holo, Reverse Holo and Holo on the copy itself. One vocabulary has
-# to give, and it is not the one already written on people's records.
-VARIANT_LABEL = {"normal": "", "reverse": "RH", "holo": "Holo"}
-VARIANT_COPY = {"normal": "Non-Holo", "reverse": "Reverse Holo", "holo": "Holo"}
-
-
-def _printings(attrs, master: bool) -> list[str]:
+def _printings(rows, master: bool) -> list[str]:
     """The slots one card earns.
 
     A plain set binder gives every card one, whatever it was printed as. A
-    master binder gives it one per printing — but only where we know the
-    printings. Where nobody has asked TCGdex, or TCGdex does not carry the
-    card, the flags are null and it falls back to a single slot: not knowing
-    of a reverse holo is not the same as knowing there is one.
+    master binder gives it one per printing — but only where we know them.
+    Where nobody has asked TCGdex, or TCGdex does not carry the card, there
+    are no rows and it falls back to a single slot: not knowing of a Poké Ball
+    parallel is not the same as knowing there is not one.
     """
-    if not master or attrs is None or attrs.has_normal is None:
+    if not master or not rows:
         return [""]
-    kinds = [
-        k for k, on in (
-            ("normal", attrs.has_normal),
-            ("reverse", attrs.has_reverse),
-            ("holo", attrs.has_holo),
-        ) if on
-    ]
-    return kinds or [""]
+    return [r.code for r in rows]
+
+
+# What a copy's own `variant` field can say, mapped onto printing codes. It
+# has only ever offered three answers, so it can name a plain print, a
+# parallel or a holo and nothing finer — a Poké Ball parallel is not something
+# a copy can currently claim to be, which is why the fallback below matters.
+COPY_VARIANT_CODE = {"non-holo": "n", "reverse holo": "r", "holo": "h"}
 
 
 def _place_copies(mine, printings, slots, num) -> dict:
@@ -81,10 +75,10 @@ def _place_copies(mine, printings, slots, num) -> dict:
     master binder told its owner he had 24 of a set he had 34 of: every
     unrecorded copy fell through, and a card you own showed as a gap.
 
-    A binder must never do that. So: copies that name their printing take that
-    slot, anything pinned to a slot by hand takes precedence over both, and
-    whatever is left fills the remaining slots in order. Every copy you own
-    lands somewhere, and the count matches what is in your hands.
+    A binder must never do that. So: anything pinned to a slot by hand wins,
+    then copies that name their printing take it, then whatever is left fills
+    the remaining slots in order. Every copy you own lands somewhere, and the
+    count matches what is in your hands.
     """
     placed: dict[str, Owned] = {}
     left = list(mine)
@@ -103,8 +97,11 @@ def _place_copies(mine, printings, slots, num) -> dict:
     for v in printings:
         if v in placed or not v:
             continue
-        want = VARIANT_COPY[v].casefold()
-        hit = next((o for o in left if (o.variant or "").strip().casefold() == want), None)
+        hit = next(
+            (o for o in left
+             if COPY_VARIANT_CODE.get((o.variant or "").strip().casefold()) == v),
+            None,
+        )
         if hit:
             placed[v] = hit
             left.remove(hit)
@@ -214,6 +211,15 @@ def _set_entries(db: Session, binder, user_id: int):
         )
         .options(joinedload(CollectionItem.card_attrs), selectinload(CollectionItem.owned))
     ).unique().all()
+
+    printings_by_item: dict[int, list] = {}
+    if binder.master and cards:
+        for row in db.scalars(
+            select(CardPrinting)
+            .where(CardPrinting.item_id.in_([c.id for c in cards]))
+            .order_by(CardPrinting.item_id, CardPrinting.position)
+        ).all():
+            printings_by_item.setdefault(row.item_id, []).append(row)
     cards.sort(key=lambda i: natural_key(i.card_attrs.card_number if i.card_attrs else None))
 
     slots = _slots_of(db, binder.id)
@@ -222,7 +228,7 @@ def _set_entries(db: Session, binder, user_id: int):
         num = (a.card_number if a else None) or ""
         mine = [o for o in item.owned if o.user_id == user_id]
 
-        printings = _printings(a, binder.master)
+        printings = _printings(printings_by_item.get(item.id), binder.master)
         placed = _place_copies(mine, printings, slots, num)
 
         for variant in printings:
@@ -231,10 +237,12 @@ def _set_entries(db: Session, binder, user_id: int):
             card = _card_out(item, copy) if copy else None
             yield {
                 "key": num,
-                # the plain printing has no suffix, so it must not pick up the
+                # the standard print has no suffix, so it must not pick up the
                 # space that would have separated one
-                "label": " ".join(x for x in (num, VARIANT_LABEL.get(variant, "")) if x),
+                "label": " ".join(x for x in (num, printing_short(variant)) if x),
                 "variant": variant,
+                "printing": printing_label(variant) if variant else None,
+                "rarity_mark": rarity_mark(a.rarity if a else None),
                 "name": item.title,
                 # the art shows whether or not you own it — a set binder is a
                 # list of what exists, and the gap should look like the card

@@ -489,30 +489,41 @@ def test_a_binder_can_carry_a_cover(owner):
 
 @pytest.fixture
 def a_set_with_printings(owner, a_set):
-    """The nine-card set, told which printings each card exists in."""
-    from sqlalchemy import select, update
+    """The nine-card set, told how each of its cards was printed.
+
+    The booklet's vocabulary: a standard print, a parallel, and the two
+    premium parallels. Card 1 gets all four, which is what a common in
+    Prismatic Evolutions gets; 9 is holo only, like an ACE SPEC; and the rest
+    are left unknown on purpose, because that is the common case for any set
+    nobody has looked up and it must not invent printings.
+    """
+    from sqlalchemy import select
 
     from app.db import SessionLocal
-    from app.models import CardAttrs
+    from app.models import CardAttrs, CardPrinting, CollectionItem
 
+    plan = {
+        "1": [("normal", None), ("reverse", None),
+              ("reverse", "pokeball"), ("reverse", "masterball")],
+        "2": [("normal", None), ("reverse", None)],
+        "9": [("holo", None)],
+        "10": [("normal", None)],
+    }
     db = SessionLocal()
     try:
-        rows = db.scalars(
-            select(CardAttrs).where(CardAttrs.set_code == a_set)
+        rows = db.execute(
+            select(CollectionItem.id, CardAttrs.card_number)
+            .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+            .where(CardAttrs.set_code == a_set)
         ).all()
-        # 1 and 2: plain + reverse. 9: holo only. 10: plain only.
-        # The rest are left unknown on purpose — that is the common case for
-        # any set nobody has looked up, and it must not invent printings.
-        plan = {
-            "1": (True, True, False),
-            "2": (True, True, False),
-            "9": (False, False, True),
-            "10": (True, False, False),
-        }
-        for a in rows:
-            got = plan.get(a.card_number)
-            if got:
-                a.has_normal, a.has_reverse, a.has_holo = got
+        from app.printings import code_for
+
+        for item_id, number in rows:
+            for n, (kind, foil) in enumerate(plan.get(number, [])):
+                db.add(CardPrinting(
+                    item_id=item_id, code=code_for(kind, foil, None, None),
+                    kind=kind, foil=foil, position=n,
+                ))
         db.commit()
         yield a_set
     finally:
@@ -533,14 +544,20 @@ def test_a_master_binder_gives_each_printing_its_own_slot(owner, a_set_with_prin
         m = owner.get(f"/api/binders/{master}").json()
 
         assert p["binder"]["total"] == len(SET_NUMBERS)
-        # 1 and 2 gain a reverse; 9 and 10 keep one; the unlisted five are
-        # unknown and keep one each
-        assert m["binder"]["total"] == len(SET_NUMBERS) + 2
+        # card 1 has four printings and card 2 has two, so those two cards
+        # bring four extra slots between them; 9 and 10 have one each and the
+        # five nobody looked up keep one each
+        assert m["binder"]["total"] == len(SET_NUMBERS) + 4
 
         labels = [e["label"] for e in m["entries"]]
-        assert "1" in labels and "1 RH" in labels
-        # a card nobody looked up is one slot, not three
+        assert "1" in labels, "the standard print should carry no suffix"
+        assert "1 PAR" in labels
+        assert "1 P.BALL" in labels and "1 M.BALL" in labels
+        # a card nobody looked up is one slot, not four
         assert labels.count("5a") == 1
+        # and the long name is there for the detail panel
+        pokeball = next(e for e in m["entries"] if e["label"] == "1 P.BALL")
+        assert pokeball["printing"] == "Premium parallel — Poké Ball"
     finally:
         owner.delete(f"/api/binders/{plain}")
         owner.delete(f"/api/binders/{master}")
@@ -560,7 +577,7 @@ def test_a_master_binder_never_hides_a_card_you_own(owner, a_set_with_printings)
         "/api/cards", params={"set_code": code, "collection": False, "limit": 50}
     ).json()["items"]
     # card 9 exists only as a holo; own it with nothing recorded, which is
-    # what almost every copy looks like
+    # what almost every copy looks like (823 of 943 on the real install)
     nine = next(c for c in cards if (c["attrs"]["card_number"] or "") == "9")
     owner.post(f"/api/items/{nine['id']}/owned", json={"condition": "NM"}).raise_for_status()
     # and card 1, recorded as a printing it does not have

@@ -70,10 +70,23 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
             {entry.card.set_abbr}
           </span>
         )}
-        {entry.card?.rarity && (
-          <span className="rarity-tag" title={entry.card.rarity}>
-            {abbrevRarity(entry.card.rarity)}
+        {/* The symbol the card actually prints — a circle, a diamond, one or
+            more stars — rather than initials nobody says out loud. The tone
+            carries the rest: two black stars is a double rare, two silver an
+            ultra rare, and that is exactly how the card tells them apart. */}
+        {entry.rarity_mark ? (
+          <span
+            className={`rarity-mark ${entry.rarity_mark.tone}`}
+            title={entry.rarity_mark.name}
+          >
+            {entry.rarity_mark.glyph}
           </span>
+        ) : (
+          entry.card?.rarity && (
+            <span className="rarity-tag" title={entry.card.rarity}>
+              {abbrevRarity(entry.card.rarity)}
+            </span>
+          )
         )}
         {entry.final && entry.card && (
           <span className="pip-happy" title="The one">

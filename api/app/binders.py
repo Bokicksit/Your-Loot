@@ -133,48 +133,69 @@ def clear_binder(db: Session, binder_id: int) -> None:
 
 def printings_known(db: Session, set_code: str) -> bool:
     """Has anybody asked TCGdex about this set yet?"""
-    from app.models import CardAttrs
+    from app.models import CardAttrs, CardPrinting, CollectionItem
 
-    unknown = db.scalar(
-        select(func.count()).select_from(CardAttrs).where(
-            CardAttrs.set_code == set_code, CardAttrs.has_normal.is_(None)
+    without = db.scalar(
+        select(func.count()).select_from(CollectionItem)
+        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+        .where(
+            CardAttrs.set_code == set_code,
+            ~select(CardPrinting.id)
+            .where(CardPrinting.item_id == CollectionItem.id).exists(),
         )
     )
-    return not unknown
+    return not without
 
 
 def learn_printings(db: Session, set_code: str, set_name: str | None) -> dict:
-    """Fetch and keep which printings each card in a set exists in.
+    """Fetch and keep every way each card in a set was printed.
 
     Once per set, the first time somebody makes a master binder of it. A card
-    TCGdex does not carry — the dump has sets and promos it does not — keeps
-    its nulls and gets one slot, which is the honest fallback: we do not know
-    of another printing, so we do not invent one.
+    TCGdex does not carry keeps no rows and gets a single unnamed slot, which
+    is the honest fallback: we do not know of another printing, so we do not
+    invent one.
     """
     from app.integrations.tcgdex import tcgdex_client
-    from app.models import CardAttrs
+    from app.models import CardAttrs, CardPrinting, CollectionItem
+    from app.printings import code_for
 
     tcg_id = tcgdex_client.set_id_for(set_name or "", set_code)
     if not tcg_id:
-        return {"matched": False, "set": set_code, "learned": 0, "unmatched": 0}
+        return {"matched": False, "set": set_code, "learned": 0, "printings": 0}
 
     found = tcgdex_client.printings_in_set(tcg_id)
-    # their numbers are zero-padded ("001"), the dump's are not ("1")
     by_number = {k.lstrip("0") or k: v for k, v in found.items()}
 
-    rows = db.scalars(select(CardAttrs).where(CardAttrs.set_code == set_code)).all()
-    learned = 0
-    for a in rows:
-        key = (a.card_number or "").lstrip("0") or (a.card_number or "")
-        v = by_number.get(key) or by_number.get(a.card_number or "")
-        if v is None:
+    rows = db.execute(
+        select(CollectionItem.id, CardAttrs.card_number)
+        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+        .where(CardAttrs.set_code == set_code)
+    ).all()
+
+    learned = written = 0
+    for item_id, number in rows:
+        key = (number or "").lstrip("0") or (number or "")
+        variants = by_number.get(key) or by_number.get(number or "")
+        if not variants:
             continue
-        a.has_normal = bool(v.get("normal"))
-        a.has_reverse = bool(v.get("reverse"))
-        a.has_holo = bool(v.get("holo"))
+        db.execute(delete(CardPrinting).where(CardPrinting.item_id == item_id))
+        seen = set()
+        for n, v in enumerate(variants):
+            code = code_for(v.get("type"), v.get("foil"), v.get("stamp"), v.get("size"))
+            # the same combination twice on one card is a duplicate, not a
+            # second box on the checklist
+            if code in seen:
+                continue
+            seen.add(code)
+            db.add(CardPrinting(
+                item_id=item_id, code=code, kind=(v.get("type") or "holo"),
+                foil=v.get("foil"), stamp=",".join(v.get("stamp") or []) or None,
+                position=n,
+            ))
+            written += 1
         learned += 1
     db.commit()
     return {
         "matched": True, "set": set_code, "tcgdex_id": tcg_id,
-        "learned": learned, "unmatched": len(rows) - learned,
+        "learned": learned, "unmatched": len(rows) - learned, "printings": written,
     }
