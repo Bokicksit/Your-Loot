@@ -15,7 +15,7 @@ jobs:
       contents: write # create the Release
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # --generate-notes needs the history to diff against
 
@@ -50,6 +50,18 @@ jobs:
           start. **Take a backup from the Settings page first** — downgrading
           across a schema change is not supported.
           EOF
+          # Making the release by hand in the web UI publishes the tag, which
+          # runs this — so by the time it gets here the release it means to
+          # create already exists and `gh release create` exits 1. That is a
+          # red cross against a job that did nothing wrong, and a workflow
+          # that cries wolf is one nobody reads.
+          #
+          # So if it is already there, leave it alone: somebody wrote those
+          # notes on purpose and they beat anything generated here.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "$GITHUB_REF_NAME was released by hand — leaving it as it is."
+            exit 0
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
             --notes-file notes.md \

@@ -19,7 +19,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Migrations, backups and tenancy
         run: docker compose -f compose.test.yaml run --rm tests
@@ -48,7 +48,7 @@ jobs:
             context: ./web
             dockerfile: web/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # arm64 as well as amd64: a large share of self-hosters are on a Pi, an
       # ARM NAS or Apple Silicon, and an amd64-only image simply won't start
