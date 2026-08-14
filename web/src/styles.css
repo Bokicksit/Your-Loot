@@ -2966,12 +2966,20 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .binder-card:hover { border-color: var(--gold-line); background: var(--bg-3); }
 .binder-card > :not(.binder-cover) { grid-column: 2; }
+/* Same treatment as a game's box art, and for the same reason: a binder cover
+   is whatever you photographed. A shot of the real binder is landscape, a
+   card's art is portrait, a logo is square — one fixed frame cropped most of
+   them, and cropping a picture somebody chose is the one thing it must not
+   do. Height is fixed so the shelf rows still line up, width follows the
+   image, and the clamp stops a panorama dragging the card about. */
 .binder-cover {
   grid-column: 1;
   grid-row: 1 / -1;
-  width: 46px;
   height: 64px;
-  object-fit: cover;
+  width: auto;
+  min-width: 40px;
+  max-width: 104px;
+  object-fit: contain;
   border-radius: var(--r-1);
   background: var(--bg-3);
 }

@@ -68,7 +68,11 @@ export default function BindersPage() {
         {(shelf || []).map((b) => (
           <Link key={b.id} to={`/binders/${b.id}`} className="binder-card">
             {b.image_url && (
-              <img className="binder-cover" src={b.image_url} alt="" loading="lazy" />
+              // Not lazy. A shelf holds a handful of covers and they are all
+              // near the top, so deferring them saves nothing — and the width
+              // is computed from the image's own proportions, which the
+              // browser cannot know until it has actually loaded one.
+              <img className="binder-cover" src={b.image_url} alt="" />
             )}
             <span className="binder-kind">
               <Icon id={b.kind === "dex" ? "ball" : b.kind === "set" ? "card" : "star"} />
