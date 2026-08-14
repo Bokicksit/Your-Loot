@@ -3,11 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
-import ViewToggle, {
-  TileDensity,
-  useTileCols,
-  useTileView,
-} from "../components/ViewToggle.jsx";
+import { TileDensity, useTileCols } from "../components/ViewToggle.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -31,7 +27,6 @@ export default function BinderPage() {
   const [arranging, setArranging] = useState(false);
   const [lifted, setLifted] = useState(null); // the card in your hand
   const [cols] = useTileCols("binder", 3, 6);
-  const [tiles] = useTileView("binder");
   const [sort, setSort] = useState("order");
 
   useDismiss(
@@ -247,8 +242,7 @@ export default function BinderPage() {
           {isCustom && <option value="set">By set</option>}
         </select>
         <span className="rail-spacer" />
-        <ViewToggle module="binder" />
-        {tiles && <TileDensity module="binder" min={3} max={6} />}
+        <TileDensity module="binder" min={3} max={6} />
       </div>
 
       {isCustom && picking && (
@@ -276,8 +270,8 @@ export default function BinderPage() {
       )}
 
       <div
-        className={`dex-grid ${tiles ? `cols-${cols}` : "as-list"} ${arranging ? "arranging" : ""}`}
-        style={tiles ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}
+        className={`dex-grid cols-${cols} ${arranging ? "arranging" : ""}`}
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {ordered.map((e) => (
           <Fragment key={e.key}>

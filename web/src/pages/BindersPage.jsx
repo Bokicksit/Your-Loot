@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
+import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 /** A binder with no cover still needs a front.
  *
@@ -39,6 +40,7 @@ export default function BindersPage() {
   const [error, setError] = useState(null);
   const [arranging, setArranging] = useState(false);
   const [lifted, setLifted] = useState(null); // the binder in your hand
+  const [tiles] = useTileView("binders");
 
   const load = () => api.binders().then((d) => setShelf(d.binders)).catch((e) => setError(e.message));
   useEffect(() => {
@@ -90,9 +92,10 @@ export default function BindersPage() {
           <Icon id="plus" />
           Binder of your own
         </button>
+        <span className="rail-spacer" />
+        <ViewToggle module="binders" />
         {shelf?.length > 1 && (
           <>
-            <span className="rail-spacer" />
             <button
               className={`chip ${arranging ? "active" : ""}`}
               onClick={() => {
@@ -134,7 +137,7 @@ export default function BindersPage() {
         </p>
       )}
 
-      <div className="binder-shelf">
+      <div className={`binder-shelf ${tiles ? "as-tiles" : ""}`}>
         {(shelf || []).map((b) => (
           <Link
             key={b.id}

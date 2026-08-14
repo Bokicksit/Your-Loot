@@ -3030,46 +3030,6 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .binder-actions { margin-left: auto; }
 }
 
-/* ---- the binder as a list ---------------------------------------------
- *
- * Same slots, same buttons, same handlers — laid on their side. A grid of
- * card art answers "what does my binder look like"; a list answers "what am
- * I missing", because names in a column can be read down at a glance where a
- * wall of thumbnails cannot.
- *
- * The detail panel keeps its full width in both, so opening a slot works the
- * same either way.
- */
-.dex-grid.as-list { grid-template-columns: 1fr; gap: var(--s-1); }
-.dex-grid.as-list .dex-slot {
-  grid-template-columns: 34px 44px 1fr auto;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-2) var(--s-3);
-}
-.dex-grid.as-list .dex-slot img,
-.dex-grid.as-list .dex-slot .placeholder {
-  width: 44px;
-  grid-column: 2;
-  grid-row: 1;
-}
-.dex-grid.as-list .dex-no {
-  grid-column: 1; grid-row: 1;
-  font-size: var(--f-2);
-  text-align: right;
-}
-.dex-grid.as-list .name {
-  grid-column: 3; grid-row: 1;
-  font-size: var(--f-3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.dex-grid.as-list .layer-pips {
-  grid-column: 4; grid-row: 1;
-  justify-content: flex-end;
-}
-/* the detail panel is a row of its own, full width, in both layouts */
-.dex-grid.as-list .dex-detail { grid-column: 1 / -1; }
-
 /* arranging: the grid becomes a surface you move cards around on, so every
    slot has to look like a target and the one in your hand has to look like it
    left the page */
@@ -3165,9 +3125,11 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* A binder with no cover still needs a front. The hue is set on the element
    from the binder's kind, so the colour repeats what the label says — and the
    tile is the same height as a real cover, so a shelf of mixed ones still
-   lines up. */
+   lines up.
+   Its width belongs to the row layout, so it is stated there rather than here
+   and overridden for tiles. Declaring a size and then countermanding it is how
+   this ended up rendering a 56px filler beside a 143px photo. */
 .binder-cover.filler {
-  width: 56px;
   border: 1px solid var(--line);
   background:
     linear-gradient(152deg,
@@ -3223,6 +3185,35 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   border-radius: 999px;
   background: var(--gold);
 }
+
+/* ---- the shelf as tiles ------------------------------------------------
+ *
+ * The rows answer "how far through each one am I" — the covers are small and
+ * the numbers do the work. Tiles answer "which binder is that" — the cover
+ * leads, big enough to recognise across a room, with the name and the count
+ * beneath it. Same cards, same links, stacked instead of laid out sideways.
+ */
+.binder-shelf.as-tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.binder-shelf.as-tiles .binder-card {
+  grid-template-columns: 1fr;
+  align-items: start;
+  text-align: left;
+}
+.binder-shelf.as-tiles .binder-card > :not(.binder-cover) { grid-column: 1; }
+.binder-shelf.as-tiles .binder-cover {
+  grid-column: 1;
+  grid-row: auto;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  margin-bottom: var(--s-1);
+}
+
+/* only the rows give the filler a width of its own; in tiles it takes the
+   full width from the rule above, like every other cover */
+.binder-shelf:not(.as-tiles) .binder-cover.filler { width: 56px; }
 
 /* the set picker: a long list, so each row has to be readable at a glance */
 .set-picker {
