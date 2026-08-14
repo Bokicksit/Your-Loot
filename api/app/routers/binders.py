@@ -29,6 +29,8 @@ class BinderEdit(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=60)
     image_url: str | None = Field(default=None, max_length=500)
+    # set binders only: switch between a slot per card and a slot per printing
+    master: bool | None = None
 
 
 class SlotFill(BaseModel):
@@ -74,7 +76,11 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
     of those for a number on a card.
     """
     rows = db.scalars(
-        select(Binder).where(Binder.user_id == user.id).order_by(Binder.kind, Binder.name)
+        select(Binder).where(Binder.user_id == user.id).order_by(
+            # placed binders first, in the order they were placed; the rest
+            # fall in behind by kind and name, which is where a new one lands
+            Binder.position.is_(None), Binder.position, Binder.kind, Binder.name
+        )
     ).all()
 
     filled = dict(
@@ -122,6 +128,7 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
         out.append({
             "id": b.id, "name": b.name, "kind": b.kind,
             "set_code": b.set_code, "master": b.master, "image_url": b.image_url,
+            "position": b.position,
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
     return {"binders": out}
@@ -202,8 +209,42 @@ def edit_binder(
         b.name = fields["name"].strip()
     if "image_url" in fields:
         b.image_url = (fields["image_url"] or "").strip() or None
+
+    learned = None
+    if "master" in fields and fields["master"] is not None:
+        want = bool(fields["master"])
+        if b.kind != engine.SET:
+            raise HTTPException(409, "only a set binder has printings to split")
+        if want != b.master:
+            clash = db.scalar(
+                select(Binder).where(
+                    Binder.user_id == user.id, Binder.kind == engine.SET,
+                    Binder.set_code == b.set_code, Binder.master.is_(want),
+                    Binder.id != b.id,
+                )
+            )
+            if clash:
+                raise HTTPException(
+                    409, f"you already have that binder in this mode: {clash.name!r}"
+                )
+            b.master = want
+            # Slots survive the switch. A keeper flag is about the card in the
+            # slot, and the plain slot of a master binder is the same slot the
+            # simple one had — going back and forth must not cost you what you
+            # marked.
+            if want and not engine.printings_known(db, b.set_code):
+                name = db.scalar(
+                    select(CardAttrs.set_name)
+                    .where(CardAttrs.set_code == b.set_code).limit(1)
+                )
+                try:
+                    learned = engine.learn_printings(db, b.set_code, name)
+                except Exception as exc:
+                    learned = {"matched": False, "error": str(exc)[:200]}
+
     db.commit()
-    return {"id": b.id, "name": b.name, "image_url": b.image_url}
+    return {"id": b.id, "name": b.name, "image_url": b.image_url,
+            "master": b.master, "printings": learned}
 
 
 @router.delete("/{binder_id}", status_code=204)
@@ -378,6 +419,38 @@ def refresh_printings(
         select(CardAttrs.set_name).where(CardAttrs.set_code == b.set_code).limit(1)
     )
     return engine.learn_printings(db, b.set_code, name)
+
+
+class ShelfOrder(BaseModel):
+    binder_ids: list[int]
+
+
+@router.put("/order")
+def reorder_shelf(
+    body: ShelfOrder,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Arrange the shelf.
+
+    Kind and then name is a reasonable order and nobody's actual one — a real
+    shelf is arranged by what you reach for. Anything the caller does not
+    mention keeps its place behind the ones it does.
+    """
+    mine = {
+        b.id: b
+        for b in db.scalars(select(Binder).where(Binder.user_id == user.id)).all()
+    }
+    unknown = [i for i in body.binder_ids if i not in mine]
+    if unknown:
+        raise HTTPException(404, f"not your binders: {unknown}")
+    for n, binder_id in enumerate(body.binder_ids, start=1):
+        mine[binder_id].position = n
+    rest = [b for i, b in mine.items() if i not in set(body.binder_ids)]
+    for n, b in enumerate(sorted(rest, key=lambda x: (x.position or 0, x.id)), start=1):
+        b.position = len(body.binder_ids) + n
+    db.commit()
+    return list_binders(db=db, user=user)
 
 
 @router.get("/sets/available")

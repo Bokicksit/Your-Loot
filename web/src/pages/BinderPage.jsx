@@ -374,6 +374,27 @@ export default function BinderPage() {
  */
 function Rename({ binder, onDone, onCover }) {
   const [name, setName] = useState(binder.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  /** A set binder can become a master set and go back again.
+   *
+   *  The slots survive it. A keeper flag is about the card in the slot, and
+   *  the plain slot of a master binder is the same slot the simple one had —
+   *  switching back and forth must not cost you what you marked.
+   */
+  const flipMaster = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.editBinder(binder.id, { master: !binder.master });
+      onCover?.();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const save = async (e) => {
     e.preventDefault();
     if (name.trim() && name.trim() !== binder.name) {
@@ -394,14 +415,28 @@ function Rename({ binder, onDone, onCover }) {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      {binder.kind === "set" && (
+        <>
+          <div className="form-row">
+            <span className="settings-label">Master set</span>
+            <button
+              type="button"
+              className={`toggle ${binder.master ? "on" : ""}`}
+              disabled={busy}
+              onClick={flipMaster}
+            >
+              {busy ? "…" : binder.master ? "Every printing" : "One per card"}
+            </button>
+          </div>
+          <p className="settings-note">
+            {binder.master
+              ? "Each card has a slot per printing — plain, reverse holo, holo. Turning this off folds them back into one slot each; nothing you have marked is lost either way."
+              : "One slot per card. Turning this on splits each into the ways it was printed, looking the printings up the first time."}
+          </p>
+        </>
+      )}
+      {error && <p className="error">{error}</p>}
       <span className="settings-label">Cover</span>
-      <p className="settings-note">
-        A photo of the real binder, or any picture — upload one, take one, or
-        paste a link. It shows beside the name on your shelf.
-      </p>
-      <ImagePicker
-        label="Cover"
-        value={binder.image_url}
         onChange={async (url) => {
           await api.editBinder(binder.id, { image_url: url || "" });
           onCover?.();

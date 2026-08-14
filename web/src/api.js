@@ -147,6 +147,11 @@ export const api = {
     request(`/api/binders/${id}/cards/${ownedId}`, { method: "DELETE" }),
   binderRemoveSlot: (id, slotId) =>
     request(`/api/binders/${id}/slots/${slotId}`, { method: "DELETE" }),
+  reorderShelf: (binderIds) =>
+    request("/api/binders/order", {
+      method: "PUT",
+      body: JSON.stringify({ binder_ids: binderIds }),
+    }),
   binderReorder: (id, slotIds) =>
     request(`/api/binders/${id}/order`, {
       method: "PUT",

@@ -49,6 +49,9 @@ class Binder(TimestampMixin, Base):
     # the cover: a photo of the real binder, or the art of whatever it is
     # about. A shelf of names and nothing else is hard to read at a glance.
     image_url: Mapped[str | None] = mapped_column(String(500))
+    # where it sits on the shelf; null means never placed, and those sort
+    # after the ones that have been
+    position: Mapped[int | None] = mapped_column(Integer)
 
     slots = relationship(
         "BinderSlot", back_populates="binder", cascade="all, delete-orphan"

@@ -103,9 +103,15 @@ def test_a_shared_catalogue_entry_does_not_share_its_copies(people):
     alice.post(f"/api/items/{item}/owned", json={"condition": "NM", "notes": "alice-secret"})
     bob.post(f"/api/items/{item}/owned", json={"condition": "DMG", "notes": "bob-secret"})
 
+    # Asked for by name rather than taken off the first page. The list is
+    # sorted by title and capped, so "Shared …" drifts off the end as the
+    # database fills up — this passed for a year and then failed only in a
+    # full run, which is the worst way for a tenancy test to go quiet.
     for who, other in ((alice, "bob-secret"), (bob, "alice-secret")):
-        row = next(i for i in who.get("/api/games", params={"limit": 100}).json()["items"]
-                   if i["id"] == item)
+        found = who.get(
+            "/api/games", params={"search": f"Shared {tag}", "limit": 100}
+        ).json()["items"]
+        row = next(i for i in found if i["id"] == item)
         assert len(row["owned"]) == 1, f"sees {len(row['owned'])} copies, should see 1"
         assert other not in str(row["owned"]), f"can read the other person's copy ({other})"
 

@@ -3106,6 +3106,17 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .binder-menu small { color: var(--text-mute); }
 .binder-menu .toggle { width: 100%; justify-content: flex-start; }
 
+/* a shelf being arranged behaves like a binder being arranged */
+.binder-card.arranging { cursor: pointer; }
+.binder-card.arranging:hover { outline: 2px dashed var(--gold-line); outline-offset: -2px; }
+.binder-card.lifted {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+  transform: scale(.97);
+  box-shadow: var(--shadow-2);
+}
+@media (prefers-reduced-motion: reduce) { .binder-card.lifted { transform: none; } }
+
 /* ---- the binder shelf -------------------------------------------------- */
 
 /* Wide cards rather than a grid of thumbnails: a binder has no cover, and

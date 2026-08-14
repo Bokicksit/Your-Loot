@@ -37,6 +37,8 @@ export default function BindersPage() {
   const [shelf, setShelf] = useState(null);
   const [adding, setAdding] = useState(null); // null | "set" | "custom"
   const [error, setError] = useState(null);
+  const [arranging, setArranging] = useState(false);
+  const [lifted, setLifted] = useState(null); // the binder in your hand
 
   const load = () => api.binders().then((d) => setShelf(d.binders)).catch((e) => setError(e.message));
   useEffect(() => {
@@ -46,6 +48,33 @@ export default function BindersPage() {
   const made = () => {
     setAdding(null);
     load();
+  };
+
+  /** The same two taps that arrange a binder, arranging the shelf.
+   *
+   *  Kind and then name is a reasonable order and nobody's actual one — a
+   *  real shelf is arranged by what you reach for, the set you are working
+   *  through at eye level and the trades pile at the end.
+   */
+  const place = async (targetId) => {
+    const ids = shelf.map((b) => b.id);
+    const from = ids.indexOf(lifted);
+    const to = ids.indexOf(targetId);
+    setLifted(null);
+    if (from < 0 || to < 0 || from === to) return;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    setShelf(ids.map((i) => shelf.find((b) => b.id === i)));  // land the tap first
+    await api.reorderShelf(ids);
+    load();
+  };
+
+  const tap = (e, binder) => {
+    if (!arranging) return;                 // otherwise the Link does its job
+    e.preventDefault();
+    if (lifted === null) setLifted(binder.id);
+    else if (lifted === binder.id) setLifted(null);
+    else place(binder.id);
   };
 
   return (
@@ -61,7 +90,31 @@ export default function BindersPage() {
           <Icon id="plus" />
           Binder of your own
         </button>
+        {shelf?.length > 1 && (
+          <>
+            <span className="rail-spacer" />
+            <button
+              className={`chip ${arranging ? "active" : ""}`}
+              onClick={() => {
+                setArranging(!arranging);
+                setLifted(null);
+                setAdding(null);
+              }}
+            >
+              <Icon id="sliders" />
+              {arranging ? "Done" : "Arrange"}
+            </button>
+          </>
+        )}
       </div>
+
+      {arranging && (
+        <p className="settings-note arrange-hint">
+          {lifted === null
+            ? "Tap a binder to pick it up."
+            : "Now tap where it should go — or tap it again to put it back."}
+        </p>
+      )}
 
       {adding === "set" && <AddSetBinder onDone={made} onCancel={() => setAdding(null)} />}
       {adding === "custom" && <AddCustomBinder onDone={made} onCancel={() => setAdding(null)} />}
@@ -83,7 +136,12 @@ export default function BindersPage() {
 
       <div className="binder-shelf">
         {(shelf || []).map((b) => (
-          <Link key={b.id} to={`/binders/${b.id}`} className="binder-card">
+          <Link
+            key={b.id}
+            to={`/binders/${b.id}`}
+            className={`binder-card ${lifted === b.id ? "lifted" : ""} ${arranging ? "arranging" : ""}`}
+            onClick={(e) => tap(e, b)}
+          >
             {b.image_url ? (
               // Not lazy. A shelf holds a handful of covers and they are all
               // near the top, so deferring them saves nothing — and the width
