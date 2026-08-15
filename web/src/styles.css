@@ -2466,6 +2466,110 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .linkish:hover { text-decoration: underline; }
 
+/* The front page of the hosted service. Never rendered on a self-hosted
+   install — see SignIn.jsx — so it can talk about subscriptions without
+   confusing somebody running this on a machine in their own house. */
+.landing {
+  min-height: 100dvh;
+  background: var(--bg-0);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.landing > * { max-width: 940px; margin-inline: auto; padding-inline: var(--s-4); }
+.landing-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-block: var(--s-4);
+}
+.landing-logo { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-size: var(--f-4); }
+.landing-logo b { color: var(--gold); font-weight: 700; }
+
+.landing-hero { padding-block: clamp(28px, 8vw, 76px) clamp(24px, 5vw, 44px); }
+.landing-hero h1 {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(30px, 7vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -.035em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.landing-hero h1 em { font-style: normal; color: var(--gold); }
+.landing-sub { margin: 0 0 var(--s-5); max-width: 46ch; font-size: clamp(15px, 2.2vw, 18px); }
+.landing-cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-3); }
+.landing-cta button { min-height: calc(var(--tap) + 2px); }
+.landing-fine { margin: 0; font-size: var(--f-2); color: var(--text-mute); max-width: 44ch; }
+
+.landing-shelves {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  padding-block: var(--s-5);
+}
+.landing-shelf {
+  padding: var(--s-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  background: var(--bg-1);
+}
+.landing-shelf .i { color: var(--gold); width: 22px; height: 22px; }
+.landing-shelf h3 { margin: var(--s-2) 0 4px; font-size: var(--f-4); color: var(--text); }
+.landing-shelf p { margin: 0; font-size: var(--f-2); }
+
+.landing-craft, .landing-tiers, .landing-open { padding-block: clamp(28px, 6vw, 56px); }
+.landing h2 {
+  margin: 0 0 var(--s-5);
+  font-size: clamp(21px, 3.4vw, 30px);
+  letter-spacing: -.025em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.landing-point { margin-bottom: var(--s-5); max-width: 62ch; }
+.landing-point h3 { margin: 0 0 6px; font-size: var(--f-5); color: var(--text); letter-spacing: -.015em; }
+.landing-point p { margin: 0; }
+
+.landing-plans {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.landing-plan {
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--bg-1);
+}
+.landing-plan.lit { border-color: var(--gold-line); background: var(--gold-wash); }
+.landing-plan h3 { margin: 0; font-size: var(--f-4); color: var(--text); }
+.landing-price {
+  margin: 4px 0 var(--s-2);
+  font: 700 clamp(30px, 5vw, 40px)/1 var(--font-num);
+  color: var(--gold);
+  letter-spacing: -.02em;
+}
+.landing-price span { font-size: var(--f-3); font-weight: 500; color: var(--text-mute); letter-spacing: 0; }
+.landing-plan-lead { margin: 0 0 var(--s-3); font-size: var(--f-2); color: var(--text); }
+.landing-plan ul { margin: 0; padding-left: 18px; font-size: var(--f-2); }
+.landing-plan li { margin-bottom: 6px; }
+.landing-plan li::marker { color: var(--gold); }
+
+.landing-open p { max-width: 62ch; }
+.landing-repo { display: inline-flex; align-items: center; gap: 7px; color: var(--gold); font-size: var(--f-3); }
+
+.landing-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  padding-block: var(--s-5) calc(var(--s-6) * 1.5);
+  margin-top: var(--s-4);
+  border-top: 1px solid var(--line-soft);
+  font-size: var(--f-2);
+  color: var(--text-mute);
+}
+.landing-foot a { color: var(--text-dim); }
+.landing-foot a:hover { color: var(--gold); }
+
 /* The pages a stranger reads: privacy, terms, how to delete your account.
    A document rather than a card — these are read top to bottom, not filled
    in, so they get a measure and room to breathe instead of a modal. */

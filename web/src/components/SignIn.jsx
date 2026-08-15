@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
+import LandingPage from "../pages/LandingPage.jsx";
 import { DeleteAccountPage, PrivacyPage, TermsPage } from "../pages/PublicPages.jsx";
 import { BrandMark, Icon } from "./Icons.jsx";
 
@@ -25,6 +26,7 @@ export default function SignIn({ children }) {
   const [state, setState] = useState(null); // null = still asking
   const [error, setError] = useState(null);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   const refresh = () =>
     api
@@ -59,6 +61,13 @@ export default function SignIn({ children }) {
   if (state.user) return children;
   if (!state.multi_user && !state.locked) return children;
 
+  // A stranger who lands on the front page of a *service* should be told what
+  // it is, not handed a password box for an account they do not have. A
+  // self-hosted install says open_signup is false and goes straight to the
+  // form, exactly as before — there is nobody to persuade on somebody's own
+  // server, and a sales pitch on your own machine would be absurd.
+  if (state.open_signup && pathname === "/") return <LandingPage />;
+
   return (
     <Gate
       needsSetup={state.needs_setup}
@@ -66,7 +75,13 @@ export default function SignIn({ children }) {
       soloLock={!state.multi_user}
       openSignup={state.open_signup}
       canEmail={state.email_enabled}
-      onDone={refresh}
+      // /signin is a door, not a place: it matches no route inside the app,
+      // so somebody who signs in there would land on an empty page under a
+      // working tab bar.
+      onDone={async () => {
+        await refresh();
+        if (pathname === "/signin") navigate("/");
+      }}
       error={error}
       setError={setError}
     />

@@ -1,0 +1,15 @@
+# Everything worth indexing is the front page and the three public documents.
+# The app itself sits behind a sign-in, so a crawler that follows those paths
+# gets a login form — no harm, but no point either.
+User-agent: *
+Allow: /$
+Allow: /privacy
+Allow: /terms
+Allow: /delete-account
+Disallow: /api/
+Disallow: /images/
+Disallow: /verify
+Disallow: /reset
+Disallow: /signin
+
+Sitemap: https://yourloot.app/sitemap.xml

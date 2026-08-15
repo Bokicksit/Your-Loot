@@ -3,8 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Your Loot</title>
-    <meta name="description" content="Collection tracker for cards, games, movies, records, comics, Lego, books and hardware." />
+    <title>Your Loot — keep track of what you collect</title>
+    <meta name="description" content="A home for the things you collect. Every card, set and printing, with binders and a full Pokédex — free. Records, books and LEGO too. Open source, and your collection exports in one file whenever you want it." />
+
+    <!-- One index.html serves every route, so these describe the front page —
+         which is the one anybody searches for. The app's own screens are
+         behind a sign-in and are not indexed at all. -->
+    <link rel="canonical" href="https://yourloot.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Your Loot" />
+    <meta property="og:title" content="Your Loot — keep track of what you collect" />
+    <meta property="og:description" content="Every card, set and printing, with binders and a full Pokédex — free. Records, books and LEGO too. Your collection exports in one file whenever you want it." />
+    <meta property="og:url" content="https://yourloot.app/" />
+    <meta property="og:image" content="https://yourloot.app/assets/apple-touch-icon.svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Your Loot — keep track of what you collect" />
+    <meta name="twitter:description" content="Every card, set and printing, with binders and a full Pokédex — free. Records, books and LEGO too." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Your Loot",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web, Android",
+        "url": "https://yourloot.app/",
+        "description": "A collection tracker for trading cards, records, books and LEGO, with binders, master sets and barcode scanning.",
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "offers": [
+          { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Supporter", "price": "4", "priceCurrency": "USD" }
+        ]
+      }
+    </script>
 
     <!-- The mark is a shelf holding four things you collect. One weight, one
          colour, so it survives being 16px in a browser tab. -->
