@@ -10,6 +10,17 @@
 server {
     listen ${PORT};
 
+    # Written as a variable on purpose. With a literal hostname nginx resolves
+    # it once, when it starts, and keeps that address for the life of the
+    # process — so the moment the API container is recreated on a new address,
+    # every request goes to where it used to be and times out. The API looks
+    # perfectly healthy in its own logs while nothing can reach it.
+    #
+    # A variable forces a lookup per request, against the resolver written by
+    # resolver.sh. It also turns "the API is down" into a prompt 502 instead of
+    # a sixty-second hang.
+    set $backend "${API_UPSTREAM}";
+
     root /usr/share/nginx/html;
     index index.html;
 
@@ -33,7 +44,7 @@ server {
     # a restore uploads the whole collection at once, so it needs both a much
     # larger body and longer than the default 60s to finish inserting
     location /api/backup/restore {
-        proxy_pass http://${API_UPSTREAM};
+        proxy_pass http://$backend$request_uri;
         proxy_set_header Host $host;
         # so the API can tell callers apart when rate limiting logins
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -47,7 +58,7 @@ server {
     # takes about ten seconds here, but that is ten seconds against a warm CDN
     # on a quick box — the default 60s is too close to comfortable.
     location /api/share/ {
-        proxy_pass http://${API_UPSTREAM};
+        proxy_pass http://$backend$request_uri;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 300s;
@@ -56,13 +67,13 @@ server {
 
     # api + uploaded images live in the api container
     location /api/ {
-        proxy_pass http://${API_UPSTREAM};
+        proxy_pass http://$backend$request_uri;
         proxy_set_header Host $host;
         # so the API can tell callers apart when rate limiting logins
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         client_max_body_size 20m; # image uploads
     }
     location /images/ {
-        proxy_pass http://${API_UPSTREAM};
+        proxy_pass http://$backend$request_uri;
     }
 }

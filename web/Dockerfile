@@ -31,5 +31,9 @@ ENV API_UPSTREAM=api:8000
 ENV PORT=80
 
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# Runs at start, before nginx: writes the resolver this platform actually has.
+# See the script, and the `set $backend` line in the template it serves.
+COPY resolver.sh /docker-entrypoint.d/15-resolver.sh
+RUN chmod +x /docker-entrypoint.d/15-resolver.sh
 COPY --from=build /src/dist /usr/share/nginx/html
 EXPOSE 80
