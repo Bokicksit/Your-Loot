@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import { BrandMark, Icon } from "./Icons.jsx";
 
@@ -15,6 +16,7 @@ import { BrandMark, Icon } from "./Icons.jsx";
 export default function SignIn({ children }) {
   const [state, setState] = useState(null); // null = still asking
   const [error, setError] = useState(null);
+  const { pathname } = useLocation();
 
   const refresh = () =>
     api
@@ -30,6 +32,13 @@ export default function SignIn({ children }) {
     refresh();
   }, []);
 
+  // A link from an email arrives at a browser that is signed out — that is
+  // the whole point of it. Meeting it with a login form would be asking for
+  // the password the person is here because they have forgotten. So these two
+  // are decided before anything else, and before /me has even answered.
+  if (pathname === "/verify") return <VerifyScreen onDone={refresh} />;
+  if (pathname === "/reset") return <ResetScreen />;
+
   if (state === null) return null; // a spinner here would flicker on every load
   if (state.unreachable) return <Unreachable detail={state.unreachable} onRetry={refresh} />;
   if (state.user) return children;
@@ -40,6 +49,7 @@ export default function SignIn({ children }) {
       needsSetup={state.needs_setup}
       // one account: the address is implied, so the form is one field
       soloLock={!state.multi_user}
+      openSignup={state.open_signup}
       onDone={refresh}
       error={error}
       setError={setError}
@@ -86,11 +96,173 @@ function Unreachable({ detail, onRetry }) {
   );
 }
 
-function Gate({ needsSetup, soloLock, onDone, error, setError }) {
+/** Confirming an address, from the link in the welcome email. */
+function VerifyScreen({ onDone }) {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const [result, setResult] = useState(null); // null = still going
+
+  useEffect(() => {
+    const token = params.get("token");
+    if (!token) {
+      setResult({ error: "That link is missing its code." });
+      return;
+    }
+    api
+      .authVerify(token)
+      .then(() => setResult({ ok: true }))
+      .catch((e) => setResult({ error: e.message }));
+  }, [params]);
+
+  return (
+    <div className="signin-scrim">
+      <div className="signin">
+        <h1>
+          <span className="brand-mark">
+            <BrandMark size={26} />
+          </span>
+          Your <b>Loot</b>
+        </h1>
+        {result === null && <p className="signin-lead">Confirming your address…</p>}
+        {result?.ok && (
+          <>
+            <p className="signin-lead">
+              That's confirmed — thank you. Your address can now be used to
+              reset your password if you ever need it.
+            </p>
+            <button
+              type="button"
+              className="primary"
+              onClick={async () => {
+                await onDone();
+                navigate("/");
+              }}
+            >
+              <Icon id="check" />
+              Continue
+            </button>
+          </>
+        )}
+        {result?.error && (
+          <>
+            <span className="signin-error">
+              <Icon id="alert" />
+              {result.error}
+            </span>
+            <p className="signin-note">
+              Links last a day and can only be used once. Sign in and ask for
+              another from your settings.
+            </p>
+            <button type="button" className="primary" onClick={() => navigate("/")}>
+              Go to sign in
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Choosing a new password, from the link in a reset email. */
+function ResetScreen() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [done, setDone] = useState(false);
+  const token = params.get("token");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.authReset(token, password);
+      setDone(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="signin-scrim">
+        <div className="signin">
+          <h1>
+            <span className="brand-mark">
+              <BrandMark size={26} />
+            </span>
+            Your <b>Loot</b>
+          </h1>
+          <p className="signin-lead">
+            Your password has been changed. Sign in with the new one.
+          </p>
+          <button type="button" className="primary" onClick={() => navigate("/")}>
+            <Icon id="check" />
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="signin-scrim">
+      <form className="signin" onSubmit={submit}>
+        <h1>
+          <span className="brand-mark">
+            <BrandMark size={26} />
+          </span>
+          Your <b>Loot</b>
+        </h1>
+        <p className="signin-lead">Choose a new password.</p>
+        <input
+          type="password"
+          placeholder="New password (8+ characters)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          minLength={8}
+          required
+          autoFocus
+        />
+        {error && (
+          <span className="signin-error">
+            <Icon id="alert" />
+            {error}
+          </span>
+        )}
+        <button type="submit" className="primary" disabled={busy || !token}>
+          <Icon id="check" />
+          {busy ? "…" : "Set password"}
+        </button>
+        {!token && (
+          <p className="signin-note">That link is missing its code.</p>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function Gate({ needsSetup, soloLock, openSignup, onDone, error, setError }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  // signin | signup | forgot. Only ever leaves "signin" where the server said
+  // it offers accounts to anybody.
+  const [mode, setMode] = useState("signin");
+  const [sent, setSent] = useState(false);
+
+  const go = (next) => {
+    setMode(next);
+    setError(null);
+    setSent(false);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -100,6 +272,12 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
     try {
       if (needsSetup) {
         await api.authSetup({ email, password, display_name: name.trim() || null });
+      } else if (mode === "signup") {
+        await api.authSignup({ email, password, display_name: name.trim() || null });
+      } else if (mode === "forgot") {
+        await api.authForgot(email);
+        setSent(true);
+        return; // nothing to sign in to yet
       } else {
         await api.authLogin(soloLock ? { password } : { email, password });
       }
@@ -110,6 +288,39 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
       setBusy(false);
     }
   };
+
+  // The reset email has been asked for. Deliberately says nothing about
+  // whether that address had an account — the server does not tell us, on
+  // purpose, and inventing an answer here would give away what it protects.
+  if (sent) {
+    return (
+      <div className="signin-scrim">
+        <div className="signin">
+          <h1>
+            <span className="brand-mark">
+              <BrandMark size={26} />
+            </span>
+            Your <b>Loot</b>
+          </h1>
+          <p className="signin-lead">
+            If there's an account for {email}, a reset link is on its way. It
+            lasts an hour.
+          </p>
+          <button type="button" className="primary" onClick={() => go("signin")}>
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const heading = needsSetup
+    ? "Claim this server"
+    : mode === "signup"
+      ? "Create an account"
+      : mode === "forgot"
+        ? "Send a reset link"
+        : "Unlock";
 
   return (
     <div className="signin-scrim">
@@ -127,11 +338,20 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
             you set here becomes the owner account — it already holds
             everything in the collection.
           </p>
+        ) : mode === "signup" ? (
+          <p className="signin-lead">
+            Your collection, kept for you. We'll send one email to confirm the
+            address and nothing else.
+          </p>
+        ) : mode === "forgot" ? (
+          <p className="signin-lead">
+            Your address, and we'll send a link to set a new password.
+          </p>
         ) : (
           <p className="signin-lead">Sign in to your collection.</p>
         )}
 
-        {needsSetup && (
+        {(needsSetup || mode === "signup") && (
           <input
             type="text"
             placeholder="Your name (optional)"
@@ -150,18 +370,24 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
             required
           />
         )}
-        <input
-          type="password"
-          placeholder={
-            needsSetup ? "Choose a password (8+ characters)" : "Password or PIN"
-          }
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete={needsSetup ? "new-password" : "current-password"}
-          minLength={needsSetup ? 8 : 4}
-          required
-          autoFocus={soloLock}
-        />
+        {mode !== "forgot" && (
+          <input
+            type="password"
+            placeholder={
+              needsSetup || mode === "signup"
+                ? "Choose a password (8+ characters)"
+                : "Password or PIN"
+            }
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={
+              needsSetup || mode === "signup" ? "new-password" : "current-password"
+            }
+            minLength={needsSetup || mode === "signup" ? 8 : 4}
+            required
+            autoFocus={soloLock}
+          />
+        )}
 
         {error && (
           <span className="signin-error">
@@ -172,12 +398,35 @@ function Gate({ needsSetup, soloLock, onDone, error, setError }) {
 
         <button type="submit" className="primary" disabled={busy}>
           <Icon id="check" />
-          {busy ? "…" : needsSetup ? "Claim this server" : "Unlock"}
+          {busy ? "…" : heading}
         </button>
 
-        {/* Somebody will lock themselves out, and the answer cannot be an
-            email they never configured a server to send. */}
-        {!needsSetup && (
+        {/* Only where the server said anybody may have an account. A home
+            install shows none of this and keeps the advice below instead. */}
+        {openSignup && !needsSetup && (
+          <p className="signin-alt">
+            {mode === "signin" ? (
+              <>
+                <button type="button" className="linkish" onClick={() => go("forgot")}>
+                  Forgotten your password?
+                </button>
+                <button type="button" className="linkish" onClick={() => go("signup")}>
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <button type="button" className="linkish" onClick={() => go("signin")}>
+                Back to sign in
+              </button>
+            )}
+          </p>
+        )}
+
+        {/* Somebody will lock themselves out, and on a server they run
+            themselves the answer cannot be an email they never configured
+            anything to send. Where signup is open there is a provider, so the
+            reset link above is the real answer and this would be wrong. */}
+        {!needsSetup && !openSignup && (
           <p className="signin-note">
             Forgotten it? There is no reset email — this is your server. Reset
             it from the host:

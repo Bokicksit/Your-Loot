@@ -34,6 +34,11 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-getloot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-getloot}
       IMAGE_DIR: /data/images
       AUTH_MODE: ${AUTH_MODE:-single}
+      OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
+      SIGNUP_LIMIT: ${SIGNUP_LIMIT:-20}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
       SECRET_KEY: ${SECRET_KEY:-}
       SESSION_HTTPS_ONLY: ${SESSION_HTTPS_ONLY:-false}
       # optional: without these, game/movie lookup returns a clear "not

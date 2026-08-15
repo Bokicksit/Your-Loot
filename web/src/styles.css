@@ -2445,6 +2445,26 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   overflow-x: auto;
   white-space: nowrap;
 }
+/* The two ways out of the sign-in form: make an account, or admit you have
+   forgotten. Side by side on a wide form, stacked when there is no room. */
+.signin-alt {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0;
+}
+.linkish {
+  padding: 4px 0;
+  min-height: 0;
+  border: 0;
+  background: none;
+  color: var(--accent, #9bb7ff);
+  font-size: var(--f-1);
+  text-align: left;
+  cursor: pointer;
+}
+.linkish:hover { text-decoration: underline; }
 
 /* the small print under a settings control */
 .settings-note {

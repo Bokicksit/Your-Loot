@@ -144,6 +144,7 @@ export default function SettingsPage() {
 
       <ShareCard enabled={enabled} />
       <LockCard />
+      <AccountCard />
       <BackupCard />
 
       {version && <p className="version-tag">Your Loot v{version}</p>}
@@ -350,6 +351,135 @@ function LockCard() {
         <code>docker compose exec api python -m app.resetpw --clear</code> on
         the host.
       </p>
+    </section>
+  );
+}
+
+/** Your own account: the address, and the way out.
+ *
+ *  Only where there are accounts at all. A single-user install has no address
+ *  to confirm and nowhere to go if it deleted itself — LockCard is the whole
+ *  of its account settings.
+ */
+function AccountCard() {
+  const [me, setMe] = useState(null);
+  const [note, setNote] = useState(null);
+  const [error, setError] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = () => api.authMe().then(setMe).catch(() => {});
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (!me || !me.multi_user || !me.user) return null;
+
+  const user = me.user;
+  const confirmed = Boolean(user.email_verified_at);
+  // The owner cannot leave — deleting account 1 leaves a database nobody can
+  // sign into. Saying so beats a button that always fails.
+  const isOwner = user.id === 1;
+
+  const resend = async () => {
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      await api.authResendVerification();
+      setNote("Sent. Check your inbox — the link lasts a day.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.authDeleteMe(password);
+      // everything is gone, including the session — start again from the gate
+      window.location.href = "/";
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="settings-card">
+      <h3>Your account</h3>
+      <p>
+        Signed in as <strong>{user.email}</strong>
+        {confirmed ? " — address confirmed." : "."}
+      </p>
+
+      {!confirmed && (
+        <>
+          <p className="settings-note">
+            This address hasn't been confirmed yet. Until it is, we can't send
+            you a link if you forget your password.
+          </p>
+          <button type="button" onClick={resend} disabled={busy}>
+            <Icon id="check" />
+            {busy ? "…" : "Send the confirmation again"}
+          </button>
+        </>
+      )}
+
+      {note && <p className="settings-note">{note}</p>}
+      {error && (
+        <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>
+          {error}
+        </p>
+      )}
+
+      <h4 style={{ margin: "18px 0 0", fontSize: "var(--f-2)" }}>Delete this account</h4>
+      {isOwner ? (
+        <p className="settings-note">
+          This is the owner account, which can't be deleted — the server would
+          be left with no way in. Another account can be removed from the users
+          list.
+        </p>
+      ) : confirming ? (
+        <form className="lock-form" onSubmit={remove}>
+          <p className="settings-note">
+            This removes your collection, photos, binders and wanted list. It
+            cannot be undone — take a backup first if you want a copy.
+          </p>
+          <input
+            type="password"
+            placeholder="Your password, to be sure"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            autoFocus
+          />
+          <button type="submit" className="ghost danger" disabled={busy}>
+            <Icon id="trash" />
+            {busy ? "…" : "Delete everything"}
+          </button>
+          <button type="button" onClick={() => setConfirming(false)} disabled={busy}>
+            Keep it
+          </button>
+        </form>
+      ) : (
+        <>
+          <p className="settings-note">
+            Removes the account and everything in it, for good.
+          </p>
+          <button type="button" onClick={() => setConfirming(true)}>
+            <Icon id="trash" />
+            Delete this account
+          </button>
+        </>
+      )}
     </section>
   );
 }

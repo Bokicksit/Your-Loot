@@ -87,6 +87,24 @@ export const api = {
   authSetup: (body) =>
     request("/api/auth/setup", { method: "POST", body: JSON.stringify(body) }),
   authLogout: () => request("/api/auth/logout", { method: "POST" }),
+  // Only answered when the server offers open signup — see OPEN_SIGNUP. On a
+  // self-hosted install every one of these is a 404, which is why the UI asks
+  // /me first rather than showing a link that leads nowhere.
+  authSignup: (body) =>
+    request("/api/auth/signup", { method: "POST", body: JSON.stringify(body) }),
+  authVerify: (token) =>
+    request("/api/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
+  authResendVerification: () =>
+    request("/api/auth/verify/resend", { method: "POST" }),
+  authForgot: (email) =>
+    request("/api/auth/forgot", { method: "POST", body: JSON.stringify({ email }) }),
+  authReset: (token, password) =>
+    request("/api/auth/reset", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+    }),
+  authDeleteMe: (password) =>
+    request("/api/auth/me", { method: "DELETE", body: JSON.stringify({ password }) }),
   changePassword: (body) =>
     request("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
   users: () => request("/api/auth/users"),
