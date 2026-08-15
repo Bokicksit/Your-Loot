@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.auth import current_user
 from app.db import get_db
 from app.integrations.openlibrary import openlibrary_client
-from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
+from app.barcodes import lookup as cached_lookup
+from app.integrations.upcitemdb import BarcodeError
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted, User
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
@@ -55,7 +56,7 @@ def _base_query():
     )
 
 
-def _jacket(isbn: str) -> str | None:
+def _jacket(db, isbn: str) -> str | None:
     """A cover from the retail listing for this ISBN.
 
     Open Library's bibliographic data is good but its cover coverage is thin —
@@ -64,7 +65,7 @@ def _jacket(isbn: str) -> str | None:
     a photograph of the jacket.
     """
     try:
-        products = upc_lookup(isbn)
+        products = cached_lookup(db, isbn)
     except BarcodeError:
         return None  # a missing cover shouldn't fail the whole lookup
     for p in products:
@@ -75,7 +76,9 @@ def _jacket(isbn: str) -> str | None:
 
 @router.get("/search")
 def search_openlibrary(
-    q: str | None = None, isbn: str | None = None
+    q: str | None = None,
+    isbn: str | None = None,
+    db: Session = Depends(get_db),
 ):
     """Look a book up in Open Library — by ISBN (the barcode on the back) or
     by title/author text. An ISBN with no cover in Open Library borrows one
@@ -85,13 +88,13 @@ def search_openlibrary(
             hit = openlibrary_client.by_isbn(isbn)
             if hit and hit.get("image_url"):
                 return [hit]
-            jacket = _jacket(isbn)
+            jacket = _jacket(db, isbn)
             if hit:
                 hit["image_url"] = jacket
                 return [hit]
             # nothing bibliographic, but the shops may still know the book
             if jacket:
-                products = upc_lookup(isbn)
+                products = cached_lookup(db, isbn)
                 return [{
                     "title": products[0]["title"],
                     "author": None,

@@ -9,21 +9,19 @@ being keyed on the barcode, they show the exact edition a film-level poster
 can't distinguish.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.integrations.upcitemdb import (
-    BarcodeError,
-    lookup as upc_lookup,
-    search as upc_search,
-)
+from app.barcodes import lookup as cached_lookup
+from app.db import get_db
+from app.integrations.upcitemdb import BarcodeError, search as upc_search
 
 router = APIRouter(prefix="/api/lookup", tags=["lookup"])
 
 
 @router.get("/barcode")
-def barcode(code: str = Query(pattern=r"^\d{8,14}$")):
+def barcode(code: str = Query(pattern=r"^\d{8,14}$"), db=Depends(get_db)):
     try:
-        items = upc_lookup(code)
+        items = cached_lookup(db, code)
     except BarcodeError as e:
         raise HTTPException(e.status, e.message)
     return {"found": bool(items), "titles": items}

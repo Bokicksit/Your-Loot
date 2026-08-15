@@ -1,6 +1,6 @@
 """Signing in, and everything that surrounds it."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
@@ -291,5 +291,5 @@ def revoke_token(
     if row is None or row.user_id != user.id:
         raise HTTPException(404, "token not found")
     if row.revoked_at is None:
-        row.revoked_at = datetime.utcnow()
+        row.revoked_at = datetime.now(UTC).replace(tzinfo=None)
         db.commit()

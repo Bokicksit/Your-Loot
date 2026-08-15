@@ -1,3 +1,4 @@
+from app.models.barcodes import BarcodeCache
 from app.models.base import Base
 from app.models.books import BookAttrs
 from app.models.binders import Binder, BinderSlot
@@ -16,6 +17,7 @@ from app.models.users import ItemOverride, User
 
 __all__ = [
     "ApiToken",
+    "BarcodeCache",
     "Base",
     "Binder",
     "BinderSlot",

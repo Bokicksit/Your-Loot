@@ -13,7 +13,7 @@ schema for.
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
@@ -147,7 +147,7 @@ def user_from_token(request: Request, db: Session) -> User | None:
         return None
     # Written at most hourly. Knowing a token is still in use is worth having;
     # a database write on every single request to record it is not.
-    now = datetime.utcnow()
+    now = datetime.now(UTC).replace(tzinfo=None)
     if row.last_used_at is None or now - row.last_used_at > timedelta(hours=1):
         row.last_used_at = now
         db.commit()

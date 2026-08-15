@@ -9,7 +9,8 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.discogs import discogs_client
 from app.integrations.musicbrainz import musicbrainz_client
-from app.integrations.upcitemdb import BarcodeError, lookup as upc_lookup
+from app.barcodes import lookup as cached_lookup
+from app.integrations.upcitemdb import BarcodeError
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted, User
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
@@ -131,7 +132,7 @@ def search_musicbrainz(
             if hits:
                 return hits
             try:
-                products = upc_lookup(barcode)
+                products = cached_lookup(db, barcode)
             except BarcodeError:
                 products = []  # the fallback failing shouldn't mask "not found"
             if not products:
