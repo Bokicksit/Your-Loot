@@ -146,6 +146,7 @@ export default function SettingsPage() {
       <LockCard />
       <AccountCard />
       <BackupCard />
+      <PolicyLinks />
 
       {version && <p className="version-tag">Your Loot v{version}</p>}
     </div>
@@ -350,6 +351,31 @@ function LockCard() {
         can still read the database. Locked out? Run{" "}
         <code>docker compose exec api python -m app.resetpw --clear</code> on
         the host.
+      </p>
+    </section>
+  );
+}
+
+/** Where the policies live, for somebody already inside.
+ *
+ *  They are public pages and the store listing links to them, but somebody
+ *  wondering what happens to their photographs looks in settings, not in a
+ *  store listing. Only where there are accounts — a self-hosted install has
+ *  no operator to have a privacy policy about.
+ */
+function PolicyLinks() {
+  const [me, setMe] = useState(null);
+  useEffect(() => {
+    api.authMe().then(setMe).catch(() => {});
+  }, []);
+  if (!me || !me.multi_user) return null;
+  return (
+    <section className="settings-card">
+      <h3>The small print</h3>
+      <p className="settings-note" style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px" }}>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms of service</a>
+        <a href="/delete-account">Deleting your account</a>
       </p>
     </section>
   );

@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
+import { DeleteAccountPage, PrivacyPage, TermsPage } from "../pages/PublicPages.jsx";
 import { BrandMark, Icon } from "./Icons.jsx";
+
+// Readable without an account, and therefore decided before the gate.
+const PUBLIC_PAGES = {
+  "/privacy": PrivacyPage,
+  "/terms": TermsPage,
+  "/delete-account": DeleteAccountPage,
+};
 
 /** The gate.
  *
@@ -38,6 +46,13 @@ export default function SignIn({ children }) {
   // are decided before anything else, and before /me has even answered.
   if (pathname === "/verify") return <VerifyScreen onDone={refresh} />;
   if (pathname === "/reset") return <ResetScreen />;
+
+  // And the three a stranger must be able to read without an account at all.
+  // Play requires the privacy policy and the deletion page to be reachable
+  // without installing anything, and a policy you can only read once you have
+  // signed up is not a policy anybody can consult before signing up.
+  const Public = PUBLIC_PAGES[pathname];
+  if (Public) return <Public />;
 
   if (state === null) return null; // a spinner here would flicker on every load
   if (state.unreachable) return <Unreachable detail={state.unreachable} onRetry={refresh} />;

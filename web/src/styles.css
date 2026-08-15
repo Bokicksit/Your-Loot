@@ -2466,6 +2466,74 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .linkish:hover { text-decoration: underline; }
 
+/* The pages a stranger reads: privacy, terms, how to delete your account.
+   A document rather than a card — these are read top to bottom, not filled
+   in, so they get a measure and room to breathe instead of a modal. */
+.public-doc {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4) calc(var(--s-6) * 2);
+  color: var(--text-dim);
+  line-height: 1.65;
+}
+.public-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--f-3);
+}
+.public-brand b { color: var(--gold); font-weight: 700; }
+.public-doc h1 {
+  margin: var(--s-4) 0 4px;
+  font-size: var(--f-6);
+  letter-spacing: -.02em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.public-updated { margin: 0 0 var(--s-5); color: var(--text-mute); font-size: var(--f-1); }
+.public-doc h2 {
+  margin: var(--s-5) 0 var(--s-2);
+  font-size: var(--f-3);
+  letter-spacing: -.01em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.public-doc p { margin: 0 0 var(--s-3); }
+.public-doc strong { color: var(--text); }
+.public-doc a { color: var(--gold); }
+.public-doc ul,
+.public-doc ol { margin: 0 0 var(--s-3); padding-left: 22px; }
+.public-doc li { margin-bottom: 6px; }
+.public-doc li::marker { color: var(--text-mute); }
+.public-lead {
+  border-left: 2px solid var(--gold);
+  padding-left: var(--s-3);
+}
+.public-table { overflow-x: auto; margin: 0 0 var(--s-4); }
+.public-table table { border-collapse: collapse; width: 100%; min-width: 380px; font-size: var(--f-2); }
+.public-table th,
+.public-table td {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.public-table th { color: var(--text-mute); font-weight: 600; white-space: nowrap; }
+.public-table td:first-child { color: var(--text); }
+.public-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line-soft);
+  font-size: var(--f-1);
+}
+.public-foot a { color: var(--text-dim); }
+.public-foot a:hover { color: var(--gold); }
+
 /* the small print under a settings control */
 .settings-note {
   margin: var(--s-2) 0 0;
