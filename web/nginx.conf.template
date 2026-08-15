@@ -1,5 +1,14 @@
+# Rendered at container start by the nginx image's envsubst step, which only
+# touches the two names in NGINX_ENVSUBST_FILTER — so nginx's own $uri, $host
+# and $proxy_add_x_forwarded_for below survive untouched, which they would not
+# under a blanket substitution.
+#
+# Both have the values this file used to hardcode, so a compose install
+# behaves exactly as before and needs to set nothing. They exist because a
+# platform host puts the API somewhere other than "api" and tells you which
+# port to listen on rather than letting you pick 80.
 server {
-    listen 80;
+    listen ${PORT};
 
     root /usr/share/nginx/html;
     index index.html;
@@ -24,7 +33,7 @@ server {
     # a restore uploads the whole collection at once, so it needs both a much
     # larger body and longer than the default 60s to finish inserting
     location /api/backup/restore {
-        proxy_pass http://api:8000;
+        proxy_pass http://${API_UPSTREAM};
         proxy_set_header Host $host;
         # so the API can tell callers apart when rate limiting logins
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -38,7 +47,7 @@ server {
     # takes about ten seconds here, but that is ten seconds against a warm CDN
     # on a quick box — the default 60s is too close to comfortable.
     location /api/share/ {
-        proxy_pass http://api:8000;
+        proxy_pass http://${API_UPSTREAM};
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 300s;
@@ -47,13 +56,13 @@ server {
 
     # api + uploaded images live in the api container
     location /api/ {
-        proxy_pass http://api:8000;
+        proxy_pass http://${API_UPSTREAM};
         proxy_set_header Host $host;
         # so the API can tell callers apart when rate limiting logins
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         client_max_body_size 20m; # image uploads
     }
     location /images/ {
-        proxy_pass http://api:8000;
+        proxy_pass http://${API_UPSTREAM};
     }
 }

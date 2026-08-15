@@ -211,6 +211,19 @@ Galleries and the Galarian Gallery — and those keep the picture they have.
 Photos you took yourself are never touched, the refresh above won't undo it,
 and `CARD_ART=tcgdex` in `.env` does it automatically on first start.
 
+**Running it on a platform host** (Railway, Fly, Render) rather than compose?
+The web container assumes the API answers to `api` on port 8000, which is true
+under compose and nowhere else. Two variables on the **web** service fix it,
+and neither is needed for a normal install:
+```bash
+API_UPSTREAM=<your api service host>:8000
+```
+`PORT` is also honoured, since most platforms assign one rather than letting
+you listen on 80. Point the API service at a managed Postgres with
+`DATABASE_URL`, set `PUBLIC_URL` to the address people actually type, and
+**pin both images to a version** — `latest` moves whenever this repo does,
+which is not what you want under a live site.
+
 **Back up** from **Settings → Backup & restore** — one zip with every item,
 copy, wanted entry and photo. Keep it somewhere that isn't this server. At the
 filesystem level the `data/` directory holds the Postgres database and your

@@ -15,6 +15,21 @@ RUN npm run build
 
 # serve stage — static files + reverse proxy to the api container
 FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# A template rather than a finished config: this image's entrypoint runs
+# envsubst over /etc/nginx/templates before nginx starts.
+#
+# The filter is the important part. Without it envsubst would substitute
+# every $name in the file, and the config is full of nginx's own — $uri,
+# $host, $proxy_add_x_forwarded_for — which would be replaced with nothing
+# and break the proxy in ways that only show up under load. Naming the two
+# variables explicitly means nothing else is touched.
+ENV NGINX_ENVSUBST_FILTER="^(API_UPSTREAM|PORT)$"
+# The values this config used to hardcode, so compose installs need set
+# neither and behave exactly as before.
+ENV API_UPSTREAM=api:8000
+ENV PORT=80
+
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /src/dist /usr/share/nginx/html
 EXPOSE 80
