@@ -24,6 +24,7 @@ sys.path.insert(0, "/app")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
 
 from sqlalchemy import func, select  # noqa: E402
+from app.card_art import settled  # noqa: E402
 from app.cards_util import classify_layer, derive_variant  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
 from app.models import CardAttrs, CollectionItem, Module  # noqa: E402
@@ -102,9 +103,11 @@ def seed_file(db, cards_path: Path, sets_by_id: dict, dex_map: dict | None = Non
             updated += 1
 
         item.title = card["name"]
-        # never clobber an image the collector set themselves — those are
-        # stored on this server, so they start with /images/
-        if not (item.image_url or "").startswith("/images/"):
+        # Never clobber a photograph the collector took, nor a card already
+        # moved onto TCGdex's asset host — a weekly refresh that quietly put
+        # every picture back on somebody else's CDN would undo the whole
+        # point of backfill_art.py. See app/card_art.py.
+        if not settled(item.image_url):
             item.image_url = (card.get("images") or {}).get("small")
         a = item.card_attrs
         a.set_code = set_code

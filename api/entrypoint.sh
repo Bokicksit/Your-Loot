@@ -12,6 +12,17 @@ if [ "${SEED_ON_START:-true}" = "true" ]; then
     if python /seed/seed_cards.py --check-empty; then
       echo "[seed] empty card catalog — downloading the full card database…"
       python /seed/seed_cards.py --download || echo "[seed] failed; run it by hand later"
+
+      # Card pictures are seeded pointing at images.pokemontcg.io, which is
+      # somebody else's CDN. One household is a rounding error there; serving
+      # a whole site from it is not, so a shared install moves them onto
+      # TCGdex's asset host, which is published for this. Off by default:
+      # self-hosters are the rounding error, and this costs a few minutes of
+      # requests they have no reason to spend.
+      if [ "${CARD_ART:-}" = "tcgdex" ]; then
+        echo "[seed] moving card art onto TCGdex…"
+        python /seed/backfill_art.py || echo "[seed] art backfill failed; run it by hand later"
+      fi
     fi
   ) &
 fi

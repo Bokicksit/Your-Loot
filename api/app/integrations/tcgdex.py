@@ -9,11 +9,13 @@ server-side fetch is refused. TCGdex publishes the same card data for exactly
 this purpose.
 """
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 
 API_URL = "https://api.tcgdex.net/v2/en"
+ASSETS = "https://assets.tcgdex.net/"
 
 
 class TCGdexClient:
@@ -107,7 +109,23 @@ class TCGdexClient:
 
     # --- printings, for master-set binders ---------------------------------
 
-    def set_id_for(self, name: str, code: str | None = None) -> str | None:
+    def all_sets(self) -> list[dict]:
+        """Every set they publish. Worth fetching once and passing around when
+        resolving more than one — see set_id_for."""
+        resp = httpx.get(f"{API_URL}/sets", timeout=20, follow_redirects=True)
+        resp.raise_for_status()
+        return resp.json()
+
+    @staticmethod
+    def _loose(name: str | None) -> str:
+        """A set name with the punctuation the two catalogues disagree about
+        taken out: "Sun & Moon" and "Sun and Moon" are the same set, and so
+        are "HeartGold SoulSilver" and "HeartGold & SoulSilver"."""
+        return re.sub(r"[^a-z0-9]", "", (name or "").casefold().replace("&", "and"))
+
+    def set_id_for(
+        self, name: str, code: str | None = None, sets: list[dict] | None = None
+    ) -> str | None:
         """Their id for a set we know by name.
 
         The two catalogues do not agree on set ids and only sometimes collide:
@@ -115,10 +133,12 @@ class TCGdexClient:
         `sv8pt5` in the dump and `sv08.5` here. The printed name is the one
         thing they do share, so that is what this matches on, with the code
         tried first for the sets where it happens to line up.
+
+        Pass `sets` when resolving several — otherwise this fetches the whole
+        set list again for every single one, which for a whole catalogue is a
+        hundred and seventy identical requests.
         """
-        sets = httpx.get(f"{API_URL}/sets", timeout=20, follow_redirects=True)
-        sets.raise_for_status()
-        rows = sets.json()
+        rows = sets if sets is not None else self.all_sets()
         if code:
             for s in rows:
                 if (s.get("id") or "").lower() == code.lower():
@@ -127,6 +147,13 @@ class TCGdexClient:
         for s in rows:
             if (s.get("name") or "").strip().casefold() == want:
                 return s["id"]
+        # Last, and deliberately after both exact passes: punctuation-blind
+        # matching would happily confuse two sets that differ only by it.
+        loose = self._loose(name)
+        if loose:
+            for s in rows:
+                if self._loose(s.get("name")) == loose:
+                    return s["id"]
         return None
 
     def printings_in_set(self, set_id: str, workers: int = 8) -> dict[str, list]:

@@ -198,6 +198,19 @@ docker compose exec api python /seed/seed_cards.py --download
 This only ever adds and updates catalog entries. Your owned copies, wanted
 list, binder picks, grades, and any photos you added are never touched.
 
+**Running this for a lot of people?** Card pictures are seeded pointing at
+`images.pokemontcg.io`, which belongs to the project publishing the card
+database — fine for a household, less fine as somebody else's bandwidth bill.
+Move them onto TCGdex's asset host, which is published under MIT for this:
+```bash
+docker compose exec api python /seed/backfill_art.py --dry-run
+docker compose exec api python /seed/backfill_art.py
+```
+Roughly one card in twenty has no art there — mostly Shiny Vault, the Trainer
+Galleries and the Galarian Gallery — and those keep the picture they have.
+Photos you took yourself are never touched, the refresh above won't undo it,
+and `CARD_ART=tcgdex` in `.env` does it automatically on first start.
+
 **Back up** from **Settings → Backup & restore** — one zip with every item,
 copy, wanted entry and photo. Keep it somewhere that isn't this server. At the
 filesystem level the `data/` directory holds the Postgres database and your
