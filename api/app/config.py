@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # what every existing install already has. A hosted service names a
     # subset — see app/modules.py.
     available_modules: str = ""
+    # Which collections this install charges for. Empty means none, which is
+    # what self-hosting means — see app/plans.py.
+    paid_modules: str = ""
     open_signup: bool = False
     # New accounts allowed per hour from one address. See ratelimit.py.
     signup_limit: int = 20

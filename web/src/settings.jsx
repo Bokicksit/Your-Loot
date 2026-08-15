@@ -83,6 +83,20 @@ export function useEnabledModules() {
  *  Falls back to all of them, which is what a self-hosted install has and
  *  what every version before this one reported.
  */
+/** Whether a collection is behind the paywall for this person.
+ *
+ *  False for everything on a self-hosted install, where nothing is paid, and
+ *  false for everything once somebody has subscribed. Locked is not the same
+ *  as absent: their records are still there, still theirs, and still in the
+ *  backup — the door is shut, the room is not empty.
+ */
+export function useLocked() {
+  const { settings } = useSettings();
+  const paid = settings?.paid_modules || [];
+  const paying = settings?.subscribed;
+  return (key) => paid.includes(key) && !paying;
+}
+
 export function useAvailableModules() {
   const { settings } = useSettings();
   const here = settings?.available_modules;

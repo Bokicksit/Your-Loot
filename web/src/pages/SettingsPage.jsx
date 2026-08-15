@@ -521,6 +521,11 @@ function BackupCard() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [me, setMe] = useState(null);
+
+  useEffect(() => {
+    api.authMe().then(setMe).catch(() => {});
+  }, []);
 
   const pick = (e) => {
     const file = e.target.files?.[0];
@@ -551,6 +556,13 @@ function BackupCard() {
       setBusy(false);
     }
   };
+
+  // This is the whole database, not one person's collection — it holds every
+  // account's items and restoring it replaces everything. So it belongs to
+  // whoever runs the server, and on a service a subscriber must not be shown
+  // a button that can only answer 403. Their own copy is "Share a collection"
+  // above, which needs no permission and includes everything of theirs.
+  if (me && me.multi_user && !me.user?.is_admin) return null;
 
   return (
     <section className="settings-card">

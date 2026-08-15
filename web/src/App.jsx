@@ -12,7 +12,13 @@ import { BrandMark, Icon, IconDefs } from "./components/Icons.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import PageArrows from "./components/PageArrows.jsx";
 import SignIn from "./components/SignIn.jsx";
-import { MODULES, SettingsProvider, useEnabledModules, useSettings } from "./settings.jsx";
+import {
+  MODULES,
+  SettingsProvider,
+  useEnabledModules,
+  useLocked,
+  useSettings,
+} from "./settings.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import CardsPage from "./pages/CardsPage.jsx";
 import WantedPage from "./pages/WantedPage.jsx";
@@ -68,9 +74,31 @@ function TabBar() {
 function RequireModule({ moduleKey, children }) {
   const enabled = useEnabledModules();
   const { settings } = useSettings();
+  const locked = useLocked();
   if (!settings) return null; // still loading
-  if (enabled.some((m) => m.key === moduleKey)) return children;
   const label = MODULES.find((m) => m.key === moduleKey)?.label || moduleKey;
+
+  // Checked before "turned off": somebody who has not paid should be told
+  // that, not told to flip a switch that will not help.
+  if (locked(moduleKey)) {
+    return (
+      <div className="empty">
+        <span className="glyph"><Icon id="star" /></span>
+        <strong>{label} is part of the paid plan</strong>
+        <p>
+          Cards, the Pokédex and every binder stay free forever. {label} joins
+          them for $4 a month.
+        </p>
+        <p className="locked-note">
+          Anything you have already added is still here and still yours —
+          nothing was deleted, and your backup still includes all of it.
+        </p>
+        <Link to="/settings" className="primary">See the plans</Link>
+      </div>
+    );
+  }
+
+  if (enabled.some((m) => m.key === moduleKey)) return children;
   return (
     <div className="empty">
       <span className="glyph"><Icon id="sliders" /></span>

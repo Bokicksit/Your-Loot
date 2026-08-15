@@ -2466,6 +2466,15 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .linkish:hover { text-decoration: underline; }
 
+/* The reassurance under a locked collection. Quieter than the pitch above
+   it, because "your things are safe" should read as a fact rather than as
+   part of the sell. */
+.locked-note {
+  max-width: 42ch;
+  font-size: var(--f-2);
+  color: var(--text-mute);
+}
+
 /* The front page of the hosted service. Never rendered on a self-hosted
    install — see SignIn.jsx — so it can talk about subscriptions without
    confusing somebody running this on a machine in their own house. */

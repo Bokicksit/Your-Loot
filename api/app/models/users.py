@@ -27,6 +27,11 @@ class User(TimestampMixin, Base):
     # ever asked — so this must never be read as "not allowed in", only as
     # "we cannot send this person a password reset".
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # "free" or "supporter", and when it runs out. Both are meaningless on a
+    # self-hosted install, where nothing costs anything — see app/plans.py.
+    # Null `plan_until` on a supporter means it does not expire.
+    plan: Mapped[str] = mapped_column(String(20), default="free", server_default="free")
+    plan_until: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class ItemOverride(TimestampMixin, Base):

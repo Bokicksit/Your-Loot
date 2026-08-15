@@ -35,6 +35,7 @@ services:
       IMAGE_DIR: /data/images
       AUTH_MODE: ${AUTH_MODE:-single}
       AVAILABLE_MODULES: ${AVAILABLE_MODULES:-}
+      PAID_MODULES: ${PAID_MODULES:-}
       OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
       SIGNUP_LIMIT: ${SIGNUP_LIMIT:-20}
       PUBLIC_URL: ${PUBLIC_URL:-}

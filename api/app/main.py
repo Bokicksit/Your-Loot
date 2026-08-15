@@ -1,13 +1,15 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.auth import session_secret
+from app.auth import current_user, session_secret
 from app.config import origin_list, settings
+from app.models import User
 from app.modules import available
+from app.plans import costs_money, may_open
 from app.routers import (
     auth,
     backup,
@@ -71,10 +73,30 @@ _ROUTERS = {
     "lego": lego.router,
     "comics": comics.router,
 }
+def _paywall(module: str):
+    """Refuse a collection this install charges for to somebody who has not
+    paid. Attached to the whole router rather than to each endpoint, because
+    a paywall with one route missing is not a paywall."""
+
+    def guard(user: User = Depends(current_user)):
+        if not may_open(user, module):
+            raise HTTPException(
+                402,
+                f"{module.title()} is part of the paid plan. "
+                "Your collection is safe and still here.",
+            )
+
+    return guard
+
+
 for _name in available():
     _router = _ROUTERS.get(_name)
-    if _router is not None:
-        app.include_router(_router)
+    if _router is None:
+        continue
+    # Empty on every self-hosted install, so this list is empty and nothing
+    # anywhere is guarded.
+    _guards = [Depends(_paywall(_name))] if costs_money(_name) else []
+    app.include_router(_router, dependencies=_guards)
 
 app.include_router(images.router)
 app.include_router(backup.router)

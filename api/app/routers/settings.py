@@ -8,6 +8,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.models import Setting, User
 from app.modules import available
+from app.plans import paid_modules, subscribed
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -62,6 +63,10 @@ class SettingsOut(BaseModel):
     # switched on. Sent so the settings screen can offer toggles for the
     # collections that exist rather than for every one the code can draw.
     available_modules: list[str] = []
+    # Which of those cost money here, and whether this account has paid.
+    # Both empty and false on a self-hosted install, where nothing is paid.
+    paid_modules: list[str] = []
+    subscribed: bool = False
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
@@ -90,6 +95,7 @@ class SettingsUpdate(BaseModel):
 
 
 def _current(db: Session, user_id: int) -> SettingsOut:
+    who = db.get(User, user_id)
     stored = {
         s.key: s.value
         for s in db.query(Setting).filter(Setting.user_id == user_id).all()
@@ -100,6 +106,8 @@ def _current(db: Session, user_id: int) -> SettingsOut:
         owner_name=raw["owner_name"],
         enabled_modules=enabled or MODULES,
         available_modules=MODULES,
+        paid_modules=[m for m in paid_modules() if m in MODULES],
+        subscribed=subscribed(who),
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
         tile_modules=[m for m in _csv(raw["tile_modules"]) if m in VIEWS],

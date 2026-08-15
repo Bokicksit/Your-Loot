@@ -55,9 +55,9 @@ export function DeleteAccountPage() {
         <li>Confirm with your password</li>
       </ol>
       <p>
-        It happens immediately. Take a backup from <strong>Settings → Backup &amp;
-        restore</strong> first if you want to keep a copy of your collection —
-        afterwards there is nothing to take one from.
+        It happens immediately. Take a copy first if you want one —
+        <strong> Settings → Share a collection</strong> gives you a file with
+        everything in it. Afterwards there is nothing to take one from.
       </p>
 
       <h2>If you cannot sign in</h2>
@@ -182,10 +182,11 @@ export function PrivacyPage() {
       <h2>Your rights</h2>
       <p>
         You can take a complete copy of everything you have entered at any time
-        from <strong>Settings → Backup &amp; restore</strong> — a single file,
-        no request and no waiting. You can correct anything by editing it, and
-        delete everything by deleting your account. If you would rather ask us to
-        do any of that, write to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
+        from <strong>Settings → Share a collection</strong> — a single file, no
+        request and no waiting, and it includes collections your plan no longer
+        opens. You can correct anything by editing it, and delete everything by
+        deleting your account. If you would rather ask us to do any of that,
+        write to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
       </p>
       <p>
         Depending on where you live you may also have the right to object to
