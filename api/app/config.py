@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Open signup. Off, and deliberately: the default install of this is one
     # person's home server, where a stranger who finds it must not be able to
     # make themselves an account. A public service turns it on.
+    # Which collections this install offers at all, comma-separated. Empty
+    # means every one of them, which is what a self-hosted install wants and
+    # what every existing install already has. A hosted service names a
+    # subset — see app/modules.py.
+    available_modules: str = ""
     open_signup: bool = False
     # New accounts allowed per hour from one address. See ratelimit.py.
     signup_limit: int = 20

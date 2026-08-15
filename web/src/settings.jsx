@@ -73,3 +73,19 @@ export function useEnabledModules() {
   const on = settings?.enabled_modules || MODULES.map((m) => m.key);
   return MODULES.filter((m) => on.includes(m.key));
 }
+
+/** Modules this server carries at all, in display order.
+ *
+ *  Different from the above and not a preference: the hosted service cannot
+ *  legally offer some of these, so they are absent rather than switched off.
+ *  Offering a toggle for one would be offering a switch wired to nothing.
+ *
+ *  Falls back to all of them, which is what a self-hosted install has and
+ *  what every version before this one reported.
+ */
+export function useAvailableModules() {
+  const { settings } = useSettings();
+  const here = settings?.available_modules;
+  if (!here || !here.length) return MODULES;
+  return MODULES.filter((m) => here.includes(m.key));
+}

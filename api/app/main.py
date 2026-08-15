@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.auth import session_secret
 from app.config import origin_list, settings
+from app.modules import available
 from app.routers import (
     auth,
     backup,
@@ -54,14 +55,27 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(cards.router)
 app.include_router(collection.router)
-app.include_router(games.router)
-app.include_router(movies.router)
-app.include_router(books.router)
-app.include_router(records.router)
-app.include_router(lego.router)
-app.include_router(comics.router)
+
+# A collection this install does not offer is not registered at all, so its
+# routes 404 the way any other unknown path does. Hiding the tab and leaving
+# /api/movies answering would not be hiding it — it would be moving it
+# somewhere only the curious find. `hardware` has no router of its own; it is
+# served by games.
+_ROUTERS = {
+    "cards": cards.router,
+    "games": games.router,
+    "movies": movies.router,
+    "books": books.router,
+    "records": records.router,
+    "lego": lego.router,
+    "comics": comics.router,
+}
+for _name in available():
+    _router = _ROUTERS.get(_name)
+    if _router is not None:
+        app.include_router(_router)
+
 app.include_router(images.router)
 app.include_router(backup.router)
 app.include_router(settings_router.router)

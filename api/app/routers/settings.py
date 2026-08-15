@@ -7,13 +7,14 @@ from sqlalchemy.orm import Session
 from app.auth import current_user
 from app.db import get_db
 from app.models import Setting, User
+from app.modules import available
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
-MODULES = [
-    "cards", "games", "hardware", "movies", "books", "records", "lego", "comics",
-]
+# What this install offers, not what the code can draw — a person cannot
+# switch on a collection their server does not carry. See app/modules.py.
+MODULES = available()
 # Things that can be drawn as tiles. The wanted list and the shelf of binders
 # are views rather than collections — neither can be turned on or off — but
 # both have the same two layouts, so they belong in this list and nowhere else.
@@ -57,6 +58,10 @@ def _prefs(v: str | None) -> dict:
 class SettingsOut(BaseModel):
     owner_name: str | None = None
     enabled_modules: list[str] = []
+    # What this install carries at all, which is not the same as what you have
+    # switched on. Sent so the settings screen can offer toggles for the
+    # collections that exist rather than for every one the code can draw.
+    available_modules: list[str] = []
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
@@ -94,6 +99,7 @@ def _current(db: Session, user_id: int) -> SettingsOut:
     return SettingsOut(
         owner_name=raw["owner_name"],
         enabled_modules=enabled or MODULES,
+        available_modules=MODULES,
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
         tile_modules=[m for m in _csv(raw["tile_modules"]) if m in VIEWS],

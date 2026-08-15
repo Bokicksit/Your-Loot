@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { MODULES, useSettings } from "../settings.jsx";
+import { MODULES, useAvailableModules, useSettings } from "../settings.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 // mirrors the two book fields most shelves never change
@@ -10,6 +10,8 @@ const BOOK_JACKETS = ["With jacket", "No jacket"];
 
 export default function SettingsPage() {
   const { settings, save } = useSettings();
+  // what this server carries, not what the code can draw
+  const available = useAvailableModules();
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
   const [version, setVersion] = useState("");
@@ -74,7 +76,7 @@ export default function SettingsPage() {
           everything exactly as it was.
         </p>
         <div className="settings-modules">
-          {MODULES.map((m) => {
+          {available.map((m) => {
             const on = enabled.includes(m.key);
             return (
               <div key={m.key} className={`module-row ${on ? "" : "off"}`}>

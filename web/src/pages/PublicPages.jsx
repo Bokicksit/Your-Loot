@@ -326,7 +326,7 @@ export function TermsPage() {
 
       <h2>The legal bits</h2>
       <p>
-        These terms are governed by the laws of [STATE], United States. If part
+        These terms are governed by the laws of Tennessee, United States. If part
         of them turns out to be unenforceable, the rest still stands. If they
         change materially we will tell you before the change takes effect.
       </p>
