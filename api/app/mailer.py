@@ -25,8 +25,6 @@ from app.config import settings
 
 log = logging.getLogger("yourloot.mail")
 
-API = "https://api.resend.com/emails"
-
 # Plain text, deliberately. These are two short transactional messages; HTML
 # would buy nothing and cost deliverability, and a link somebody can read
 # before clicking is a feature in an email about their password.
@@ -74,7 +72,7 @@ def send(to: str, subject: str, body: str) -> bool:
 
     try:
         resp = httpx.post(
-            API,
+            settings.mail_api_url,
             headers={"Authorization": f"Bearer {settings.resend_api_key}"},
             json={
                 "from": settings.mail_from,

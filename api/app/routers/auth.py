@@ -24,7 +24,7 @@ from app.auth import (
 )
 from app.config import settings
 from app.db import get_db
-from app.mailer import send_reset, send_verification
+from app.mailer import configured as mail_configured, send_reset, send_verification
 from app.models import ApiToken, AuthToken, User
 from app.ratelimit import client_key, logins, mails, signups
 
@@ -58,6 +58,11 @@ class MeOut(BaseModel):
     locked: bool = False
     # whether this install offers a "create an account" link at all
     open_signup: bool = False
+    # Whether this server can send mail, which is a different question from
+    # whether anybody may sign up. A family install with a provider set wants
+    # password resets without wanting strangers; one without a provider must
+    # not show a reset form that can only ever write to a log.
+    email_enabled: bool = False
     user: UserOut | None = None
 
 
@@ -110,12 +115,18 @@ def me(request: Request, db: Session = Depends(get_db)):
             user=UserOut.model_validate(owner) if signed_in and owner else None,
         )
     if needs_setup(db):
-        return MeOut(multi_user=True, needs_setup=True, open_signup=settings.open_signup)
+        return MeOut(
+            multi_user=True,
+            needs_setup=True,
+            open_signup=settings.open_signup,
+            email_enabled=mail_configured(),
+        )
     uid = request.session.get("uid")
     user = db.get(User, uid) if uid else None
     return MeOut(
         multi_user=True,
         open_signup=settings.open_signup,
+        email_enabled=mail_configured(),
         user=UserOut.model_validate(user) if user else None,
     )
 
@@ -306,6 +317,8 @@ def resend_verification(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
+    if not mail_configured():
+        raise HTTPException(404, "Not found")
     if user.email_verified_at is not None or not user.email:
         return  # nothing to do, and saying so would be noise
     wait = mails.retry_after(client_key(request, user.email))
@@ -332,7 +345,10 @@ def forgot_password(
     does must be indistinguishable from out here, or this becomes a way to
     ask which of a list of people uses the service.
     """
-    if not multi_user():
+    if not multi_user() or not mail_configured():
+        # No provider means no link can reach anybody, and the only thing
+        # this would achieve is writing reset tokens into the container log
+        # for whoever asked. A self-hosted install resets from the host.
         raise HTTPException(404, "Not found")
 
     key = client_key(request, body.email)

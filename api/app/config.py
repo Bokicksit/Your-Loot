@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # instead — see mailer.py. Self-hosters need neither.
     resend_api_key: str = ""
     mail_from: str = ""
+    # Where the mail goes. Resend's own endpoint unless you point it at a
+    # compatible relay of your own — or, in the test suite, at a dead port,
+    # so that "this server can send mail" can be exercised without any packet
+    # leaving the machine.
+    mail_api_url: str = "https://api.resend.com/emails"
 
     igdb_client_id: str = ""
     igdb_client_secret: str = ""

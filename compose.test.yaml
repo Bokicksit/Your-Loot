@@ -77,8 +77,17 @@ services:
       # busy household. Raised here rather than lowering the real default.
       SIGNUP_LIMIT: "500"
       SECRET_KEY: test-only-not-a-secret
-      # no RESEND_API_KEY on purpose: the suite must pass without a mail
-      # provider, which is also every self-hosted install
+      # Configured, but pointed at a dead port. "This server can send mail"
+      # is a thing the routes branch on and therefore has to be exercised;
+      # actually reaching Resend from a test suite is not. Connection refused
+      # comes back instantly and the mailer swallows it, which is the same
+      # path a provider having a bad afternoon takes.
+      #
+      # The api container next door has none of this on purpose — that is the
+      # self-hosted install, and it must keep offering no reset at all.
+      RESEND_API_KEY: test-only-not-a-real-key
+      MAIL_FROM: noreply@example.com
+      MAIL_API_URL: http://127.0.0.1:9/mail-goes-nowhere
       PUBLIC_URL: http://api-open:8000
       SEED_ON_START: "false"
     depends_on:

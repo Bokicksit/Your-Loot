@@ -377,7 +377,11 @@ function AccountCard() {
   if (!me || !me.multi_user || !me.user) return null;
 
   const user = me.user;
-  const confirmed = Boolean(user.email_verified_at);
+  // Only worth mentioning where a confirmation could actually be sent. On a
+  // server with no mail provider there is nothing to confirm an address for
+  // and no way to do it, so saying it is unconfirmed is a complaint about
+  // something the person cannot fix.
+  const confirmed = Boolean(user.email_verified_at) || !me.email_enabled;
   // The owner cannot leave — deleting account 1 leaves a database nobody can
   // sign into. Saying so beats a button that always fails.
   const isOwner = user.id === 1;
@@ -416,7 +420,7 @@ function AccountCard() {
       <h3>Your account</h3>
       <p>
         Signed in as <strong>{user.email}</strong>
-        {confirmed ? " — address confirmed." : "."}
+        {user.email_verified_at ? " — address confirmed." : "."}
       </p>
 
       {!confirmed && (

@@ -109,6 +109,36 @@ def test_signup_is_off_unless_it_is_turned_on():
     assert r.status_code == 404, "an invite-only install offered open signup"
 
 
+def test_a_server_with_no_mail_provider_offers_no_reset():
+    """The install this actually protects: somebody's house, accounts on for
+    the family, no mail provider and no wish for one.
+
+    Without this, /forgot answers 204 and quietly writes a working reset link
+    into the container log for anybody who asks — reachable by whoever can
+    reach the API. The password is reset from the host there, which is what
+    the sign-in screen says.
+    """
+    me = httpx.get(f"{BASE}/api/auth/me", timeout=60).json()
+    assert me["email_enabled"] is False, "the invite-only test stack grew a mail provider"
+
+    r = httpx.post(f"{BASE}/api/auth/forgot", json={"email": an_email()}, timeout=60)
+    assert r.status_code == 404, "a reset was offered with nowhere to send it"
+
+
+@needs_open
+def test_the_two_flags_are_separate_questions():
+    """Whether strangers may join and whether this server can send mail were
+    the same flag once. A family install with a provider wants resets without
+    wanting signups, and the UI branches on each of them separately."""
+    me = httpx.get(f"{OPEN}/api/auth/me", timeout=60).json()
+    assert me["open_signup"] is True
+    assert me["email_enabled"] is True
+
+    invite_only = httpx.get(f"{BASE}/api/auth/me", timeout=60).json()
+    assert invite_only["open_signup"] is False
+    assert invite_only["email_enabled"] is False
+
+
 @pytest.mark.skipif(not SOLO, reason="no single-user API configured")
 def test_a_single_user_install_has_none_of_this():
     for path, body in [

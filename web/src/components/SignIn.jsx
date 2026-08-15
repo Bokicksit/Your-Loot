@@ -50,6 +50,7 @@ export default function SignIn({ children }) {
       // one account: the address is implied, so the form is one field
       soloLock={!state.multi_user}
       openSignup={state.open_signup}
+      canEmail={state.email_enabled}
       onDone={refresh}
       error={error}
       setError={setError}
@@ -248,7 +249,7 @@ function ResetScreen() {
   );
 }
 
-function Gate({ needsSetup, soloLock, openSignup, onDone, error, setError }) {
+function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setError }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -401,18 +402,24 @@ function Gate({ needsSetup, soloLock, openSignup, onDone, error, setError }) {
           {busy ? "…" : heading}
         </button>
 
-        {/* Only where the server said anybody may have an account. A home
-            install shows none of this and keeps the advice below instead. */}
-        {openSignup && !needsSetup && (
+        {/* Two separate questions, and they were the same flag once, which
+            was wrong: whether strangers may join, and whether this server can
+            send an email. A family install with a provider configured wants
+            resets without wanting signups. */}
+        {!needsSetup && (canEmail || openSignup) && (
           <p className="signin-alt">
             {mode === "signin" ? (
               <>
-                <button type="button" className="linkish" onClick={() => go("forgot")}>
-                  Forgotten your password?
-                </button>
-                <button type="button" className="linkish" onClick={() => go("signup")}>
-                  Create an account
-                </button>
+                {canEmail && (
+                  <button type="button" className="linkish" onClick={() => go("forgot")}>
+                    Forgotten your password?
+                  </button>
+                )}
+                {openSignup && (
+                  <button type="button" className="linkish" onClick={() => go("signup")}>
+                    Create an account
+                  </button>
+                )}
               </>
             ) : (
               <button type="button" className="linkish" onClick={() => go("signin")}>
@@ -422,11 +429,10 @@ function Gate({ needsSetup, soloLock, openSignup, onDone, error, setError }) {
           </p>
         )}
 
-        {/* Somebody will lock themselves out, and on a server they run
-            themselves the answer cannot be an email they never configured
-            anything to send. Where signup is open there is a provider, so the
-            reset link above is the real answer and this would be wrong. */}
-        {!needsSetup && !openSignup && (
+        {/* Somebody will lock themselves out, and on a server that cannot
+            send mail the answer cannot be an email. Shown exactly when there
+            is no reset link above to contradict it. */}
+        {!needsSetup && !canEmail && (
           <p className="signin-note">
             Forgotten it? There is no reset email — this is your server. Reset
             it from the host:
