@@ -35,6 +35,12 @@ OPEN_DB = os.environ.get("OPEN_DATABASE_URL")
 needs_open = pytest.mark.skipif(not OPEN, reason="no open-signup API configured")
 
 PASSWORD = "a-real-password-1"
+# Fixed, not random, and for the reason conftest.py gives about its own: the
+# first run claims this account and every run after it signs into the same
+# one. A random address claimed the account on the first run and then could
+# not sign in on the second, which passed on a fresh stack and failed on a
+# reused one — the very shape of bug this file was meant to be careful about.
+OPEN_OWNER_EMAIL = "open-owner@example.com"
 OWNER_PASSWORD = "the-owner-password-1"
 
 
@@ -42,25 +48,26 @@ OWNER_PASSWORD = "the-owner-password-1"
 def owner_of_open():
     """Claim id 1 before any signup does.
 
-    Session-scoped and first, because /setup only works while no account has
-    a password — so if a signup gets there first, the owner is whoever that
-    was and this module can no longer test the guard on it.
+    Module-scoped and autouse so it runs first, because /setup only works
+    while no account has a password — if a signup gets there first, the owner
+    is whoever that was and the guard on account 1 can no longer be tested.
     """
     if not OPEN:
         yield None
         return
     c = httpx.Client(base_url=OPEN, timeout=60)
-    email = f"owner-{uuid.uuid4().hex[:8]}@example.com"
     me = c.get("/api/auth/me").json()
     if me.get("needs_setup"):
         c.post(
-            "/api/auth/setup", json={"email": email, "password": OWNER_PASSWORD}
+            "/api/auth/setup",
+            json={"email": OPEN_OWNER_EMAIL, "password": OWNER_PASSWORD},
         ).raise_for_status()
     else:
         c.post(
-            "/api/auth/login", json={"email": email, "password": OWNER_PASSWORD}
+            "/api/auth/login",
+            json={"email": OPEN_OWNER_EMAIL, "password": OWNER_PASSWORD},
         )
-    yield c, email
+    yield c, OPEN_OWNER_EMAIL
     c.close()
 
 
@@ -316,6 +323,11 @@ def test_the_owner_cannot_delete_themselves(owner_of_open):
     or the first stranger through the door becomes the undeletable one.
     """
     c, _email = owner_of_open
-    assert c.get("/api/auth/me").json()["user"]["id"] == OWNER_ID
+    signed_in = c.get("/api/auth/me").json()["user"]
+    # Not an assert: on a stack somebody else already claimed, this module
+    # cannot test the guard and should say so rather than fail on a None.
+    if not signed_in:
+        pytest.skip("the owner of this stack belongs to somebody else")
+    assert signed_in["id"] == OWNER_ID
     r = c.request("DELETE", "/api/auth/me", json={"password": OWNER_PASSWORD})
     assert r.status_code == 400

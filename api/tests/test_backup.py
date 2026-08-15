@@ -24,8 +24,18 @@ pytestmark = pytest.mark.destructive
 BASE = os.environ.get("LOOT_URL", "http://localhost:8000")
 
 
-def _titles(c: httpx.Client) -> set[str]:
-    return {i["title"] for i in c.get("/api/games", params={"limit": 200}).json()["items"]}
+def _titles(c: httpx.Client, tag: str) -> set[str]:
+    """The titles this test made, and only those.
+
+    Asked for by name rather than read off the first page of everything. A
+    capped list sorted by title quietly stops containing "Kept ..." once the
+    other modules have left a couple of hundred games called "Alice ..." and
+    "Shared ..." ahead of it — which passes on a fresh stack and fails on a
+    busy one, the worst way for a backup test to go wrong. The same fix as
+    test_tenancy.py and test_tags.py.
+    """
+    found = c.get("/api/games", params={"search": tag, "limit": 200}).json()["items"]
+    return {i["title"] for i in found}
 
 
 def test_a_backup_restores_what_it_captured(owner):
@@ -34,7 +44,7 @@ def test_a_backup_restores_what_it_captured(owner):
 
     item = owner.post("/api/games", json={"title": kept}).json()
     owner.post(f"/api/items/{item['id']}/owned", json={"condition": "NM"}).raise_for_status()
-    assert kept in _titles(owner)
+    assert kept in _titles(owner, tag)
 
     archive = owner.get("/api/backup")
     archive.raise_for_status()
@@ -47,7 +57,7 @@ def test_a_backup_restores_what_it_captured(owner):
     owner.post(f"/api/items/{later['id']}/owned", json={"condition": "NM"})
     owner.delete(f"/api/games/{item['id']}").raise_for_status()
 
-    now = _titles(owner)
+    now = _titles(owner, tag)
     assert kept not in now and added_after in now, "the divergence didn't take"
 
     restored = owner.post(
@@ -56,7 +66,7 @@ def test_a_backup_restores_what_it_captured(owner):
     )
     restored.raise_for_status()
 
-    after = _titles(owner)
+    after = _titles(owner, tag)
     assert kept in after, "restore lost something the backup contained"
     assert added_after not in after, "restore kept something the backup never had"
 
@@ -78,10 +88,8 @@ def test_the_copies_come_back_too(owner):
         files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
     ).raise_for_status()
 
-    row = next(
-        i for i in owner.get("/api/games", params={"limit": 200}).json()["items"]
-        if i["title"] == f"Copies {tag}"
-    )
+    found = owner.get("/api/games", params={"search": tag, "limit": 200}).json()["items"]
+    row = next(i for i in found if i["title"] == f"Copies {tag}")
     assert len(row["owned"]) == 1, "the copy did not come back"
     copy = row["owned"][0]
     assert copy["condition"] == "LP"
@@ -91,11 +99,25 @@ def test_the_copies_come_back_too(owner):
 
 def test_a_corrupt_file_is_refused_rather_than_applied(owner):
     """The failure that would otherwise be silent and total: half a restore
-    from a truncated file leaves nothing to go back to."""
-    before = _titles(owner)
+    from a truncated file leaves nothing to go back to.
+
+    Something of this test's own has to be on the shelf for "nothing changed"
+    to mean anything. Comparing two unscoped pages compared the same first
+    two hundred rows either way, which would have gone on passing while a
+    half-applied restore quietly emptied everything behind them.
+    """
+    tag = uuid.uuid4().hex[:8]
+    survivor = f"Survivor {tag}"
+    owner.post("/api/games", json={"title": survivor}).raise_for_status()
+
+    before = _titles(owner, tag)
+    total_before = owner.get("/api/games", params={"limit": 1}).json()["total"]
+
     r = owner.post(
         "/api/backup/restore",
         files={"file": ("not-a-backup.zip", io.BytesIO(b"this is not a zip"), "application/zip")},
     )
     assert r.status_code >= 400, "a corrupt file was accepted"
-    assert _titles(owner) == before, "a rejected restore still changed the database"
+    assert _titles(owner, tag) == before, "a rejected restore still changed the database"
+    assert owner.get("/api/games", params={"limit": 1}).json()["total"] == total_before, \
+        "a rejected restore changed rows it never reported"
