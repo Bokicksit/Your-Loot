@@ -30,6 +30,21 @@ class Settings(BaseSettings):
     # Integration credentials. Each is optional: without one, that module's
     # online search returns a 503 telling you which key is missing, and manual
     # entry keeps working. TCGdex, Open Library and MusicBrainz need no key.
+    # Open signup. Off, and deliberately: the default install of this is one
+    # person's home server, where a stranger who finds it must not be able to
+    # make themselves an account. A public service turns it on.
+    open_signup: bool = False
+    # New accounts allowed per hour from one address. See ratelimit.py.
+    signup_limit: int = 20
+    # Where this install is reachable, for the links inside emails. A verify
+    # link has to be absolute and the API cannot infer the public address
+    # behind a proxy without being told.
+    public_url: str = "http://localhost:5173"
+    # Mail. Without both of these nothing is sent and the link is logged
+    # instead — see mailer.py. Self-hosters need neither.
+    resend_api_key: str = ""
+    mail_from: str = ""
+
     igdb_client_id: str = ""
     igdb_client_secret: str = ""
     tmdb_api_key: str = ""

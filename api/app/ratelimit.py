@@ -14,6 +14,8 @@ need Redis to have a login form.
 import time
 from collections import defaultdict, deque
 
+from app.config import settings
+
 
 class Attempts:
     """A sliding window of failures per key.
@@ -61,6 +63,22 @@ class Attempts:
 # PIN takes weeks rather than seconds, loose enough that nobody mistyping
 # their own password on a phone notices it exists.
 logins = Attempts(limit=5, window=300)
+
+# Mail costs money and lands in somebody's inbox, so the brake here is not
+# about guessing — nobody is brute-forcing "send me an email". It is about
+# not letting one address be used to post a hundred messages at a stranger,
+# and not letting a stuck client empty the sending quota. Counted per address
+# rather than per attempt, so three in an hour is generous for a person and
+# useless for a mail bomb.
+mails = Attempts(limit=3, window=3600)
+
+# Signups from one address. A person makes one account; a script makes as many
+# as it can until something stops it. The number is a setting because the two
+# ends of it pull opposite ways: a household, an office or a school all share
+# one address and might legitimately produce several in an evening, while the
+# thing this is for wants thousands. Twenty stops the second without ever
+# being noticed by the first.
+signups = Attempts(limit=settings.signup_limit, window=3600)
 
 
 def client_key(request, identifier: str | None = None) -> str:

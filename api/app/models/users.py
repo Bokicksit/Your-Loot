@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
@@ -20,6 +22,11 @@ class User(TimestampMixin, Base):
     display_name: Mapped[str | None] = mapped_column(String(50))
     password_hash: Mapped[str | None] = mapped_column(String(255))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # When they proved the address is theirs. Null on every account that
+    # predates this and on every single-user install, neither of which was
+    # ever asked — so this must never be read as "not allowed in", only as
+    # "we cannot send this person a password reset".
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class ItemOverride(TimestampMixin, Base):

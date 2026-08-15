@@ -41,3 +41,35 @@ class ApiToken(TimestampMixin, Base):
     @property
     def active(self) -> bool:
         return self.revoked_at is None
+
+
+class AuthToken(TimestampMixin, Base):
+    """A single-use link sent to an email address.
+
+    Two jobs, one shape: proving an address belongs to whoever signed up, and
+    letting somebody back in who has forgotten their password. Both are "hold
+    this secret for a while, spend it once", and splitting them into two
+    tables would only mean writing the expiry logic twice.
+
+    Stored as a SHA-256 like ApiToken, and for the same reason — a leaked
+    copy of this table must not be a leaked copy of everybody's password
+    reset. The raw value exists only in the email.
+
+    `used_at` rather than deleting the row: a reset that was already spent
+    should say so, and the row is the evidence. It also means a link mailed
+    twice cannot be redeemed twice.
+    """
+
+    __tablename__ = "auth_token"
+
+    VERIFY = "verify"
+    RESET = "reset"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(10))  # verify | reset
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)

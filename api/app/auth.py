@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import engine, get_db
-from app.models import ApiToken, User
+from app.models import ApiToken, AuthToken, User
 
 OWNER_ID = 1  # the row migration 0018 seeded from the existing install
 
@@ -120,6 +120,63 @@ def new_token() -> tuple[str, str, str]:
     """(raw, hash, prefix). The raw value is the caller's only copy."""
     raw = TOKEN_PREFIX + secrets.token_urlsafe(32)
     return raw, hash_token(raw), raw[:12]
+
+
+# --- Emailed links: verify an address, reset a password --------------------
+# Both are "hold this secret briefly, spend it once". A verify link is
+# generous because people read mail the next morning; a reset link is not,
+# because it is the one that hands over an account.
+
+VERIFY_HOURS = 24
+RESET_MINUTES = 60
+
+
+def issue_link_token(db: Session, user: User, kind: str, lifetime: timedelta) -> str:
+    """Mint one and return the raw value, which only the email will hold.
+
+    Any unspent token of the same kind is retired first: asking for a second
+    reset link should make the first one stop working, or a link forwarded to
+    the wrong person stays live for an hour after you have replaced it.
+    """
+    now = datetime.now(UTC).replace(tzinfo=None)
+    db.query(AuthToken).filter(
+        AuthToken.user_id == user.id,
+        AuthToken.kind == kind,
+        AuthToken.used_at.is_(None),
+    ).update({AuthToken.used_at: now}, synchronize_session=False)
+
+    raw = secrets.token_urlsafe(32)
+    db.add(
+        AuthToken(
+            user_id=user.id,
+            kind=kind,
+            token_hash=hash_token(raw),
+            expires_at=now + lifetime,
+        )
+    )
+    db.commit()
+    return raw
+
+
+def spend_link_token(db: Session, raw: str, kind: str) -> User | None:
+    """Redeem it, once. None if it is unknown, the wrong kind, already spent
+    or out of date — the caller must not be able to tell those apart."""
+    if not raw:
+        return None
+    now = datetime.now(UTC).replace(tzinfo=None)
+    row = db.scalar(
+        select(AuthToken).where(
+            AuthToken.token_hash == hash_token(raw),
+            AuthToken.kind == kind,
+            AuthToken.used_at.is_(None),
+            AuthToken.expires_at > now,
+        )
+    )
+    if row is None:
+        return None
+    row.used_at = now
+    db.commit()
+    return db.get(User, row.user_id)
 
 
 def _bearer(request: Request) -> str | None:
