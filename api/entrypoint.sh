@@ -27,4 +27,11 @@ if [ "${SEED_ON_START:-true}" = "true" ]; then
   ) &
 fi
 
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+# 0.0.0.0 is every IPv4 address on this container, which is what compose
+# networking uses and what every self-hosted install wants.
+#
+# Some platform hosts route between services over IPv6 only — Railway is one —
+# and there an IPv4-only listener resolves, accepts nothing, and looks exactly
+# like a crashed API from the container next door. Setting BIND_HOST=:: listens
+# on IPv6 (and, on Linux defaults, IPv4 with it). Left alone nothing changes.
+exec uvicorn app.main:app --host "${BIND_HOST:-0.0.0.0}" --port "${API_PORT:-8000}"
