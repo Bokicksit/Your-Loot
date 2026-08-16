@@ -107,6 +107,15 @@ export const api = {
     request("/api/auth/me", { method: "DELETE", body: JSON.stringify({ password }) }),
   changePassword: (body) =>
     request("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
+  // Admin-only; every one of these 403s for anybody else.
+  adminStats: () => request("/api/admin/stats"),
+  adminUsers: () => request("/api/admin/users"),
+  adminSetPlan: (id, body) =>
+    request(`/api/admin/users/${id}/plan`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
   users: () => request("/api/auth/users"),
   inviteUser: (body) =>
     request("/api/auth/users", { method: "POST", body: JSON.stringify(body) }),

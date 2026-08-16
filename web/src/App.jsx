@@ -29,6 +29,7 @@ import BooksPage from "./pages/BooksPage.jsx";
 import RecordsPage from "./pages/RecordsPage.jsx";
 import LegoPage from "./pages/LegoPage.jsx";
 import ComicsPage from "./pages/ComicsPage.jsx";
+import AdminPage from "./pages/AdminPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import BindersPage from "./pages/BindersPage.jsx";
 import BinderPage from "./pages/BinderPage.jsx";
@@ -227,6 +228,10 @@ function Shell() {
             element={<RequireModule moduleKey="cards"><BinderPage /></RequireModule>}
           />
           <Route path="/settings" element={<SettingsPage />} />
+          {/* The API refuses this to anybody who is not an admin, so the
+              route existing costs nothing — the page shows what the server
+              is willing to say and no more. */}
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
       <PageArrows />

@@ -11,6 +11,7 @@ from app.models import User
 from app.modules import available
 from app.plans import costs_money, may_open
 from app.routers import (
+    admin,
     auth,
     backup,
     binders,
@@ -57,6 +58,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(collection.router)
 
 # A collection this install does not offer is not registered at all, so its

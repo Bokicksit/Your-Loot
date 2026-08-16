@@ -2466,6 +2466,78 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .linkish:hover { text-decoration: underline; }
 
+/* The operator's page. Scanned rather than read, so the numbers lead and
+   everything else gets out of their way. */
+.admin { display: grid; gap: var(--s-3); }
+.admin-stats {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  margin-bottom: var(--s-3);
+}
+.admin-stat { display: grid; gap: 2px; align-content: start; }
+.admin-stat-label {
+  font-size: var(--f-1);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.admin-stat-value {
+  font: 700 clamp(21px, 4vw, 27px)/1.1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.admin-stat-note { font-size: var(--f-1); color: var(--text-mute); }
+
+.admin-modules { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--s-2); }
+.admin-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  font-size: var(--f-1);
+  color: var(--text-dim);
+}
+.admin-chip b { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: var(--text); }
+.admin-chip.paid { border-color: var(--gold-line); color: var(--gold); }
+.admin-chip.paid b { color: var(--gold); }
+
+.admin-table-wrap { overflow-x: auto; margin-bottom: var(--s-2); }
+.admin-table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: var(--f-2); }
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.admin-table th {
+  font-size: var(--f-1);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-num { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.admin-who { display: block; color: var(--text); word-break: break-all; }
+.admin-name { display: block; font-size: var(--f-1); color: var(--text-mute); }
+.admin-flag { display: inline-block; margin-top: 2px; font-size: var(--f-1); color: var(--gold); }
+.admin-plan {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  font-size: var(--f-1);
+  white-space: nowrap;
+  color: var(--text-dim);
+}
+.admin-plan.on { border-color: var(--gold-line); color: var(--gold); }
+.admin-plan.admin { border-color: var(--jade); color: var(--jade); }
+.admin-plan small { opacity: .75; }
+
 /* The reassurance under a locked collection. Quieter than the pitch above
    it, because "your things are safe" should read as a fact rather than as
    part of the sell. */

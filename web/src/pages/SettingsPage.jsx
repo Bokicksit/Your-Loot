@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { MODULES, useAvailableModules, useSettings } from "../settings.jsx";
@@ -373,6 +374,11 @@ function PolicyLinks() {
   if (!me || !me.multi_user) return null;
   return (
     <section className="settings-card">
+      {me.user?.is_admin && (
+        <p className="settings-note" style={{ marginTop: 0 }}>
+          <Link to="/admin">Admin — accounts and statistics</Link>
+        </p>
+      )}
       <h3>The small print</h3>
       <p className="settings-note" style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px" }}>
         <a href="/privacy">Privacy</a>

@@ -1,0 +1,183 @@
+import { useEffect, useState } from "react";
+import { api } from "../api.js";
+import { Icon } from "../components/Icons.jsx";
+
+/** The operator's page: who is here, who has paid, what the server holds.
+ *
+ *  Nothing per-person beyond what running a service requires — no last-seen,
+ *  no activity, no counting how often somebody opens the app. The people
+ *  here handed over a list of everything they own; the least they are owed is
+ *  that nobody is watching them use it.
+ */
+
+const fmtBytes = (n) => {
+  if (!n) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1);
+  return `${(n / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`;
+};
+
+const fmtDate = (s) => (s ? new Date(s).toLocaleDateString() : "—");
+
+function Stat({ label, value, note }) {
+  return (
+    <div className="admin-stat">
+      <span className="admin-stat-label">{label}</span>
+      <span className="admin-stat-value">{value}</span>
+      {note && <span className="admin-stat-note">{note}</span>}
+    </div>
+  );
+}
+
+export default function AdminPage() {
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(null);
+
+  const load = () =>
+    Promise.all([api.adminStats(), api.adminUsers()])
+      .then(([s, u]) => {
+        setStats(s);
+        setUsers(u);
+        setError(null);
+      })
+      .catch((e) => setError(e.message));
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const setPlan = async (id, plan) => {
+    setBusy(id);
+    setError(null);
+    try {
+      await api.adminSetPlan(id, { plan, until: null });
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (error && !stats) {
+    return (
+      <div className="empty">
+        <span className="glyph"><Icon id="alert" /></span>
+        <strong>Not available</strong>
+        <p>{error}</p>
+      </div>
+    );
+  }
+  if (!stats || !users) return <p className="empty">Loading…</p>;
+
+  const a = stats.accounts;
+  const modules = Object.entries(stats.collections.owned_by_module);
+
+  return (
+    <div className="admin">
+      <section className="settings-card">
+        <h3>People</h3>
+        <div className="admin-stats">
+          <Stat label="Accounts" value={a.total} note={`${a.admins} admin`} />
+          <Stat label="Confirmed" value={a.verified} note="address proven" />
+          <Stat
+            label="Subscribers"
+            value={a.subscribers}
+            note={`$${stats.revenue.monthly_gross_usd}/mo gross`}
+          />
+          <Stat label="New this week" value={a.new_7d} note={`${a.new_30d} in 30 days`} />
+        </div>
+      </section>
+
+      <section className="settings-card">
+        <h3>What the server holds</h3>
+        <div className="admin-stats">
+          <Stat label="Catalogue" value={stats.catalogue.items.toLocaleString()} note="shared entries" />
+          <Stat label="Copies owned" value={stats.collections.copies.toLocaleString()} note="across everybody" />
+          <Stat label="Wanted" value={stats.collections.wanted.toLocaleString()} />
+          <Stat label="Photographs" value={fmtBytes(stats.storage.photos_bytes)} note="on disk" />
+          <Stat
+            label="Barcodes cached"
+            value={stats.barcodes.barcodes_known.toLocaleString()}
+            note={`${stats.barcodes.unrecognised} unknown`}
+          />
+        </div>
+        <div className="admin-modules">
+          {modules.map(([m, n]) => (
+            <span key={m} className={`admin-chip ${stats.install.paid_modules.includes(m) ? "paid" : ""}`}>
+              {m}
+              <b>{n.toLocaleString()}</b>
+            </span>
+          ))}
+        </div>
+        <p className="settings-note">
+          Collections marked in gold are the ones this install charges for.
+          {stats.install.open_signup
+            ? " Anybody can sign themselves up."
+            : " Signup is closed — accounts are invited."}
+        </p>
+      </section>
+
+      <section className="settings-card">
+        <h3>Accounts</h3>
+        {error && (
+          <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>{error}</p>
+        )}
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <tbody>
+              <tr>
+                <th>Who</th>
+                <th>Joined</th>
+                <th>Items</th>
+                <th>Plan</th>
+                <th />
+              </tr>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <span className="admin-who">{u.email || `#${u.id}`}</span>
+                    {u.display_name && <span className="admin-name">{u.display_name}</span>}
+                    {!u.email_verified_at && <span className="admin-flag">unconfirmed</span>}
+                  </td>
+                  <td className="admin-num">{fmtDate(u.created_at)}</td>
+                  <td className="admin-num">{u.items.toLocaleString()}</td>
+                  <td>
+                    {u.is_admin ? (
+                      <span className="admin-plan admin">admin</span>
+                    ) : u.subscribed ? (
+                      <span className="admin-plan on">
+                        supporter
+                        {u.plan_until && <small> to {fmtDate(u.plan_until)}</small>}
+                      </span>
+                    ) : (
+                      <span className="admin-plan">free</span>
+                    )}
+                  </td>
+                  <td>
+                    {!u.is_admin && (
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={busy === u.id}
+                        onClick={() => setPlan(u.id, u.subscribed ? "free" : "supporter")}
+                      >
+                        {busy === u.id ? "…" : u.subscribed ? "Make free" : "Give supporter"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="settings-note">
+          Granting a plan here has no end date — it stays until you take it
+          back. Admins are never billed and cannot be put on a plan.
+        </p>
+      </section>
+    </div>
+  );
+}
