@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const { settings, save } = useSettings();
   // what this server carries, not what the code can draw
   const available = useAvailableModules();
+  const hasModule = (key) => available.some((m) => m.key === key);
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
   const [version, setVersion] = useState("");
@@ -98,52 +99,53 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Every row here is a default for one collection, so each is drawn
+          only where this server carries it — a "default region for games"
+          on an install with no games configures nothing. The Pokédex toggle
+          that used to live here is gone: the card list has its own, in the
+          row above the cards it affects, which is where you actually reach
+          for it. Two switches for one setting is one too many. */}
+      {(hasModule("books") || hasModule("games") || hasModule("hardware")) && (
       <section className="settings-card">
         <h3>Display</h3>
-        <div className="form-row">
-          <span className="settings-label">Show Pokédex cards in the card list</span>
-          <button
-            className={`toggle ${settings.show_binder_in_collection ? "on" : ""}`}
-            onClick={() =>
-              flash({ show_binder_in_collection: !settings.show_binder_in_collection })
-            }
-          >
-            {settings.show_binder_in_collection ? "Shown" : "Hidden"}
-          </button>
-        </div>
-        <div className="form-row">
-          <span className="settings-label">Books are usually</span>
-          <select
-            value={settings.default_book_format}
-            onChange={(e) => flash({ default_book_format: e.target.value })}
-          >
-            {BOOK_FORMATS.map((f) => (
-              <option key={f}>{f}</option>
-            ))}
-          </select>
-          <select
-            value={settings.default_book_jacket}
-            onChange={(e) => flash({ default_book_jacket: e.target.value })}
-          >
-            {BOOK_JACKETS.map((j) => (
-              <option key={j}>{j}</option>
-            ))}
-          </select>
-        </div>
-        <div className="form-row">
-          <span className="settings-label">
-            Default region for new games &amp; hardware
-          </span>
-          <select
-            value={settings.default_region}
-            onChange={(e) => flash({ default_region: e.target.value })}
-          >
-            {REGIONS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
-        </div>
+        {hasModule("books") && (
+          <div className="form-row">
+            <span className="settings-label">Books are usually</span>
+            <select
+              value={settings.default_book_format}
+              onChange={(e) => flash({ default_book_format: e.target.value })}
+            >
+              {BOOK_FORMATS.map((f) => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+            <select
+              value={settings.default_book_jacket}
+              onChange={(e) => flash({ default_book_jacket: e.target.value })}
+            >
+              {BOOK_JACKETS.map((j) => (
+                <option key={j}>{j}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {(hasModule("games") || hasModule("hardware")) && (
+          <div className="form-row">
+            <span className="settings-label">
+              Default region for new games &amp; hardware
+            </span>
+            <select
+              value={settings.default_region}
+              onChange={(e) => flash({ default_region: e.target.value })}
+            >
+              {REGIONS.map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </section>
+      )}
 
       <ShareCard enabled={enabled} />
       <LockCard />
