@@ -2485,6 +2485,81 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .linkish:hover { text-decoration: underline; }
 
+/* Choosing several cards to put on a shelf together. */
+.select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.select-count { color: var(--text); font-size: var(--f-3); font-weight: 600; }
+.select-bar select { min-width: 170px; }
+.select-hint { color: var(--gold); font-size: var(--f-2); }
+.select-done {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 var(--s-3);
+  font-size: var(--f-2);
+  color: var(--jade);
+}
+
+/* A tile while choosing: dimmed until picked, and no text selection, because
+   a long press on a phone otherwise starts highlighting the card's name. */
+.tile-selecting {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.tile-selecting img,
+.tile-selecting .placeholder { opacity: .55; transition: opacity .12s; }
+.tile-selected { outline: 2px solid var(--gold); outline-offset: 1px; }
+.tile-selected img,
+.tile-selected .placeholder { opacity: 1; }
+.tile-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-line);
+  background: var(--bg-0);
+  color: transparent;
+}
+.tile-check.on { background: var(--gold); border-color: var(--gold); color: var(--gold-ink, #1a1206); }
+.tile-check .i { width: 14px; height: 14px; }
+
+/* Where a copy is filed, inside the edit sheet. */
+.binder-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.binder-chip { display: inline-flex; align-items: center; gap: 5px; }
+.binder-chip button {
+  min-height: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--text-mute);
+  font-size: var(--f-3);
+  line-height: 1;
+  cursor: pointer;
+}
+.binder-chip button:hover { color: var(--danger); }
+
 /* The operator's page. Scanned rather than read, so the numbers lead and
    everything else gets out of their way. */
 .admin { display: grid; gap: var(--s-3); }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
+import { useMyBinders } from "../mybinders.js";
 import useDismiss from "../useDismiss.js";
 import EbayLink from "./EbayLink.jsx";
 import { Icon } from "./Icons.jsx";
@@ -30,8 +31,20 @@ const ENTRY_FIELDS = [
   "card_number", "set_total", "rarity",
 ];
 
-export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
+export default function CardTile({
+  card,
+  onChange,
+  onReload,
+  onTagsChanged,
+  // selection mode, driven by the card list — see CardsPage
+  selecting = false,
+  selected = false,
+  onLongPress,
+  onToggleSelect,
+}) {
   const [busy, setBusy] = useState(false);
+  // shared across every tile on the page, fetched once
+  const myBinders = useMyBinders();
   const [detailOpen, setDetailOpen] = useState(false); // full-width expansion
   // a card is a tile plus a detail panel below its whole row, not one box, so
   // both count as "inside" — pressing either must not put the panel away
@@ -159,6 +172,74 @@ export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
     }
   };
 
+  /* Long press to start selecting, then tap to add to the selection.
+   *
+   * Half a second, and cancelled by moving — on a phone the card list is
+   * something you scroll, and a press that becomes a selection because your
+   * thumb rested a moment too long is worse than no gesture at all. A right
+   * click does the same thing with a mouse, where there is no long press.
+   *
+   * Only cards you actually own can be selected: filing works on a copy, and
+   * a card you do not own has none.
+   */
+  const pressTimer = useRef(null);
+  const pressed = useRef(false);
+  const selectable = card.owned.length > 0;
+
+  const cancelPress = () => {
+    clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
+
+  const pressHandlers = !selectable
+    ? {}
+    : {
+        onPointerDown: (e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          pressed.current = false;
+          cancelPress();
+          pressTimer.current = setTimeout(() => {
+            pressed.current = true;
+            onLongPress?.(card);
+          }, 500);
+        },
+        onPointerUp: cancelPress,
+        onPointerLeave: cancelPress,
+        onPointerCancel: cancelPress,
+        onPointerMove: cancelPress,
+        onContextMenu: (e) => {
+          if (!selecting) {
+            e.preventDefault();
+            onLongPress?.(card);
+          }
+        },
+        // In selection mode the whole tile is one big checkbox, so it has to
+        // swallow the clicks that would otherwise open the detail panel.
+        onClickCapture: (e) => {
+          if (!selecting) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSelect?.(card);
+        },
+      };
+
+  // The copy being edited, and the binders it is or isn't already on. Split
+  // here rather than in the markup so the two lists cannot disagree.
+  const editingCopy = card.owned.find((o) => o.id === editing);
+  const filedIn = new Set(editingCopy?.binder_ids || []);
+  const inBinders = myBinders.filter((b) => filedIn.has(b.id));
+  const notInBinders = myBinders.filter((b) => !filedIn.has(b.id));
+
+  /** Put this copy on a shelf, or take it off. */
+  const fileCopy = (binderId, add) =>
+    run(async () => {
+      if (add) await api.binderAddCards(binderId, [editing]);
+      else await api.binderRemoveCard(binderId, editing);
+      // the copy's binder_ids come from the server, so the list has to come
+      // back before the chips can be right
+      onReload?.();
+    });
+
   const openEdit = (o) => {
     setEditing(o.id);
     setVals({
@@ -271,6 +352,42 @@ export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
             In the Pokédex
           </button>
         )}
+
+        {/* Where this copy lives, and where it could. Separate from the
+            Pokédex switch above on purpose: that one picks a favourite among
+            the copies you own, this one puts a copy on a shelf, and they are
+            not the same question. Applied immediately rather than on save —
+            filing is its own act, and a card that moved should look moved. */}
+        {myBinders.length > 0 && (
+          <div className="binder-pick">
+            {inBinders.map((b) => (
+              <span key={b.id} className="chip binder-chip">
+                <Icon id="card" />
+                {b.name}
+                <button
+                  type="button"
+                  title={`Take it out of ${b.name}`}
+                  disabled={busy}
+                  onClick={() => fileCopy(b.id, false)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {notInBinders.length > 0 && (
+              <select
+                value=""
+                disabled={busy}
+                onChange={(e) => e.target.value && fileCopy(Number(e.target.value), true)}
+              >
+                <option value="">Add to a binder…</option>
+                {notInBinders.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
         <div className="form-row" style={{ width: "100%" }}>
           <button
             className="primary"
@@ -291,7 +408,18 @@ export default function CardTile({ card, onChange, onReload, onTagsChanged }) {
 
   return (
     <>
-    <div ref={tileRef} className={`tile ${card.owned.length ? "tile-owned" : ""}`}>
+    <div
+      ref={tileRef}
+      className={`tile ${card.owned.length ? "tile-owned" : ""} ${
+        selecting ? "tile-selecting" : ""
+      } ${selected ? "tile-selected" : ""}`}
+      {...pressHandlers}
+    >
+      {selecting && (
+        <span className={`tile-check ${selected ? "on" : ""}`} aria-hidden="true">
+          <Icon id="check" />
+        </span>
+      )}
       {card.owned.length > 0 && (
         <span className={`owned-badge ${card.owned.length > 1 ? "many" : ""}`}>
           ×{card.owned.length}

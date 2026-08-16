@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
 import { TagFilter } from "../components/Tags.jsx";
@@ -9,6 +9,7 @@ import { BinderSwitch } from "../components/BinderGrid.jsx";
 import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
+import { useMyBinders } from "../mybinders.js";
 import { useSettings, useListPref } from "../settings.jsx";
 import ViewToggle, {
   useTileView,
@@ -42,6 +43,75 @@ export default function CardsPage({ initialView = "collection" }) {
   const [cardCols] = useTileCols("cards", 3);
   const inlineDensity = useInlineDensity();
   const showBinder = !!settings?.show_binder_in_collection; // from Settings
+
+  /* Choosing several cards at once, to put them on a shelf together.
+   *
+   * Ordinary browsing is untouched until a long press starts it, and the
+   * whole mode ends the moment nothing is chosen — so there is no way to be
+   * stuck in a selection you did not mean to begin.
+   */
+  const myBinders = useMyBinders();
+  const [selecting, setSelecting] = useState(false);
+  const [chosen, setChosen] = useState(() => new Set());
+  const [filing, setFiling] = useState(false);
+  const [filed, setFiled] = useState(null);
+
+  const startSelecting = (card) => {
+    setSelecting(true);
+    setChosen(new Set([card.id]));
+    setFiled(null);
+  };
+
+  const togglePick = (card) => {
+    setChosen((prev) => {
+      const next = new Set(prev);
+      next.has(card.id) ? next.delete(card.id) : next.add(card.id);
+      // emptying the selection leaves the mode; nobody wants to hunt for a
+      // way out of a state they entered by accident
+      if (next.size === 0) setSelecting(false);
+      return next;
+    });
+  };
+
+  const stopSelecting = () => {
+    setSelecting(false);
+    setChosen(new Set());
+  };
+
+  /** File one copy of each chosen card into a binder.
+   *
+   *  A card can be owned several times over. The copy that goes is the first
+   *  one not already on that shelf — so pressing this twice does not stack
+   *  duplicates of the same copy, and somebody with four of a common can add
+   *  them one press at a time on purpose.
+   */
+  const fileSelected = async (binderId) => {
+    if (!binderId || filing) return;
+    setFiling(true);
+    try {
+      const ownedIds = [];
+      for (const c of cards) {
+        if (!chosen.has(c.id)) continue;
+        const copy = (c.owned || []).find(
+          (o) => !(o.binder_ids || []).includes(binderId)
+        );
+        if (copy) ownedIds.push(copy.id);
+      }
+      if (ownedIds.length) await api.binderAddCards(binderId, ownedIds);
+      const name = myBinders.find((b) => b.id === binderId)?.name || "the binder";
+      const already = chosen.size - ownedIds.length;
+      setFiled(
+        `${ownedIds.length} added to ${name}` +
+          (already ? ` · ${already} already there` : "")
+      );
+      stopSelecting();
+      await load();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setFiling(false);
+    }
+  };
   const [sets, setSets] = useState([]); // for the set autocomplete
   const [manual, setManual] = useState(null); // manual catalog entry draft
   const [online, setOnline] = useState(null); // TCGdex results (null = not searched)
@@ -438,6 +508,43 @@ export default function CardsPage({ initialView = "collection" }) {
           Add
         </button>
       </div>
+
+      {/* Only while choosing. It replaces nothing and hides nothing — it
+          appears above the filters, says how many are picked, and offers the
+          one thing selecting cards is for. */}
+      {selecting && (
+        <div className="select-bar">
+          <span className="select-count">
+            {chosen.size} card{chosen.size === 1 ? "" : "s"} selected
+          </span>
+          {myBinders.length > 0 ? (
+            <select
+              value=""
+              disabled={filing}
+              onChange={(e) => fileSelected(Number(e.target.value))}
+            >
+              <option value="">{filing ? "Adding…" : "Add to a binder…"}</option>
+              {myBinders.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          ) : (
+            <Link to="/binders" className="select-hint">
+              Make a binder first
+            </Link>
+          )}
+          <button type="button" className="ghost" onClick={stopSelecting}>
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {filed && !selecting && (
+        <p className="select-done">
+          <Icon id="check" />
+          {filed}
+        </p>
+      )}
 
       <div className="chip-row">
         <button
@@ -966,6 +1073,10 @@ export default function CardsPage({ initialView = "collection" }) {
             onChange={patchCard}
             onReload={load}
             onTagsChanged={() => setTagsChanged((n) => n + 1)}
+            selecting={selecting}
+            selected={chosen.has(c.id)}
+            onLongPress={startSelecting}
+            onToggleSelect={togglePick}
           />
         ))}
       </div>
