@@ -36,6 +36,10 @@ class User(TimestampMixin, Base):
     # cancellation — can be matched to a person without asking Stripe who
     # they are every time.
     stripe_customer_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    # When they agreed to the terms. Null means never asked — every account
+    # older than this, and every self-hosted one, where there is no operator
+    # to have terms with.
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class ItemOverride(TimestampMixin, Base):

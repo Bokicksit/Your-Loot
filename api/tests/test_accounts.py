@@ -92,7 +92,7 @@ def signed_up():
     """A fresh account on the open API, with its client. Cleaned up after."""
     c = httpx.Client(base_url=OPEN, timeout=60)
     email = an_email()
-    r = c.post("/api/auth/signup", json={"email": email, "password": PASSWORD})
+    r = c.post("/api/auth/signup", json={"email": email, "password": PASSWORD, "accept_terms": True})
     r.raise_for_status()
     yield c, email, r.json()
     c.close()
@@ -110,7 +110,7 @@ def test_signup_is_off_unless_it_is_turned_on():
     accounts. A stranger who finds it must not be able to make one."""
     r = httpx.post(
         f"{BASE}/api/auth/signup",
-        json={"email": an_email(), "password": PASSWORD},
+        json={"email": an_email(), "password": PASSWORD, "accept_terms": True},
         timeout=60,
     )
     assert r.status_code == 404, "an invite-only install offered open signup"
@@ -180,7 +180,7 @@ def test_signing_up_signs_you_in(signed_up):
 def test_the_same_address_cannot_sign_up_twice(signed_up):
     _c, email, _ = signed_up
     r = httpx.post(
-        f"{OPEN}/api/auth/signup", json={"email": email, "password": PASSWORD}, timeout=60
+        f"{OPEN}/api/auth/signup", json={"email": email, "password": PASSWORD, "accept_terms": True}, timeout=60
     )
     assert r.status_code == 409
 
@@ -364,3 +364,35 @@ def test_a_real_password_is_still_accepted(signed_up):
         ).status_code == 200
     finally:
         fresh.close()
+
+
+# --- agreeing to the terms -------------------------------------------------
+
+
+@needs_open
+def test_signing_up_without_agreeing_is_refused():
+    """The tick box is checked by the server, not only by the browser. One
+    that only the browser checks proves nothing afterwards and is skipped by
+    anybody who opens the network tab."""
+    r = httpx.post(
+        f"{OPEN}/api/auth/signup",
+        json={"email": an_email(), "password": PASSWORD, "accept_terms": False},
+        timeout=60,
+    )
+    assert r.status_code == 400
+
+    # and leaving it out entirely is not a way round it
+    r = httpx.post(
+        f"{OPEN}/api/auth/signup",
+        json={"email": an_email(), "password": PASSWORD},
+        timeout=60,
+    )
+    assert r.status_code == 400
+
+
+@needs_open
+def test_the_date_of_agreement_is_written_down(signed_up, odb):
+    """The tick is worthless later; the date is the part that is any use."""
+    _c, email, _ = signed_up
+    odb.expire_all()
+    assert _user(odb, email).terms_accepted_at is not None

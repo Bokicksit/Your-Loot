@@ -235,8 +235,12 @@ def change_password(
 
 class SignupIn(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=200)
+    password: str = Field(min_length=MIN_PASSWORD, max_length=200)
     display_name: str | None = Field(default=None, max_length=50)
+    # Required, and required *here* rather than only in the browser. A tick
+    # box the server does not check proves nothing later and can be skipped
+    # by anybody who opens the network tab.
+    accept_terms: bool = False
 
 
 class TokenIn(BaseModel):
@@ -278,6 +282,9 @@ def signup(
     """
     _require_open_signup()
 
+    if not body.accept_terms:
+        raise HTTPException(400, "Please accept the terms and privacy policy")
+
     key = client_key(request, "signup")
     wait = signups.retry_after(key)
     if wait:
@@ -299,6 +306,8 @@ def signup(
         display_name=body.display_name,
         password_hash=hash_password(body.password),
         is_admin=False,
+        # the date is the part that is any use afterwards
+        terms_accepted_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(user)
     db.commit()

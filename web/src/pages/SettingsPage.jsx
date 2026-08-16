@@ -569,6 +569,19 @@ function AccountCard() {
         </p>
       )}
 
+      {/* There was no way out at all. On a shared machine that is not a
+          missing convenience, it is the app refusing to let you leave. */}
+      <button
+        type="button"
+        onClick={async () => {
+          await api.authLogout().catch(() => {});
+          window.location.href = "/";
+        }}
+      >
+        <Icon id="back" />
+        Sign out
+      </button>
+
       <h4 style={{ margin: "18px 0 0", fontSize: "var(--f-2)" }}>Delete this account</h4>
       {isOwner ? (
         <p className="settings-note">

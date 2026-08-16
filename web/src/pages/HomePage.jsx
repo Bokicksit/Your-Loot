@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { MODULES, useEnabledModules, useSettings } from "../settings.jsx";
+import {
+  MODULES,
+  useAvailableModules,
+  useEnabledModules,
+  useSettings,
+} from "../settings.jsx";
 import { DEFAULT_TAGLINE, pickTagline } from "../taglines.js";
 
 const PATHS = {
@@ -22,6 +27,8 @@ const UNIT = {
 export default function HomePage() {
   const { settings } = useSettings();
   const enabled = useEnabledModules();
+  // what this server carries, which is what "more to turn on" must count
+  const available = useAvailableModules();
   const [stats, setStats] = useState(null);
   // Chosen once settings are known, so the category lines can join in — and
   // held for the session, so navigating back here doesn't reshuffle it.
@@ -41,7 +48,10 @@ export default function HomePage() {
   // turned on and still be nowhere — so it's gone, and this list is simply
   // what Settings says you collect.
   const shown = enabled;
-  const hidden = MODULES.length - enabled.length;
+  // Against what this server carries, not against every collection the code
+  // knows how to draw. A service offering four said "4 more to turn on in
+  // settings" — pointing at four that are not there and cannot be turned on.
+  const hidden = available.length - enabled.length;
   // Hardware used to borrow the games count, because the API had no hardware
   // number to give — so a shelf with one console read "29 items". It reports
   // both separately now, and this asks for what it means.
@@ -82,7 +92,7 @@ export default function HomePage() {
 
       {/* Only worth saying when something is actually missing. A line telling
           you about collections you already have is noise on every visit. */}
-      {hidden > 0 && (
+      {settings && hidden > 0 && (
         <p className="home-hint">
           <Icon id="sliders" />
           <span>
@@ -92,7 +102,10 @@ export default function HomePage() {
         </p>
       )}
 
-      {shown.length === 0 && (
+      {/* `settings &&` because the list is empty until the server answers,
+          and "No collections turned on" flashing at somebody who has eight
+          is the same lie as the one above, in the other direction. */}
+      {settings && shown.length === 0 && (
         <div className="empty">
           <span className="glyph"><Icon id="sliders" /></span>
           <strong>No collections turned on</strong>

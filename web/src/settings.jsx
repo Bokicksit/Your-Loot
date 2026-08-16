@@ -67,10 +67,17 @@ export function useListPref(module, key, fallback) {
   return [value, set];
 }
 
-/** Modules the user actually collects, in display order. */
+/** Modules the user actually collects, in display order.
+ *
+ *  Empty until the server has answered, deliberately. Falling back to all
+ *  eight meant every sign-in flashed the full set for a moment — including
+ *  collections this server does not carry — and then removed half of them.
+ *  Showing nothing for that moment is honest; showing the wrong thing is not.
+ */
 export function useEnabledModules() {
   const { settings } = useSettings();
-  const on = settings?.enabled_modules || MODULES.map((m) => m.key);
+  if (!settings) return [];
+  const on = settings.enabled_modules || [];
   return MODULES.filter((m) => on.includes(m.key));
 }
 
@@ -99,7 +106,13 @@ export function useLocked() {
 
 export function useAvailableModules() {
   const { settings } = useSettings();
-  const here = settings?.available_modules;
+  // Not asked yet is not the same as "all of them". Guessing all eight here
+  // is what made a four-collection service flash "8 more collections to turn
+  // on" before the answer arrived.
+  if (!settings) return [];
+  const here = settings.available_modules;
+  // Loaded, but from a server too old to say — assume it carries everything,
+  // which it does.
   if (!here || !here.length) return MODULES;
   return MODULES.filter((m) => here.includes(m.key));
 }

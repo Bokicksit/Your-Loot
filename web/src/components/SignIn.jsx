@@ -288,11 +288,13 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
   // it offers accounts to anybody.
   const [mode, setMode] = useState("signin");
   const [sent, setSent] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const go = (next) => {
     setMode(next);
     setError(null);
     setSent(false);
+    setAgreed(false);
   };
 
   const submit = async (e) => {
@@ -304,7 +306,12 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
       if (needsSetup) {
         await api.authSetup({ email, password, display_name: name.trim() || null });
       } else if (mode === "signup") {
-        await api.authSignup({ email, password, display_name: name.trim() || null });
+        await api.authSignup({
+          email,
+          password,
+          display_name: name.trim() || null,
+          accept_terms: agreed,
+        });
       } else if (mode === "forgot") {
         await api.authForgot(email);
         setSent(true);
@@ -431,6 +438,26 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
           />
         )}
 
+        {/* Links, not just words: agreeing to something you cannot read from
+            where you are agreeing to it is not agreeing to anything. They
+            open in a new tab so a half-filled form survives the trip. */}
+        {mode === "signup" && (
+          <label className="signin-agree">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              required
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noreferrer">terms of service</a>
+              {" "}and the{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer">privacy policy</a>.
+            </span>
+          </label>
+        )}
+
         {error && (
           <span className="signin-error">
             <Icon id="alert" />
@@ -438,7 +465,11 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
           </span>
         )}
 
-        <button type="submit" className="primary" disabled={busy}>
+        <button
+          type="submit"
+          className="primary"
+          disabled={busy || (mode === "signup" && !agreed)}
+        >
           <Icon id="check" />
           {busy ? "…" : heading}
         </button>

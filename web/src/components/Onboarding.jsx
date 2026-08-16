@@ -1,18 +1,30 @@
 import { useState } from "react";
 import { Icon } from "./Icons.jsx";
-import { MODULES, useSettings } from "../settings.jsx";
+import { useAvailableModules, useSettings } from "../settings.jsx";
 
 // Two questions, one screen: whose vault this is, and what's in it.
 // Skipping is allowed — blank name keeps "Your Loot", and skipping the
 // picker just enables everything.
 export default function Onboarding() {
   const { save } = useSettings();
+  // What this server carries. Offering a tile for a collection it does not
+  // have invites somebody to pick it and then quietly drops the choice.
+  const available = useAvailableModules();
   const [name, setName] = useState("");
-  const [picked, setPicked] = useState(MODULES.map((m) => m.key));
+  const [picked, setPicked] = useState(null); // null = not touched yet
+
   const [busy, setBusy] = useState(false);
 
+  // Everything on until somebody says otherwise, but derived rather than
+  // seeded into state — the list is empty on the first render, and state
+  // seeded from it then would stay empty after the server answered.
+  const chosen = picked ?? available.map((m) => m.key);
   const toggle = (key) =>
-    setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
+    setPicked(
+      chosen.includes(key)
+        ? chosen.filter((k) => k !== key)
+        : [...chosen, key],
+    );
 
   const finish = async () => {
     if (busy) return;
@@ -20,7 +32,7 @@ export default function Onboarding() {
     try {
       await save({
         owner_name: name.trim(),
-        enabled_modules: picked.length ? picked : MODULES.map((m) => m.key),
+        enabled_modules: chosen.length ? chosen : available.map((m) => m.key),
       });
     } catch (e) {
       alert(e.message);
@@ -52,13 +64,13 @@ export default function Onboarding() {
         <h2 style={{ marginTop: "var(--s-3)" }}>And what are you hoarding?</h2>
         <p>Turn off anything you don't collect — you can change this later.</p>
         <div className="onboard-picks">
-          {MODULES.map((m) => (
+          {available.map((m) => (
             <button
               key={m.key}
               type="button"
-              className={`pick-tile ${picked.includes(m.key) ? "on" : ""}`}
+              className={`pick-tile ${chosen.includes(m.key) ? "on" : ""}`}
               onClick={() => toggle(m.key)}
-              aria-pressed={picked.includes(m.key)}
+              aria-pressed={chosen.includes(m.key)}
             >
               <Icon id={m.icon} />
               <strong>{m.label}</strong>
