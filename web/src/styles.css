@@ -941,6 +941,33 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .binder-book.spread .binder-spread { grid-template-columns: 1fr; }
 }
 
+/* "12 of 62" — the number is the control, so it looks like a field rather
+   than a label with a field hiding next to it. */
+.page-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+.page-box input {
+  width: 3.6em;
+  padding: 3px 6px;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+/* The spinners are the wrong affordance here: a binder of 114 pages is not
+   somewhere you arrive one click at a time, and they eat half the width the
+   number needs. */
+.page-box input::-webkit-outer-spin-button,
+.page-box input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.page-box input { -moz-appearance: textfield; }
+
 .binder-shape-note {
   font-family: var(--font-num);
   font-size: var(--f-1);

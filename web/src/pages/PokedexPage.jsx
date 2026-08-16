@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
-import { BinderPages } from "../components/BinderGrid.jsx";
+import { BinderPages, PageBox, usePageTracker } from "../components/BinderGrid.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import BinderShape from "../components/BinderShape.jsx";
 import { useSettings } from "../settings.jsx";
 
@@ -64,6 +65,11 @@ export default function PokedexPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Rebuilt whenever the pages are redrawn — a filter, a search, a new shape.
+  const [pageNo, goToPage] = usePageTracker(
+    `${entries.length}:${filter}:${rarityFilter}:${query}:${shape.rows}x${shape.cols}`
+  );
 
   /** Come back to the slot you left.
    *
@@ -280,6 +286,13 @@ export default function PokedexPage() {
           Filters
           {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
         </button>
+        <PageBox
+          page={pageNo}
+          total={Math.ceil(
+            shown.length / Math.max(1, (shape.rows || 3) * (shape.cols || 3))
+          )}
+          onGo={goToPage}
+        />
         <span className="rail-spacer" />
         {/* The tile slider was here. The Pokédex is a binder, and how wide it
             is drawn is a fact about that binder — set here, because this is
@@ -432,6 +445,17 @@ export default function PokedexPage() {
                       </div>
                     </div>
                     <div className="form-row">
+                      {/* what this copy is worth, from the same sold-listings
+                          search the Cards page uses */}
+                      <EbayLink
+                        title={e.card.title}
+                        terms={[
+                          `${e.card.card_number}${
+                            e.card.set_total ? `/${e.card.set_total}` : ""
+                          }`,
+                          e.card.set_name,
+                        ]}
+                      />
                       <button
                         type="button"
                         className={`toggle ${e.final ? "on" : ""}`}

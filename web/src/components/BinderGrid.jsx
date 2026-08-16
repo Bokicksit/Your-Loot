@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 /** The row of chips that says which shelf of cards you are looking at.
@@ -28,6 +29,121 @@ export function BinderSwitch({ active }) {
 
 const abbrevRarity = (r) =>
   r ? r.split(/\s+/).map((w) => w[0]).join("").toUpperCase() : "";
+
+/** Which page you are looking at, and a way to go to another one.
+ *
+ *  Watches the pages rather than the slots — the Pokédex is 114 pages and
+ *  1,025 pockets, and observing the pockets to work out the page would be a
+ *  thousand callbacks to answer a question nine of them already answer.
+ *
+ *  `signal` is anything that means the pages have been redrawn: a filter, a
+ *  new shape, the binder finally arriving. The observer is rebuilt then,
+ *  because the elements it was holding no longer exist.
+ */
+export function usePageTracker(signal) {
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll("[data-page]"));
+    if (!els.length) return;
+    setPage(1);
+
+    // The lowest page currently on screen — which is the one you are reading,
+    // or the one you are half way out of, and both are the honest answer to
+    // "where am I".
+    const showing = new Set();
+    const io = new IntersectionObserver((rows) => {
+      for (const r of rows) {
+        const n = Number(r.target.dataset.page);
+        if (r.isIntersecting) showing.add(n);
+        else showing.delete(n);
+      }
+      if (showing.size) setPage(Math.min(...showing));
+    });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [signal]);
+
+  // Instant, not smooth. Page 40 of the Pokédex is sixty thousand pixels
+  // down; animating that is a journey rather than a jump, and the point of
+  // typing a page number is to be there.
+  //
+  // Says so straight away rather than waiting to be told by the observer: the
+  // box follows `page`, so without this it snaps back to where you were for
+  // the moment between the scroll and the callback, which reads as the jump
+  // having failed.
+  const goTo = (n) => {
+    const el = document.querySelector(`[data-page="${n}"]`);
+    if (!el) return;
+    setPage(n);
+    el.scrollIntoView({ block: "start", behavior: "auto" });
+  };
+
+  return [page, goTo];
+}
+
+/** "12 of 62" — where you are, and somewhere to type where you'd rather be.
+ *
+ *  The number is the control. A separate "go to page" field beside a "page 12
+ *  of 62" label would be two things saying one thing, and on a phone there is
+ *  no room for the second.
+ */
+export function PageBox({ page, total, onGo }) {
+  const [draft, setDraft] = useState(String(page));
+  const [typing, setTyping] = useState(false);
+
+  // follow the scroll, unless the cursor is in it — nothing worse than a
+  // field that rewrites what you are typing
+  useEffect(() => {
+    if (!typing) setDraft(String(page));
+  }, [page, typing]);
+
+  // one page is not somewhere you can be lost
+  if (!total || total < 2) return null;
+
+  /** Read the field, not the state.
+   *
+   *  `draft` is a render behind whatever was just typed, so a commit that
+   *  arrives in the same tick as the keystroke — paste then Enter, a password
+   *  manager, anything faster than a re-render — would jump to the previous
+   *  number. The element always has the current one.
+   */
+  const commit = (el) => {
+    const n = Math.min(Math.max(parseInt(el.value, 10) || 1, 1), total);
+    setDraft(String(n));
+    setTyping(false);
+    onGo(n);
+  };
+
+  return (
+    <label className="page-box" title={`Page ${page} of ${total} — type one to go there`}>
+      <input
+        type="number"
+        min="1"
+        max={total}
+        value={draft}
+        aria-label="Page"
+        onFocus={(e) => {
+          setTyping(true);
+          e.target.select(); // typing over it is the point; no backspacing first
+        }}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target)}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          // Jump here rather than leaving it to the blur this triggers.
+          // Relying on the blur means Enter does nothing at all anywhere the
+          // blur does not arrive, and committing the same number twice is the
+          // same jump twice, which is no jump at all.
+          commit(e.target);
+          e.target.blur();
+        }}
+      />
+      <span>of {total}</span>
+    </label>
+  );
+}
 
 /** The shape of a binder, with the fallbacks a binder made before it had one
  *  needs. Three of nine is the common page and what everything defaulted to. */

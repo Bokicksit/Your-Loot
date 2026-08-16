@@ -2,8 +2,15 @@ import { Fragment, useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { BinderPages, BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
+import {
+  BinderPages,
+  BinderSlotTile,
+  BinderSwitch,
+  PageBox,
+  usePageTracker,
+} from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
+import EbayLink from "../components/EbayLink.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -42,6 +49,13 @@ export default function BinderPage() {
     setOpen(null);
     load();
   }, [id]);
+
+  // Above the early returns, because hooks are. The signal is everything that
+  // redraws the pages — a different binder, a filter, a search, a sort — so
+  // the observer is rebuilt when the elements it holds are replaced.
+  const [pageNo, goToPage] = usePageTracker(
+    `${id}:${data?.entries.length ?? 0}:${filter}:${query}:${sort}`
+  );
 
   if (error) {
     return (
@@ -102,6 +116,12 @@ export default function BinderPage() {
   });
 
   const ordered = sorters[sort] ? [...shown].sort(sorters[sort]) : shown;
+
+  // Counted from what is actually drawn rather than from binder.pages: with a
+  // filter on, the pages on screen are pages of the filtered binder, and a
+  // box that said "of 62" while showing four would be lying about both.
+  const perPage = Math.max(1, (binder.rows || 3) * (binder.cols || 3));
+  const pageTotal = Math.ceil(ordered.length / perPage);
 
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
@@ -321,6 +341,7 @@ export default function BinderPage() {
           <option value="name">A–Z</option>
           {isCustom && <option value="set">By set</option>}
         </select>
+        <PageBox page={pageNo} total={pageTotal} onGo={goToPage} />
         <span className="rail-spacer" />
         {/* Where the tile slider used to be. How wide a binder is drawn is a
             fact about the binder now, set where the rest of its shape is set,
@@ -413,6 +434,20 @@ export default function BinderPage() {
                   </p>
                 )}
                 <div className="form-row wrap">
+                  {/* What it is worth, from the same sold-listings search the
+                      Cards page uses. Sellers title a card by its number and
+                      set, never by its rarity, so those are the qualifiers. */}
+                  {e.card && (
+                    <EbayLink
+                      title={e.card.title}
+                      terms={[
+                        `${e.card.card_number}${
+                          e.card.set_total ? `/${e.card.set_total}` : ""
+                        }`,
+                        e.card.set_name,
+                      ]}
+                    />
+                  )}
                   {/* A set binder knows exactly which card the slot wants, so
                       it can be filled here. The other kinds cannot: a dex slot
                       takes any card of that species and a custom binder takes
