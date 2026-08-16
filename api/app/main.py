@@ -14,6 +14,7 @@ from app.routers import (
     admin,
     auth,
     backup,
+    billing,
     binders,
     books,
     cards,
@@ -59,6 +60,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(billing.router)
 app.include_router(collection.router)
 
 # A collection this install does not offer is not registered at all, so its

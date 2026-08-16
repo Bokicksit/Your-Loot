@@ -147,6 +147,7 @@ export default function SettingsPage() {
 
       <ShareCard enabled={enabled} />
       <LockCard />
+      <PlanCard />
       <AccountCard />
       <BackupCard />
       <PolicyLinks />
@@ -354,6 +355,97 @@ function LockCard() {
         can still read the database. Locked out? Run{" "}
         <code>docker compose exec api python -m app.resetpw --clear</code> on
         the host.
+      </p>
+    </section>
+  );
+}
+
+/** The plan, and the two buttons that change it.
+ *
+ *  Absent entirely where the server takes no payments, which is every
+ *  self-hosted install — the person running it already paid, by running it,
+ *  and an upgrade prompt on your own machine would be daft.
+ *
+ *  Cancelling is Stripe's page rather than one of ours, deliberately:
+ *  somebody who wants to stop paying should not have to go through the
+ *  people being paid.
+ */
+function PlanCard() {
+  const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  // Both hooks at the top level and before any early return — React counts
+  // them per render and a conditional one throws.
+  const available = useAvailableModules();
+  const { settings } = useSettings();
+
+  useEffect(() => {
+    api.billingStatus().then(setState).catch(() => setState({ available: false }));
+  }, []);
+
+  if (!state?.available) return null;
+
+  const paidKeys = settings?.paid_modules || [];
+  const paidModules = available.filter((m) => paidKeys.includes(m.key));
+
+  const leave = async (call) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { url } = await call();
+      window.location.href = url; // Stripe's page, not ours
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  };
+
+  const paying = state.plan === "supporter";
+  const names = paidModules.map((m) => m.label).join(", ");
+
+  return (
+    <section className="settings-card">
+      <h3>Your plan</h3>
+      {paying ? (
+        <>
+          <p>
+            You're on <strong>Supporter</strong>
+            {state.plan_until
+              ? ` — paid until ${new Date(state.plan_until).toLocaleDateString()}.`
+              : "."}{" "}
+            Thank you, genuinely.
+          </p>
+          {state.can_manage && (
+            <button type="button" onClick={() => leave(api.billingPortal)} disabled={busy}>
+              <Icon id="link" />
+              {busy ? "…" : "Manage or cancel"}
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <p>
+            Cards, the Pokédex and every binder are free and always will be.
+            {names ? ` Supporter adds ${names}, for $4 a month.` : ""}
+          </p>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => leave(api.billingCheckout)}
+            disabled={busy}
+          >
+            <Icon id="star" />
+            {busy ? "…" : "Become a supporter"}
+          </button>
+        </>
+      )}
+      {error && (
+        <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>{error}</p>
+      )}
+      <p className="settings-note">
+        Cancelling stops the next payment and leaves your plan running to the
+        date you've paid for. Nothing is ever deleted, and you can take a copy
+        of everything from Share a collection whether you're paying or not.
       </p>
     </section>
   );

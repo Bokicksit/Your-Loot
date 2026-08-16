@@ -107,6 +107,13 @@ export const api = {
     request("/api/auth/me", { method: "DELETE", body: JSON.stringify({ password }) }),
   changePassword: (body) =>
     request("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
+  // Billing. Every route but status 404s on an install with no Stripe keys,
+  // which is every self-hosted one — status answers so the screen knows not
+  // to draw anything.
+  billingStatus: () => request("/api/billing/status"),
+  billingCheckout: () => request("/api/billing/checkout", { method: "POST" }),
+  billingPortal: () => request("/api/billing/portal", { method: "POST" }),
+
   // Admin-only; every one of these 403s for anybody else.
   adminStats: () => request("/api/admin/stats"),
   adminUsers: () => request("/api/admin/users"),

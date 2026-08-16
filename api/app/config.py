@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     # instead — see mailer.py. Self-hosters need neither.
     resend_api_key: str = ""
     mail_from: str = ""
+    # Payments. Without the first two nothing about billing exists — every
+    # route 404s — which is every self-hosted install. The webhook secret is
+    # separate because a webhook that cannot be verified must be refused
+    # rather than trusted: it is a public URL that grants paid plans.
+    stripe_secret_key: str = ""
+    stripe_price_id: str = ""
+    stripe_webhook_secret: str = ""
     # Where the mail goes. Resend's own endpoint unless you point it at a
     # compatible relay of your own — or, in the test suite, at a dead port,
     # so that "this server can send mail" can be exercised without any packet
