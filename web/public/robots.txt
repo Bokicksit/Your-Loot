@@ -3,6 +3,7 @@
 # gets a login form — no harm, but no point either.
 User-agent: *
 Allow: /$
+Allow: /help
 Allow: /privacy
 Allow: /terms
 Allow: /delete-account

@@ -164,6 +164,7 @@ export default function LandingPage() {
 
       <footer className="landing-foot">
         <span>© 2026 Your Loot</span>
+        <Link to="/help">How it works</Link>
         <Link to="/privacy">Privacy</Link>
         <Link to="/terms">Terms</Link>
         <Link to="/delete-account">Delete your account</Link>

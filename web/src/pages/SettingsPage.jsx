@@ -498,6 +498,7 @@ function PolicyLinks() {
       )}
       <h3>The small print</h3>
       <p className="settings-note" style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px" }}>
+        <a href="/help">How it works</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms of service</a>
         <a href="/delete-account">Deleting your account</a>

@@ -30,12 +30,183 @@ function PublicDoc({ title, children }) {
       </header>
       {children}
       <footer className="public-foot">
+        <Link to="/help">Help</Link>
         <Link to="/privacy">Privacy</Link>
         <Link to="/terms">Terms</Link>
         <Link to="/delete-account">Delete your account</Link>
         <Link to="/">Sign in</Link>
       </footer>
     </div>
+  );
+}
+
+/** The questions that actually get asked.
+ *
+ *  Not a manual. A manual that lists every button is a document nobody reads
+ *  and which is wrong within a month of the next screen changing. This covers
+ *  the handful of things that are genuinely confusing — mostly binders, which
+ *  are the most distinctive part of this app and therefore the part with no
+ *  equivalent elsewhere to reason from.
+ */
+export function HelpPage() {
+  return (
+    <PublicDoc title="How it works">
+      <p>
+        The short version: search for what you own, and it goes on your shelf.
+        Everything below is the handful of things people ask about after that.
+      </p>
+      {/* This page is served by every install, including the ones people run
+          themselves — where there is no subscription and nothing is capped.
+          Saying so once at the top is cheaper than qualifying every answer,
+          and stops a self-hoster reading about a price they will never pay. */}
+      <p className="public-lead">
+        Written for <strong>yourloot.app</strong>. If you're running your own
+        copy, everything here about binders and cards is the same — but the
+        limits and the subscription aren't, because on your own server there
+        are none.
+      </p>
+
+      <h2>Adding a card</h2>
+      <p>
+        Search by name and the <strong>printed number</strong> — the little
+        "58/102" in the corner. Two thousand cards are called Pikachu; only one
+        of them is 58/102 from Base Set. The set is optional and only worth
+        adding when the number alone still isn't enough.
+      </p>
+      <p>
+        If it isn't in the catalogue at all, add it by hand and take a photo of
+        your own copy. Nothing about the app assumes the catalogue is complete.
+      </p>
+
+      <h2>The three kinds of binder</h2>
+      <p>
+        They look alike and behave very differently, which is the single most
+        confusing thing here.
+      </p>
+      <div className="public-table"><table>
+        <tbody>
+          <tr><th>Kind</th><th>How a slot gets filled</th></tr>
+          <tr>
+            <td>Pokédex</td>
+            <td>By <em>choosing</em>. One slot per Pokémon, and you pick which of your cards represents it — a Charizard slot can be filled by any Charizard you own.</td>
+          </tr>
+          <tr>
+            <td>Set</td>
+            <td>By <em>owning</em>. Each slot belongs to one exact card, so it fills when you own that card and not before. You can't put something else there.</td>
+          </tr>
+          <tr>
+            <td>Custom</td>
+            <td>By <em>putting things in it</em>. Any card, any order, arranged by you. This is the only kind you can file a card into freely.</td>
+          </tr>
+        </tbody>
+      </table></div>
+
+      <h2>Why can't I add a card to my set binder?</h2>
+      <p>
+        Because its slots aren't empty spaces — each one is already spoken for
+        by a particular card. The slot fills itself the moment you own that
+        card. If you want a shelf you arrange by hand, make a custom binder.
+      </p>
+
+      <h2>What's a master set?</h2>
+      <p>
+        A normal set binder has one slot per card. A master set has one slot
+        per <strong>printing</strong> — so a card that exists as normal,
+        reverse holo, and a Poké Ball parallel takes three slots, not one.
+      </p>
+      <p>
+        That's why the numbers look wrong at first: Prismatic Evolutions is a
+        180-card set and its master binder has <strong>476 slots</strong>.
+        Both numbers are correct. It's the same thing the card-list booklet in
+        the box does, with its row of little boxes beside each card.
+      </p>
+
+      <h2>How do I put a card in a binder?</h2>
+      <p>Two ways, depending on how many.</p>
+      <ul>
+        <li>
+          <strong>One card:</strong> tap the condition chip on it — the little
+          "NM" — and pick a binder from the list. Binders it's already in show
+          as chips you can tap to remove.
+        </li>
+        <li>
+          <strong>Several:</strong> press and hold a card for a moment. It goes
+          into selection mode; tap the others you want, then choose a binder
+          from the bar at the top. They all go at once.
+        </li>
+      </ul>
+      <p>
+        You can also file a card straight into a binder as you add it, using
+        the binder dropdown in the add panel. That choice sticks between adds,
+        so logging a run of cards into one binder doesn't mean choosing it
+        every time.
+      </p>
+
+      <h2>My card disappeared after I filed it</h2>
+      <p>
+        It's in the binder. The card list hides cards that live in a binder by
+        default, so the list stays a list of loose cards. Turn on{" "}
+        <strong>Binder cards</strong> above the list to see them there as well.
+      </p>
+
+      <h2>"The one" or "will upgrade"?</h2>
+      <p>
+        Pokédex only. A slot holds one card, but you might be using a beaten-up
+        common as a placeholder until you find the one you actually want.
+        Marking it "will upgrade" says so, so you can see at a glance which
+        slots are genuinely finished and which are standing in.
+      </p>
+
+      <h2>Why does my Pokédex stop at 151?</h2>
+      <p>
+        The free plan on this site goes to 151. Subscribing opens all 1,025 —
+        and so does running your own copy, which has no limits at all.
+      </p>
+
+      <h2>What's free, and what does $4 buy?</h2>
+      <p>
+        Free here is <strong>300 cards</strong>, the first{" "}
+        <strong>151</strong> of the Pokédex, and <strong>one binder</strong>{" "}
+        besides it. Supporter lifts all three and adds the other collections.
+      </p>
+      <p>
+        None of those limits are in the software. They exist because this site
+        is a server, a database and a disk full of your photographs, and that
+        costs money every month. Run your own copy and there are none.
+      </p>
+
+      <h2>Barcode scanning</h2>
+      <p>
+        Works for <strong>records and books</strong>, where the barcode on the
+        sleeve or the ISBN on the back identifies the exact pressing or
+        edition. Trading cards don't carry barcodes, so those are found by
+        name and number instead.
+      </p>
+
+      <h2>Can I get my collection out?</h2>
+      <p>
+        Whenever you like, on any plan, including one that's lapsed.{" "}
+        <strong>Settings → Share a collection</strong> gives you a single file
+        with everything in it. It's not a request or a queue — it's a button.
+      </p>
+
+      <h2>Can I run this myself?</h2>
+      <p>
+        Yes, and it's the same app with nothing withheld — every card, all
+        1,025 Pokédex slots, as many binders as you like. It's open source
+        under the AGPL, it's a container and a database, and if you've set up
+        anything self-hosted before it's an evening's work.
+      </p>
+      <p>
+        <a href="https://github.com/Bokicksit/Your-Loot">The source and setup instructions</a>
+      </p>
+
+      <h2>Something else</h2>
+      <p>
+        Write to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>. If a question
+        turns up more than once it ends up on this page.
+      </p>
+    </PublicDoc>
   );
 }
 

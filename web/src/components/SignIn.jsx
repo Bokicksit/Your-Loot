@@ -2,11 +2,19 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import LandingPage from "../pages/LandingPage.jsx";
-import { DeleteAccountPage, PrivacyPage, TermsPage } from "../pages/PublicPages.jsx";
+import {
+  DeleteAccountPage,
+  HelpPage,
+  PrivacyPage,
+  TermsPage,
+} from "../pages/PublicPages.jsx";
 import { BrandMark, Icon } from "./Icons.jsx";
 
-// Readable without an account, and therefore decided before the gate.
+// Readable without an account, and therefore decided before the gate. Help
+// belongs here for the same reason as the rest: somebody deciding whether to
+// sign up should be able to read how the thing works before they do.
 const PUBLIC_PAGES = {
+  "/help": HelpPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
   "/delete-account": DeleteAccountPage,
@@ -49,7 +57,7 @@ export default function SignIn({ children }) {
   if (pathname === "/verify") return <VerifyScreen onDone={refresh} />;
   if (pathname === "/reset") return <ResetScreen />;
 
-  // And the three a stranger must be able to read without an account at all.
+  // And the pages a stranger must be able to read without an account at all.
   // Play requires the privacy policy and the deletion page to be reachable
   // without installing anything, and a policy you can only read once you have
   // signed up is not a policy anybody can consult before signing up.
