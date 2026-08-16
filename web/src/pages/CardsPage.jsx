@@ -171,6 +171,9 @@ export default function CardsPage({ initialView = "collection" }) {
     grade: "",
     binder: false, // opt-in: only flagged copies occupy Pokédex binder slots
     keeper: false, // binder card is "the one" vs a placeholder to upgrade
+    // a custom binder to file it into as it is added. Kept between adds on
+    // purpose: filling a binder is a session, not a single card.
+    binderId: "",
     variant: "Non-Holo",
     stamp: "",
   });
@@ -296,7 +299,7 @@ export default function CardsPage({ initialView = "collection" }) {
       if (addVals.own) {
         const graded = addVals.grader !== "Raw";
         const toBinder = addVals.binder && !!picked.attrs.national_dex_no;
-        await api.addOwned(picked.id, {
+        const status = await api.addOwned(picked.id, {
           condition: addVals.condition,
           grader: graded ? addVals.grader : null,
           grade: graded && addVals.grade ? addVals.grade : null,
@@ -304,6 +307,14 @@ export default function CardsPage({ initialView = "collection" }) {
           variant: addVals.variant === "Non-Holo" ? null : addVals.variant,
           stamp: addVals.stamp.trim() || null,
         });
+        // Straight onto a shelf, if one was chosen. The reply carries every
+        // copy of this card and the one just made is the last of them, which
+        // is the only way to know which copy to file — there is nothing else
+        // to tell four identical commons apart.
+        if (addVals.binderId) {
+          const fresh = status?.owned?.[status.owned.length - 1];
+          if (fresh) await api.binderAddCards(Number(addVals.binderId), [fresh.id]);
+        }
         if (toBinder) {
           // record whether this occupant is the desired card or a placeholder
           await api.dexHappy(picked.attrs.national_dex_no, addVals.keeper);
@@ -317,7 +328,7 @@ export default function CardsPage({ initialView = "collection" }) {
       setResults(null);
       setPicked(null);
       setOnline(null);
-      setAddVals({
+      setAddVals((v) => ({
         own: true,
         condition: "NM",
         grader: "Raw",
@@ -326,7 +337,11 @@ export default function CardsPage({ initialView = "collection" }) {
         keeper: false,
         variant: "Non-Holo",
         stamp: "",
-      });
+        // kept, like the name and set above it: somebody filling a binder is
+        // adding a run of cards to the same one, and re-picking it for every
+        // card is the tax this is meant to remove
+        binderId: v.binderId,
+      }));
       if (wantMode) {
         navigate("/wanted");
       } else {
@@ -414,6 +429,21 @@ export default function CardsPage({ initialView = "collection" }) {
                   >
                     {addVals.keeper ? "The one ✓" : "Will upgrade"}
                   </button>
+                )}
+                {/* Separate from the Pokédex switch beside it, and for the
+                    same reason as in the edit sheet: that one picks a
+                    favourite among copies, this one puts the copy on a shelf. */}
+                {addVals.own && myBinders.length > 0 && (
+                  <select
+                    value={addVals.binderId}
+                    onChange={(e) => setAddVals({ ...addVals, binderId: e.target.value })}
+                    title="File this copy straight into a binder as it is added"
+                  >
+                    <option value="">No binder</option>
+                    {myBinders.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 )}
                 <select
                   disabled={!addVals.own}
@@ -546,14 +576,18 @@ export default function CardsPage({ initialView = "collection" }) {
         </p>
       )}
 
+      {/* It said "Pokédex cards" when the Pokédex was the only binder a card
+          could be in. Any binder can hold one now, and a card that vanishes
+          from this list the moment it is filed should be findable again by a
+          switch that names what actually happened to it. */}
       <div className="chip-row">
         <button
           type="button"
           className={`toggle ${showBinder ? "on" : ""}`}
           onClick={() => save({ show_binder_in_collection: !showBinder })}
-          title="Pokédex cards live in the Pokédex view — toggle to list them here too"
+          title="Cards filed in a binder live there — turn this on to list them here as well"
         >
-          Pokédex cards
+          Binder cards
         </button>
       </div>
 
