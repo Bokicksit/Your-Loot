@@ -206,3 +206,44 @@ def test_the_webhook_is_refused_when_it_cannot_be_verified(monkeypatch, owner):
     assert billing.webhooks_configured() is False
     assert verify_signature(BODY, sign(BODY)) is False, \
         "an unconfigured webhook secret accepted a signature"
+
+
+# --- what confirming an address is actually for ----------------------------
+
+
+def test_checkout_needs_a_confirmed_address(monkeypatch):
+    """The one thing verification gates, and the reason it exists at all.
+
+    Taking money from an address we cannot reach means no receipt, no
+    renewal notice and nowhere to send a refund. It is also the cheapest
+    possible moment to ask: anybody willing to pay will click a link.
+    """
+    from fastapi import HTTPException
+
+    from app.routers.billing import start_checkout
+
+    monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_x")
+    monkeypatch.setattr(billing.settings, "stripe_price_id", "price_x")
+
+    class Unconfirmed:
+        id = 7
+        email = "a@example.com"
+        email_verified_at = None
+        stripe_customer_id = None
+
+    with pytest.raises(HTTPException) as e:
+        start_checkout(user=Unconfirmed())
+    assert e.value.status_code == 409
+    assert "confirm" in e.value.detail.lower()
+
+
+def test_a_reset_is_not_gated_on_it(owner):
+    """Deliberately the other way. Somebody who mistyped their address and
+    never confirmed would be locked out of their own collection for good,
+    which is a far worse failure than the one gating it would prevent."""
+    import inspect
+
+    from app.routers import auth as auth_router
+
+    source = inspect.getsource(auth_router.forgot_password)
+    assert "email_verified_at" not in source,         "a password reset started requiring a confirmed address"

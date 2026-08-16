@@ -52,6 +52,11 @@ export default function HomePage() {
   // knows how to draw. A service offering four said "4 more to turn on in
   // settings" — pointing at four that are not there and cannot be turned on.
   const hidden = available.length - enabled.length;
+  // Named rather than counted: "Records, Books and LEGO" tells somebody what
+  // they would get, where "three more collections" tells them nothing.
+  const paidNames = available
+    .filter((m) => (settings?.paid_modules || []).includes(m.key))
+    .map((m) => m.label);
   // Hardware used to borrow the games count, because the API had no hardware
   // number to give — so a shelf with one console read "29 items". It reports
   // both separately now, and this asks for what it means.
@@ -100,6 +105,26 @@ export default function HomePage() {
             on in <Link to="/settings">Settings</Link>.
           </span>
         </p>
+      )}
+
+      {/* At the bottom, after the shelves, and only where this server
+          actually charges for something. A free install has no paid_modules
+          and therefore never sees it — nobody self-hosting should be sold
+          anything by their own server. */}
+      {settings && !settings.subscribed && paidNames.length > 0 && (
+        <section className="home-upsell">
+          <div>
+            <strong>Add your other shelves</strong>
+            <p>
+              {paidNames.join(", ")} for $4 a month. Cards, the Pokédex and
+              every binder stay free — this is only for the rest.
+            </p>
+          </div>
+          <Link to="/settings" className="primary">
+            <Icon id="star" />
+            See Supporter
+          </Link>
+        </section>
       )}
 
       {/* `settings &&` because the list is empty until the server answers,

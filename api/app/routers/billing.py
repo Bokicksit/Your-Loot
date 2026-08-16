@@ -58,12 +58,27 @@ def status(user: User = Depends(current_user)):
         "plan_until": user.plan_until,
         # only somebody Stripe already knows can be sent to the portal
         "can_manage": bool(configured() and user.stripe_customer_id),
+        # so the screen can ask for the address up front rather than letting
+        # somebody press a button that is going to refuse them
+        "needs_confirmed_email": user.email_verified_at is None,
     }
 
 
 @router.post("/checkout")
 def start_checkout(user: User = Depends(current_user)):
     _needs_stripe()
+    # The one thing confirming an address is for. Taking money from somebody
+    # we cannot send a receipt, a renewal notice or a refund to is a bad
+    # bargain for both of us, and this is the moment where the cost of asking
+    # is lowest — anybody willing to pay will click a link.
+    #
+    # Not applied to the password reset, deliberately: somebody who mistyped
+    # their address and never confirmed would be locked out of their own
+    # collection for good, which is a far worse failure than this prevents.
+    if user.email_verified_at is None:
+        raise HTTPException(
+            409, "Confirm your email address first — we'll need it to send you a receipt."
+        )
     try:
         url = checkout_url(
             user_id=user.id,

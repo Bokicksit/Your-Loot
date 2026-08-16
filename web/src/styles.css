@@ -2557,6 +2557,25 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .admin-plan.admin { border-color: var(--jade); color: var(--jade); }
 .admin-plan small { opacity: .75; }
 
+/* The one place the app asks for money, at the foot of the home page and
+   only where the server charges for something. Quiet on purpose: somebody
+   who came to look at their collection should be able to ignore it. */
+.home-upsell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.home-upsell strong { display: block; color: var(--text); font-size: var(--f-4); }
+.home-upsell p { margin: 4px 0 0; max-width: 44ch; font-size: var(--f-2); color: var(--text-dim); }
+.home-upsell .primary { flex: none; }
+
 /* The reassurance under a locked collection. Quieter than the pitch above
    it, because "your things are safe" should read as a fact rather than as
    part of the sell. */

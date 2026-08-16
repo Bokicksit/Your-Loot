@@ -428,15 +428,31 @@ function PlanCard() {
             Cards, the Pokédex and every binder are free and always will be.
             {names ? ` Supporter adds ${names}, for $4 a month.` : ""}
           </p>
-          <button
-            type="button"
-            className="primary"
-            onClick={() => leave(api.billingCheckout)}
-            disabled={busy}
-          >
-            <Icon id="star" />
-            {busy ? "…" : "Become a supporter"}
-          </button>
+          {/* Asked for here rather than at the payment page. A button that
+              exists only to refuse you is worse than one that isn't there. */}
+          {state.needs_confirmed_email ? (
+            <>
+              <p className="settings-note">
+                Confirm your email address first — it's how a receipt and any
+                renewal notice reach you. Check your inbox for the link, or
+                send another from <strong>Your account</strong> below.
+              </p>
+              <button type="button" disabled>
+                <Icon id="star" />
+                Become a supporter
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="primary"
+              onClick={() => leave(api.billingCheckout)}
+              disabled={busy}
+            >
+              <Icon id="star" />
+              {busy ? "…" : "Become a supporter"}
+            </button>
+          )}
         </>
       )}
       {error && (

@@ -31,22 +31,28 @@ log = logging.getLogger("yourloot.mail")
 VERIFY_SUBJECT = "Confirm your email"
 RESET_SUBJECT = "Reset your password"
 
-# Every sentence here has to be true. The first version said no account would
-# be created without confirming, which was simply false — the account exists
-# and works the moment somebody signs up, and confirming has never gated it.
-# An email that lies about what just happened is worse than no email.
+# Every sentence here has to be true, and getting there took two goes. The
+# first said no account would be created without confirming, which was false.
+# The second said confirming was what enabled a password reset, which was
+# also false — /forgot has always answered a confirmed address and an
+# unconfirmed one alike, and gating it would lock out anybody who mistyped
+# their address. Now confirming does gate one real thing, and that is what it
+# says.
 VERIFY_BODY = """\
 Welcome to Your Loot.
 
-Your account is ready to use. Confirming this address is what lets us send
-you a reset link if you ever forget your password:
+Your account is ready — you can start adding things straight away, and the
+whole card side is free for good.
+
+Confirming this address tells us we can reach you. You'll need it before
+subscribing, since that's how a receipt or a renewal notice gets to you:
 
 {link}
 
 The link works for {hours} hours.
 
 If you didn't sign up, somebody has used your address by mistake or on
-purpose. Don't confirm it — and if you'd like the account removed, reply to
+purpose. Don't confirm it — and if you'd like that account removed, reply to
 this message and we'll delete it.
 """
 
