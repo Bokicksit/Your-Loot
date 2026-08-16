@@ -5,10 +5,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from app.auth import current_user
 from app.config import settings
+from app.imgauth import DEFAULT_TTL as IMAGE_TTL, sign as sign_image
 from app.trim import trim_border
 
 router = APIRouter(prefix="/api/images", tags=["images"])
@@ -24,6 +26,20 @@ MAX_BYTES = 15 * 1024 * 1024
 MAX_LABEL = f"{MAX_BYTES // (1024 * 1024)} MB"
 TOO_LARGE = f"image is too large ({MAX_LABEL} max)"
 CHUNK = 1024 * 1024
+
+
+@router.get("/link")
+def signed_link(name: str, user=Depends(current_user)):
+    """A URL for a photograph that works without a cookie.
+
+    For clients holding a bearer token rather than a session — a phone app,
+    say — because an `<img>` tag cannot send an Authorization header and so
+    has no other way to prove who is asking. Signed in to ask for one; the
+    link then stands on its own for an hour.
+    """
+    if "/" in name or "\\" in name or name.startswith("."):
+        raise HTTPException(400, "not a filename")
+    return {"url": f"/images/{name}?token={sign_image(name)}", "expires_in": IMAGE_TTL}
 
 
 @router.post("")

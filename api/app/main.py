@@ -1,12 +1,15 @@
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 
 from app.auth import current_user, session_secret
 from app.config import origin_list, settings
+from app.db import get_db
+from app.imgauth import verify as verify_image_token
 from app.models import User
 from app.modules import available
 from app.plans import costs_money, may_open
@@ -111,7 +114,38 @@ app.include_router(binders.router)
 app.include_router(share.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
-app.mount("/images", StaticFiles(directory=settings.image_dir), name="images")
+
+
+@app.get("/images/{name}")
+def uploaded_image(name: str, request: Request, token: str | None = None,
+                   db: Session = Depends(get_db)):
+    """An uploaded photograph, to somebody entitled to see it.
+
+    This was a StaticFiles mount, which is to say it was public: anybody who
+    had a URL could fetch that picture forever, signed in or not. Fine behind
+    a home router and wrong on a service.
+
+    404 rather than 403 for a refusal, deliberately — a 403 confirms the file
+    exists, which is half of what somebody guessing wants to know.
+    """
+    # Nothing but a bare filename. A name that can climb out of the directory
+    # turns this route into "read any file on the server".
+    if "/" in name or "\\" in name or name.startswith("."):
+        raise HTTPException(404, "Not found")
+
+    allowed = verify_image_token(name, token)
+    if not allowed:
+        try:
+            allowed = current_user(request, db) is not None
+        except HTTPException:
+            allowed = False
+    if not allowed:
+        raise HTTPException(404, "Not found")
+
+    path = Path(settings.image_dir) / name
+    if not path.is_file():
+        raise HTTPException(404, "Not found")
+    return FileResponse(path)
 
 
 @app.get("/api/health")

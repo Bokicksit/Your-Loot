@@ -72,6 +72,26 @@ function TabBar() {
 
 // A hidden collection's URL (bookmark, old link) shouldn't 404 or silently
 // show a page the user turned off — say so and offer the way back.
+/** A path that is not a page.
+ *
+ *  Says where it is rather than apologising, and offers the two things
+ *  somebody who mistyped actually wants: the collection, or the way back.
+ */
+function NotFound() {
+  const { pathname } = useLocation();
+  return (
+    <div className="empty">
+      <span className="glyph"><Icon id="search" /></span>
+      <strong>There's nothing at this address</strong>
+      <p>
+        <code>{pathname}</code> isn't a page here. It may have been a typo, or
+        a link to something that has since moved.
+      </p>
+      <Link to="/" className="primary">Back to your collection</Link>
+    </div>
+  );
+}
+
 function RequireModule({ moduleKey, children }) {
   const enabled = useEnabledModules();
   const { settings } = useSettings();
@@ -232,6 +252,12 @@ function Shell() {
               route existing costs nothing — the page shows what the server
               is willing to say and no more. */}
           <Route path="/admin" element={<AdminPage />} />
+          {/* nginx serves index.html for anything it does not have a file
+              for, so a mistyped path arrives here rather than at a web
+              server's own 404. Without this it rendered the shell with an
+              empty middle — a page that looks broken instead of one that
+              says what happened. */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <PageArrows />
