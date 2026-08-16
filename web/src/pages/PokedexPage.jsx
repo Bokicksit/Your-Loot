@@ -3,7 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
-import { BinderPages, PageBox, usePageTracker } from "../components/BinderGrid.jsx";
+import {
+  BinderPages,
+  PageBox,
+  pageIndex,
+  usePageTracker,
+} from "../components/BinderGrid.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import BinderShape from "../components/BinderShape.jsx";
 import { useSettings } from "../settings.jsx";
@@ -227,6 +232,17 @@ export default function PokedexPage() {
     return (e.name || "").toLowerCase().includes(q);
   });
 
+  // Looking at matches rather than at the binder. Frames and page numbers are
+  // for the binder; a handful of Pokémon from all over it is a result list,
+  // and numbering that 1, 2, 3 said "page 1" for a card sitting on page 15.
+  const searching = filter !== "all" || !!rarityFilter || q !== "";
+
+  // Where each slot really lives, counted down the whole Pokédex.
+  const homePage = pageIndex(entries, shape, (e) => e.dex_no);
+  const listed = searching
+    ? shown.map((e) => ({ ...e, page: homePage.get(e.dex_no) }))
+    : shown;
+
   const counts = {
     missing: entries.filter((e) => status(e) === "missing").length,
     upgrade: entries.filter((e) => status(e) === "upgrade").length,
@@ -289,7 +305,7 @@ export default function PokedexPage() {
         <PageBox
           page={pageNo}
           total={Math.ceil(
-            shown.length / Math.max(1, (shape.rows || 3) * (shape.cols || 3))
+            entries.length / Math.max(1, (shape.rows || 3) * (shape.cols || 3))
           )}
           onGo={goToPage}
         />
@@ -350,7 +366,7 @@ export default function PokedexPage() {
         </div>
       )}
 
-      <BinderPages binder={shape} entries={shown}>
+      <BinderPages binder={shape} entries={listed} flat={searching}>
         {(e) => (
           <Fragment key={e.dex_no}>
             <button
@@ -366,6 +382,9 @@ export default function PokedexPage() {
               onClick={() => setOpen(open === e.dex_no ? null : e.dex_no)}
             >
               <span className="dex-no">#{String(e.dex_no).padStart(4, "0")}</span>
+              {/* only while searching — on the binder proper you can see
+                  which page you are on */}
+              {e.page ? <span className="slot-page">p.{e.page}</span> : null}
               {e.card?.image_url ? (
                 <img src={e.card.image_url} alt={e.name || ""} loading="lazy" />
               ) : (

@@ -941,6 +941,27 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .binder-book.spread .binder-spread { grid-template-columns: 1fr; }
 }
 
+/* "p.15" on a search result: which page of the binder that card is really
+   on, so the answer to "where is it" is on the card rather than somewhere
+   you have to go and work out. Top right, opposite the slot number. */
+.slot-page {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  padding: 1px 5px;
+  border-radius: var(--r-pill);
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-mute);
+  line-height: 1.4;
+  pointer-events: none;
+}
+/* results are matches, not a page, so they fill the width like any grid */
+.dex-grid.results { margin-bottom: var(--s-4); }
+
 /* "12 of 62" — the number is the control, so it looks like a field rather
    than a label with a field hiding next to it. */
 .page-box {

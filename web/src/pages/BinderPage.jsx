@@ -7,6 +7,7 @@ import {
   BinderSlotTile,
   BinderSwitch,
   PageBox,
+  pageIndex,
   usePageTracker,
 } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
@@ -115,13 +116,22 @@ export default function BinderPage() {
     );
   });
 
-  const ordered = sorters[sort] ? [...shown].sort(sorters[sort]) : shown;
+  // Whether you are looking at the binder or at a set of results. Sorting is
+  // not on this list: A–Z still shows every card, so it is the same binder
+  // read in another order, and its pages are still pages.
+  const searching = filter !== "all" || query.trim() !== "";
 
-  // Counted from what is actually drawn rather than from binder.pages: with a
-  // filter on, the pages on screen are pages of the filtered binder, and a
-  // box that said "of 62" while showing four would be lying about both.
+  // Where each slot really lives, from the binder's own order — so a result
+  // can say "page 15" while sitting third in a list of matches.
+  const homePage = pageIndex(entries, binder, (e) => e.key);
+  const ordered = (sorters[sort] ? [...shown].sort(sorters[sort]) : shown).map(
+    (e) => (searching ? { ...e, page: homePage.get(e.key) } : e)
+  );
+
   const perPage = Math.max(1, (binder.rows || 3) * (binder.cols || 3));
-  const pageTotal = Math.ceil(ordered.length / perPage);
+  // Pages of the binder, not of the result list — the box is a way back into
+  // the binder, so it counts the binder even while you are looking at matches.
+  const pageTotal = Math.ceil(entries.length / perPage);
 
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
@@ -388,7 +398,12 @@ export default function BinderPage() {
         </div>
       )}
 
-      <BinderPages binder={binder} entries={ordered} arranging={arranging}>
+      <BinderPages
+        binder={binder}
+        entries={ordered}
+        arranging={arranging}
+        flat={searching}
+      >
         {(e) => (
           <Fragment key={e.key}>
             <BinderSlotTile

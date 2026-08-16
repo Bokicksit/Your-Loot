@@ -44,24 +44,45 @@ export function usePageTracker(signal) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const els = Array.from(document.querySelectorAll("[data-page]"));
-    if (!els.length) return;
+    if (!document.querySelector("[data-page]")) return;
     setPage(1);
 
-    // The lowest page currently on screen — which is the one you are reading,
-    // or the one you are half way out of, and both are the honest answer to
-    // "where am I".
-    const showing = new Set();
-    const io = new IntersectionObserver((rows) => {
-      for (const r of rows) {
-        const n = Number(r.target.dataset.page);
-        if (r.isIntersecting) showing.add(n);
-        else showing.delete(n);
-      }
-      if (showing.size) setPage(Math.min(...showing));
-    });
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    /* Whichever page is under a point near the top of the screen.
+     *
+     * This was an IntersectionObserver watching every page, and it never
+     * moved the number for anybody. Asking the document what is at a point is
+     * a question with one answer and no bookkeeping — and, unlike a table of
+     * cached page offsets, it cannot go stale when a lazily-loaded card image
+     * finally arrives and pushes everything below it down.
+     *
+     * A quarter of the way across rather than the middle, so a spread reports
+     * the left-hand page instead of whatever the gutter happens to be over.
+     */
+    const pick = () => {
+      const x = Math.max(1, Math.round(window.innerWidth / 4));
+      const el = document.elementFromPoint(x, 140)?.closest?.("[data-page]");
+      // Nothing under the point means the toolbar or a gap, not a new page —
+      // keeping the last answer beats flickering back to page one.
+      if (el) setPage(Number(el.dataset.page));
+    };
+
+    let queued = 0;
+    const onScroll = () => {
+      if (queued) return; // one read per frame, however fast the wheel spins
+      queued = requestAnimationFrame(() => {
+        queued = 0;
+        pick();
+      });
+    };
+
+    pick();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (queued) cancelAnimationFrame(queued);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [signal]);
 
   // Instant, not smooth. Page 40 of the Pokédex is sixty thousand pixels
@@ -183,8 +204,25 @@ export function paginate(entries, { rows, cols, double }) {
  *  `children` is called per entry, so each page keeps whatever tile and
  *  expanding panel its caller already draws.
  */
-export function BinderPages({ binder, entries, children, arranging }) {
+export function BinderPages({ binder, entries, children, arranging, flat }) {
   const shape = shapeOf(binder);
+
+  /* Searching does not produce pages, it produces matches.
+   *
+   * Drawn as pages they were numbered 1, 2, 3 — the position of the results
+   * in the result list, which said "page 1" for a card sitting on page 15.
+   * A frame around a handful of cards from all over the binder is not a page
+   * of it, so while a search is on there are no frames, and each card says
+   * where it really lives instead.
+   */
+  if (flat) {
+    return (
+      <div className="dex-grid results" data-results="">
+        {entries.map(children)}
+      </div>
+    );
+  }
+
   const spreads = paginate(entries, shape);
   let page = 0;
   return (
@@ -224,6 +262,19 @@ export function BinderPages({ binder, entries, children, arranging }) {
  *  different features. What differs between them is what fills a slot and
  *  what you can do to it, which is the caller's business, not this one's.
  */
+/** Where a slot lives in the binder, counted from the binder's own order.
+ *
+ *  Its index in the unfiltered list, never in whatever is on screen — that is
+ *  the whole point: it has to survive a search that shows nine cards from
+ *  nine different pages.
+ */
+export function pageIndex(entries, binder, keyOf) {
+  const per = Math.max(1, shapeOf(binder).rows * shapeOf(binder).cols);
+  const at = new Map();
+  entries.forEach((e, i) => at.set(keyOf(e), Math.floor(i / per) + 1));
+  return at;
+}
+
 export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arranging }) {
   const state = entry.state; // missing | upgrade | have | one
   const cls = state === "missing" ? "unowned" : state === "upgrade" ? "partial" : "owned";
@@ -238,6 +289,9 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
       onClick={onToggle}
     >
       <span className="dex-no">{entry.label}</span>
+      {/* only while searching: on the binder proper you are already looking
+          at the page, and a badge on every card would say so ninety times */}
+      {entry.page ? <span className="slot-page">p.{entry.page}</span> : null}
       {art ? (
         // A set binder shows the art of a card you do not own, dimmed by the
         // slot's own state — the gap should look like the card it wants.
