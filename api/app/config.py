@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     # Which collections this install charges for. Empty means none, which is
     # what self-hosting means — see app/plans.py.
     paid_modules: str = ""
+
+    # What a free account gets where somebody else is paying for the server.
+    # Zero means no limit, which is every self-hosted install — see
+    # app/limits.py. A hosted service sets them; the software stays complete
+    # for anybody who runs it themselves.
+    free_card_limit: int = 0    # copies of cards owned
+    free_dex_limit: int = 0     # how far up the Pokédex the binder goes
+    free_binder_limit: int = 0  # binders besides the Pokédex
     open_signup: bool = False
     # New accounts allowed per hour from one address. See ratelimit.py.
     signup_limit: int = 20

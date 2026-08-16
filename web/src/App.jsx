@@ -107,8 +107,9 @@ function RequireModule({ moduleKey, children }) {
         <span className="glyph"><Icon id="star" /></span>
         <strong>{label} is part of the paid plan</strong>
         <p>
-          Cards, the Pokédex and every binder stay free forever. {label} joins
-          them for $4 a month.
+          $4 a month adds {label}, lifts the limits on cards and binders, and
+          pays for the server this all runs on. The software itself has no
+          limits — you can host your own copy for nothing.
         </p>
         <p className="locked-note">
           Anything you have already added is still here and still yours —

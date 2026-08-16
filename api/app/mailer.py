@@ -41,8 +41,7 @@ RESET_SUBJECT = "Reset your password"
 VERIFY_BODY = """\
 Welcome to Your Loot.
 
-Your account is ready — you can start adding things straight away, and the
-whole card side is free for good.
+Your account is ready — you can start adding things straight away.
 
 Confirming this address tells us we can reach you. You'll need it before
 subscribing, since that's how a receipt or a renewal notice gets to you:

@@ -24,7 +24,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.binders import CUSTOM, DEX, SET
-from app.models import BinderSlot, CardAttrs, CardPrinting, CollectionItem, Module, Owned
+from app.models import (
+    BinderSlot,
+    CardAttrs,
+    CardPrinting,
+    CollectionItem,
+    Module,
+    Owned,
+    User,
+)
 from app.printings import rarity_mark
 
 MAX_DEX = 1025
@@ -156,7 +164,19 @@ def _copy_map(db: Session, owned_ids: set[int]) -> dict[int, Owned]:
 
 
 def _dex_entries(db: Session, binder, user_id: int):
-    """One slot per national dex number; the occupant is whatever was filed."""
+    """One slot per national dex number; the occupant is whatever was filed.
+
+    How far it runs depends on the plan where the server charges for one —
+    the first generation is a line people already know, and it is a shorter
+    binder rather than a different feature.
+
+    Anything filed above that line is hidden, never deleted. Somebody whose
+    plan lapses still owns every card they filed; the slots come back the
+    moment they subscribe again, because nothing moved.
+    """
+    from app.limits import dex_ceiling
+
+    ceiling = dex_ceiling(db.get(User, user_id))
     slots = _slots_of(db, binder.id)
     filed = {s.owned_id for s in slots.values() if s.owned_id}
     copies = _copy_map(db, filed)
@@ -181,7 +201,7 @@ def _dex_entries(db: Session, binder, user_id: int):
         if dex <= MAX_DEX and (dex not in names or len(title) < len(names[dex])):
             names[dex] = title
 
-    for n in range(1, MAX_DEX + 1):
+    for n in range(1, ceiling + 1):
         s = slots.get((str(n), ""))
         copy = copies.get(s.owned_id) if s and s.owned_id else None
         item = items.get(copy.item_id) if copy else None

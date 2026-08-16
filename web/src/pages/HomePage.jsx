@@ -116,8 +116,8 @@ export default function HomePage() {
           <div>
             <strong>Add your other shelves</strong>
             <p>
-              {paidNames.join(", ")} for $4 a month. Cards, the Pokédex and
-              every binder stay free — this is only for the rest.
+              {paidNames.join(", ")} for $4 a month, and no limit on cards or
+              binders. Or run your own copy, where there are no limits at all.
             </p>
           </div>
           <Link to="/settings" className="primary">

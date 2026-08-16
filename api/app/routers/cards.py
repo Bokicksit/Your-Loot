@@ -10,6 +10,7 @@ import httpx
 from app.cards_util import classify_layer
 from app.auth import current_user
 from app.db import get_db
+from app.limits import dex_ceiling
 from app.integrations.tcgdex import tcgdex_client
 from app import binders
 from app.models import (
@@ -529,12 +530,20 @@ def pokedex(db: Session = Depends(get_db),
             "grade": binder_copy.grade if binder_copy else None,
         }
 
+    # How far the binder runs. There are two Pokédex builders in this
+    # codebase — this one and binder_view._dex_entries — and capping only one
+    # of them is exactly the bug this comment exists to prevent: the app asks
+    # this route, so a limit applied only to the other one does nothing at
+    # all while looking like it works.
+    ceiling = dex_ceiling(user)
     entries = []
-    for dex in range(1, MAX_DEX + 1):
+    for dex in range(1, ceiling + 1):
         entries.append({
             "dex_no": dex,
             "name": names.get(dex),
             "card": card_out(slots.get(dex)),
             "final": dex in final,
         })
-    return {"max_dex": MAX_DEX, "entries": entries}
+    # max_dex is what this person's binder holds, not what the Pokédex has —
+    # the UI counts pages from it.
+    return {"max_dex": ceiling, "entries": entries}

@@ -2,11 +2,13 @@ import json
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
 from app.db import get_db
-from app.models import Setting, User
+from app.limits import binder_limit, card_limit, dex_limit, limited
+from app.models import CollectionItem, Module, Owned, Setting, User
 from app.modules import available
 from app.plans import paid_modules, subscribed
 
@@ -67,6 +69,10 @@ class SettingsOut(BaseModel):
     # Both empty and false on a self-hosted install, where nothing is paid.
     paid_modules: list[str] = []
     subscribed: bool = False
+    # What a free account gets here, so the screens can say so before somebody
+    # runs into it. All zero on a self-hosted install, where nothing is
+    # limited and none of this is drawn.
+    limits: dict = {}
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
@@ -108,6 +114,24 @@ def _current(db: Session, user_id: int) -> SettingsOut:
         available_modules=MODULES,
         paid_modules=[m for m in paid_modules() if m in MODULES],
         subscribed=subscribed(who),
+        limits={
+            # what applies to this person right now, not what the install
+            # could impose — a supporter is told nothing is limited, because
+            # for them nothing is
+            "applies": limited(who),
+            "cards": card_limit(),
+            "dex": dex_limit(),
+            "binders": binder_limit(),
+            "cards_held": db.scalar(
+                select(func.count())
+                .select_from(Owned)
+                .join(CollectionItem, CollectionItem.id == Owned.item_id)
+                .where(
+                    Owned.user_id == user_id,
+                    CollectionItem.module == Module.cards.value,
+                )
+            ) or 0,
+        },
         dex_cols=int(raw["dex_cols"] or 4),
         card_cols=int(raw["card_cols"] or 3),
         tile_modules=[m for m in _csv(raw["tile_modules"]) if m in VIEWS],

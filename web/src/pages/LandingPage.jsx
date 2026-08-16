@@ -67,8 +67,9 @@ export default function LandingPage() {
         </h1>
         <p className="landing-sub">
           A home for the things you collect — what you have, what you're
-          missing, and which shelf it's on. Cards are free and complete. Your
-          other shelves are four dollars a month.
+          missing, and which shelf it's on. The software is free and has no
+          limits at all; you can run it on your own machine today. This is us
+          running it for you instead.
         </p>
         <div className="landing-cta">
           <button type="button" className="primary" onClick={go}>
@@ -80,8 +81,9 @@ export default function LandingPage() {
           </button>
         </div>
         <p className="landing-fine">
-          No card needed for the free tier. Nothing is advertised at you and
-          nothing about you is sold.
+          No card needed to start. Nothing is advertised at you and nothing
+          about you is sold — the subscription is the only way this pays for
+          itself, which is rather the point.
         </p>
       </section>
 
@@ -109,15 +111,15 @@ export default function LandingPage() {
         <h2>What it costs</h2>
         <div className="landing-plans">
           <div className="landing-plan">
-            <h3>Free</h3>
+            <h3>Free here</h3>
             <p className="landing-price">$0</p>
-            <p className="landing-plan-lead">The whole card side, uncrippled.</p>
+            <p className="landing-plan-lead">Enough to keep a real collection.</p>
             <ul>
-              <li>All 1,025 Pokédex slots</li>
-              <li>Unlimited binders and master sets</li>
-              <li>Every printing of every card</li>
-              <li>Wanted list, tags and notes</li>
-              <li>Export your collection whenever</li>
+              <li>300 cards</li>
+              <li>The first 151 of the Pokédex</li>
+              <li>One binder besides it — custom or a master set</li>
+              <li>Wanted list, tags, notes and barcode scanning</li>
+              <li>Export everything, whenever, in one file</li>
             </ul>
           </div>
           <div className="landing-plan lit">
@@ -125,11 +127,11 @@ export default function LandingPage() {
             <p className="landing-price">
               $4<span>/month</span>
             </p>
-            <p className="landing-plan-lead">Everything free, plus your other shelves.</p>
+            <p className="landing-plan-lead">The lid comes off, and the other shelves open.</p>
             <ul>
+              <li>Cards without a limit</li>
+              <li>All 1,025 Pokédex slots, and every binder you want</li>
               <li>Records, books and LEGO</li>
-              <li>Barcode scanning across them</li>
-              <li>More room for photographs</li>
               <li>New collections as they arrive, at the price you joined at</li>
             </ul>
           </div>
@@ -137,16 +139,26 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-open">
-        <h2>Or run it yourself</h2>
+        <h2>Or run it yourself, with no limits at all</h2>
         <p>
-          Your Loot is open source under the AGPL. If you would rather your
-          collection lived on your own server, it does — the same app, in a
-          container, answering to nobody. This site is for people who would
-          rather not run a server, and that is the only difference.
+          Your Loot is open source under the AGPL, and the limits above exist
+          nowhere but here. Put it on a machine of your own — a spare box, a
+          NAS, a five-dollar server — and you get every card, all 1,025
+          Pokédex slots and as many binders as you like, free, for good.
+          It's a container and a database; if you've set up anything
+          self-hosted before, it's an evening.
+        </p>
+        <p>
+          What you're paying for on this site is not the software. It's
+          somebody else running it: a server, a database, a disk full of your
+          photographs, and a bill at the end of every month whether anybody
+          subscribes or not. If you'd rather not deal with that, four dollars
+          is us dealing with it. If you would, the door's open and there's
+          nothing behind it.
         </p>
         <a className="landing-repo" href="https://github.com/Bokicksit/Your-Loot">
           <Icon id="link" />
-          See the source
+          Run your own copy
         </a>
       </section>
 

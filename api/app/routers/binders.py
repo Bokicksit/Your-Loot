@@ -9,6 +9,7 @@ from app import binders as engine
 from app.auth import current_user
 from app.binder_view import render
 from app.db import get_db
+from app.limits import binder_limit, limited
 from app.models import Binder, BinderSlot, CardAttrs, CollectionItem, Module, Owned, User
 
 router = APIRouter(prefix="/api/binders", tags=["binders"])
@@ -143,6 +144,24 @@ def create_binder(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
+    # The Pokédex binder is not counted: it is the one everybody gets, capped
+    # by how far up it goes rather than by existing at all. Everything else —
+    # a custom shelf or a master set — comes out of the same single allowance,
+    # so somebody free chooses which one they want rather than being told.
+    if limited(user) and binder_limit() and body.kind != engine.DEX:
+        held = db.scalar(
+            select(func.count()).select_from(Binder).where(
+                Binder.user_id == user.id, Binder.kind != engine.DEX
+            )
+        ) or 0
+        if held >= binder_limit():
+            raise HTTPException(
+                402,
+                f"The free plan keeps {binder_limit()} binder besides the Pokédex. "
+                "Nothing you have made is going anywhere — Supporter lifts the "
+                "limit, and self-hosting has none at all.",
+            )
+
     if body.kind == engine.SET:
         if not body.set_code:
             raise HTTPException(422, "a set binder needs a set")

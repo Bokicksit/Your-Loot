@@ -425,8 +425,15 @@ function PlanCard() {
       ) : (
         <>
           <p>
-            Cards, the Pokédex and every binder are free and always will be.
-            {names ? ` Supporter adds ${names}, for $4 a month.` : ""}
+            {state.limits?.applies && state.limits.cards
+              ? `The free plan here holds ${state.limits.cards} cards, the first ${state.limits.dex} of the Pokédex and ${state.limits.binders} binder besides it.`
+              : "You're on the free plan."}
+            {names ? ` Supporter lifts all of that and adds ${names}, for $4 a month.` : ""}
+          </p>
+          <p className="settings-note">
+            None of these limits exist in the software itself — run your own
+            copy and there are none at all. They're here because this server,
+            its database and your photographs cost money every month.
           </p>
           {/* Asked for here rather than at the payment page. A button that
               exists only to refuse you is worse than one that isn't there. */}

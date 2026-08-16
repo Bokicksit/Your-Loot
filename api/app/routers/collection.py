@@ -6,6 +6,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, User, Wanted
 from app import binders
+from app.limits import card_limit, limited
 from app.tagging import tags_for, tags_of
 from app.tenancy import my_copies, my_want, owns
 from app.schemas.collection import ItemStatusOut, WantedItemOut
@@ -57,6 +58,29 @@ def add_owned(
     user: User = Depends(current_user),
 ):
     item = _get_item(db, item_id)
+
+    # Only cards, only on an install that has a limit, only for somebody who
+    # has not paid — which is nobody at all on a self-hosted server. Counted
+    # at the moment of adding rather than swept up later, so nothing anybody
+    # already owns is ever taken away by a rule arriving after it.
+    if item.module == Module.cards.value and limited(user) and card_limit():
+        held = db.scalar(
+            select(func.count())
+            .select_from(Owned)
+            .join(CollectionItem, CollectionItem.id == Owned.item_id)
+            .where(
+                Owned.user_id == user.id,
+                CollectionItem.module == Module.cards.value,
+            )
+        ) or 0
+        if held >= card_limit():
+            raise HTTPException(
+                402,
+                f"The free plan holds {card_limit()} cards. Everything you have "
+                "stays where it is — Supporter lifts the limit, and self-hosting "
+                "has none at all.",
+            )
+
     fields = body.model_dump()
     wants_binder = fields.pop("in_binder", False)
     owned = Owned(item_id=item.id, user_id=user.id, **fields)
