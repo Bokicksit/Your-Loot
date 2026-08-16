@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
-import { useTileCols, TileDensity } from "../components/ViewToggle.jsx";
+import { BinderPages } from "../components/BinderGrid.jsx";
 import { useSettings } from "../settings.jsx";
 
 // One card per Pokémon — the binder mirror. A slot's occupant is either the
@@ -14,6 +14,9 @@ const abbrevRarity = (r) =>
 
 export default function PokedexPage() {
   const [entries, setEntries] = useState([]);
+  // the dex binder's own shape, so this page and /binders/<it> draw the
+  // same Pokédex rather than two different-looking ones
+  const [shape, setShape] = useState({ rows: 3, cols: 3, double_page: false });
   const [filter, setFilter] = useState("all"); // all|missing|upgrade|final
   const [rarityFilter, setRarityFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -32,12 +35,7 @@ export default function PokedexPage() {
     () => setOpen(null),
     (t) => t.closest?.("[data-slot]")?.dataset.slot === String(open),
   );
-  // binder density lives in Settings so it applies on every device
   const { settings, save } = useSettings();
-  // was a 3/4/5 chip row here and a duplicate of it in Settings; it is the
-  // same slider every other grid uses now, and floors at three because a
-  // dex slot below that is mostly whitespace
-  const [cols] = useTileCols("pokedex", 3, 5);
   const navigate = useNavigate();
 
 
@@ -53,7 +51,11 @@ export default function PokedexPage() {
     }
   };
 
-  const load = () => api.pokedex().then((d) => setEntries(d.entries));
+  const load = () =>
+    api.pokedex().then((d) => {
+      setEntries(d.entries);
+      if (d.binder) setShape(d.binder);
+    });
   useEffect(() => {
     load();
   }, []);
@@ -252,7 +254,13 @@ export default function PokedexPage() {
           {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
         </button>
         <span className="rail-spacer" />
-        <TileDensity module="pokedex" min={3} max={5} />
+        {/* The tile slider was here. The Pokédex is a binder, and how wide
+            it is drawn is now a fact about that binder, set on its page
+            alongside the rest of its shape. */}
+        <span className="binder-shape-note">
+          {shape.cols}×{shape.rows}
+          {shape.double_page ? " · spread" : ""}
+        </span>
       </div>
       {filtersOpen && (
         <div className="filter-sheet">
@@ -282,11 +290,8 @@ export default function PokedexPage() {
         </div>
       )}
 
-      <div
-        className={`dex-grid cols-${cols}`}
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
-        {shown.map((e) => (
+      <BinderPages binder={shape} entries={shown}>
+        {(e) => (
           <Fragment key={e.dex_no}>
             <button
               className={`dex-slot ${
@@ -504,8 +509,8 @@ export default function PokedexPage() {
               </div>
             )}
           </Fragment>
-        ))}
-      </div>
+        )}
+      </BinderPages>
       {shown.length === 0 && entries.length > 0 && (
         <div className="empty">
           <span className="glyph"><Icon id="ball" /></span>

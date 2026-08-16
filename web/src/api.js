@@ -181,6 +181,8 @@ export const api = {
     request(`/api/binders/${id}/cards/${ownedId}`, { method: "DELETE" }),
   binderRemoveSlot: (id, slotId) =>
     request(`/api/binders/${id}/slots/${slotId}`, { method: "DELETE" }),
+  binderAddBlank: (id) =>
+    request(`/api/binders/${id}/slots/blank`, { method: "POST" }),
   reorderShelf: (binderIds) =>
     request("/api/binders/order", {
       method: "PUT",

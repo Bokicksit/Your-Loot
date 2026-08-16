@@ -49,6 +49,21 @@ class Binder(TimestampMixin, Base):
     # the cover: a photo of the real binder, or the art of whatever it is
     # about. A shelf of names and nothing else is hard to read at a glance.
     image_url: Mapped[str | None] = mapped_column(String(500))
+    # A flat colour instead of a picture — most binders on a shelf are one,
+    # and photographing a plain black folder to tell it from the other plain
+    # black folder is work for nothing. Null keeps the colour the shelf makes
+    # up from the kind and the name.
+    color: Mapped[str | None] = mapped_column(String(7))
+
+    # The shape of the physical thing: pockets across, pockets down, and
+    # whether it is read as a spread of two facing pages. These decide where
+    # the page breaks fall and nothing else — no slot moves because you
+    # changed them, which is what makes them safe to change.
+    rows: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
+    cols: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
+    double_page: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     # where it sits on the shelf; null means never placed, and those sort
     # after the ones that have been
     position: Mapped[int | None] = mapped_column(Integer)

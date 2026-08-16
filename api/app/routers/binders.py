@@ -15,23 +15,55 @@ from app.models import Binder, BinderSlot, CardAttrs, CollectionItem, Module, Ow
 router = APIRouter(prefix="/api/binders", tags=["binders"])
 
 
-class BinderCreate(BaseModel):
+# "#rrggbb". Anchored, because a pattern that is not will happily accept a
+# colour with an essay after it.
+HEX = "^#[0-9a-fA-F]{6}$"
+
+
+class Shape(BaseModel):
+    """How the binder is drawn: pockets across, pockets down, and whether it
+    is read as a spread of two facing pages."""
+
+    rows: int = Field(default=3, ge=1, le=engine.MAX_SIDE)
+    cols: int = Field(default=3, ge=1, le=engine.MAX_SIDE)
+    double_page: bool = False
+    color: str | None = Field(default=None, pattern=HEX)
+
+
+class BinderCreate(Shape):
     name: str = Field(min_length=1, max_length=60)
     kind: str = Field(pattern="^(set|custom)$")  # the dex one already exists
     set_code: str | None = None
     # set binders only: a slot per printing rather than per card
     master: bool = False
+    # custom binders only: start it as an empty binder of this many pages,
+    # ready to be filled in place. Zero keeps the old behaviour — a binder
+    # with nothing in it that grows as you add cards.
+    pages: int = Field(default=0, ge=0, le=engine.MAX_PAGES)
 
 
 class BinderEdit(BaseModel):
-    """Both optional: the cover can be set without retyping the name, and
+    """All optional: the cover can be set without retyping the name, and
     cleared by sending an empty string rather than by omitting it, which means
-    "leave it alone"."""
+    "leave it alone". The same is true of the colour."""
 
     name: str | None = Field(default=None, min_length=1, max_length=60)
     image_url: str | None = Field(default=None, max_length=500)
     # set binders only: switch between a slot per card and a slot per printing
     master: bool | None = None
+
+    # Shape, all of it safe to change whenever: no slot moves because the page
+    # got wider, only where the breaks between pages fall.
+    rows: int | None = Field(default=None, ge=1, le=engine.MAX_SIDE)
+    cols: int | None = Field(default=None, ge=1, le=engine.MAX_SIDE)
+    double_page: bool | None = None
+    # "" clears it back to the shelf's own colour
+    color: str | None = Field(default=None, pattern=f"{HEX}|^$")
+
+    # custom binders only. Growing appends blank pages; shrinking takes empty
+    # ones off the end and stops at the first that holds a card, because "make
+    # it four pages" is never a request to throw two pages of cards away.
+    pages: int | None = Field(default=None, ge=0, le=engine.MAX_PAGES)
 
 
 class SlotFill(BaseModel):
@@ -62,6 +94,48 @@ def _mine(db: Session, binder_id: int, user: User) -> Binder:
     if b is None or b.user_id != user.id:
         raise HTTPException(404, "binder not found")
     return b
+
+
+def _resize(db: Session, b: Binder, pages: int) -> None:
+    """Make a custom binder this many pages long.
+
+    Growing adds blank pockets on the end. Shrinking takes them off the end
+    and stops the moment it meets one with a card in it, because "make it four
+    pages" is a statement about the size of the binder and never a request to
+    throw two pages of cards away. Saying so is better than a confirm dialog:
+    the binder is still the size it was, and nothing was lost while you
+    decided.
+    """
+    slots = db.scalars(
+        select(BinderSlot)
+        .where(BinderSlot.binder_id == b.id)
+        .order_by(BinderSlot.position, BinderSlot.id)
+    ).all()
+    want = pages * engine.per_page(b)
+
+    if want > len(slots):
+        if want > engine.MAX_BLANKS:
+            raise HTTPException(
+                422,
+                f"that is {want} pockets — {engine.MAX_BLANKS} is as many as one "
+                "binder can hold",
+            )
+        last = slots[-1].position if slots else 0
+        for n in range(1, want - len(slots) + 1):
+            db.add(BinderSlot(binder_id=b.id, position=(last or 0) + n))
+        return
+
+    doomed = slots[want:]
+    held = [s for s in doomed if s.owned_id or s.item_id]
+    if held:
+        raise HTTPException(
+            409,
+            f"{len(held)} card{'s' if len(held) > 1 else ''} would have to come "
+            f"out to make it {pages} page{'s' if pages != 1 else ''}. Take them "
+            "out first, or leave it the size it is.",
+        )
+    for s in doomed:
+        db.delete(s)
 
 
 def _my_copy(db: Session, owned_id: int, user: User) -> Owned:
@@ -132,7 +206,9 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
         out.append({
             "id": b.id, "name": b.name, "kind": b.kind,
             "set_code": b.set_code, "master": b.master, "image_url": b.image_url,
-            "position": b.position,
+            "color": b.color, "position": b.position,
+            "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
+            "pages": engine.page_count(b, total),
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
     return {"binders": out}
@@ -185,9 +261,27 @@ def create_binder(
         user_id=user.id, name=body.name.strip(), kind=body.kind,
         set_code=body.set_code if body.kind == engine.SET else None,
         master=bool(body.master) and body.kind == engine.SET,
+        rows=body.rows, cols=body.cols,
+        double_page=body.double_page, color=body.color,
     )
     db.add(b)
     db.commit()
+
+    # An empty binder of a stated size, ready to be filled in place. Only a
+    # custom binder can have one: the other two get their pages from a
+    # universe the app already knows, and padding those with blanks would
+    # invent slots the set does not have.
+    if b.kind == engine.CUSTOM and body.pages:
+        wanted = body.pages * engine.per_page(b)
+        if wanted > engine.MAX_BLANKS:
+            raise HTTPException(
+                422,
+                f"that is {wanted} pockets — {engine.MAX_BLANKS} is as many as "
+                "one binder can be made with at once",
+            )
+        for n in range(1, wanted + 1):
+            db.add(BinderSlot(binder_id=b.id, position=n))
+        db.commit()
 
     # A master binder needs to know which printings each card exists in, and
     # only TCGdex knows. Asked once per set, here, so the binder is right the
@@ -206,7 +300,9 @@ def create_binder(
             learned = {"matched": False, "error": str(exc)[:200]}
 
     return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code,
-            "image_url": b.image_url, "master": b.master, "printings": learned}
+            "image_url": b.image_url, "color": b.color, "master": b.master,
+            "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
+            "printings": learned}
 
 
 @router.get("/{binder_id}")
@@ -231,6 +327,21 @@ def edit_binder(
         b.name = fields["name"].strip()
     if "image_url" in fields:
         b.image_url = (fields["image_url"] or "").strip() or None
+    if "color" in fields:
+        b.color = (fields["color"] or "").strip().lower() or None
+    for side in ("rows", "cols"):
+        if fields.get(side) is not None:
+            setattr(b, side, fields[side])
+    if fields.get("double_page") is not None:
+        b.double_page = bool(fields["double_page"])
+
+    # Pages last, so it is measured against the shape you just set rather than
+    # the one you are replacing — "three by three, four pages" in one press
+    # should mean thirty-six pockets, not four pages of whatever it was.
+    if fields.get("pages") is not None:
+        if b.kind != engine.CUSTOM:
+            raise HTTPException(409, "only a custom binder is filled by hand")
+        _resize(db, b, fields["pages"])
 
     learned = None
     if "master" in fields and fields["master"] is not None:
@@ -339,7 +450,66 @@ def add_cards(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
-    """Add copies to the end of a custom binder, in the order given."""
+    """Put copies into a custom binder: the empty pockets first, then the end.
+
+    Filling the gaps before growing is the whole point of being able to make a
+    binder blank. A binder set up as ten empty pages is a binder somebody
+    means to fill in place, and appending to the end would file the first card
+    they added onto page eleven, behind all the empties they just asked for.
+
+    It also does the right thing for a binder with no gaps, where "first empty
+    pocket, then the end" is exactly the old behaviour of adding to the end.
+    """
+    b = _mine(db, binder_id, user)
+    if b.kind != engine.CUSTOM:
+        raise HTTPException(409, "only a custom binder is filled by hand")
+
+    empty = db.scalars(
+        select(BinderSlot)
+        .where(
+            BinderSlot.binder_id == b.id,
+            BinderSlot.owned_id.is_(None),
+            BinderSlot.item_id.is_(None),
+        )
+        .order_by(BinderSlot.position, BinderSlot.id)
+    ).all()
+    last = db.scalar(
+        select(func.max(BinderSlot.position)).where(BinderSlot.binder_id == b.id)
+    ) or 0
+
+    grown = 0
+    for owned_id in body.owned_ids:
+        copy = _my_copy(db, owned_id, user)
+        if empty:
+            s = empty.pop(0)
+            s.item_id = copy.item_id
+        else:
+            grown += 1
+            s = BinderSlot(binder_id=b.id, position=last + grown, item_id=copy.item_id)
+            db.add(s)
+        s.owned = copy
+    db.commit()
+    return render(db, b, user.id)
+
+
+@router.post("/{binder_id}/slots/blank")
+def add_blank(
+    binder_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """A page with nothing on it, added at the end.
+
+    A real binder is not always full front to back — a gap separates one run
+    from the next, or holds a space for the card that has not turned up yet.
+    The row itself is the same one a sold card leaves behind, so nothing here
+    is new except being able to ask for it on purpose.
+
+    Added at the end and moved with Arrange, rather than inserted at an index:
+    the two-tap move already exists and knows how to slide everything else
+    along, and a second way of saying where a page goes is a second thing that
+    can disagree with the first.
+    """
     b = _mine(db, binder_id, user)
     if b.kind != engine.CUSTOM:
         raise HTTPException(409, "only a custom binder is filled by hand")
@@ -347,11 +517,7 @@ def add_cards(
     last = db.scalar(
         select(func.max(BinderSlot.position)).where(BinderSlot.binder_id == b.id)
     ) or 0
-    for n, owned_id in enumerate(body.owned_ids, start=1):
-        copy = _my_copy(db, owned_id, user)
-        s = BinderSlot(binder_id=b.id, position=last + n, item_id=copy.item_id)
-        s.owned = copy
-        db.add(s)
+    db.add(BinderSlot(binder_id=b.id, position=last + 1))
     db.commit()
     return render(db, b, user.id)
 
@@ -389,14 +555,19 @@ def remove_card(
     b = _mine(db, binder_id, user)
     _my_copy(db, owned_id, user)
     if b.kind == engine.CUSTOM:
-        # here the slot *is* the entry, so emptying it would leave a blank page
+        # The page stays, empty. It used to be deleted, on the reasoning that a
+        # custom slot only exists because you put something there — true then,
+        # and no longer, now that a blank page is something you can add on
+        # purpose. Keeping it means taking one card out does not shuffle every
+        # card after it up a place, which is not what pulling a card out of a
+        # binder does. Removing the page itself is its own button.
         for s in db.scalars(
             select(BinderSlot).where(
                 BinderSlot.binder_id == b.id, BinderSlot.owned_id == owned_id
             )
         ).all():
             s.owned = None
-            db.delete(s)
+            s.item_id = None
     else:
         engine.unfile(db, owned_id, b.id)
     db.commit()

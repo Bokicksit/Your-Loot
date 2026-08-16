@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
+import BinderShape from "../components/BinderShape.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 
 /** A binder with no cover still needs a front.
@@ -155,6 +156,14 @@ export default function BindersPage() {
               // is computed from the image's own proportions, which the
               // browser cannot know until it has actually loaded one.
               <img className="binder-cover" src={b.image_url} alt="" />
+            ) : b.color ? (
+              // A colour you chose beats one the app made up, and beats
+              // photographing a plain folder to prove it is plain.
+              <span
+                className="binder-cover flat"
+                style={{ background: b.color }}
+                aria-hidden="true"
+              />
             ) : (
               <span
                 className="binder-cover filler"
@@ -201,6 +210,11 @@ function AddSetBinder({ onDone, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [master, setMaster] = useState(false);
   const [error, setError] = useState(null);
+  // No page count here: a set binder's pages are however many it takes to
+  // hold the set, which the set already decides.
+  const [shape, setShape] = useState({
+    rows: 3, cols: 3, double_page: false, color: null,
+  });
 
   useEffect(() => {
     api.binderSets().then((d) => setSets(d.sets)).catch((e) => setError(e.message));
@@ -223,6 +237,7 @@ function AddSetBinder({ onDone, onCancel }) {
         kind: "set",
         set_code: s.code,
         master,
+        ...shape,
       });
       onDone();
     } catch (e) {
@@ -260,6 +275,7 @@ function AddSetBinder({ onDone, onCancel }) {
           ? "A slot for each way a card was printed — plain, reverse holo, holo — so a set is only complete when you have them all. The printings are looked up when the binder is made, which takes a moment."
           : "One slot per card in the set, whichever way it was printed."}
       </p>
+      <BinderShape value={shape} onChange={setShape} />
       {error && <p className="error">{error}</p>}
       {sets === null ? (
         <p className="empty">Loading sets…</p>
@@ -299,6 +315,9 @@ function AddCustomBinder({ onDone, onCancel }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [shape, setShape] = useState({
+    rows: 3, cols: 3, double_page: false, color: null, pages: 0,
+  });
 
   const make = async (e) => {
     e.preventDefault();
@@ -306,7 +325,7 @@ function AddCustomBinder({ onDone, onCancel }) {
     setBusy(true);
     setError(null);
     try {
-      await api.createBinder({ name: name.trim(), kind: "custom" });
+      await api.createBinder({ name: name.trim(), kind: "custom", ...shape });
       onDone();
     } catch (err) {
       setError(err.message);
@@ -329,6 +348,7 @@ function AddCustomBinder({ onDone, onCancel }) {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <BinderShape value={shape} onChange={setShape} showPages />
       {error && <p className="error">{error}</p>}
       <button type="submit" className="primary" disabled={busy || !name.trim()}>
         <Icon id="check" />

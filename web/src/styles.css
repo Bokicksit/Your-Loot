@@ -876,6 +876,176 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .dex-slot.unowned .placeholder { filter: grayscale(1) brightness(.42) contrast(.85); }
 .dex-slot.unowned .name { color: var(--text-mute); }
 .dex-slot.unowned .count { color: var(--text-mute); background: transparent; border-color: transparent; padding-left: 0; }
+/* ---- The binder as an object: pages, spreads, and the edge of the cover ---- */
+
+.binder-book {
+  /* the cover colour, when one was chosen; otherwise a line that reads as
+     structure rather than decoration */
+  --binder-edge: var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.binder-spread {
+  display: flex;
+  gap: var(--s-4);
+  align-items: start;
+}
+.binder-spread > .binder-page { flex: 1 1 0; min-width: 0; }
+
+/* Two facing pages, the way it sits open on the table.
+   Two fixed columns rather than two things that grow: a binder with an odd
+   number of pages ends on a spread holding one, and letting it grow would
+   draw that last page at twice the width of every other page in the book.
+   The empty half is what the real thing looks like. */
+.binder-book.spread .binder-spread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+.binder-book.spread .binder-page { min-width: 0; }
+
+.binder-page {
+  position: relative;
+  padding: var(--s-3);
+  border: 1px solid var(--binder-edge);
+  border-radius: var(--r-2);
+  /* The colour is the edge, not a wash — a saturated cover behind a grid of
+     card art would fight every card in it. */
+  background: color-mix(in oklab, var(--binder-edge) 6%, transparent);
+}
+.binder-page-no {
+  position: absolute;
+  right: var(--s-3);
+  bottom: calc(var(--s-3) * -1 - 2px);
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-mute);
+  background: var(--bg-0);
+  padding: 0 6px;
+  line-height: 1.4;
+}
+
+/* One page at a time once there is no room for two.
+   A spread of a 4×3 binder is eight columns; on a phone that is a grid of
+   thumbnails too small to recognise a card in, which defeats the point of
+   drawing the binder at all. The shape is right on the screens that can hold
+   it and legible on the ones that cannot. */
+@media (max-width: 760px) {
+  /* start is right for two facing pages — they hang from the same top edge
+     rather than stretching to match each other's height. Stacked it is the
+     wrong axis entirely: it becomes "as narrow as the contents", and a page
+     of empty pockets has almost no contents, so it collapsed to a strip. */
+  .binder-spread { flex-direction: column; align-items: stretch; }
+  .binder-book.spread .binder-spread { grid-template-columns: 1fr; }
+}
+
+.binder-shape-note {
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+/* ---- Setting the shape, on the way in and on the way back ---- */
+
+.binder-shape {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 100%;
+}
+.shape-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+.shape-label {
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  min-width: 5.5em;
+}
+.chip-row.tight { margin-bottom: 0; gap: var(--s-1); }
+.shape-dims { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.shape-dims label { display: flex; align-items: center; gap: 6px; }
+.shape-dims input {
+  width: 3.6em;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.shape-dims span { font-size: var(--f-2); color: var(--text-mute); }
+.shape-dims .times { color: var(--text-mute); }
+.shape-total { font-size: var(--f-1); color: var(--text-mute); }
+
+.shape-colors { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+.swatch {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: var(--r-1);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.swatch.on { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
+.swatch.custom {
+  display: grid;
+  place-items: center;
+  background: var(--bg-1);
+  color: var(--text-mute);
+  position: relative;
+  overflow: hidden;
+}
+/* the native colour well is the whole square, invisible over the icon */
+.swatch.custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.ghost.tiny { padding: 2px 8px; font-size: var(--f-1); }
+
+.binder-cover.flat { display: block; width: 100%; height: 100%; }
+
+/* A page left empty on purpose.
+   Not the same thing as a card you have not got, and it should not look like
+   one: those are dashed and dimmed but still card-shaped, because they are
+   waiting for something in particular. This is waiting for nothing, so it
+   recedes to the shape of the space it holds — and comes back on hover, since
+   it is still a page you can pick up and move. */
+.dex-slot.blank {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--line);
+  box-shadow: none;
+  opacity: .5;
+}
+.dex-slot.blank .placeholder {
+  background: transparent;
+  border: 1px dashed var(--line);
+}
+.dex-slot.blank:hover { opacity: 1; }
+
+.arrange-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-3);
+}
+/* the hint takes the room, so the button sits at the far end rather than
+   halfway across on a wide screen */
+.arrange-bar .arrange-hint { margin: 0; flex: 1 1 auto; }
+
 .dex-slot:hover { transform: translateY(-2px); border-color: var(--gold-line); }
 .dex-slot[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--gold), 0 10px 26px -12px var(--gold-glow); }
 

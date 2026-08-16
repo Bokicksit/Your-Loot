@@ -23,7 +23,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.binders import CUSTOM, DEX, SET
+from app.binders import CUSTOM, DEX, SET, page_count
 from app.models import (
     BinderSlot,
     CardAttrs,
@@ -308,6 +308,11 @@ def _custom_entries(db: Session, binder, user_id: int):
             # nor here: a custom slot holds the card you put in it
             "final": False,
             "state": "missing" if copy is None else "have",
+            # A page with nothing on it, rather than a card you have not got
+            # yet. The set binders' gaps know what they are waiting for and
+            # show it dimmed; this one is waiting for nothing, and should look
+            # like the space it is.
+            "blank": item is None,
         }
 
 
@@ -325,6 +330,14 @@ def render(db: Session, binder, user_id: int) -> dict:
             "set_code": binder.set_code,
             "master": binder.master,
             "image_url": binder.image_url,
+            "color": binder.color,
+            # the shape it is drawn in, and the page count that follows from
+            # it — derived here rather than stored, so it cannot disagree with
+            # the number of slots actually present
+            "rows": binder.rows,
+            "cols": binder.cols,
+            "double_page": binder.double_page,
+            "pages": page_count(binder, len(entries)),
             "total": len(entries),
             "filled": filled,
             "missing": len(entries) - filled,

@@ -544,4 +544,18 @@ def pokedex(db: Session = Depends(get_db),
         })
     # max_dex is what this person's binder holds, not what the Pokédex has —
     # the UI counts pages from it.
-    return {"max_dex": ceiling, "entries": entries}
+    #
+    # The shape rides along because this page and /binders/<the dex one> draw
+    # the same Pokédex, and fetching it separately here would let the two
+    # disagree for as long as one request was in flight.
+    return {
+        "max_dex": ceiling,
+        "binder": {
+            "id": shelf.id,
+            "rows": shelf.rows,
+            "cols": shelf.cols,
+            "double_page": shelf.double_page,
+            "color": shelf.color,
+        },
+        "entries": entries,
+    }

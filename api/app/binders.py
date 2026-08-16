@@ -18,6 +18,34 @@ DEX = "dex"
 SET = "set"
 CUSTOM = "custom"
 
+# The shape of a page. Ten is past any binder anybody sells and well past what
+# fits on a screen, so it is a guard against a typo rather than a judgement
+# about pages. Two hundred pages of nine is eighteen hundred pockets, which is
+# a real binder and also as many blank rows as anyone should be able to ask
+# for in one press.
+MAX_SIDE = 10
+MAX_PAGES = 200
+MAX_BLANKS = 2000
+
+
+def per_page(binder) -> int:
+    """Pockets on one page. Never zero — a binder of no pockets is a binder of
+    one page that never ends, and every page count derived from it would be a
+    division by nothing."""
+    return max(1, (binder.rows or 1) * (binder.cols or 1))
+
+
+def page_count(binder, slots: int) -> int:
+    """How many pages it takes to hold what is in it.
+
+    Derived, never stored. A stored count is a second answer to a question the
+    slots already answer, and the two would disagree the first time anything
+    was added — the binder would claim four pages while holding five.
+    """
+    if slots <= 0:
+        return 0
+    return -(-slots // per_page(binder))  # ceil, without the float
+
 
 def dex_binder(db: Session, user_id: int, create: bool = True) -> Binder | None:
     """The Pokédex, made on first use.

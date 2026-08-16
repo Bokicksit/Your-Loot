@@ -399,9 +399,12 @@ def test_a_copy_says_which_binders_it_is_in(owner):
         owner.delete(f"/api/cards/{item}")
 
 
-def test_taking_a_copy_out_of_a_custom_binder_removes_the_page(owner):
-    """A custom slot only exists because you put something there, so emptying
-    it would leave a blank page in the binder rather than closing the gap."""
+def test_taking_a_copy_out_of_a_custom_binder_leaves_the_page(owner):
+    """This used to close the gap, on the reasoning that a custom slot only
+    exists because you put something there. That stopped being true when a
+    blank page became something you can add on purpose — so the page stays,
+    empty, and every card after it keeps the position you gave it. Taking a
+    card out of a binder does not shuffle the rest of the binder up."""
     mark = uuid.uuid4().hex[:6]
     item, owned = _card(owner, f"Test Page {mark}", 1019)
     binder = owner.post(
@@ -410,11 +413,214 @@ def test_taking_a_copy_out_of_a_custom_binder_removes_the_page(owner):
     try:
         owner.post(f"/api/binders/{binder}/cards", json={"owned_ids": [owned]})
         assert len(owner.get(f"/api/binders/{binder}").json()["entries"]) == 1
+
         owner.delete(f"/api/binders/{binder}/cards/{owned}").raise_for_status()
+        entries = owner.get(f"/api/binders/{binder}").json()["entries"]
+        assert len(entries) == 1, "the page went with the card"
+        assert entries[0]["card"] is None
+        assert entries[0]["blank"] is True, "it should not still name the card"
+
+        # and the page itself goes when you ask for that instead
+        owner.delete(
+            f"/api/binders/{binder}/slots/{entries[0]['key']}"
+        ).raise_for_status()
         assert owner.get(f"/api/binders/{binder}").json()["entries"] == []
     finally:
         owner.delete(f"/api/binders/{binder}")
         owner.delete(f"/api/cards/{item}")
+
+
+def test_a_binder_can_hold_a_deliberate_gap(owner):
+    """card — empty page — card. The gap is a position in the binder rather
+    than the absence of one, so it has to survive a reorder like anything
+    else, and it has to still be there when the binder is read back."""
+    mark = uuid.uuid4().hex[:6]
+    made = [_card(owner, f"Test Gap {mark} {n}", 1016 + n) for n in range(2)]
+    binder = owner.post(
+        "/api/binders", json={"name": f"Gaps {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [o for _i, o in made]}
+        ).raise_for_status()
+
+        r = owner.post(f"/api/binders/{binder}/slots/blank")
+        r.raise_for_status()
+        body = r.json()
+        assert [e["blank"] for e in body["entries"]] == [False, False, True], (
+            "a blank page lands at the end, where Arrange picks it up"
+        )
+        # it is a page like any other, so it counts as one
+        assert body["binder"]["total"] == 3
+        assert body["binder"]["filled"] == 2
+
+        keys = [int(e["key"]) for e in body["entries"]]
+        owner.put(
+            f"/api/binders/{binder}/order",
+            json={"slot_ids": [keys[0], keys[2], keys[1]]},
+        ).raise_for_status()
+
+        entries = owner.get(f"/api/binders/{binder}").json()["entries"]
+        assert [e["blank"] for e in entries] == [False, True, False], (
+            "the gap did not stay between the two cards"
+        )
+        assert entries[1]["card"] is None and entries[1]["name"] is None
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        for item, _owned in made:
+            owner.delete(f"/api/cards/{item}")
+
+
+def test_a_binder_can_be_made_as_an_empty_binder_of_a_size(owner):
+    """Four pages of nine is thirty-six pockets, ready to be filled where the
+    cards actually go rather than in the order they were typed in."""
+    mark = uuid.uuid4().hex[:6]
+    binder = owner.post(
+        "/api/binders",
+        json={"name": f"Blank {mark}", "kind": "custom",
+              "rows": 3, "cols": 3, "pages": 4},
+    ).json()["id"]
+    try:
+        d = owner.get(f"/api/binders/{binder}").json()
+        assert d["binder"]["total"] == 36
+        assert d["binder"]["pages"] == 4
+        assert d["binder"]["rows"] == 3 and d["binder"]["cols"] == 3
+        assert all(e["blank"] for e in d["entries"]), "it should start empty"
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+
+
+def test_cards_go_into_the_empty_pockets_before_the_end(owner):
+    """A binder made as ten blank pages is one somebody means to fill in
+    place. Adding to the end would file the first card behind every empty
+    page they just asked for."""
+    mark = uuid.uuid4().hex[:6]
+    item, owned = _card(owner, f"Test Fill {mark}", 1018)
+    binder = owner.post(
+        "/api/binders",
+        json={"name": f"Fill {mark}", "kind": "custom",
+              "rows": 2, "cols": 2, "pages": 2},
+    ).json()["id"]
+    try:
+        d = owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [owned]}
+        ).json()
+        assert d["binder"]["total"] == 8, "it grew instead of filling a pocket"
+        assert d["entries"][0]["card"] is not None, "it did not go in first"
+        assert all(e["blank"] for e in d["entries"][1:])
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        owner.delete(f"/api/cards/{item}")
+
+
+def test_the_shape_can_be_changed_afterwards_without_moving_a_card(owner):
+    """Rows and columns only decide where the page breaks fall, so changing
+    them is safe at any time — which is the reason it is offered at any time.
+    The order of the cards must come back identical."""
+    mark = uuid.uuid4().hex[:6]
+    made = [_card(owner, f"Test Shape {mark} {n}", 1011 + n) for n in range(4)]
+    binder = owner.post(
+        "/api/binders", json={"name": f"Shape {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [o for _i, o in made]}
+        ).raise_for_status()
+        before = [e["name"] for e in owner.get(f"/api/binders/{binder}").json()["entries"]]
+
+        owner.patch(
+            f"/api/binders/{binder}",
+            json={"rows": 4, "cols": 3, "double_page": True, "color": "#3b5bdb"},
+        ).raise_for_status()
+
+        d = owner.get(f"/api/binders/{binder}").json()
+        assert [e["name"] for e in d["entries"]] == before, "a card moved"
+        assert d["binder"]["rows"] == 4 and d["binder"]["cols"] == 3
+        assert d["binder"]["double_page"] is True
+        assert d["binder"]["color"] == "#3b5bdb"
+        # four cards, twelve to a page
+        assert d["binder"]["pages"] == 1
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        for item, _owned in made:
+            owner.delete(f"/api/cards/{item}")
+
+
+def test_shrinking_a_binder_will_not_throw_cards_away(owner):
+    """"Make it one page" is a statement about the size of the binder and
+    never a request to lose what is on page two. It says so and changes
+    nothing, which is better than a confirm dialog nobody reads."""
+    mark = uuid.uuid4().hex[:6]
+    item, owned = _card(owner, f"Test Shrink {mark}", 1017)
+    binder = owner.post(
+        "/api/binders",
+        json={"name": f"Shrink {mark}", "kind": "custom",
+              "rows": 1, "cols": 2, "pages": 3},
+    ).json()["id"]
+    try:
+        owner.post(f"/api/binders/{binder}/cards", json={"owned_ids": [owned]})
+        # the card is in the first pocket, so pages 2 and 3 are empty
+        r = owner.patch(f"/api/binders/{binder}", json={"pages": 2})
+        r.raise_for_status()
+        assert owner.get(f"/api/binders/{binder}").json()["binder"]["total"] == 4
+
+        # now one that would take the card with it
+        r = owner.patch(f"/api/binders/{binder}", json={"pages": 0})
+        assert r.status_code == 409
+        d = owner.get(f"/api/binders/{binder}").json()
+        assert d["binder"]["total"] == 4, "it shrank anyway"
+        assert d["entries"][0]["card"] is not None, "the card went"
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        owner.delete(f"/api/cards/{item}")
+
+
+def test_a_colour_has_to_be_a_colour(owner):
+    """It goes straight into a style attribute, so anything that is not six
+    hex digits has no business being stored."""
+    mark = uuid.uuid4().hex[:6]
+    binder = owner.post(
+        "/api/binders", json={"name": f"Paint {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        for bad in ["red", "#12345", "#3b5bdb; background: url(x)", "javascript:1"]:
+            assert owner.patch(
+                f"/api/binders/{binder}", json={"color": bad}
+            ).status_code == 422, f"accepted {bad!r}"
+        owner.patch(f"/api/binders/{binder}", json={"color": "#c0392b"}).raise_for_status()
+        # and "" puts it back to the colour the shelf makes up
+        owner.patch(f"/api/binders/{binder}", json={"color": ""}).raise_for_status()
+        assert owner.get(f"/api/binders/{binder}").json()["binder"]["color"] is None
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+
+
+def test_the_pokedex_page_is_told_the_same_shape(owner):
+    """The Pokédex is drawn by two routes and they have to agree, or the same
+    binder looks like two different things depending on how you got there."""
+    dex = next(
+        b for b in owner.get("/api/binders").json()["binders"] if b["kind"] == "dex"
+    )["id"]
+    owner.patch(
+        f"/api/binders/{dex}", json={"rows": 4, "cols": 3, "double_page": True}
+    ).raise_for_status()
+    try:
+        shape = owner.get("/api/cards/pokedex").json()["binder"]
+        assert (shape["rows"], shape["cols"], shape["double_page"]) == (4, 3, True)
+    finally:
+        owner.patch(
+            f"/api/binders/{dex}", json={"rows": 3, "cols": 3, "double_page": False}
+        )
+
+
+def test_only_a_custom_binder_takes_a_blank_page(owner):
+    """The other two get their pages from a universe the app already knows —
+    a dex number, a card in a set — so there is nowhere to put one."""
+    dex = next(
+        b for b in owner.get("/api/binders").json()["binders"] if b["kind"] == "dex"
+    )["id"]
+    r = owner.post(f"/api/binders/{dex}/slots/blank")
+    assert r.status_code == 409
 
 
 def test_the_order_is_an_insert_not_a_swap(owner):

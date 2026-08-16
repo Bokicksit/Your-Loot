@@ -2,8 +2,8 @@ import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
-import { TileDensity, useTileCols } from "../components/ViewToggle.jsx";
+import { BinderPages, BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
+import BinderShape from "../components/BinderShape.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -26,7 +26,6 @@ export default function BinderPage() {
   const [picking, setPicking] = useState(false);
   const [arranging, setArranging] = useState(false);
   const [lifted, setLifted] = useState(null); // the card in your hand
-  const [cols] = useTileCols("binder", 3, 6);
   const [sort, setSort] = useState("order");
   const [adding, setAdding] = useState(null);   // the slot being filled
 
@@ -91,6 +90,19 @@ export default function BinderPage() {
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
     load();
+  };
+
+  /** A page with nothing on it, added at the end and picked up straight away.
+   *
+   *  The lift is the point. A blank page lands last, which on a binder of
+   *  forty is a scroll away from wherever you were looking — so it arrives
+   *  already in your hand, and the next tap is where it goes. Same two taps as
+   *  moving anything else.
+   */
+  const addBlank = async () => {
+    const next = await api.binderAddBlank(binder.id);
+    setData(next);
+    setLifted(next.entries[next.entries.length - 1]?.key ?? null);
   };
 
   const move = async (slotId, by) => {
@@ -207,7 +219,10 @@ export default function BinderPage() {
             Add cards
           </button>
         )}
-        {isCustom && entries.length > 1 && sort === "order" && (
+        {/* One card and no way in was the old gate; Arrange is also where an
+            empty page is added, and a binder holding a single card is exactly
+            where you might want one either side of it. */}
+        {isCustom && entries.length > 0 && sort === "order" && (
           <button
             className={`ghost ${arranging ? "on" : ""}`}
             onClick={() => {
@@ -279,7 +294,15 @@ export default function BinderPage() {
           {isCustom && <option value="set">By set</option>}
         </select>
         <span className="rail-spacer" />
-        <TileDensity module="binder" min={3} max={6} />
+        {/* Where the tile slider used to be. How wide a binder is drawn is a
+            fact about the binder now, set where the rest of its shape is set,
+            rather than a reader preference that made "third row of page four"
+            mean something different on every screen. */}
+        <span className="binder-shape-note">
+          {binder.cols}×{binder.rows}
+          {binder.double_page ? " · spread" : ""}
+          {binder.pages ? ` · ${binder.pages} page${binder.pages > 1 ? "s" : ""}` : ""}
+        </span>
       </div>
 
       {isCustom && picking && (
@@ -299,18 +322,25 @@ export default function BinderPage() {
       )}
 
       {arranging && (
-        <p className="settings-note arrange-hint">
-          {lifted === null
-            ? "Tap a card to pick it up."
-            : "Now tap where it should go — or tap it again to put it back."}
-        </p>
+        <div className="arrange-bar">
+          <p className="settings-note arrange-hint">
+            {lifted === null
+              ? "Tap a card to pick it up."
+              : "Now tap where it should go — or tap it again to put it back."}
+          </p>
+          <button
+            className="ghost"
+            onClick={addBlank}
+            title="Leave a gap — a page with nothing on it"
+          >
+            <Icon id="plus" />
+            Empty slot
+          </button>
+        </div>
       )}
 
-      <div
-        className={`dex-grid cols-${cols} ${arranging ? "arranging" : ""}`}
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
-        {ordered.map((e) => (
+      <BinderPages binder={binder} entries={ordered} arranging={arranging}>
+        {(e) => (
           <Fragment key={e.key}>
             <BinderSlotTile
               entry={e}
@@ -405,8 +435,8 @@ export default function BinderPage() {
               </div>
             )}
           </Fragment>
-        ))}
-      </div>
+        )}
+      </BinderPages>
     </div>
   );
 }
@@ -422,6 +452,13 @@ function Rename({ binder, onDone, onCover }) {
   const [name, setName] = useState(binder.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [shape, setShape] = useState({
+    rows: binder.rows ?? 3,
+    cols: binder.cols ?? 3,
+    double_page: !!binder.double_page,
+    color: binder.color || null,
+    pages: binder.pages ?? 0,
+  });
 
   /** A set binder can become a master set and go back again.
    *
@@ -441,12 +478,38 @@ function Rename({ binder, onDone, onCover }) {
       setBusy(false);
     }
   };
+  /** One PATCH for the lot.
+   *
+   *  Only what actually changed goes up — a page count sent unchanged on a
+   *  binder that has grown since the form opened would be read as "shrink it
+   *  back", and the server would rightly refuse to throw the new cards away.
+   */
   const save = async (e) => {
     e.preventDefault();
-    if (name.trim() && name.trim() !== binder.name) {
-      await api.editBinder(binder.id, { name: name.trim() });
+    const patch = {};
+    if (name.trim() && name.trim() !== binder.name) patch.name = name.trim();
+    if (shape.rows !== (binder.rows ?? 3)) patch.rows = shape.rows;
+    if (shape.cols !== (binder.cols ?? 3)) patch.cols = shape.cols;
+    if (shape.double_page !== !!binder.double_page) {
+      patch.double_page = shape.double_page;
     }
-    onDone();
+    if ((shape.color || null) !== (binder.color || null)) {
+      patch.color = shape.color || "";
+    }
+    if (binder.kind === "custom" && shape.pages !== (binder.pages ?? 0)) {
+      patch.pages = shape.pages;
+    }
+    if (!Object.keys(patch).length) return onDone();
+    setBusy(true);
+    setError(null);
+    try {
+      await api.editBinder(binder.id, patch);
+      onDone();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <form className="filter-sheet" onSubmit={save}>
@@ -461,6 +524,15 @@ function Rename({ binder, onDone, onCover }) {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <BinderShape
+        value={shape}
+        onChange={setShape}
+        showPages={binder.kind === "custom"}
+        pageHint={
+          "Grows the binder with empty pages, or takes empty ones off the " +
+          "end. It will not drop a page that still has a card in it."
+        }
+      />
       {binder.kind === "set" && (
         <>
           <div className="form-row">
