@@ -58,7 +58,7 @@ def _base_query():
 
 
 @router.get("/tmdb/search")
-def tmdb_search(q: str = Query(min_length=2)):
+def tmdb_search(q: str = Query(min_length=2), user: User = Depends(current_user)):
     if not tmdb_client.configured:
         raise HTTPException(503, "TMDB not configured — set TMDB_API_KEY")
     try:

@@ -107,7 +107,7 @@ def list_platforms(db: Session = Depends(get_db),
 
 
 @router.get("/igdb/search")
-def igdb_search(q: str = Query(min_length=2)):
+def igdb_search(q: str = Query(min_length=2), user: User = Depends(current_user)):
     if not igdb_client.configured:
         raise HTTPException(
             503, "IGDB not configured — set IGDB_CLIENT_ID / IGDB_CLIENT_SECRET"

@@ -79,6 +79,7 @@ def search_openlibrary(
     q: str | None = None,
     isbn: str | None = None,
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
 ):
     """Look a book up in Open Library — by ISBN (the barcode on the back) or
     by title/author text. An ISBN with no cover in Open Library borrows one
@@ -114,7 +115,10 @@ def search_openlibrary(
 
 
 @router.get("/description")
-def book_description(olid: str = Query(min_length=3, max_length=30)):
+def book_description(
+    olid: str = Query(min_length=3, max_length=30),
+    user: User = Depends(current_user),
+):
     """The blurb for one book, fetched only once it's been chosen.
 
     Its own route rather than a field on the search results: it costs an extra

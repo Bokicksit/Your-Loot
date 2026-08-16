@@ -2,7 +2,7 @@ import ipaddress
 import socket
 import uuid
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -43,7 +43,7 @@ def signed_link(name: str, user=Depends(current_user)):
 
 
 @router.post("")
-async def upload_image(file: UploadFile):
+async def upload_image(file: UploadFile, user=Depends(current_user)):
     """Store an upload in IMAGE_DIR (bind-mounted to a TrueNAS dataset) and
     return the /images/ URL to save on an item.
 
@@ -78,6 +78,12 @@ class FetchBody(BaseModel):
     url: str
 
 
+# A redirect is a second URL somebody else chose, so it gets checked like the
+# first one. Enough hops for a CDN that shortens then signs, few enough that a
+# loop cannot be used to keep a worker busy.
+MAX_HOPS = 5
+
+
 def _reject_private(host: str):
     """Don't let a pasted URL make the API poke around the LAN (SSRF)."""
     try:
@@ -86,27 +92,55 @@ def _reject_private(host: str):
         raise HTTPException(400, "couldn't resolve that host")
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local  # 169.254/16 — cloud metadata lives here
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
             raise HTTPException(400, "that address isn't allowed")
 
 
+def _checked_get(url: str) -> httpx.Response:
+    """Fetch it, checking every address it sends us to — not just the first.
+
+    The guard used to run once on the pasted hostname and then hand the whole
+    job to httpx with follow_redirects=True. That is a hole rather than a
+    subtlety: a host anybody controls can answer 302 to 169.254.169.254 or a
+    private address, and the check never sees where the request actually
+    went. Following the chain here means each hop is a URL that had to pass.
+    """
+    for _ in range(MAX_HOPS):
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            raise HTTPException(400, "paste a full http(s) image URL")
+        _reject_private(parsed.hostname)
+
+        resp = httpx.get(
+            url,
+            timeout=20,
+            follow_redirects=False,  # each hop is checked above before it runs
+            headers={"User-Agent": "your-loot/1.0"},
+        )
+        if not resp.is_redirect:
+            return resp
+        location = resp.headers.get("location")
+        if not location:
+            return resp
+        url = urljoin(url, location)
+
+    raise HTTPException(400, "that URL redirects too many times")
+
+
 @router.post("/fetch")
-def fetch_image(body: FetchBody):
+def fetch_image(body: FetchBody, user=Depends(current_user)):
     """Store a copy of an image from a pasted URL — e.g. the card art from
     pokemon.com's asset CDN. Copying it locally means the picture keeps
     working if the source moves or blocks hotlinking."""
-    parsed = urlparse(body.url.strip())
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise HTTPException(400, "paste a full http(s) image URL")
-    _reject_private(parsed.hostname)
-
     try:
-        resp = httpx.get(
-            body.url.strip(),
-            timeout=20,
-            follow_redirects=True,
-            headers={"User-Agent": "your-loot/1.0"},
-        )
+        resp = _checked_get(body.url.strip())
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
         raise HTTPException(502, f"source returned {e.response.status_code}")

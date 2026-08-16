@@ -13,13 +13,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.barcodes import lookup as cached_lookup
 from app.db import get_db
+from app.auth import current_user
 from app.integrations.upcitemdb import BarcodeError, search as upc_search
 
 router = APIRouter(prefix="/api/lookup", tags=["lookup"])
 
 
 @router.get("/barcode")
-def barcode(code: str = Query(pattern=r"^\d{8,14}$"), db=Depends(get_db)):
+def barcode(
+    code: str = Query(pattern=r"^\d{8,14}$"),
+    db=Depends(get_db),
+    user=Depends(current_user),
+):
     try:
         items = cached_lookup(db, code)
     except BarcodeError as e:
@@ -31,6 +36,7 @@ def barcode(code: str = Query(pattern=r"^\d{8,14}$"), db=Depends(get_db)):
 def products(
     q: str = Query(min_length=3, max_length=120),
     require_images: bool = True,
+    user=Depends(current_user),
 ):
     """Retail listings by name, for their photographs of the actual packaging.
 

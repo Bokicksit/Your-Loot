@@ -276,11 +276,9 @@ def list_cards(
 
 
 @router.get("/tcgdex/search")
-def tcgdex_search(
-    name: str | None = None,
+def tcgdex_search(name: str | None = None,
     set: str | None = None,
-    number: str | None = None,
-):
+    number: str | None = None, user: User = Depends(current_user)):
     """Look the card up in TCGdex — the open catalog that carries cards our
     offline dump lacks (new promo sets, and later additions to ongoing promo
     sets). Needs a name, or a set plus number."""

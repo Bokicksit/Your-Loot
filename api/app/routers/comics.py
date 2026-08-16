@@ -56,7 +56,7 @@ def _base_query():
 
 
 @router.get("/runs")
-def series_runs(series: str):
+def series_runs(series: str, user: User = Depends(current_user)):
     """The runs called `series`, newest first, with the year each began.
 
     A comic's main barcode is the same on every issue of a run, so a scan can
@@ -85,12 +85,10 @@ def series_runs(series: str):
 
 
 @router.get("/search")
-def search_comicvine(
-    q: str | None = None,
+def search_comicvine(q: str | None = None,
     series: str | None = None,
     issue: str | None = None,
-    year: int | None = None,
-):
+    year: int | None = None, user: User = Depends(current_user)):
     """Look an issue up on Comic Vine.
 
     Given a series and an issue number it goes via the run, which is the only

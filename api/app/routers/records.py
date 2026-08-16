@@ -105,7 +105,10 @@ def _from_product(item: dict, barcode: str) -> dict:
 
 @router.get("/search")
 def search_musicbrainz(
-    q: str | None = None, artist: str | None = None, barcode: str | None = None
+    q: str | None = None,
+    artist: str | None = None,
+    barcode: str | None = None,
+    user: User = Depends(current_user),
 ):
     """Look a pressing up in MusicBrainz — by barcode (the scan on the sleeve),
     or by album title and artist. `q` is the album title; passing `artist` too
@@ -167,7 +170,7 @@ def search_musicbrainz(
 
 
 @router.get("/tracklist")
-def record_tracklist(release_id: str):
+def record_tracklist(release_id: str, user: User = Depends(current_user)):
     """The running order for one Discogs pressing.
 
     Its own route, fetched only once a pressing has been chosen: it is a

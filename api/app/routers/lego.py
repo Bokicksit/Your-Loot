@@ -56,7 +56,11 @@ def _base_query():
 
 
 @router.get("/search")
-def search_rebrickable(q: str | None = None, set_number: str | None = None):
+def search_rebrickable(
+    q: str | None = None,
+    set_number: str | None = None,
+    user: User = Depends(current_user),
+):
     """Look a set up on Rebrickable — by set number (printed on the box) or by
     name."""
     if not rebrickable_client.configured:
