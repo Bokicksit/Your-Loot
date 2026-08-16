@@ -15,6 +15,9 @@ export function IconDefs() {
         <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"></circle> <circle cx="12" cy="12" r="4.4"></circle> <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"></circle></symbol>
         <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"></circle> <circle cx="12" cy="12" r="6.2"></circle> <path d="M14.1 9.5a2.1 2.1 0 00-2-1.2h-.4a1.9 1.9 0 00-.3 3.75l1.6.3a1.9 1.9 0 01-.3 3.75h-.4a2.1 2.1 0 01-2-1.2M12 7v1.3M12 15.7V17"></path></symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h9.5M4.5 17h5.5" /><circle cx="17" cy="12" r="2" /><circle cx="13.5" cy="17" r="2" /></symbol>
+        {/* nine pockets to a page — the shape of a binder page, which is what
+            it stands for */}
+        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M9.17 3.5v17M14.83 3.5v17M3.5 9.17h17M3.5 14.83h17" /></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13" /></symbol>
         <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5.5 12h13" /></symbol>

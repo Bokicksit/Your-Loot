@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderPages, BinderSlotTile, BinderSwitch } from "../components/BinderGrid.jsx";
@@ -57,6 +57,22 @@ export default function BinderPage() {
   if (!data) return <p className="empty">Loading…</p>;
 
   const { binder, entries } = data;
+
+  /* The Pokédex has a page of its own and this is not it.
+   *
+   * It was reachable both ways and only one of them could do anything: on
+   * /pokedex a name is a link to search for that card and a filled slot can
+   * be swapped for a better copy, and here neither existed — a slot with a
+   * card in it opened a panel with no buttons at all. That is not a thing
+   * anybody chose; the shelf simply linked to a page that never learned what
+   * a dex binder can do.
+   *
+   * Sent there rather than taught it, because the alternative is a second
+   * copy of the swap flow that has to stay in step with the first. One
+   * Pokédex, one page, and the shelf link goes straight there.
+   */
+  if (binder.kind === "dex") return <Navigate to="/pokedex" replace />;
+
   const isCustom = binder.kind === "custom";
 
   // Sorting looks at the binder differently; it does not rearrange it. That
@@ -90,6 +106,18 @@ export default function BinderPage() {
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
     load();
+  };
+
+  /** The name is a link to that card in your collection.
+   *
+   *  The tile has taken this since it was written and no binder ever passed
+   *  it, so the Pokédex had clickable names and the other two did not — the
+   *  same tile behaving differently depending on which page drew it. Stops
+   *  the tap from also opening the slot's panel underneath.
+   */
+  const findCards = (ev, name) => {
+    ev.stopPropagation();
+    if (name) navigate(`/cards?add=${encodeURIComponent(name)}`);
   };
 
   /** A page with nothing on it, added at the end and picked up straight away.
@@ -348,6 +376,7 @@ export default function BinderPage() {
               lifted={lifted === e.key}
               arranging={arranging}
               onToggle={() => tapSlot(e)}
+              onName={findCards}
             />
             {open === e.key && (
               <div className="dex-detail" data-slot={e.key}>

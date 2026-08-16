@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import useDismiss from "../useDismiss.js";
 import { Icon } from "../components/Icons.jsx";
 import { BinderPages } from "../components/BinderGrid.jsx";
+import BinderShape from "../components/BinderShape.jsx";
 import { useSettings } from "../settings.jsx";
 
 // One card per Pokémon — the binder mirror. A slot's occupant is either the
@@ -14,9 +15,13 @@ const abbrevRarity = (r) =>
 
 export default function PokedexPage() {
   const [entries, setEntries] = useState([]);
-  // the dex binder's own shape, so this page and /binders/<it> draw the
-  // same Pokédex rather than two different-looking ones
+  // The dex binder's own shape, and its id so this page can save changes to
+  // it. This is the only page that draws the Pokédex — the binder route sends
+  // you here — so the shape is set here too.
   const [shape, setShape] = useState({ rows: 3, cols: 3, double_page: false });
+  const [shapeOpen, setShapeOpen] = useState(false);
+  const [shapeBusy, setShapeBusy] = useState(false);
+  const [shapeError, setShapeError] = useState(null);
   const [filter, setFilter] = useState("all"); // all|missing|upgrade|final
   const [rarityFilter, setRarityFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -101,6 +106,28 @@ export default function PokedexPage() {
     }, 50);
     return () => clearInterval(timer);
   }, [at, entries.length]);
+
+  /** The dex binder is a binder like any other, so this is the same PATCH the
+   *  binder page sends — the Pokédex just has nowhere else to send it from. */
+  const saveShape = async (ev) => {
+    ev.preventDefault();
+    if (!shape.id) return setShapeOpen(false);
+    setShapeBusy(true);
+    setShapeError(null);
+    try {
+      await api.editBinder(shape.id, {
+        rows: shape.rows,
+        cols: shape.cols,
+        double_page: shape.double_page,
+        color: shape.color || "",
+      });
+      setShapeOpen(false);
+    } catch (e) {
+      setShapeError(e.message);
+    } finally {
+      setShapeBusy(false);
+    }
+  };
 
   const status = (e) => (e.card ? (e.final ? "final" : "upgrade") : "missing");
 
@@ -254,14 +281,34 @@ export default function PokedexPage() {
           {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
         </button>
         <span className="rail-spacer" />
-        {/* The tile slider was here. The Pokédex is a binder, and how wide
-            it is drawn is now a fact about that binder, set on its page
-            alongside the rest of its shape. */}
-        <span className="binder-shape-note">
+        {/* The tile slider was here. The Pokédex is a binder, and how wide it
+            is drawn is a fact about that binder — set here, because this is
+            the Pokédex's page and there is no other. */}
+        <button
+          type="button"
+          className={`chip ${shapeOpen ? "active" : ""}`}
+          onClick={() => setShapeOpen(!shapeOpen)}
+          aria-expanded={shapeOpen}
+          title="Pockets to a page, and the cover"
+        >
+          <Icon id="grid" />
           {shape.cols}×{shape.rows}
           {shape.double_page ? " · spread" : ""}
-        </span>
+        </button>
       </div>
+      {shapeOpen && (
+        <form className="filter-sheet" onSubmit={saveShape}>
+          <BinderShape value={shape} onChange={setShape} />
+          {shapeError && <p className="error">{shapeError}</p>}
+          <button type="submit" className="primary" disabled={shapeBusy}>
+            <Icon id="check" />
+            {shapeBusy ? "…" : "Save"}
+          </button>
+          <button type="button" className="ghost" onClick={() => setShapeOpen(false)}>
+            Cancel
+          </button>
+        </form>
+      )}
       {filtersOpen && (
         <div className="filter-sheet">
           <label>

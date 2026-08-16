@@ -146,7 +146,9 @@ export default function BindersPage() {
         {(shelf || []).map((b) => (
           <Link
             key={b.id}
-            to={`/binders/${b.id}`}
+            // straight to the Pokédex rather than through a binder page that
+            // only redirects there
+            to={b.kind === "dex" ? "/pokedex" : `/binders/${b.id}`}
             className={`binder-card ${lifted === b.id ? "lifted" : ""} ${arranging ? "arranging" : ""}`}
             onClick={(e) => tap(e, b)}
           >
