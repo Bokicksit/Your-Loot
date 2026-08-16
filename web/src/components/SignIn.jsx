@@ -407,14 +407,25 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
             placeholder={
               needsSetup || mode === "signup"
                 ? "Choose a password (8+ characters)"
-                : "Password or PIN"
+                // "or PIN" is the one-account bargain — four digits behind a
+                // five-tries-then-wait brake, which is reasonable on a home
+                // network and is what Plex does. Where there are accounts
+                // there are no PINs, and offering one reads as an invitation
+                // to pick something short.
+                : soloLock
+                  ? "Password or PIN"
+                  : "Password"
             }
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={
               needsSetup || mode === "signup" ? "new-password" : "current-password"
             }
-            minLength={needsSetup || mode === "signup" ? 8 : 4}
+            // Only where a password is being chosen. Signing in must accept
+            // whatever the account already has, or somebody with an older
+            // short one is locked out by their own browser before the server
+            // is ever asked.
+            minLength={needsSetup || mode === "signup" ? 8 : undefined}
             required
             autoFocus={soloLock}
           />

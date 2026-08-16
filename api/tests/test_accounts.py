@@ -331,3 +331,36 @@ def test_the_owner_cannot_delete_themselves(owner_of_open):
     assert signed_in["id"] == OWNER_ID
     r = c.request("DELETE", "/api/auth/me", json={"password": OWNER_PASSWORD})
     assert r.status_code == 400
+
+# --- what counts as a password -------------------------------------------
+
+
+@needs_open
+def test_a_short_password_is_refused_where_there_are_accounts(signed_up):
+    """Every other door demands eight characters — setup, signup, an
+    invitation, a reset. Changing it quietly took four, which is how an
+    account somebody reaches over the internet ends up behind a PIN."""
+    c, _email, _ = signed_up
+    r = c.post(
+        "/api/auth/password",
+        json={"current_password": PASSWORD, "new_password": "1234"},
+    )
+    assert r.status_code == 400, f"a four-character password was accepted ({r.status_code})"
+
+
+@needs_open
+def test_a_real_password_is_still_accepted(signed_up):
+    c, email, _ = signed_up
+    new = "a-properly-long-one-2"
+    c.post(
+        "/api/auth/password",
+        json={"current_password": PASSWORD, "new_password": new},
+    ).raise_for_status()
+
+    fresh = httpx.Client(base_url=OPEN, timeout=60)
+    try:
+        assert fresh.post(
+            "/api/auth/login", json={"email": email, "password": new}
+        ).status_code == 200
+    finally:
+        fresh.close()

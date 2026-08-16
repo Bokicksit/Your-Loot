@@ -72,6 +72,13 @@ class MeOut(BaseModel):
 # which is the same bargain Plex makes.
 MIN_SECRET = 4
 
+# What a real account needs, everywhere one is chosen: setup, signup, an
+# invitation, a reset — and changing it, which was the one that let a
+# four-character PIN onto an account on a public service. The bargain above
+# is about a lock on one household's door, not about an account somebody
+# reaches over the internet.
+MIN_PASSWORD = 8
+
 
 class Credentials(BaseModel):
     email: EmailStr | None = None
@@ -206,8 +213,16 @@ def change_password(
     that it always does, so a borrowed session can't lock the owner out."""
     if user.password_hash and not verify_password(body.current_password or "", user.password_hash):
         raise HTTPException(403, "Current password is wrong")
-    if body.new_password is None and multi_user():
-        raise HTTPException(400, "An account needs a password when accounts are on")
+    if multi_user():
+        if body.new_password is None:
+            raise HTTPException(400, "An account needs a password when accounts are on")
+        # Enforced here rather than on the model, which cannot see which mode
+        # this install is in. Without it every other door demands eight
+        # characters and this one quietly took four.
+        if len(body.new_password) < MIN_PASSWORD:
+            raise HTTPException(
+                400, f"Use at least {MIN_PASSWORD} characters"
+            )
     user.password_hash = hash_password(body.new_password) if body.new_password else None
     db.commit()
 
