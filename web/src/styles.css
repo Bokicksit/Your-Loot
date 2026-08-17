@@ -941,6 +941,13 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   .binder-book.spread .binder-spread { grid-template-columns: 1fr; }
 }
 
+/* The English name under a title you may not read. Quieter than the title,
+   because it is not what the card says — it is what the card is. */
+.tile-info .alt-name {
+  color: var(--text-mute);
+  font-style: italic;
+}
+
 /* "p.15" on a search result: which page of the binder that card is really
    on, so the answer to "where is it" is on the card rather than somewhere
    you have to go and work out. Top right, opposite the slot number. */

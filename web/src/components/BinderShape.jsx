@@ -33,7 +33,13 @@ const SWATCHES = [
  *  columns and the spread only decide where the page breaks fall — which is
  *  what makes it safe to offer at any time.
  */
-export default function BinderShape({ value, onChange, showPages = false, pageHint }) {
+export default function BinderShape({
+  value,
+  onChange,
+  showPages = false,
+  pageHint,
+  showJapanese = false,
+}) {
   const set = (patch) => onChange({ ...value, ...patch });
   const rows = value.rows ?? 3;
   const cols = value.cols ?? 3;
@@ -132,6 +138,27 @@ export default function BinderShape({ value, onChange, showPages = false, pageHi
               "the cards actually go. Leave it at zero for a binder that just " +
               "grows as you add to it."}
         </p>
+      )}
+
+      {showJapanese && (
+        <>
+          <div className="shape-row">
+            <span className="shape-label">Japanese</span>
+            <button
+              type="button"
+              className={`toggle ${value.allow_ja ? "on" : ""}`}
+              onClick={() => set({ allow_ja: !value.allow_ja })}
+            >
+              {value.allow_ja ? "Allowed in here" : "English only"}
+            </button>
+          </div>
+          <p className="settings-note">
+            A dex slot takes any card of that species, so a Japanese one can
+            fill it. Off, they are never offered for this binder and never
+            take a slot in it — which keeps a binder you built in English the
+            way you built it.
+          </p>
+        </>
       )}
 
       <div className="shape-row">

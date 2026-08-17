@@ -52,7 +52,9 @@ adding items, barcode scanning, the binder, grading, backups, troubleshooting.
 **Cards** — search 20,000+ Pokémon cards by name, number, or set code (`151`,
 `MEW`, `JTG`). Track each copy with condition and grading (PSA/BGS/CGC…). Cards
 missing from the offline database can be pulled from an online catalog or
-entered by hand with your own photo.
+entered by hand with your own photo. A further 13,000 Japanese cards are
+available as an optional second catalogue — see
+[Keeping it running](#keeping-it-running).
 
 **Pokédex binder** — a slot per national dex number, mirroring a physical
 binder: one card per Pokémon, marked either *the one* or *will upgrade*.
@@ -198,6 +200,39 @@ docker compose exec api python /seed/seed_cards.py --download
 This only ever adds and updates catalog entries. Your owned copies, wanted
 list, binder picks, grades, and any photos you added are never touched.
 
+**Japanese cards** are a second catalogue — 13,061 cards across 124 sets,
+including the sets that never had an English printing. Off by default, because
+it doubles the size of the card database and most collections never need it.
+Turn it on with `SEED_JAPANESE=true` in `.env` and restart, or do it once by
+hand:
+```bash
+docker compose exec api python /seed/seed_cards_ja.py --download
+```
+Either way it takes about 40 seconds, adds roughly 7 MB, and is only ever done
+once — the automatic version checks first and skips if they are already there.
+Until you run it, nothing about Japanese appears anywhere in the app.
+
+Once seeded: a **JP** button beside the card search brings up Japanese
+printings instead of English, and each one shows the English species name
+underneath so you can find リザードン by typing Charizard. Japanese cards go in
+your collection, your Pokédex and binders of your own — not set binders, since
+those sets have no English equivalent to be a set *of*. A binder takes them
+only when its settings say so, so the Pokédex you built in English stays that
+way until you decide otherwise.
+
+About 6 in 10 have artwork. Modern sets are complete; the 1990s and 2000s sets
+and the very newest releases have none yet, and those cards show an empty frame
+with the English name in it. That is TCGdex's coverage rather than a setting —
+it improves on its own as scans are contributed there. Your own photos work on
+Japanese cards exactly as they do on English ones.
+
+To undo it entirely:
+```bash
+docker compose exec postgres psql -U getloot -d getloot \
+  -c "delete from collection_item where source = 'tcgdex-ja';"
+```
+That takes the Japanese catalogue with it and leaves everything you own alone.
+
 **Running this for a lot of people?** Card pictures are seeded pointing at
 `images.pokemontcg.io`, which belongs to the project publishing the card
 database — fine for a household, less fine as somebody else's bandwidth bill.
@@ -285,7 +320,8 @@ deploy/  TrueNAS compose
 ## Data sources & credits
 
 - Card data: [pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data)
-  and [TCGdex](https://tcgdex.dev)
+  and [TCGdex](https://tcgdex.dev) · Japanese cards and all card artwork:
+  [TCGdex](https://tcgdex.dev) (MIT)
 - Games: [IGDB](https://www.igdb.com), box scans from
   [libretro-thumbnails](https://github.com/libretro-thumbnails) ·
   Movies: [TMDB](https://www.themoviedb.org)

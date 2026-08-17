@@ -143,3 +143,85 @@ def test_both_pokedex_builders_are_capped():
 
     for fn, where in ((_dex_entries, "binder_view"), (pokedex, "routers/cards")):
         assert "dex_ceiling" in inspect.getsource(fn),             f"the Pokédex builder in {where} is not capped"
+
+
+# --- a card is a card ------------------------------------------------------
+
+
+def test_a_japanese_card_counts_toward_the_free_limit(owner):
+    """Japanese printings are more cards, not a separate thing.
+
+    Decided rather than discovered, and worth a test because the opposite is
+    just as easy to build by accident: the moment `language` exists, a count
+    that filters on it looks like a reasonable thing to write. It is not. A
+    Japanese card costs the same to store, sits in the same binders, and a
+    free account holding 300 of them is holding 300 cards.
+
+    This asserts the counting function itself rather than the 402, because
+    the test stack sets no limit — and setting one would mean an API that
+    charges, which is exactly what a self-hosted install must never become.
+    """
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.limits import cards_held
+    from app.models import CardAttrs, CollectionItem, Module, User
+
+    mark = os.urandom(3).hex()
+    me = owner.get("/api/auth/me").json()
+    db = SessionLocal()
+    try:
+        user_id = db.scalar(select(User.id).where(User.email == me["email"])) \
+            if me.get("email") else db.scalar(select(User.id).order_by(User.id))
+
+        before = cards_held(db, user_id)
+
+        # a Japanese card, seeded the way seed_cards_ja.py seeds one
+        item = CollectionItem(
+            module=Module.cards.value, source="tcgdex-ja",
+            external_id=f"TEST{mark}-001", title=f"テストカード {mark}",
+            card_attrs=CardAttrs(language="ja", set_code=f"TEST{mark}",
+                                 card_number="001", national_dex_no=25),
+        )
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+
+        owner.post(f"/api/items/{item.id}/owned", json={"condition": "NM"}) \
+            .raise_for_status()
+        db.expire_all()
+
+        assert cards_held(db, user_id) == before + 1, (
+            "a Japanese card did not count toward the free card limit"
+        )
+    finally:
+        owner.delete(f"/api/cards/{item.id}")
+        db.close()
+
+
+def test_an_install_without_japanese_says_so(owner):
+    """The JP tick and the Japanese switch in a binder's settings only exist
+    where the Japanese catalogue was seeded, which is opt-in and which most
+    installs will never do. A control whose only possible outcome is nothing
+    happening is worse than no control, so the client is told.
+
+    The test stack seeds no catalogue at all, which is exactly the shape of a
+    fresh self-hosted install — the case this is defending.
+    """
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import CardAttrs
+
+    db = SessionLocal()
+    try:
+        seeded = db.scalar(
+            select(CardAttrs.item_id).where(CardAttrs.language == "ja").limit(1)
+        )
+    finally:
+        db.close()
+
+    said = owner.get("/api/settings").json()["has_japanese"]
+    assert said is bool(seeded), "the app disagrees with the catalogue"
+    if not seeded:
+        assert said is False, "an install with no Japanese cards offered the tick"

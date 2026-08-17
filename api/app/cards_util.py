@@ -11,7 +11,12 @@ def classify_layer(rarity: str | None) -> int:
         vintage cards, and gold Hyper Rares / Secrets
     """
     r = (rarity or "").lower()
-    if "illustration" in r or "trainer gallery" in r:
+    # "Character Rare" and "Character Super Rare" are the Japanese CHR and
+    # CSR: a Pokémon drawn with its trainer, across the whole card. They are
+    # the same idea as an illustration rare and belong on the same layer —
+    # they only miss the test above because Japan named them after what is in
+    # the picture rather than after the picture.
+    if "illustration" in r or "trainer gallery" in r or "character" in r:
         return 3
     if (
         "ultra" in r

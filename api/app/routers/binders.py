@@ -28,6 +28,9 @@ class Shape(BaseModel):
     cols: int = Field(default=3, ge=1, le=engine.MAX_SIDE)
     double_page: bool = False
     color: str | None = Field(default=None, pattern=HEX)
+    # whether Japanese cards belong in it; off is the answer for a binder
+    # that was English before there were any
+    allow_ja: bool = False
 
 
 class BinderCreate(Shape):
@@ -57,6 +60,7 @@ class BinderEdit(BaseModel):
     rows: int | None = Field(default=None, ge=1, le=engine.MAX_SIDE)
     cols: int | None = Field(default=None, ge=1, le=engine.MAX_SIDE)
     double_page: bool | None = None
+    allow_ja: bool | None = None
     # "" clears it back to the shelf's own colour
     color: str | None = Field(default=None, pattern=f"{HEX}|^$")
 
@@ -94,6 +98,15 @@ def _mine(db: Session, binder_id: int, user: User) -> Binder:
     if b is None or b.user_id != user.id:
         raise HTTPException(404, "binder not found")
     return b
+
+
+# Said the same way wherever it is said, because somebody hitting it in the
+# Pokédex and again in a binder of their own should not have to work out
+# whether they are two different rules.
+_NOT_HERE = (
+    "This binder is English. Turn on Japanese cards in its settings to file "
+    "one here."
+)
 
 
 def _resize(db: Session, b: Binder, pages: int) -> None:
@@ -208,6 +221,7 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
             "set_code": b.set_code, "master": b.master, "image_url": b.image_url,
             "color": b.color, "position": b.position,
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
+            "allow_ja": b.allow_ja,
             "pages": engine.page_count(b, total),
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
@@ -247,6 +261,18 @@ def create_binder(
         )
         if not known:
             raise HTTPException(404, f"no cards in the catalogue for set {body.set_code!r}")
+        # The picker only offers English sets; this is the same rule for
+        # anybody reaching the endpoint directly, so the two cannot disagree.
+        english = db.scalar(
+            select(func.count()).select_from(CardAttrs)
+            .where(CardAttrs.set_code == body.set_code, CardAttrs.language == "en")
+        )
+        if not english:
+            raise HTTPException(
+                409,
+                "Japanese sets don't get set binders. They go in your "
+                "collection, the Pokédex, or a binder of your own.",
+            )
         clash = db.scalar(
             select(Binder).where(
                 Binder.user_id == user.id, Binder.kind == engine.SET,
@@ -263,6 +289,7 @@ def create_binder(
         master=bool(body.master) and body.kind == engine.SET,
         rows=body.rows, cols=body.cols,
         double_page=body.double_page, color=body.color,
+        allow_ja=body.allow_ja,
     )
     db.add(b)
     db.commit()
@@ -302,6 +329,7 @@ def create_binder(
     return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code,
             "image_url": b.image_url, "color": b.color, "master": b.master,
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
+            "allow_ja": b.allow_ja,
             "printings": learned}
 
 
@@ -334,6 +362,8 @@ def edit_binder(
             setattr(b, side, fields[side])
     if fields.get("double_page") is not None:
         b.double_page = bool(fields["double_page"])
+    if fields.get("allow_ja") is not None:
+        b.allow_ja = bool(fields["allow_ja"])
 
     # Pages last, so it is measured against the shape you just set rather than
     # the one you are replacing — "three by three, four pages" in one press
@@ -416,6 +446,8 @@ def fill_slot(
         return render(db, b, user.id)
 
     copy = _my_copy(db, body.owned_id, user)
+    if not engine.may_hold(b, copy.item):
+        raise HTTPException(409, _NOT_HERE)
     engine.file_copy(
         db, b, key, copy.id,
         item_id=body.item_id or copy.item_id, variant=body.variant,
@@ -480,6 +512,8 @@ def add_cards(
     grown = 0
     for owned_id in body.owned_ids:
         copy = _my_copy(db, owned_id, user)
+        if not engine.may_hold(b, copy.item):
+            raise HTTPException(409, _NOT_HERE)
         if empty:
             s = empty.pop(0)
             s.item_id = copy.item_id
@@ -682,7 +716,16 @@ def sets_available(db: Session = Depends(get_db), user: User = Depends(current_u
             CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr,
             CardAttrs.set_year, func.count(), func.max(CardAttrs.set_total),
         )
-        .where(CollectionItem.module == Module.cards.value)
+        # English sets only. A set binder is a set with a slot per card, and
+        # the Japanese sets are not offered as binders — they would add a
+        # hundred and twenty-four entries to this list, each of them a binder
+        # whose master mode would need printings nobody publishes for them.
+        # Japanese cards go in the collection, the Pokédex and binders of
+        # your own, which is where somebody who collects them wants them.
+        .where(
+            CollectionItem.module == Module.cards.value,
+            CardAttrs.language == "en",
+        )
         .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
         .group_by(
             CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr, CardAttrs.set_year

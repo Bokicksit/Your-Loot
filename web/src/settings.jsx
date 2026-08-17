@@ -74,6 +74,17 @@ export function useListPref(module, key, fallback) {
  *  collections this server does not carry — and then removed half of them.
  *  Showing nothing for that moment is honest; showing the wrong thing is not.
  */
+/** Was the Japanese catalogue ever seeded on this install?
+ *
+ *  Seeding it is opt-in and most installs never will, so the controls that
+ *  only mean something beside it ask this first. Nobody should be offered a
+ *  switch whose only possible outcome is nothing happening.
+ */
+export function useHasJapanese() {
+  const { settings } = useSettings();
+  return !!settings?.has_japanese;
+}
+
 export function useEnabledModules() {
   const { settings } = useSettings();
   if (!settings) return [];

@@ -47,6 +47,23 @@ def page_count(binder, slots: int) -> int:
     return -(-slots // per_page(binder))  # ceil, without the float
 
 
+def may_hold(binder: Binder, item) -> bool:
+    """Does this binder take this card?
+
+    One rule, three doors: adding a copy to the collection with the Pokédex
+    flag on, filling a slot by hand, and dropping cards into a binder of your
+    own. A rule enforced at two of the three is not a rule, it is a habit.
+
+    Only language is asked. Everything else about what belongs in a binder is
+    already decided by its kind — a set binder holds its set, a dex binder
+    holds one of each species — and this is the one question the kind cannot
+    answer, because a Japanese Charizard is as much a Charizard as any other.
+    """
+    attrs = getattr(item, "card_attrs", None)
+    language = getattr(attrs, "language", None) or "en"
+    return language == "en" or bool(binder.allow_ja)
+
+
 def dex_binder(db: Session, user_id: int, create: bool = True) -> Binder | None:
     """The Pokédex, made on first use.
 

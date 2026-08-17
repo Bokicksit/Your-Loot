@@ -10,7 +10,7 @@ import RarityMark from "../components/RarityMark.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
 import PokedexView from "./PokedexPage.jsx";
 import { useMyBinders } from "../mybinders.js";
-import { useSettings, useListPref } from "../settings.jsx";
+import { useSettings, useListPref, useHasJapanese } from "../settings.jsx";
 import ViewToggle, {
   useTileView,
   useTileCols,
@@ -122,6 +122,24 @@ export default function CardsPage({ initialView = "collection" }) {
   const [cols, setCols] = useState(1);
   const [setHints, setSetHints] = useState([]); // autocomplete, 2+ chars
   const [setBrowser, setSetBrowser] = useState(null); // browse-all filter text
+  // Off is English. A Japanese card is a different piece of cardboard and
+  // most people looking for Charizard mean the one they can read — but the
+  // catalogue holds both, and forty results cannot show both, so this is how
+  // you say which you are after.
+  const [jp, setJp] = useState(false);
+  const hasJapanese = useHasJapanese();
+
+
+  /** The sets you could be searching, in the language you are searching.
+   *
+   *  A Japanese set has nothing in it that an English search can find, so
+   *  offering トリプレットビート while the JP tick is off is offering a
+   *  filter that guarantees no results. The tick already says which
+   *  catalogue you mean; this list answers to the same question.
+   */
+  const pickableSets = sets.filter(
+    (s) => (s.language || "en") === (jp ? "ja" : "en")
+  );
 
   // suggest sets only once there's something to go on — 176 sets in a
   // dropdown is noise, not help
@@ -132,7 +150,7 @@ export default function CardsPage({ initialView = "collection" }) {
       (s.abbr || "").toLowerCase().startsWith(t) ||
       (s.code || "").toLowerCase().startsWith(t) ||
       (s.name || "").toLowerCase().includes(t);
-    setSetHints(sets.filter(hit).slice(0, 8));
+    setSetHints(pickableSets.filter(hit).slice(0, 8));
   };
 
   const chooseSet = (s) => {
@@ -266,7 +284,9 @@ export default function CardsPage({ initialView = "collection" }) {
     (async () => {
       setSearching(true);
       try {
-        setResults((await api.cardsSearch({ name })).items);
+        // arriving from the Pokédex, which asked in English; the JP tick
+        // is off, so this searches the same catalogue it says it will
+        setResults((await api.cardsSearch({ name, language: "en" })).items);
       } catch (e) {
         alert(e.message);
       } finally {
@@ -282,7 +302,7 @@ export default function CardsPage({ initialView = "collection" }) {
     setResults(null); // clear the old hits so the status stands alone
     try {
       setOnline(null);
-      const params = { name: form.name.trim() };
+      const params = { name: form.name.trim(), language: jp ? "ja" : "en" };
       if (form.number.trim()) params.number = form.number.trim();
       if (form.set.trim()) params.set = form.set.trim();
       setResults((await api.cardsSearch(params)).items);
@@ -748,6 +768,17 @@ export default function CardsPage({ initialView = "collection" }) {
             >
               <Icon id="sliders" />
             </button>
+            {hasJapanese && (
+              <button
+                type="button"
+                className={`chip ${jp ? "active" : ""}`}
+                aria-pressed={jp}
+                title="Search Japanese printings instead of English"
+                onClick={() => setJp(!jp)}
+              >
+                JP
+              </button>
+            )}
             <button type="button" className="ghost" onClick={doSearch} disabled={searching}>
               {searching ? "…" : "Search"}
             </button>
@@ -760,7 +791,7 @@ export default function CardsPage({ initialView = "collection" }) {
                   type="text"
                   className="grow"
                   autoFocus
-                  placeholder={`Filter ${sets.length} sets…`}
+                  placeholder={`Filter ${pickableSets.length} sets…`}
                   value={setBrowser}
                   onChange={(e) => setSetBrowser(e.target.value)}
                 />
@@ -774,7 +805,7 @@ export default function CardsPage({ initialView = "collection" }) {
                 </button>
               </div>
               <ul className="set-list">
-                {sets
+                {pickableSets
                   .filter((s) => {
                     const t = setBrowser.trim().toLowerCase();
                     if (!t) return true;
@@ -825,12 +856,26 @@ export default function CardsPage({ initialView = "collection" }) {
                   {c.image_url ? (
                     <img src={c.image_url} alt={c.title} loading="lazy" />
                   ) : (
-                    <div className="placeholder" data-label={c.title} />
+                    // The empty frame is where your eye goes when there is no
+                    // picture, so it says the name you can read. Four in ten
+                    // Japanese cards have no art, and a wall of frames each
+                    // labelled in Japanese is not something you can search.
+                    <div
+                      className="placeholder"
+                      data-label={c.attrs.name_en || c.title}
+                    />
                   )}
                   <div className="tile-info">
                     <strong>{c.title}</strong>
+                    {/* what it is, for a title you may not read */}
+                    {c.attrs.name_en && <small className="alt-name">{c.attrs.name_en}</small>}
                     <small>
-                      {c.attrs.set_name} #{c.attrs.card_number}
+                      {/* the set code is Latin even where the set name is not,
+                          so it is the half of this line that always reads */}
+                      {c.attrs.language === "ja" && c.attrs.set_abbr
+                        ? `${c.attrs.set_abbr} · ${c.attrs.set_name}`
+                        : c.attrs.set_name}{" "}
+                      #{c.attrs.card_number}
                       {c.attrs.set_total ? `/${c.attrs.set_total}` : ""}
                     </small>
                     <small>

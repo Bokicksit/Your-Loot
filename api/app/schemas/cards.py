@@ -6,6 +6,9 @@ from app.schemas.common import OwnedOut, WantedOut
 class CardAttrsOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    language: str = "en"
+    # the English species name on a card printed in another language
+    name_en: str | None = None
     set_code: str | None = None
     set_name: str | None = None
     set_abbr: str | None = None

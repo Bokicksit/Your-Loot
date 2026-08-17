@@ -59,6 +59,7 @@ services:
       DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
       # seed the full card database on first start (set false to skip)
       SEED_ON_START: ${SEED_ON_START:-true}
+      SEED_JAPANESE: ${SEED_JAPANESE:-false}
     volumes:
       - ./data/images:/data/images
     healthcheck:

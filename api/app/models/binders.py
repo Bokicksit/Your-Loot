@@ -64,6 +64,11 @@ class Binder(TimestampMixin, Base):
     double_page: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
+    # Whether Japanese cards belong in this binder — eligibility, not a view
+    # filter. Off, one is never offered for it and never takes a slot in it.
+    allow_ja: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     # where it sits on the shelf; null means never placed, and those sort
     # after the ones that have been
     position: Mapped[int | None] = mapped_column(Integer)

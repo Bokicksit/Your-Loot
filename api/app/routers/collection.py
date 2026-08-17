@@ -6,7 +6,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.models import CardAttrs, CollectionItem, GameAttrs, Module, Owned, User, Wanted
 from app import binders
-from app.limits import card_limit, limited
+from app.limits import card_limit, cards_held, limited
 from app.tagging import tags_for, tags_of
 from app.tenancy import my_copies, my_want, owns
 from app.schemas.collection import ItemStatusOut, WantedItemOut
@@ -47,7 +47,14 @@ def _file_in_dex(db: Session, item: CollectionItem, owned_id: int, uid: int):
     dex = item.card_attrs.national_dex_no
     if dex is None:
         return  # a card with no species has no slot to sit in
-    binders.file_copy(db, binders.dex_binder(db, uid), str(dex), owned_id)
+    shelf = binders.dex_binder(db, uid)
+    # A dex slot takes any card of that species, which is exactly why this
+    # has to ask: otherwise the first Japanese card somebody buys out of
+    # curiosity quietly rearranges an English binder they have kept for
+    # years. The binder says whether they belong in it.
+    if not binders.may_hold(shelf, item):
+        return
+    binders.file_copy(db, shelf, str(dex), owned_id)
 
 
 @router.post("/items/{item_id}/owned", response_model=ItemStatusOut)
@@ -64,15 +71,7 @@ def add_owned(
     # at the moment of adding rather than swept up later, so nothing anybody
     # already owns is ever taken away by a rule arriving after it.
     if item.module == Module.cards.value and limited(user) and card_limit():
-        held = db.scalar(
-            select(func.count())
-            .select_from(Owned)
-            .join(CollectionItem, CollectionItem.id == Owned.item_id)
-            .where(
-                Owned.user_id == user.id,
-                CollectionItem.module == Module.cards.value,
-            )
-        ) or 0
+        held = cards_held(db, user.id)
         if held >= card_limit():
             raise HTTPException(
                 402,

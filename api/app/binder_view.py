@@ -38,6 +38,48 @@ from app.printings import rarity_mark
 MAX_DEX = 1025
 
 
+def species_names(db: Session, max_dex: int = 0) -> dict[int, str]:
+    """A plain species name for every dex number the catalogue knows.
+
+    The shortest title is a decent proxy for the species: "Charizard" beats
+    "Charizard ex", which beats "M Charizard EX". That worked for as long as
+    every card was English.
+
+    It stopped the day the Japanese catalogue arrived. リザードン is five
+    characters and Charizard is nine, so counting characters alone renamed a
+    thousand Pokédex slots into Japanese — a shelf of English cards labelled
+    in a language the owner may not read. So English is asked first and the
+    rest only fills the gaps, which is what a Japanese-exclusive species
+    would need and what nothing else should touch.
+
+    Written once and read twice, because there are two Pokédex builders in
+    this codebase and the last thing to exist in only one of them was a limit
+    that then silently did nothing.
+    """
+    ceiling = max_dex or MAX_DEX
+
+    def shortest(only=None) -> dict[int, str]:
+        q = (
+            select(CardAttrs.national_dex_no, CollectionItem.title)
+            .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
+            .where(CardAttrs.national_dex_no.is_not(None))
+        )
+        if only is not None:
+            q = q.where(only)
+        out: dict[int, str] = {}
+        for dex, title in db.execute(q):
+            if dex is None or dex > ceiling:
+                continue
+            if dex not in out or len(title) < len(out[dex]):
+                out[dex] = title
+        return out
+
+    names = shortest(CardAttrs.language == "en")
+    for dex, title in shortest().items():
+        names.setdefault(dex, title)
+    return names
+
+
 def natural_key(number: str | None):
     """Sort card numbers the way they are printed.
 
@@ -190,16 +232,7 @@ def _dex_entries(db: Session, binder, user_id: int):
         ).unique().all()
         items = {i.id: i for i in rows}
 
-    # display names for every dex number the catalogue knows; the shortest
-    # title is a decent proxy for the plain species name
-    names: dict[int, str] = {}
-    for dex, title in db.execute(
-        select(CardAttrs.national_dex_no, CollectionItem.title)
-        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
-        .where(CardAttrs.national_dex_no.is_not(None))
-    ):
-        if dex <= MAX_DEX and (dex not in names or len(title) < len(names[dex])):
-            names[dex] = title
+    names = species_names(db)
 
     for n in range(1, ceiling + 1):
         s = slots.get((str(n), ""))
@@ -337,6 +370,7 @@ def render(db: Session, binder, user_id: int) -> dict:
             "rows": binder.rows,
             "cols": binder.cols,
             "double_page": binder.double_page,
+            "allow_ja": binder.allow_ja,
             "pages": page_count(binder, len(entries)),
             "total": len(entries),
             "filled": filled,

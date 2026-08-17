@@ -849,3 +849,74 @@ def test_the_shelf_and_the_binder_agree(owner, a_set_with_printings):
         assert (shelf["total"], shelf["filled"]) == (page["total"], page["filled"])
     finally:
         owner.delete(f"/api/binders/{master}")
+
+
+# --- Japanese cards, and where they are allowed ---------------------------
+
+
+def _ja_card(owner, mark: str) -> int:
+    """A Japanese catalogue card, seeded the way seed_cards_ja.py seeds one."""
+    from app.db import SessionLocal
+    from app.models import CardAttrs, CollectionItem, Module
+
+    db = SessionLocal()
+    try:
+        item = CollectionItem(
+            module=Module.cards.value, source="tcgdex-ja",
+            external_id=f"JATEST{mark}-001", title=f"テスト {mark}",
+            card_attrs=CardAttrs(language="ja", set_code=f"JATEST{mark}",
+                                 card_number="001", national_dex_no=1021),
+        )
+        db.add(item)
+        db.commit()
+        return item.id
+    finally:
+        db.close()
+
+
+def test_japanese_sets_are_not_offered_as_set_binders(owner):
+    """A set binder is a set with a slot per card, and a master one needs
+    printings nobody publishes for the Japanese sets. They go in the
+    collection, the Pokédex and binders of your own instead."""
+    # Whatever the picker offers here, none of it is Japanese. It offers
+    # nothing at all on the test stack, which seeds no catalogue — so the
+    # assertion that carries the rule is the refusal below, not this.
+    offered = owner.get("/api/binders/sets/available").json()["sets"]
+    assert not [s for s in offered if s["code"] in {"SV1a", "S8b", "PCG2", "M2"}]
+
+    r = owner.post(
+        "/api/binders",
+        json={"name": "should not exist", "kind": "set", "set_code": "SV1a"},
+    )
+    # 409 where the Japanese catalogue is seeded, 404 where it is not — the
+    # binder must not be made either way, which is what this is about.
+    assert r.status_code in (404, 409), "a Japanese set binder was created"
+
+
+def test_a_japanese_card_stays_out_of_an_english_binder(owner):
+    """A dex slot takes any card of that species, so without this the first
+    Japanese card somebody buys rearranges a binder they built in English.
+    The binder says whether they belong in it, and the default is no."""
+    mark = uuid.uuid4().hex[:6]
+    item = _ja_card(owner, mark)
+    binder = owner.post(
+        "/api/binders", json={"name": f"English {mark}", "kind": "custom"}
+    ).json()["id"]
+    try:
+        owned = owner.post(f"/api/items/{item}/owned", json={"condition": "NM"}).json()
+        copy = owned["owned"][-1]["id"]
+
+        r = owner.post(f"/api/binders/{binder}/cards", json={"owned_ids": [copy]})
+        assert r.status_code == 409, "a Japanese card went into an English binder"
+        assert owner.get(f"/api/binders/{binder}").json()["entries"] == []
+
+        # and it is allowed the moment the binder says so
+        owner.patch(f"/api/binders/{binder}", json={"allow_ja": True}).raise_for_status()
+        owner.post(
+            f"/api/binders/{binder}/cards", json={"owned_ids": [copy]}
+        ).raise_for_status()
+        entries = owner.get(f"/api/binders/{binder}").json()["entries"]
+        assert len(entries) == 1 and entries[0]["card"] is not None
+    finally:
+        owner.delete(f"/api/binders/{binder}")
+        owner.delete(f"/api/cards/{item}")

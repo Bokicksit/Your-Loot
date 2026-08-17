@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 import httpx
 
+from app.binder_view import species_names
 from app.cards_util import classify_layer
 from app.auth import current_user
 from app.db import get_db
@@ -62,11 +63,28 @@ def search_cards(
     name: str = Query(min_length=2),
     number: str | None = None,
     set: str | None = None,
+    language: str | None = Query(None, pattern="^(en|ja)$"),
     limit: int = Query(40, le=100),
 ):
     """Find a physical card by name; the printed number ("91/108", which also
     matches the set size) and set name narrow it to the exact card."""
-    q = _base_query().where(contains(CollectionItem.title, name.strip()))
+    # Either the name printed on the card, or the English species name a
+    # card printed in another language borrows from its dex number — so
+    # "Charizard" finds リザードン, which is otherwise findable only by
+    # somebody who can type it.
+    term = name.strip()
+    q = _base_query().where(
+        or_(
+            contains(CollectionItem.title, term),
+            contains(CardAttrs.name_en, term),
+        )
+    )
+    # Asking for one language is the only way to see past the other. Forty
+    # results over a catalogue holding both means whichever sorts first fills
+    # the page — English does, deliberately, and this is how somebody looking
+    # for the Japanese printing says so.
+    if language:
+        q = q.where(CardAttrs.language == language)
     total = None
     if number and number.strip():
         # Most cards print "91/108", but subset cards carry their prefix on
@@ -102,7 +120,26 @@ def search_cards(
         )
 
     items = (
-        db.scalars(q.order_by(CardAttrs.set_code, CollectionItem.title).limit(limit))
+        db.scalars(
+            q.order_by(
+                # English first. Not a judgement about Japanese cards — a
+                # limit of forty and thirteen thousand Japanese printings
+                # meant "Charizard" returned thirty-nine of them and one
+                # English card, so the language nobody asked about pushed the
+                # one they did ask about off the end. Sorting by set code
+                # alone did it, because JA set codes are upper case and
+                # sort first.
+                CardAttrs.language != "en",
+                # Then the ones you can recognise. Four in ten Japanese cards
+                # have no artwork, and a card with no picture and a title you
+                # cannot read is one you can only pick by its number — so the
+                # illustrated ones come first rather than scattered among
+                # forty rows of empty frames.
+                CollectionItem.image_url.is_(None),
+                CardAttrs.set_code,
+                CollectionItem.title,
+            ).limit(limit)
+        )
         .unique()
         .all()
     )
@@ -119,14 +156,20 @@ def list_sets(db: Session = Depends(get_db),
     """Every set in the card database, newest first — powers the set
     autocomplete so the printed codes are discoverable, and makes a missing
     reseed obvious (abbr shows null)."""
+    # Language rides along so the add flow can leave the Japanese sets out
+    # until somebody asks for them. Grouping by it is free: a set code belongs
+    # to one language — SV1a was never printed in English and sv3pt5 was never
+    # printed in Japanese — so this splits no set in two.
     stmt = select(
         CardAttrs.set_code,
         CardAttrs.set_name,
         CardAttrs.set_abbr,
         CardAttrs.set_year,
         func.max(CardAttrs.set_total),
+        CardAttrs.language,
     ).group_by(
-        CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr, CardAttrs.set_year
+        CardAttrs.set_code, CardAttrs.set_name, CardAttrs.set_abbr,
+        CardAttrs.set_year, CardAttrs.language,
     )
     if q:
         s = q.strip()
@@ -141,8 +184,8 @@ def list_sets(db: Session = Depends(get_db),
         stmt.order_by(CardAttrs.set_year.desc().nulls_last(), CardAttrs.set_name)
     ).all()
     return [
-        {"code": c, "name": n, "abbr": a, "year": y, "total": t}
-        for c, n, a, y, t in rows
+        {"code": c, "name": n, "abbr": a, "year": y, "total": t, "language": lang}
+        for c, n, a, y, t, lang in rows
     ]
 
 
@@ -477,16 +520,7 @@ def pokedex(db: Session = Depends(get_db),
         if dex not in slots or rank(it) > rank(slots[dex]):
             slots[dex] = it
 
-    # display names for every dex number that exists in the catalog (shortest
-    # title is a decent proxy for the plain species name)
-    names: dict[int, str] = {}
-    for dex, title in db.execute(
-        select(CardAttrs.national_dex_no, CollectionItem.title)
-        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
-        .where(CardAttrs.national_dex_no.is_not(None))
-    ):
-        if dex <= MAX_DEX and (dex not in names or len(title) < len(names[dex])):
-            names[dex] = title
+    names = species_names(db, MAX_DEX)
 
     final = {
         int(k)
@@ -555,6 +589,7 @@ def pokedex(db: Session = Depends(get_db),
             "rows": shelf.rows,
             "cols": shelf.cols,
             "double_page": shelf.double_page,
+            "allow_ja": shelf.allow_ja,
             "color": shelf.color,
         },
         "entries": entries,

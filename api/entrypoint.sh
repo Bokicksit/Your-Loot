@@ -24,6 +24,21 @@ if [ "${SEED_ON_START:-true}" = "true" ]; then
         python /seed/backfill_art.py || echo "[seed] art backfill failed; run it by hand later"
       fi
     fi
+
+    # The Japanese catalogue: 13,000 more cards, off unless asked for. It is
+    # a separate switch from the English seed above rather than part of it,
+    # because it doubles the catalogue and nobody should get it by having
+    # left a default alone.
+    #
+    # Gated on there being none yet, so this costs a database question on
+    # every start rather than a download.
+    if [ "${SEED_JAPANESE:-false}" = "true" ]; then
+      if python /seed/seed_cards_ja.py --check-empty; then
+        echo "[seed] no Japanese cards — seeding them…"
+        python /seed/seed_cards_ja.py --download \
+          || echo "[seed] Japanese seed failed; run it by hand later"
+      fi
+    fi
   ) &
 fi
 

@@ -40,6 +40,35 @@ def binder_limit() -> int:
     return max(0, settings.free_binder_limit)
 
 
+def cards_held(db, user_id: int) -> int:
+    """Copies of cards this person owns, for the free-plan count.
+
+    A card is a card. A Japanese printing costs the same to store, sits in
+    the same binders and counts the same as an English one — which is why
+    nothing here looks at `language` or at where the row was seeded from,
+    and why it never should. Whether Japanese is worth having is a question
+    about the catalogue, not about the bill.
+
+    Its own function so the rule is written once. It was inline in the add
+    handler, where the only way to say "and this counts Japanese too" would
+    have been to test the handler's HTTP behaviour and hope the reason
+    survived.
+    """
+    from sqlalchemy import func, select
+
+    from app.models import CollectionItem, Module, Owned
+
+    return db.scalar(
+        select(func.count())
+        .select_from(Owned)
+        .join(CollectionItem, CollectionItem.id == Owned.item_id)
+        .where(
+            Owned.user_id == user_id,
+            CollectionItem.module == Module.cards.value,
+        )
+    ) or 0
+
+
 def limited(user: User) -> bool:
     """Is this person subject to any of it?
 

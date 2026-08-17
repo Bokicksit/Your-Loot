@@ -11,7 +11,7 @@ import {
 } from "../components/BinderGrid.jsx";
 import EbayLink from "../components/EbayLink.jsx";
 import BinderShape from "../components/BinderShape.jsx";
-import { useSettings } from "../settings.jsx";
+import { useHasJapanese, useSettings } from "../settings.jsx";
 
 // One card per Pokémon — the binder mirror. A slot's occupant is either the
 // desired card ("the one") or a placeholder awaiting an upgrade; some basics
@@ -47,6 +47,7 @@ export default function PokedexPage() {
     (t) => t.closest?.("[data-slot]")?.dataset.slot === String(open),
   );
   const { settings, save } = useSettings();
+  const hasJapanese = useHasJapanese();
   const navigate = useNavigate();
 
 
@@ -130,6 +131,7 @@ export default function PokedexPage() {
         rows: shape.rows,
         cols: shape.cols,
         double_page: shape.double_page,
+        allow_ja: !!shape.allow_ja,
         color: shape.color || "",
       });
       setShapeOpen(false);
@@ -327,7 +329,7 @@ export default function PokedexPage() {
       </div>
       {shapeOpen && (
         <form className="filter-sheet" onSubmit={saveShape}>
-          <BinderShape value={shape} onChange={setShape} />
+          <BinderShape value={shape} onChange={setShape} showJapanese={hasJapanese} />
           {shapeError && <p className="error">{shapeError}</p>}
           <button type="submit" className="primary" disabled={shapeBusy}>
             <Icon id="check" />

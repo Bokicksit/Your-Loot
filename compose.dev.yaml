@@ -51,6 +51,7 @@ services:
       COMICVINE_API_KEY: ${COMICVINE_API_KEY:-}
       DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
       SEED_ON_START: ${SEED_ON_START:-false}
+      SEED_JAPANESE: ${SEED_JAPANESE:-false}
     volumes:
       - ./data/images:/data/images
       - ./seed:/seed # live-edit seed scripts without rebuilding

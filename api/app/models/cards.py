@@ -14,6 +14,16 @@ class CardAttrs(Base):
     item_id: Mapped[int] = mapped_column(
         ForeignKey("collection_item.id", ondelete="CASCADE"), primary_key=True
     )
+    # "en", "ja". Identity is kept by UNIQUE(source, external_id) instead —
+    # this is here so the app can ask questions about the card rather than
+    # about where it was seeded from.
+    language: Mapped[str] = mapped_column(
+        String(5), default="en", server_default="en", index=True, nullable=False
+    )
+    # The English species name, on a card that is not printed in English.
+    # Borrowed from the dex number so リザードン can be found by typing
+    # Charizard; null where the title already is the English name.
+    name_en: Mapped[str | None] = mapped_column(String(120))
     set_code: Mapped[str | None] = mapped_column(String(30), index=True)
     # denormalized for display; a proper card_set table can come later
     set_name: Mapped[str | None] = mapped_column(String(100))
