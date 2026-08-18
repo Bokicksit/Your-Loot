@@ -5,11 +5,19 @@ moment, and by then a bug in it is indistinguishable from having no backup at
 all. It's also the answer the app gives to "take a copy before you upgrade",
 which makes it load-bearing for every migration in the project.
 
-So this does the real thing: makes a backup, changes the world, restores, and
-checks the world came back. It cannot be done without wiping the database it
-runs against — restoring *is* replacing everything — which is why the whole
-module is marked destructive and skipped unless the stack has been declared
-disposable. See conftest.py.
+So this does the real thing: makes a backup and loads it into a second
+install, then checks it arrived.
+
+A whole-server restore is only allowed into an install with nothing in it —
+a rebuilt machine, new hardware, a fresh database — so there is an API in the
+stack that exists for no other reason, pointed at a database nothing else
+touches. Which also means these tests are no longer destructive: they take a
+copy of one install and fill an empty one, and the install they run against
+is left exactly as it was.
+
+Order matters once, and only here: the corrupt-file test needs the fresh
+install to still be empty, so it goes first. The test after it fills that
+install and then proves the door has shut behind it.
 """
 
 import io
@@ -19,9 +27,32 @@ import uuid
 import httpx
 import pytest
 
-pytestmark = pytest.mark.destructive
+from conftest import OWNER_PASSWORD
 
 BASE = os.environ.get("LOOT_URL", "http://localhost:8000")
+FRESH = os.environ.get("LOOT_FRESH_URL")
+
+needs_fresh = pytest.mark.skipif(
+    not FRESH, reason="no empty install to restore into"
+)
+
+
+@pytest.fixture
+def fresh():
+    """A client for the install that has nothing in it.
+
+    It is only empty once. The test below fills it — that is what it is for —
+    and after that the stack has to be recreated (`down -v`) before these can
+    run again. Skipped rather than failed in that state: a stale volume is a
+    fact about the machine, not a bug in the code.
+    """
+    c = httpx.Client(base_url=FRESH, timeout=300)
+    me = c.get("/api/auth/me").json()
+    if me.get("locked") or not me.get("user"):
+        c.close()
+        pytest.skip("the empty install has already been filled — recreate the stack")
+    yield c
+    c.close()
 
 
 def _titles(c: httpx.Client, tag: str) -> set[str]:
@@ -38,86 +69,88 @@ def _titles(c: httpx.Client, tag: str) -> set[str]:
     return {i["title"] for i in found}
 
 
-def test_a_backup_restores_what_it_captured(owner):
-    tag = uuid.uuid4().hex[:8]
-    kept = f"Kept {tag}"
-
-    item = owner.post("/api/games", json={"title": kept}).json()
-    owner.post(f"/api/items/{item['id']}/owned", json={"condition": "NM"}).raise_for_status()
-    assert kept in _titles(owner, tag)
-
-    archive = owner.get("/api/backup")
-    archive.raise_for_status()
-    blob = archive.content
-    assert len(blob) > 0, "the backup is empty"
-
-    # now diverge from it, in both directions
-    added_after = f"Added after {tag}"
-    later = owner.post("/api/games", json={"title": added_after}).json()
-    owner.post(f"/api/items/{later['id']}/owned", json={"condition": "NM"})
-    owner.delete(f"/api/games/{item['id']}").raise_for_status()
-
-    now = _titles(owner, tag)
-    assert kept not in now and added_after in now, "the divergence didn't take"
-
-    restored = owner.post(
-        "/api/backup/restore",
-        files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
-    )
-    restored.raise_for_status()
-
-    after = _titles(owner, tag)
-    assert kept in after, "restore lost something the backup contained"
-    assert added_after not in after, "restore kept something the backup never had"
-
-
-def test_the_copies_come_back_too(owner):
-    """An item without its copies is a catalogue entry, not a collection —
-    the condition and completeness are the part that was yours."""
-    tag = uuid.uuid4().hex[:8]
-    item = owner.post("/api/games", json={"title": f"Copies {tag}"}).json()
-    owner.post(
-        f"/api/items/{item['id']}/owned",
-        json={"condition": "LP", "completeness": "CIB", "notes": f"note-{tag}"},
-    ).raise_for_status()
-
-    blob = owner.get("/api/backup").content
-    owner.delete(f"/api/games/{item['id']}").raise_for_status()
-    owner.post(
-        "/api/backup/restore",
-        files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
-    ).raise_for_status()
-
-    found = owner.get("/api/games", params={"search": tag, "limit": 200}).json()["items"]
-    row = next(i for i in found if i["title"] == f"Copies {tag}")
-    assert len(row["owned"]) == 1, "the copy did not come back"
-    copy = row["owned"][0]
-    assert copy["condition"] == "LP"
-    assert copy["completeness"] == "CIB"
-    assert copy["notes"] == f"note-{tag}", "the note did not come back"
-
-
-def test_a_corrupt_file_is_refused_rather_than_applied(owner):
+@needs_fresh
+def test_a_corrupt_file_is_refused_rather_than_applied(fresh):
     """The failure that would otherwise be silent and total: half a restore
     from a truncated file leaves nothing to go back to.
 
-    Something of this test's own has to be on the shelf for "nothing changed"
-    to mean anything. Comparing two unscoped pages compared the same first
-    two hundred rows either way, which would have gone on passing while a
-    half-applied restore quietly emptied everything behind them.
+    First in the file on purpose. It needs an install that would otherwise
+    accept a restore, and the test below fills the only one there is.
+    """
+    r = fresh.post(
+        "/api/backup/restore",
+        files={"file": ("not-a-backup.zip", io.BytesIO(b"this is not a zip"),
+                        "application/zip")},
+    )
+    assert r.status_code >= 400, "a corrupt file was accepted"
+    assert fresh.get("/api/games", params={"limit": 1}).json()["total"] == 0, (
+        "a refused restore left something behind"
+    )
+
+
+@needs_fresh
+def test_a_backup_fills_an_empty_install_and_then_the_door_shuts(owner, fresh):
+    """The path somebody rebuilds a machine with, and the one that makes this
+    feature worth having at all.
+
+    The second half is the point of the change: once there is a collection in
+    it, the same file is refused. Nothing that is already on a server can be
+    replaced by a restore, including by the person who runs it.
     """
     tag = uuid.uuid4().hex[:8]
-    survivor = f"Survivor {tag}"
-    owner.post("/api/games", json={"title": survivor}).raise_for_status()
+    kept = f"Kept {tag}"
+    item = owner.post("/api/games", json={"title": kept}).json()
+    owner.post(
+        f"/api/items/{item['id']}/owned", json={"condition": "NM"}
+    ).raise_for_status()
 
-    before = _titles(owner, tag)
-    total_before = owner.get("/api/games", params={"limit": 1}).json()["total"]
+    blob = owner.get("/api/backup").content
+    assert len(blob) > 0, "the backup is empty"
+
+    loaded = fresh.post(
+        "/api/backup/restore",
+        files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
+    )
+    loaded.raise_for_status()
+
+    # The accounts came with it, and so did the lock on the door — which is
+    # the whole point of a whole-server restore and also means this client is
+    # now a stranger to the install it just filled.
+    assert fresh.get("/api/auth/me").json()["locked"] is True
+    fresh.post("/api/auth/login", json={"password": OWNER_PASSWORD}).raise_for_status()
+
+    assert kept in _titles(fresh, tag), "the restore did not bring the item"
+    row = next(
+        i for i in fresh.get(
+            "/api/games", params={"search": tag, "limit": 200}
+        ).json()["items"] if i["title"] == kept
+    )
+    assert len(row["owned"]) == 1, "the copy did not come with it"
+
+    again = fresh.post(
+        "/api/backup/restore",
+        files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
+    )
+    assert again.status_code == 409, "a second restore could have replaced it"
+
+
+def test_a_live_install_will_not_be_replaced(owner):
+    """The door that used to be open. It deleted every row for every account
+    and reloaded from a file, and one mis-click was the whole server."""
+    tag = uuid.uuid4().hex[:8]
+    kept = f"Still here {tag}"
+    item = owner.post("/api/games", json={"title": kept}).json()
+    # owned, not merely catalogued: a shelf is what you have a copy of, so an
+    # entry without one would be missing from the check for the wrong reason
+    owner.post(
+        f"/api/items/{item['id']}/owned", json={"condition": "NM"}
+    ).raise_for_status()
+    blob = owner.get("/api/backup").content
 
     r = owner.post(
         "/api/backup/restore",
-        files={"file": ("not-a-backup.zip", io.BytesIO(b"this is not a zip"), "application/zip")},
+        files={"file": ("backup.zip", io.BytesIO(blob), "application/zip")},
     )
-    assert r.status_code >= 400, "a corrupt file was accepted"
-    assert _titles(owner, tag) == before, "a rejected restore still changed the database"
-    assert owner.get("/api/games", params={"limit": 1}).json()["total"] == total_before, \
-        "a rejected restore changed rows it never reported"
+    assert r.status_code == 409, "a live install accepted a whole-server restore"
+    assert "Settings" in r.json()["detail"], "refused without saying what to do instead"
+    assert kept in _titles(owner, tag), "the refusal cost something anyway"

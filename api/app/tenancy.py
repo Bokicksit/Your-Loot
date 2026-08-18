@@ -11,9 +11,28 @@ to forget one, and a forgotten one is invisible from the inside — the app
 looks right until somebody else's collection turns up in yours.
 """
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
-from app.models import Owned, Wanted
+from app.models import CollectionItem, Owned, Wanted
+
+
+def visible(user_id: int):
+    """Which catalogue rows this person may see.
+
+    Everything, minus the rows that belong to somebody else. Almost every row
+    is shared and answers this trivially; the exceptions are entries created
+    by importing a collection, which had no external id to match against and
+    so were nobody's fact but the importer's.
+
+    A condition rather than a filtered query, because the eight collections
+    each build their own query and this has to go into all of them. Every one
+    of them is checked by test_privacy — a filter that is merely usually
+    applied is not a filter.
+    """
+    return or_(
+        CollectionItem.private_to.is_(None),
+        CollectionItem.private_to == user_id,
+    )
 
 
 def my_copies(item, user_id: int) -> list:

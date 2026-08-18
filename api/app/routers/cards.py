@@ -18,7 +18,7 @@ from app.models import (
     BinderSlot, CardAttrs, CollectionItem, Module, Owned, User, Wanted,
 )
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf
+from app.tenancy import my_copies, my_want, on_my_shelf, visible
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
@@ -246,7 +246,10 @@ def list_cards(
         .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
         .where(CollectionItem.module == Module.cards.value)
     )
-    filters = []
+    # Rows somebody imported and nobody else agreed to stay with them. First
+    # in the list because it is not a filter the caller asked for — it is the
+    # boundary the rest of the query runs inside.
+    filters = [visible(user.id)]
     if search:
         filters.append(contains(CollectionItem.title, search))
     if set_code:

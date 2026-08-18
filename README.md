@@ -136,10 +136,14 @@ rather than a link, so nothing on your network has to be reachable from outside,
 and it carries a plain list — cover, title, condition. Your notes, tags, serial
 numbers and grading certificates stay here.
 
-**Backup & restore** — Settings gives you a one-click zip of the whole
-install: every item, every copy, the wanted list, the binder, your settings,
-and your uploaded photos. Restoring replaces everything from that file. It's
-plain JSON inside, so it stays readable and portable across Postgres versions.
+**Backup & restore** — two of them, because they answer different questions.
+**Your collection** is yours: every item, every copy with its condition, the
+wanted list, your binders and your photos, in a file that restores into your
+account on any Your Loot install. **Whole server** is the operator's copy of
+the machine, and it loads only into an install with nothing in it yet — a
+rebuilt box, a fresh database. Nothing that is already on a server can be
+replaced by a restore, by anybody. Both are plain JSON inside, so they stay
+readable and portable across Postgres versions.
 
 ## Quick start
 
@@ -276,8 +280,9 @@ you listen on 80. Point the API service at a managed Postgres with
 **pin both images to a version** — `latest` moves whenever this repo does,
 which is not what you want under a live site.
 
-**Back up** from **Settings → Backup & restore** — one zip with every item,
-copy, wanted entry and photo. Keep it somewhere that isn't this server. At the
+**Back up** from **Settings → Whole server** — one zip with every account's
+items, copies, wanted entries and photos. Keep it somewhere that isn't this
+server. (Each person can also take their own from **Your collection**.) At the
 filesystem level the `data/` directory holds the Postgres database and your
 uploaded images; nothing else holds state.
 

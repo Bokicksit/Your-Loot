@@ -336,6 +336,26 @@ export const api = {
       filename: name ? name[1] : `yourloot-${scope}.html`,
     };
   },
+  // Your own collection, which everybody has and nothing gates.
+  myBackupUrl: "/api/backup/mine",
+  /** Same shape as restoreBackup below, and for the same reason: a file goes
+   *  up as multipart, so `request` — which insists on JSON — cannot carry it. */
+  restoreMine: async (file, confirm) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("confirm", confirm);
+    const res = await fetch(url("/api/backup/mine"), {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(errorMessage(b, res));
+    }
+    return res.json();
+  },
   restoreBackup: async (file) => {
     const fd = new FormData();
     fd.append("file", file);

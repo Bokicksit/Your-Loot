@@ -4383,3 +4383,23 @@ a.admin-name:hover { color: var(--gold-bright); text-decoration: underline; }
 }
 .admin-friend input { accent-color: var(--gold); }
 .admin-friend:hover { color: var(--text-dim); }
+
+/* The pause before a restore. Deliberately not a dialog — a dialog is
+   dismissed by reflex, and this asks for a word to be typed. */
+.confirm-box {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--bg-1);
+}
+.confirm-box p { margin: 0; font-size: var(--f-2); line-height: 1.55; }
+.confirm-box input { text-transform: uppercase; letter-spacing: .12em; }
+button.primary.danger {
+  background: var(--danger, #ff8080);
+  border-color: var(--danger, #ff8080);
+  color: #1a0d0d;
+}
+button.primary.danger:disabled { opacity: .45; }

@@ -14,7 +14,7 @@ from app.integrations.upcitemdb import BarcodeError
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted, User
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf
+from app.tenancy import my_copies, my_want, on_my_shelf, visible
 from app.schemas.records import (
     RecordAttrsOut,
     RecordCreate,
@@ -230,7 +230,10 @@ def list_records(
         .join(RecordAttrs, RecordAttrs.item_id == CollectionItem.id)
         .where(CollectionItem.module == Module.records.value)
     )
-    filters = []
+    # Rows somebody imported and nobody else agreed to stay with them. First
+    # in the list because it is not a filter the caller asked for — it is the
+    # boundary the rest of the query runs inside.
+    filters = [visible(user.id)]
     if search:
         filters.append(
             contains(CollectionItem.title, search)

@@ -6,3 +6,8 @@ CREATE DATABASE solo OWNER getloot;
 -- each container runs migrations on start, and pointing two of them at one
 -- database is a race nobody needs in a test suite.
 CREATE DATABASE opensignup OWNER getloot;
+
+-- And a fourth that is deliberately left empty. A whole-server restore is
+-- only allowed into an install with nothing in it, and the only honest way
+-- to test the path somebody rebuilds a machine with is to actually do it.
+CREATE DATABASE freshinstall OWNER getloot;

@@ -18,15 +18,16 @@ import zipfile
 from datetime import date, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import Date, DateTime, text
+from sqlalchemy import Date, DateTime, func, select, text
 from sqlalchemy.orm import Session
 
 from app.config import settings as cfg
-from app.auth import require_admin
+from app import mine
+from app.auth import OWNER_ID, current_user, require_admin
 from app.db import get_db
-from app.models import Base
+from app.models import Base, User
 from app.version import VERSION
 
 router = APIRouter(prefix="/api/backup", tags=["backup"])
@@ -195,13 +196,104 @@ def _reset_sequences(db: Session):
             )
 
 
+# ------------------------------------------------------- one person's own
+
+
+@router.get("/mine")
+def download_mine(
+    db: Session = Depends(get_db), user: User = Depends(current_user)
+):
+    """Your collection, as a file you can carry to another install.
+
+    Everybody gets this, always, on every plan and on the day a plan lapses.
+    A collection you cannot get out of is a hostage, and this is the promise
+    that it isn't — which is why it is here and not behind require_admin.
+    """
+    blob = mine.to_zip(db, user)
+    stamp = f"{date.today():%Y-%m-%d}"
+    return Response(
+        content=blob,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition":
+                f'attachment; filename="yourloot-collection-{stamp}.zip"',
+        },
+    )
+
+
+@router.post("/mine")
+async def restore_mine(
+    file: UploadFile,
+    confirm: str = Form(""),
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Replace what is in your account with what is in the file.
+
+    Only ever your account. The format cannot describe anybody else's rows
+    and this writes none — there is no argument that widens it and no flag
+    that makes it whole-server.
+
+    The confirmation is typed rather than clicked because it clears what is
+    there first, and a dialog somebody has learned to dismiss is not a
+    decision.
+    """
+    raw = await file.read()
+    try:
+        return mine.load(db, user, raw, confirm)
+    except mine.Refused as e:
+        db.rollback()
+        raise HTTPException(400, str(e)) from None
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _already_lived_in(db: Session) -> bool:
+    """Is there anything here somebody would miss?
+
+    Not "are there rows" — a fresh install has an owner account, a platform
+    table and, where it seeds, a catalogue. It is whether anybody has put
+    anything of their own into it: a copy, a wanted entry, a binder, a tag,
+    or a second account.
+    """
+    from app.models import Binder, ItemTag, Owned, User, Wanted
+
+    for model in (Owned, Wanted, Binder, ItemTag):
+        if db.scalar(select(func.count()).select_from(model)):
+            return True
+    others = db.scalar(
+        select(func.count()).select_from(User).where(User.id != OWNER_ID)
+    )
+    return bool(others)
+
+
 @router.post("/restore")
 async def restore_backup(
     file: UploadFile, db: Session = Depends(get_db), _=Depends(require_admin)
 ):
-    """Replaces the entire collection with the contents of a backup. Everything
-    is validated before a single row is touched, and the wipe-and-reload runs in
-    one transaction, so a bad file leaves the database exactly as it was."""
+    """Loads a whole-server backup into an install that has nothing in it yet.
+
+    This used to replace everything: delete every row for every account, then
+    reload. That is the right shape for disaster recovery and the wrong thing
+    to have within reach of a mis-click on a live server, so it is now only
+    allowed where there is nothing to lose — a rebuilt machine, a fresh
+    database, a move to new hardware.
+
+    An install with a collection in it is refused, and pointed at the restore
+    that cannot take anything from anybody: your own, into your own account.
+
+    Everything is still validated before a single row is touched, and the load
+    runs in one transaction, so a bad file leaves the database as it was.
+    """
+    if _already_lived_in(db):
+        raise HTTPException(
+            409,
+            "This install already has collections in it, and a whole-server "
+            "restore would replace every one of them. It is only allowed into "
+            "an empty install. To bring a collection into this one, use "
+            "Restore my collection in Settings.",
+        )
     raw = await file.read()
     if len(raw) > MAX_UPLOAD:
         raise HTTPException(400, "that backup is too large to upload")

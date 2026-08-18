@@ -676,24 +676,56 @@ Settings are stored on the server, so they're the same on every device.
 
 ## Backup and restore
 
-**Download backup** gives you a single `.zip` containing everything: every
-item, every copy with its condition, the wanted list, the Pokédex, your
-settings, and every photo you've uploaded. It's plain JSON inside, so it stays
-readable and portable.
+There are two, and they are not the same thing.
 
-**Restore from a backup…** replaces your entire collection with the contents of
-a backup file. It asks for confirmation first, and tells you afterwards how
-many rows and images came back.
+### Your collection
+
+**Back up my collection** gives you a `.zip` holding everything of yours:
+every item, every copy with its condition and notes, your wanted list, your
+binders and the photographs you uploaded. It restores into your account on
+any Your Loot install — this one, or a different one entirely.
+
+Everybody has this, on every plan, including the day a plan runs out. A
+collection you cannot get out of is a hostage.
+
+**Restore my collection…** replaces what is in *your* account with what is in
+the file. Your copies, wanted list, binders and tags are cleared and rebuilt
+from it. Nobody else's collection is affected — not on this server and not on
+any other.
+
+Because it clears first, it asks you to type `RESTORE` rather than to click
+something. That is deliberate.
 
 Things worth knowing:
 
-- A restore is **all or nothing**. The file is fully validated before a single
-  row is touched, and the replacement runs in one transaction — so a bad file
-  leaves your data exactly as it was.
-- Anything added *since* the backup was taken is gone after a restore. Take a
-  fresh backup first if you're unsure.
-- A backup from a **newer version** of Your Loot is refused rather than
-  restored with pieces missing. Update first. Older backups restore fine.
+- It is **all or nothing**. The file is validated before anything is touched,
+  and the whole thing is one transaction — a bad file leaves your account
+  exactly as it was.
+- Restoring the same file twice leaves you with one of everything, not two.
+- Items are matched by where they came from, not by an internal id, so a card
+  from your own server finds the same card on another one. Anything you typed
+  in by hand has nothing to match against, so it arrives as an entry belonging
+  to you rather than one added to everybody's catalogue.
+- Which shelves you publish is **not** in the file. Publishing is a decision
+  about the server your profile lives on, and a restore never turns it on.
+- A file from a **newer version** of Your Loot is refused rather than restored
+  with pieces missing. Update first.
+
+### Whole server (administrators)
+
+**Download backup** gives you a `.zip` of the entire install — every account,
+everything they own, and the uploaded photographs. This is the disaster
+recovery copy, and it belongs to whoever runs the server.
+
+**Restore** loads one into an install that has **nothing in it yet**: a
+rebuilt machine, new hardware, a fresh database. A server that already has
+collections on it refuses, because a restore here would replace every one of
+them. There is no way — for anybody, including an administrator — to replace
+a live server's data from a file.
+
+To bring one collection into a server that is already running, use **Your
+collection** above.
+
 - Photos are added, never deleted — restoring an old backup won't remove a
   picture you added last week.
 

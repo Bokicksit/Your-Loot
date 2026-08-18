@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Index, String, Text
+from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -31,6 +31,10 @@ class CollectionItem(TimestampMixin, Base):
     source: Mapped[str | None] = mapped_column(String(20))
     external_id: Mapped[str | None] = mapped_column(String(100))
     notes: Mapped[str | None] = mapped_column(Text)
+    # Whose row this is, where it is not everybody's. Set on catalogue entries
+    # created by importing somebody's collection, which are the only rows here
+    # that nobody else agreed to — see tenancy.visible() and migration 0046.
+    private_to: Mapped[int | None] = mapped_column(Integer, index=True)
 
     card_attrs = relationship("CardAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     game_attrs = relationship(

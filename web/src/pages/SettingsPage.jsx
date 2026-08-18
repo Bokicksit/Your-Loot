@@ -25,7 +25,8 @@ const SECTION_LABEL = {
   lock: "Lock",
   plan: "Plan",
   account: "Account",
-  backup: "Backup",
+  mine: "Your collection",
+  backup: "Whole server",
 };
 
 /** One section of the settings accordion.
@@ -249,6 +250,7 @@ export default function SettingsPage() {
       <LockCard open={open} onToggle={setOpen} />
       <PlanCard open={open} onToggle={setOpen} />
       <AccountCard open={open} onToggle={setOpen} />
+      <MyBackupCard open={open} onToggle={setOpen} />
       <BackupCard open={open} onToggle={setOpen} />
       </div>
 
@@ -1017,6 +1019,151 @@ function AccountCard({ open, onToggle }) {
   );
 }
 
+/** Your collection, out and back in.
+ *
+ *  Everybody's, on every plan, on the day a plan lapses — a collection you
+ *  cannot get out of is a hostage, and this is where that promise is kept.
+ *  The card above it belongs to whoever runs the server and holds everybody's
+ *  rows; this one holds only yours and can only ever write yours back.
+ *
+ *  The confirmation is typed rather than clicked because a restore clears
+ *  what is in the account first. A dialog people have learned to dismiss is
+ *  not a decision.
+ */
+function MyBackupCard({ open, onToggle }) {
+  const fileInput = useRef(null);
+  const [chosen, setChosen] = useState(null);
+  const [word, setWord] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const pick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // so the same file can be picked again after an error
+    setError(null);
+    setResult(null);
+    setWord("");
+    if (file) setChosen(file);
+  };
+
+  const go = async () => {
+    if (!chosen) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.restoreMine(chosen, word.trim());
+      setResult(r);
+      setChosen(null);
+      setWord("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section
+      id="mine"
+      icon="save"
+      name="Your collection"
+      summary={"a copy you keep"}
+      open={open}
+      onToggle={onToggle}
+    >
+      <p>
+        A file holding everything of yours — every item, every copy with its
+        condition and notes, your wanted list, your binders and the photographs
+        you uploaded. It restores into your account on any Your Loot, and
+        nothing on this page is ever behind a plan.
+      </p>
+      <div className="form-row wrap">
+        <a className="primary" href={api.myBackupUrl} download>
+          <Icon id="save" />
+          Back up my collection
+        </a>
+        <button
+          className="ghost"
+          disabled={busy}
+          onClick={() => fileInput.current?.click()}
+        >
+          <Icon id="upload" />
+          Restore my collection…
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".zip,application/zip"
+          style={{ display: "none" }}
+          onChange={pick}
+        />
+      </div>
+
+      {chosen && (
+        <div className="confirm-box">
+          <p>
+            <strong>{chosen.name}</strong> will replace what is in your account.
+            Your copies, wanted list, binders and tags are cleared and rebuilt
+            from the file. Nobody else's collection is touched, on this server
+            or any other.
+          </p>
+          <label className="set-field">
+            <span className="set-label">Type RESTORE to confirm</span>
+            <input
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              placeholder="RESTORE"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </label>
+          <div className="form-row wrap">
+            <button
+              className="primary danger"
+              disabled={busy || word.trim().toUpperCase() !== "RESTORE"}
+              onClick={go}
+            >
+              {busy ? "Restoring…" : "Replace my collection"}
+            </button>
+            <button className="ghost" disabled={busy} onClick={() => setChosen(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="error">
+          <Icon id="alert" />
+          {error}
+        </p>
+      )}
+
+      {result && (
+        <div className="restore-result">
+          <strong>
+            <Icon id="check" />
+            {result.items.toLocaleString()} items and {result.copies.toLocaleString()} copies
+            {result.images ? `, ${result.images} photographs` : ""}
+          </strong>
+          <small>
+            {result.binders} binders, {result.tags} tags
+            {result.skipped
+              ? ` · ${result.skipped} left out — this server does not carry that collection`
+              : ""}
+            {result.created_at ? ` · from a copy taken ${result.created_at.replace("T", " ")}` : ""}
+          </small>
+          <button className="primary" onClick={() => window.location.reload()}>
+            Reload to see it
+          </button>
+        </div>
+      )}
+    </Section>
+  );
+}
+
 function BackupCard({ open, onToggle }) {
   const fileInput = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -1082,10 +1229,15 @@ function BackupCard({ open, onToggle }) {
 
     >
       <p>
-        A backup is a single zip holding your whole collection — every item,
-        every copy with its condition, the wanted list, the Pokédex, your
-        settings, and the photos you've uploaded. Keep one somewhere that isn't
-        this server.
+        A zip holding the whole server — every account, everything they own,
+        and the uploaded photographs. Keep one somewhere that isn't this
+        machine.
+      </p>
+      <p className="settings-note">
+        It restores <strong>only into an install with nothing in it</strong> —
+        a rebuilt machine or a fresh database. A server with collections on it
+        refuses, because a restore here would replace all of them. To bring a
+        collection into this one, use Your collection above.
       </p>
       <div className="form-row wrap">
         <a className="primary" href={api.backupUrl} download>
