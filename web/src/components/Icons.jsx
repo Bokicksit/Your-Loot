@@ -36,6 +36,9 @@ export function IconDefs() {
         <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11" /></symbol>
         <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4.5 19.5l1.1-4.2L16.4 4.5a2 2 0 012.9 0l.2.2a2 2 0 010 2.9L8.7 18.4 4.5 19.5z" /><path d="M14.2 6.7l3.1 3.1" /></symbol>
         <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6V4.5a1 1 0 011-1h3a1 1 0 011 1V6M7 6.5l.8 12a2 2 0 002 1.9h4.4a2 2 0 002-1.9l.8-12M10 10.5v5M14 10.5v5" /></symbol>
+        <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.4" /><path d="M7 10l2.6 2.2L7 14.4M12 15h5" /></symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.5 18h9.2a3.8 3.8 0 00.4-7.6A5.6 5.6 0 006.9 9.2 3.9 3.9 0 007.5 18z" /></symbol>
+        <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.5s-7-4.3-7-9a3.9 3.9 0 017-2.4A3.9 3.9 0 0119 10.5c0 4.7-7 9-7 9z" /></symbol>
         <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.6 3.6 0 010-5l2.5-2.5a3.6 3.6 0 015 5L16 13" /><path d="M14 10a3.6 3.6 0 010 5L11.5 17.5a3.6 3.6 0 01-5-5L8 11" /></symbol>
         <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10v4M12 16.6v.1" /></symbol>
         <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.7v.1" /></symbol>
