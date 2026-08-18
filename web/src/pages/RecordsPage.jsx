@@ -42,6 +42,8 @@ const EMPTY_FORM = {
   track_count: "",
   tracklist: null,
   image_url: null,
+  discogs_id: null,
+  mbid: null,
   tags: [],
   notes: "",
   own: true,
@@ -270,6 +272,10 @@ export default function RecordsPage() {
       track_count: r.track_count || "",
       image_url: r.image_url || null,
       tracklist: null,
+      // where this pick came from — the row keeps it, and Discogs data
+      // carries a link back to its release page as their terms require
+      discogs_id: r.discogs_id || null,
+      mbid: r.source === "discogs" ? null : r.mbid || null,
     }));
     findRetailArt(r.title, form.artist);
     setResults(null);
@@ -320,6 +326,8 @@ export default function RecordsPage() {
         // a sleeve photo from a shop listing outlives the listing this way
         image_url: await api.localiseImage(form.image_url),
         notes: form.notes.trim() || null,
+        discogs_id: form.discogs_id || null,
+        mbid: form.mbid || null,
       });
       // after the create, because a tag needs something to hang on
       if (form.tags.length) {
@@ -511,13 +519,20 @@ export default function RecordsPage() {
           {results && (
             <>
               <span className="game-info-line">
-                {results.some((r) => r.source === "barcode")
-                  ? "Not in the music databases — matched the barcode to a shop listing"
-                  : `${
-                      results.some((r) => r.source === "discogs")
-                        ? "Discogs"
-                        : "MusicBrainz"
-                    } · ${results.length} match${results.length === 1 ? "" : "es"}`}
+                {results.some((r) => r.source === "barcode") ? (
+                  "Not in the music databases — matched the barcode to a shop listing"
+                ) : results.some((r) => r.source === "discogs") ? (
+                  <>
+                    {/* their terms: this credit sits next to the data, and
+                        the link must pass ranking credit — no nofollow */}
+                    <a href="https://www.discogs.com" target="_blank" rel="noopener">
+                      Data provided by Discogs
+                    </a>
+                    {` · ${results.length} match${results.length === 1 ? "" : "es"}`}
+                  </>
+                ) : (
+                  `MusicBrainz · ${results.length} match${results.length === 1 ? "" : "es"}`
+                )}
               </span>
               {results.length === 0 && (
                 <p className="empty" style={{ padding: "var(--s-3)" }}>
@@ -1091,6 +1106,18 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
             {/* an artist and album alone pull up the CD, the cassette and the
                 download — the pressing format is what makes it a record */}
             <EbayLink title={record.title} terms={[a.artist, a.format]} />
+            {/* Discogs' terms: this credit sits next to the data, links the
+                exact release, and passes ranking credit — no nofollow. */}
+            {record.source === "discogs" && record.external_id && (
+              <a
+                className="game-info-line source-credit"
+                href={`https://www.discogs.com/release/${record.external_id}`}
+                target="_blank"
+                rel="noopener"
+              >
+                Data provided by Discogs
+              </a>
+            )}
           </div>
           {/* Positions are kept as Discogs lists them, because on a record
               "B2" is where the track physically is, not just its number. */}

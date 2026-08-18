@@ -36,6 +36,8 @@ def record_to_out(item: CollectionItem, uid: int, tags=()) -> RecordOut:
     return RecordOut(
         id=item.id,
         title=item.title,
+        source=item.source,
+        external_id=item.external_id,
         image_url=item.image_url,
         notes=item.notes,
         attrs=RecordAttrsOut(**{f: getattr(a, f) for f in ATTR_FIELDS}),
@@ -128,7 +130,7 @@ def search_musicbrainz(
                 try:
                     hits = discogs_client.by_barcode(barcode)
                     if hits:
-                        return hits
+                        return _within_terms(hits)
                 except httpx.HTTPError:
                     pass
             hits = musicbrainz_client.search(barcode=barcode)
@@ -161,12 +163,32 @@ def search_musicbrainz(
             try:
                 hits = discogs_client.search(query=q, artist=artist)
                 if hits:
-                    return hits
+                    return _within_terms(hits)
             except httpx.HTTPError:
                 pass  # a dead token shouldn't take the search down with it
         return musicbrainz_client.search(query=q, artist=artist)
     except httpx.HTTPError as e:
         raise HTTPException(502, f"MusicBrainz unreachable: {e}")
+
+
+def _within_terms(hits: list[dict]) -> list[dict]:
+    """Discogs hits, minus what a commercial install may not use.
+
+    Titles, artists, formats, years and barcodes are CC0 — Discogs publishes
+    them as monthly CC0 dumps. Release images are Restricted Data, and their
+    terms bar commercial use of those outright. So where this install sells
+    anything, the covers are dropped and the hit shows a placeholder; a home
+    server is personal use and keeps them. The install's own commercial
+    status is the test — not whose token made the request, because the terms
+    bind the application, not the key.
+    """
+    from app.plans import sells_anything
+
+    if not sells_anything():
+        return hits
+    for h in hits:
+        h["image_url"] = None
+    return hits
 
 
 @router.get("/tracklist")
@@ -292,9 +314,19 @@ def create_record(body: RecordCreate, db: Session = Depends(get_db),
     """No dedupe on barcode: owning two copies of the same pressing is normal,
     and a repress shares almost everything with the original but is a different
     record."""
+    # Stamped with where the pick actually came from — it used to say
+    # "musicbrainz" for anything with a barcode, including Discogs picks and
+    # shop listings, which is a lie the attribution link would repeat.
+    if body.discogs_id:
+        source, external = "discogs", str(body.discogs_id)
+    elif body.mbid:
+        source, external = "musicbrainz", body.mbid
+    else:
+        source, external = "manual", None
     item = CollectionItem(
         module=Module.records.value,
-        source="musicbrainz" if body.barcode else "manual",
+        source=source,
+        external_id=external,
         title=body.title.strip(),
         image_url=body.image_url,
         notes=body.notes,

@@ -21,6 +21,9 @@ class RecordAttrsOut(BaseModel):
 class RecordOut(BaseModel):
     id: int
     title: str
+    # so the row can carry the attribution link its source requires
+    source: str | None = None
+    external_id: str | None = None
     image_url: str | None = None
     notes: str | None = None
     attrs: RecordAttrsOut
@@ -51,6 +54,12 @@ class RecordCreate(BaseModel):
     tracklist: str | None = None
     image_url: str | None = None
     notes: str | None = None
+    # Where the pick came from, so the row can say so. Discogs requires a
+    # link back to the release page next to its data, and a stored identity
+    # is also what lets a personal restore find the same pressing on another
+    # install instead of duplicating it.
+    discogs_id: int | None = None
+    mbid: str | None = Field(default=None, max_length=40)
 
 
 class RecordUpdate(BaseModel):

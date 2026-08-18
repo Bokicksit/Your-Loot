@@ -4403,3 +4403,7 @@ button.primary.danger {
   color: #1a0d0d;
 }
 button.primary.danger:disabled { opacity: .45; }
+
+/* A data source's credit: present, legible, and not shouting. */
+a.source-credit { color: var(--text-mute); text-decoration: none; }
+a.source-credit:hover { color: var(--gold); text-decoration: underline; }

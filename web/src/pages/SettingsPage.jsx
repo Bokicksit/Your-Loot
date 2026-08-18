@@ -254,6 +254,7 @@ export default function SettingsPage() {
       <BackupCard open={open} onToggle={setOpen} />
       </div>
 
+      <DataSources />
       <PolicyLinks />
       {version && <p className="version-tag">Your Loot v{version}</p>}
     </div>
@@ -869,6 +870,35 @@ function PolicyLinks() {
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms of service</a>
         <a href="/delete-account">Deleting your account</a>
+      </p>
+    </section>
+  );
+}
+
+/** Where the data comes from, said once, on every install.
+ *
+ *  Every catalogue this app searches belongs to somebody else, and several of
+ *  them require credit as a condition of use — Discogs' wording is theirs
+ *  verbatim, required by their API terms on any application, personal or
+ *  commercial. The rest are thanked because they have earned it.
+ */
+function DataSources() {
+  return (
+    <section className="settings-card">
+      <h3>Where the data comes from</h3>
+      <p className="settings-note" style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px" }}>
+        <a href="https://www.igdb.com" target="_blank" rel="noopener noreferrer">IGDB.com</a>
+        <a href="https://www.discogs.com" target="_blank" rel="noopener">Discogs</a>
+        <a href="https://musicbrainz.org" target="_blank" rel="noopener noreferrer">MusicBrainz</a>
+        <a href="https://openlibrary.org" target="_blank" rel="noopener noreferrer">Open Library</a>
+        <a href="https://rebrickable.com" target="_blank" rel="noopener noreferrer">Rebrickable</a>
+        <a href="https://tcgdex.dev" target="_blank" rel="noopener noreferrer">TCGdex</a>
+      </p>
+      <p className="settings-note">
+        Games data by IGDB.com. Records search data provided by Discogs — this
+        application uses Discogs&rsquo; API but is not affiliated with,
+        sponsored or endorsed by Discogs. &lsquo;Discogs&rsquo; is a trademark
+        of Zink Media, LLC.
       </p>
     </section>
   );

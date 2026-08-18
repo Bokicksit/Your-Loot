@@ -20,7 +20,7 @@ import httpx
 from app.config import settings
 
 API = "https://api.discogs.com"
-UA = "your-loot/1.0 (+https://github.com/Bokicksit/Your-Loot)"
+UA = "your-loot/1.0 +https://yourloot.app"
 
 
 def _format(parts: list[str], qty: int = 1) -> str | None:
