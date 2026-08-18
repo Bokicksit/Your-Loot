@@ -351,7 +351,7 @@ function ProfileCard({ open, onToggle }) {
 
     >
 
-      {me.can_claim ? (
+      {me.can_claim && !me.fixed_url ? (
         <>
           <p>
             A page you can send anybody, showing only the collections you pick
@@ -391,6 +391,14 @@ function ProfileCard({ open, onToggle }) {
         </>
       ) : (
         <>
+          {me.fixed_url && (
+            <p>
+              A page you can send anybody, showing only the collections you
+              pick below. On your own server it lives at a fixed address — no
+              name to claim — and the user guide covers how to put just this
+              page on the internet without exposing the rest of your machine.
+            </p>
+          )}
           {/* The address, and a way to take it somewhere. Copying is what
               people actually do with this — the whole point of the page is
               being pasted into a chat. */}
@@ -466,7 +474,8 @@ function ProfileCard({ open, onToggle }) {
         Anybody with the link can see it and search engines can find it.
         Nothing is public until you tick it. Notes, tags, serial and
         certificate numbers are never included, whatever you choose.
-        {!me.can_claim && " The name is fixed — contact support if there is a problem with it."}
+        {!me.can_claim && !me.fixed_url &&
+          " The name is fixed — contact support if there is a problem with it."}
       </p>
       {!me.can_claim && me.collections.length === 0 && (
         <p className="sec-note">

@@ -41,6 +41,14 @@ PUBLIC = {
         "the pockets of a binder on that same page, too big to put in it — "
         "and it re-asks every question the page asked"
     ),
+    ("GET", "/loot"): (
+        "the same public page at a home server's fixed address — "
+        "single-user installs only, and publishing is still opt-in"
+    ),
+    ("GET", "/loot/binder/{binder_id}"): (
+        "its binder data, under the same prefix so a tunnel can expose "
+        "exactly one path — same gates, re-asked"
+    ),
 }
 
 

@@ -99,6 +99,24 @@ services:
       postgres:
         condition: service_healthy
 
+  # A home server with the room switched on: single-user, public profiles.
+  # The /loot page exists only in that combination — api-single keeps
+  # profiles off so the default's absence stays proven.
+  api-home:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/home
+      IMAGE_DIR: /data/images-home
+      AUTH_MODE: single
+      PUBLIC_PROFILES: "true"
+      SECRET_KEY: test-only-not-a-secret
+      SEED_ON_START: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Nothing has ever been put into this one, and nothing in the suite may
   # put anything into it except the restore test — that is the whole point of
   # it. A whole-server restore is refused by every other API here, because
@@ -134,6 +152,7 @@ services:
       LOOT_SOLO_URL: http://api-single:8000
       LOOT_OPEN_URL: http://api-open:8000
       LOOT_FRESH_URL: http://api-fresh:8000
+      LOOT_HOME_URL: http://api-home:8000
       # the opt-in from conftest.py. Set here and nowhere else.
       LOOT_DESTRUCTIVE_OK: "1"
     depends_on:
@@ -145,11 +164,13 @@ services:
         condition: service_started
       api-fresh:
         condition: service_started
+      api-home:
+        condition: service_started
       postgres:
         condition: service_healthy
     command: >
       sh -c "pip install --quiet --disable-pip-version-check -r requirements-dev.txt &&
-             for u in http://api:8000 http://api-single:8000 http://api-open:8000 http://api-fresh:8000; do
+             for u in http://api:8000 http://api-single:8000 http://api-open:8000 http://api-fresh:8000 http://api-home:8000; do
                until python -c \"import httpx,sys; sys.exit(0 if httpx.get('$$u/api/health', timeout=2).status_code==200 else 1)\" 2>/dev/null; do sleep 1; done;
              done &&
              python -m pytest tests -q"

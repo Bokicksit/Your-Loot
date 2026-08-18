@@ -111,4 +111,19 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
+
+    # The same page at its home-server address. Exact-or-prefix on purpose:
+    # /loot is the page, /loot/binder/<id> is its data, and nothing else
+    # starts with it — this pair plus the token-guarded /images/ is the whole
+    # surface a tunnel has to expose to put the room on the internet.
+    location = /loot {
+        proxy_pass http://$backend$request_uri;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    location /loot/ {
+        proxy_pass http://$backend$request_uri;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
 }

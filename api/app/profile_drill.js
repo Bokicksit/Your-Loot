@@ -12,7 +12,10 @@
 (function () {
   var room = document.querySelector(".room2");
   if (!room) return;
-  var who = room.getAttribute("data-u") || "";
+  /* The one address this page answers on — /u/<name>, or /loot on a home
+     server. Data is fetched under it so the page and its data travel
+     together through whatever is in front of the server. */
+  var base = room.getAttribute("data-base") || "";
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ------------------------------------------------------ the layer */
@@ -185,7 +188,7 @@
   function fetchBinder(id, then) {
     if (cache[id]) return then(cache[id]);
     var r = new XMLHttpRequest();
-    r.open("GET", "/u/" + encodeURIComponent(who) + "/binder/" + id, true);
+    r.open("GET", base + "/binder/" + id, true);
     r.onload = function () {
       if (r.status !== 200) return;
       cache[id] = JSON.parse(r.responseText);

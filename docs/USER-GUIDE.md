@@ -15,6 +15,7 @@ version.
   [records](#records) · [LEGO](#lego) · [comics](#comics)
 - [The wanted list](#the-wanted-list)
 - [Settings](#settings)
+- [Showing off your room](#showing-off-your-room)
 - [Backup and restore](#backup-and-restore)
 - [Keeping it healthy](#keeping-it-healthy)
 - [Troubleshooting](#troubleshooting)
@@ -671,6 +672,64 @@ Collections tab.
 **Backup & restore** — see below.
 
 Settings are stored on the server, so they're the same on every device.
+
+---
+
+## Showing off your room
+
+Set `PUBLIC_PROFILES=true` and your install grows a public page: your
+collections drawn as a room, at a fixed address —
+
+    http://your-server:8080/loot
+
+No account for visitors, no name to claim. It shows **only the collections
+you tick** in Settings → Public profile, only the fields a share would carry
+(never notes, tags, serial or certificate numbers), and until you tick
+something the page answers "not found". Any binder can be kept back from it
+in that binder's own settings.
+
+### Putting it on the internet — without the rest of your server
+
+Do **not** just forward port 8080. The page was built so you don't have to:
+everything it needs lives under three paths — `/loot` (the page and its
+binder data), `/images/` (your photos, each link carrying a signed,
+short-lived token), and `/assets/` (the favicon). Card art comes from the
+catalogue's own CDN. Expose those three paths and you have exposed the whole
+page and nothing else — no API, no login screen, no admin, no settings.
+
+**Cloudflare Tunnel** (a real domain, HTTPS included). In your tunnel's
+config, route only those paths and end with a 404:
+
+```yaml
+ingress:
+  - hostname: loot.example.com
+    path: ^/(loot(/.*)?|images/.*|assets/.*)$
+    service: http://localhost:8080
+  - service: http_status:404
+```
+
+**Tailscale Funnel** (no domain needed — you get a `*.ts.net` address):
+
+```bash
+tailscale funnel --bg --set-path /loot   http://127.0.0.1:8080/loot
+tailscale funnel --bg --set-path /images http://127.0.0.1:8080/images
+tailscale funnel --bg --set-path /assets http://127.0.0.1:8080/assets
+```
+
+Your page is then `https://your-machine.your-tailnet.ts.net/loot`.
+
+Worth knowing:
+
+- Anything outside those paths is refused by the tunnel itself — a visitor
+  probing `/api/...` or `/settings` never reaches your server at all.
+- The "Your Loot" link in the page footer points at your app's root, which
+  you deliberately did not expose. Visitors who click it get the tunnel's
+  404, not your login screen. That is correct.
+- Photos are served through signed tokens minted into the page, so a photo
+  URL copied out of it expires on its own.
+- Turning the page off is one switch: untick everything in Settings →
+  Public profile, and `/loot` goes back to "not found" — no tunnel change
+  needed.
 
 ---
 

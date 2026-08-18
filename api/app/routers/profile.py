@@ -34,7 +34,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app import screennames
-from app.auth import current_user
+from app.auth import OWNER_ID, current_user, multi_user
 from app.config import settings
 from app.db import get_db
 from app.models import Setting, User
@@ -106,6 +106,23 @@ def _must_be_on() -> None:
 def my_profile(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """What I am called, and which shelves I show."""
     _must_be_on()
+    if not multi_user():
+        # A home server: one person, no accounts, so no name to claim. The
+        # page lives at a fixed address instead, and the client draws the
+        # publish switches without the name form.
+        return {
+            "screen_name": None,
+            "url": "/loot",
+            "fixed_url": True,
+            "can_claim": False,
+            "name_revoked": False,
+            "collections": _shown(db, user.id),
+            "loose": _loose_shown(db, user.id),
+            "available": [
+                {"scope": s, "label": TITLES.get(s, s)} for s in available()
+            ],
+            "themed": themed(user),
+        }
     now = screennames.current_for(db, user.id)
     return {
         "screen_name": now.display if now else None,
@@ -131,6 +148,8 @@ def set_profile(
 ):
     _must_be_on()
     if body.screen_name is not None:
+        if not multi_user():
+            raise HTTPException(409, "A home server's page lives at /loot — there is no name to claim.")
         try:
             # an administrator may go to two characters; nobody else may
             screennames.claim(
@@ -245,20 +264,54 @@ def public_profile(
     row = screennames.holder(db, name)
     if row is None or row.revoked:
         raise HTTPException(404, "No such profile")
+    owner = db.get(User, row.user_id)
+    if owner is None:
+        raise HTTPException(404, "No such profile")
+    who = _display_name(db, row.user_id) or row.display
+    return _render_profile(db, owner, who, f"/u/{row.name}")
 
-    scopes = _shown(db, row.user_id)
+
+@router.get("/loot", response_class=HTMLResponse)
+def solo_profile(db: Session = Depends(get_db)):
+    """The owner's shelves, at an address that needs no name.
+
+    A home server has one collection and one person, so a claimed screen name
+    would be a formality — this is the same page /u/<name> serves, at a fixed
+    path instead. Only on single-user installs: where there are accounts, a
+    URL that means "the owner" would be a page about whoever runs the server
+    that they never asked for.
+
+    The fixed path is also the point of it operationally. Everything the page
+    needs lives under this one prefix (the binder data included) plus the
+    token-guarded /images/, so a tunnel can expose exactly this and nothing
+    else — see the user guide. Publishing is still the same opt-in: nothing
+    ticked in settings, no page.
+    """
+    _must_be_on()
+    if multi_user():
+        raise HTTPException(404, "Not found")
+    owner = db.get(User, OWNER_ID)
+    if owner is None:
+        raise HTTPException(404, "Not found")
+    who = _display_name(db, OWNER_ID) or "Your"
+    return _render_profile(db, owner, who, "/loot")
+
+
+def _render_profile(db: Session, owner: User, who: str, base: str):
+    """The page itself, for whoever `base` points at.
+
+    `base` is the one address this profile answers on — /u/<name>, or /loot on
+    a home server — and everything the page fetches later hangs off it, so
+    the page and its data always travel together through whatever is in
+    front of the server.
+    """
+    scopes = _shown(db, owner.id)
     if not scopes:
         # Not an empty page. Somebody who has published nothing does not have
         # a profile, and saying so is different from saying "look, nothing".
         raise HTTPException(404, "No such profile")
 
-    owner = db.get(User, row.user_id)
-    if owner is None:
-        raise HTTPException(404, "No such profile")
-
     from app.routers.share import everything  # circular at module scope
-
-    who = _display_name(db, row.user_id) or row.display
     shelves = [(scope, everything(scope, db, owner)) for scope in scopes]
     total = sum(len(items) for _s, items in shelves)
     biggest = max(shelves, key=lambda x: len(x[1]))[0] if shelves else None
@@ -327,7 +380,7 @@ def public_profile(
             if items
         )
         room = room_view.render(
-            who, shelves, labels, stamp, total, name=row.name, drills=drills
+            who, shelves, labels, stamp, total, base=base, drills=drills
         )
 
     body = (
@@ -336,7 +389,7 @@ def public_profile(
         + f'<div class="stats">{stats}</div>'
         + (f'<div class="jump">{jump}</div>' if total else "")
         + sections
-        + '<div class="pub-foot">Kept with <a href="/">Your Loot</a></div>'
+        + '<div class="pub-foot">Show off <a href="/">Your Loot</a></div>'
         + "</div>"
     )
 
@@ -351,10 +404,26 @@ def public_profile(
             # whatever the internal hop was called — "http://localhost" —
             # and og:url and canonical are the two places that must be the
             # address people actually type.
-            url=f"{(settings.public_url or '').rstrip('/')}/u/{row.name}",
+            url=f"{(settings.public_url or '').rstrip('/')}{base}",
             room=bool(room),
         )
     )
+
+
+@router.get("/loot/binder/{binder_id}")
+def solo_binder(binder_id: int, db: Session = Depends(get_db)):
+    """The pockets of a binder on the /loot page — same gates, solo address.
+
+    Under /loot on purpose: the page and its data share one prefix, which is
+    what lets a tunnel expose the room without exposing the server.
+    """
+    _must_be_on()
+    if multi_user():
+        raise HTTPException(404, "Not found")
+    owner = db.get(User, OWNER_ID)
+    if owner is None or "cards" not in _shown(db, OWNER_ID) or not themed(owner):
+        raise HTTPException(404, "No such profile")
+    return _binder_payload(db, owner, binder_id)
 
 
 @router.get("/u/{name}/binder/{binder_id}")
@@ -382,6 +451,10 @@ def public_binder(name: str, binder_id: int, db: Session = Depends(get_db)):
     if owner is None or not themed(owner):
         raise HTTPException(404, "No such profile")
 
+    return _binder_payload(db, owner, binder_id)
+
+
+def _binder_payload(db: Session, owner: User, binder_id: int):
     from app.models import Binder
 
     binder = db.get(Binder, binder_id)

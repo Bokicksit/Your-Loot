@@ -286,6 +286,11 @@ server. (Each person can also take their own from **Your collection**.) At the
 filesystem level the `data/` directory holds the Postgres database and your
 uploaded images; nothing else holds state.
 
+**Show off your room** — set `PUBLIC_PROFILES=true` and your collections get
+a public page at `/loot`, drawn as a collector's room. The user guide covers
+putting just that page on the internet through Cloudflare Tunnel or Tailscale
+Funnel, without exposing anything else on your server.
+
 ## Remote access
 
 Even with a password set, **don't expose port 8080 to the internet directly.**

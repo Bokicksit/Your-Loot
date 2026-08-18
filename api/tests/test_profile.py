@@ -631,3 +631,99 @@ def test_signing_up_where_there_are_profiles_requires_a_name(owner):
         # and the payload the form actually sends goes through
         body["screen_name"] = f"nm{mark}"
         anyone.post("/api/auth/signup", json=body).raise_for_status()
+
+
+# --- the home server's own page ---------------------------------------------
+
+HOME = os.environ.get("LOOT_HOME_URL")
+needs_home = pytest.mark.skipif(
+    not HOME, reason="no single-user install with profiles on"
+)
+
+
+@needs_home
+def test_a_home_server_shows_its_room_at_a_fixed_address():
+    """One person, no accounts, so no name to claim: the page is /loot.
+
+    And because nothing is sold on a home server, there is no tier to be
+    outside of — the room is everyone's, which here means the owner's.
+    """
+    import re
+
+    with httpx.Client(base_url=HOME, timeout=60) as owner:
+        # publishing is still the same opt-in — nothing ticked, no page
+        owner.put("/api/profile", json={"collections": []}).raise_for_status()
+        assert httpx.get(f"{HOME}/loot", timeout=30).status_code == 404, (
+            "an unpublished /loot page answered"
+        )
+
+        me = owner.get("/api/profile").json()
+        assert me["fixed_url"] is True and me["url"] == "/loot"
+        assert me["can_claim"] is False, "a home server offered a name to claim"
+        r = owner.put("/api/profile", json={"screen_name": "anything"})
+        assert r.status_code == 409, "a home server accepted a screen name"
+
+        item = owner.post(
+            "/api/cards", json={"title": "Home Card", "card_number": "1"}
+        ).json()["id"]
+        try:
+            owner.post(
+                f"/api/items/{item}/owned", json={"condition": "NM"}
+            ).raise_for_status()
+            owner.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+
+            page = httpx.get(f"{HOME}/loot", timeout=60)
+            assert page.status_code == 200, "a published /loot page refused a stranger"
+            body = page.text
+            assert 'class="room2-page"' in body, "a home server did not get the room"
+            assert 'property="og:title"' in body
+
+            # the page's data lives under its own prefix — that is what lets
+            # a tunnel expose exactly one path
+            binder_id = re.search(r'data-binder="(\d+)"', body)
+            if binder_id:
+                assert httpx.get(
+                    f"{HOME}/loot/binder/{binder_id.group(1)}", timeout=30
+                ).status_code == 200
+        finally:
+            owner.put("/api/profile", json={"collections": []})
+            owner.delete(f"/api/cards/{item}")
+
+
+@needs_home
+def test_the_loot_page_never_points_outside_its_own_surface():
+    """The guarantee the tunnel guide rests on. Somebody exposing /loot,
+    /images/ and /assets/ has exposed the whole page — every URL in the
+    document stays inside that surface or goes to another host entirely, so
+    following the guide can never leak a route into the rest of the server."""
+    import re
+
+    with httpx.Client(base_url=HOME, timeout=60) as owner:
+        item = owner.post(
+            "/api/cards", json={"title": "Surface Card", "card_number": "2"}
+        ).json()["id"]
+        try:
+            owner.post(
+                f"/api/items/{item}/owned", json={"condition": "NM"}
+            ).raise_for_status()
+            owner.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+
+            body = httpx.get(f"{HOME}/loot", timeout=60).text
+            refs = re.findall(r'(?:href|src)="([^"]+)"', body)
+            refs += re.findall(r"url\('([^']+)'\)", body)
+            allowed = ("/loot", "/images/", "/assets/", "/", "#", "http://", "https://", "data:")
+            for ref in refs:
+                assert ref.startswith(allowed), f"{ref} points outside the exposed surface"
+                # bare "/" is the footer link home; anything longer must be on the list
+                if ref.startswith("/") and not ref.startswith(("//", "/loot", "/images/", "/assets/")):
+                    assert ref == "/", f"{ref} points outside the exposed surface"
+        finally:
+            owner.put("/api/profile", json={"collections": []})
+            owner.delete(f"/api/cards/{item}")
+
+
+def test_where_there_are_accounts_there_is_no_loot_page(owner):
+    """A URL that means "the owner" on a server full of people would be a
+    page about whoever runs it that they never asked for."""
+    r = owner.get("/loot")
+    assert r.status_code == 404, "/loot answered on a multi-user install"

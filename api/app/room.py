@@ -310,7 +310,7 @@ def _motes(n=16):
     return '<div class="motes2">' + "".join(out) + '</div>'
 
 
-def render(who, shelves, labels, stamp, total, name="", drills=""):
+def render(who, shelves, labels, stamp, total, base="", drills=""):
     """The whole room: one zone per published shelf, in the order they were
     published.
 
@@ -344,7 +344,7 @@ def render(who, shelves, labels, stamp, total, name="", drills=""):
     return (
         '<div class="room2-wrap">'
         + heading(who, str(total) + ' things · ' + stamp) +
-        '<div class="room2" data-u="' + html.escape(name, quote=True) + '">'
+        '<div class="room2" data-base="' + html.escape(base, quote=True) + '">'
         '<div class="floor"></div><div class="rug"></div><div class="skirt"></div>'
         '<div class="scene"><div class="scene-strip">' + "".join(zones) + '</div></div>'
         + _motes() +
@@ -352,6 +352,6 @@ def render(who, shelves, labels, stamp, total, name="", drills=""):
         '<div class="panhint">drag to look around</div>'
         + drills +
         '</div>'
-        '<div class="room-foot">Kept with <a href="/">Your Loot</a></div>'
+        '<div class="room-foot">Show off <a href="/">Your Loot</a></div>'
         '</div>'
     )

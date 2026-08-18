@@ -11,3 +11,8 @@ CREATE DATABASE opensignup OWNER getloot;
 -- only allowed into an install with nothing in it, and the only honest way
 -- to test the path somebody rebuilds a machine with is to actually do it.
 CREATE DATABASE freshinstall OWNER getloot;
+
+-- A home server that shows its room off: single-user, profiles on. The
+-- /loot page only exists in this combination, so it needs its own install —
+-- api-single keeps profiles off to prove the default's absence.
+CREATE DATABASE home OWNER getloot;
