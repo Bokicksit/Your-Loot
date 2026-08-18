@@ -392,6 +392,7 @@ def create_card(body: CardCreate, db: Session = Depends(get_db),
         title=body.title.strip(),
         image_url=body.image_url,
         card_attrs=CardAttrs(
+            language=body.language,
             set_name=body.set_name,
             set_abbr=body.set_abbr.upper() if body.set_abbr else None,
             set_code=None,

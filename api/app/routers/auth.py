@@ -26,6 +26,7 @@ from app.config import settings
 from app.db import get_db
 from app.mailer import configured as mail_configured, send_reset, send_verification
 from app.models import ApiToken, AuthToken, User
+from app import screennames
 from app.ratelimit import client_key, logins, mails, signups
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -237,6 +238,11 @@ class SignupIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=MIN_PASSWORD, max_length=200)
     display_name: str | None = Field(default=None, max_length=50)
+    # Required from here on, and chosen once — it is the address of a public
+    # profile, so it cannot be changed later without breaking every link
+    # anybody wrote down. Accounts made before this exists have none, and
+    # claim one in settings when they want a profile.
+    screen_name: str = Field(min_length=3, max_length=100)
     # Required, and required *here* rather than only in the browser. A tick
     # box the server does not check proves nothing later and can be skipped
     # by anybody who opens the network tab.
@@ -300,6 +306,16 @@ def signup(
     if db.query(User).filter(User.email == body.email).count():
         raise HTTPException(409, "That email already has an account")
 
+    # Checked before the account is made rather than after: a signup that
+    # creates the account and then rejects the name leaves somebody signed in
+    # with no name and no obvious way to get one.
+    try:
+        wanted = screennames.check(body.screen_name)
+    except screennames.NameProblem as e:
+        raise HTTPException(409, str(e))
+    if screennames.holder(db, wanted) is not None:
+        raise HTTPException(409, "Somebody already has that name.")
+
     signups.failed(key)
     user = User(
         email=body.email,
@@ -310,6 +326,8 @@ def signup(
         terms_accepted_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(user)
+    db.flush()           # the name needs the id
+    screennames.claim(db, user.id, body.screen_name)
     db.commit()
     db.refresh(user)
 

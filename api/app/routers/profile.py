@@ -1,0 +1,368 @@
+"""A profile somebody can send a stranger.
+
+Two halves that barely touch. `/api/profile` is the owner deciding: what they
+are called and which shelves they are willing to show. `/u/<name>` is the
+result, served to anybody, and it is the only page in this application that
+answers without a session.
+
+Rendered here as HTML rather than by the app's React, and that is the whole
+reason this file exists. A profile is for pasting into a chat and for being
+found — and link previews in Discord, iMessage, Slack and every other unfurler
+read `og:` tags out of the first response without running any JavaScript. A
+single-page app hands them an empty shell. So this returns a real document,
+with real tags, on the first byte.
+
+What may appear is not decided here. `app/share.py` already answers that for
+the downloadable file: a row built from a named list of fields, with nothing
+that came out of a free-text box — no notes, no tags, no serial or certificate
+numbers, no prices. That list is the reason this feature is publishable at all,
+and it is reused rather than rewritten, because a second answer to "what is
+safe to show" would be a second thing to get wrong.
+
+Nothing is public until it is switched on. A profile with no shelves chosen is
+a 404, not an empty page: somebody who has not opted in does not have a URL.
+"""
+
+import html
+from datetime import date
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app import screennames
+from app.auth import current_user
+from app.config import settings
+from app.db import get_db
+from app.models import Setting, User
+from app.modules import available
+from app.plans import subscribed
+from app.imgauth import sign as sign_image
+from app.share import TITLES
+
+router = APIRouter()
+
+# Which shelves this person shows, as a comma-separated list in the same
+# key/value table `owner_name` lives in — it is a preference about
+# presentation, which is what that table is for.
+PUBLIC_KEY = "public_collections"
+
+
+def _shown(db: Session, user_id: int) -> list[str]:
+    row = db.get(Setting, (user_id, PUBLIC_KEY))
+    raw = (row.value if row else "") or ""
+    here = set(available())
+    # Intersected with what this install carries, so a shelf switched off at
+    # the service level cannot be published by a setting that outlived it.
+    return [s for s in (x.strip() for x in raw.split(",")) if s and s in here]
+
+
+def _display_name(db: Session, user_id: int) -> str:
+    row = db.get(Setting, (user_id, "owner_name"))
+    return (row.value if row else None) or ""
+
+
+# ---------------------------------------------------------------- the owner
+
+
+class ProfileIn(BaseModel):
+    # Absent means "leave it alone"; the two halves are set independently
+    # because renaming yourself and publishing a shelf are different decisions.
+    # Generous on purpose. The rules live in one place — screennames.check() —
+    # so that every refusal comes back as a sentence somebody can act on
+    # rather than as a schema error. This bound is only here to throw away an
+    # absurd payload before it is worth thinking about.
+    screen_name: str | None = Field(default=None, max_length=100)
+    collections: list[str] | None = None
+
+
+def _must_be_on() -> None:
+    """404 rather than 403 where profiles are off.
+
+    An install that does not offer them has no such endpoint, which is a
+    different statement from "you may not" — and it keeps the settings screen
+    from having to explain a feature this server does not have.
+    """
+    if not settings.public_profiles:
+        raise HTTPException(404, "Not found")
+
+
+@router.get("/api/profile")
+def my_profile(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """What I am called, and which shelves I show."""
+    _must_be_on()
+    now = screennames.current_for(db, user.id)
+    return {
+        "screen_name": now.display if now else None,
+        "url": f"/u/{now.name}" if now else None,
+        # A name is claimed once and never changed, so the form has to know
+        # whether it is a form at all or just a label.
+        "can_claim": now is None,
+        # And if theirs was taken away, why their profile went dark — somebody
+        # not told simply finds a broken URL and cannot act on it.
+        "name_revoked": screennames.was_revoked(db, user.id),
+        "collections": _shown(db, user.id),
+        "available": [{"scope": s, "label": TITLES.get(s, s)} for s in available()],
+        "themed": subscribed(user),
+    }
+
+
+@router.put("/api/profile")
+def set_profile(
+    body: ProfileIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    _must_be_on()
+    if body.screen_name is not None:
+        try:
+            # an administrator may go to two characters; nobody else may
+            screennames.claim(
+                db, user.id, body.screen_name,
+                floor=screennames.floor_for(user),
+            )
+        except screennames.NameProblem as e:
+            raise HTTPException(409, str(e))
+
+    if body.collections is not None:
+        here = set(available())
+        keep = [s for s in body.collections if s in here]
+        row = db.get(Setting, (user.id, PUBLIC_KEY))
+        if row is None:
+            row = Setting(user_id=user.id, key=PUBLIC_KEY)
+            db.add(row)
+        row.value = ",".join(keep)
+
+    db.commit()
+    return my_profile(db=db, user=user)
+
+
+# --------------------------------------------------------------- the public
+
+
+# Read once at import. The page has no application stylesheet to inherit
+# from — a stranger arriving from a link has never loaded this app — so the
+# rules travel with it.
+_CSS = (Path(__file__).resolve().parents[1] / "profile_theme.css").read_text(
+    encoding="utf-8"
+)
+
+# The icons the jump rail uses, one per collection, from the design's sprite.
+_GLYPHS = {
+    "cards": '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 7.5h6M9 11h4"/>',
+    "games": '<rect x="2.5" y="7" width="19" height="11" rx="4.5"/><path d="M8 10.8v3.4M6.3 12.5h3.4"/><circle cx="15.8" cy="11.6" r="1.15"/><circle cx="18.4" cy="14.2" r="1.15"/>',
+    "hardware": '<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M6.5 9.5h4M8.5 7.5v4"/><circle cx="16.5" cy="10.5" r="1.2"/><path d="M6 21h12"/>',
+    "movies": '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M8 5v14M16 5v14"/>',
+    "books": '<path d="M5 4.5h9.5a3 3 0 013 3V20H8a3 3 0 01-3-3z"/><path d="M5 17.2a3 3 0 013-3h9.5"/><path d="M9.5 4.5V14"/>',
+    "records": '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.4"/>',
+    "lego": '<rect x="4" y="8.5" width="16" height="10" rx="1.8"/><path d="M8.5 8.5V6.6a1.6 1.6 0 013.2 0v1.9M13.2 8.5V6.6a1.6 1.6 0 013.2 0v1.9"/>',
+    "comics": '<rect x="4" y="4.5" width="16" height="15" rx="2.2"/><path d="M8 9h5M8 12.5h8M8 16h4"/>',
+}
+
+# Sleeves are square; everything else is a card or a cover.
+_SQUARE = {"records"}
+
+
+def _icon(scope: str) -> str:
+    inner = _GLYPHS.get(scope)
+    if not inner:
+        return ""
+    return (
+        '<svg class="i" viewBox="0 0 24 24" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" '
+        f'stroke-linejoin="round" aria-hidden="true">{inner}</svg>'
+    )
+
+
+def _page(title: str, description: str, body: str, url: str) -> str:
+    """A document, not an app shell.
+
+    The og: tags are the point of rendering server-side, so they are not
+    optional decoration — they are what makes a pasted link show anything at
+    all in a chat window.
+    """
+    t, d = html.escape(title), html.escape(description)
+    return f"""<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{t}</title>
+<meta name="description" content="{d}">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="{t}">
+<meta property="og:description" content="{d}">
+<meta property="og:url" content="{html.escape(url)}">
+<link rel="canonical" href="{html.escape(url)}">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/assets/favicon.svg">
+<style>{_CSS}</style>
+</head><body class="pub">{body}
+<script>
+/* The grid is visible without this. `rv` is added by script precisely so
+   that a browser with no JavaScript — or a crawler — sees the items rather
+   than a page of things waiting to be faded in. */
+(function () {{
+  var items = document.querySelectorAll(".pub-item");
+  if (!window.IntersectionObserver || !items.length) return;
+  for (var i = 0; i < items.length; i++) items[i].classList.add("rv");
+  var io = new IntersectionObserver(function (es) {{
+    es.forEach(function (e) {{
+      if (e.isIntersecting) {{ e.target.classList.add("in"); io.unobserve(e.target); }}
+    }});
+  }}, {{ threshold: 0.12 }});
+  for (var j = 0; j < items.length; j++) io.observe(items[j]);
+}})();
+</script>
+</body></html>"""
+
+
+@router.get("/u/{name}", response_class=HTMLResponse)
+def public_profile(
+    name: str, request: Request, db: Session = Depends(get_db)
+):
+    """Somebody's shelves, to anybody, with no session.
+
+    Names are claimed once and never changed, so there is no redirect to make
+    — a URL either belongs to somebody or it does not. A revoked name is gone
+    rather than forwarded: forwarding it would be pointing at the person whose
+    name was taken away.
+    """
+    _must_be_on()
+    row = screennames.holder(db, name)
+    if row is None or row.revoked:
+        raise HTTPException(404, "No such profile")
+
+    scopes = _shown(db, row.user_id)
+    if not scopes:
+        # Not an empty page. Somebody who has published nothing does not have
+        # a profile, and saying so is different from saying "look, nothing".
+        raise HTTPException(404, "No such profile")
+
+    owner = db.get(User, row.user_id)
+    if owner is None:
+        raise HTTPException(404, "No such profile")
+
+    from app.routers.share import everything  # circular at module scope
+
+    who = _display_name(db, row.user_id) or row.display
+    shelves = [(scope, everything(scope, db, owner)) for scope in scopes]
+    total = sum(len(items) for _s, items in shelves)
+    biggest = max(shelves, key=lambda x: len(x[1]))[0] if shelves else None
+    stamp = f"{date.today():%B %Y}"
+
+    # the four numbers somebody actually wants at a glance
+    stats = "".join(
+        f'<div class="stat"><span class="k">{k}</span><span class="v">{v}</span></div>'
+        for k, v in [
+            ("Things", str(total)),
+            ("Categories", f"{len(scopes)} <small>of {len(available())}</small>"),
+            (
+                "Largest",
+                f"{html.escape(TITLES.get(biggest, biggest or ''))} "
+                f"<small>{len(dict(shelves).get(biggest, []))}</small>"
+                if biggest else "—",
+            ),
+            ("Updated", f"{date.today():%b} <small>{date.today():%Y}</small>"),
+        ]
+    )
+
+    jump = "".join(
+        f'<a href="#s-{s}">{_icon(s)}{html.escape(TITLES.get(s, s))} '
+        f"<b>{len(items)}</b></a>"
+        for s, items in shelves
+    )
+
+    sections = "".join(
+        f'<section class="pub-sec" id="s-{s}">'
+        f"<h2>{html.escape(TITLES.get(s, s))} <span>{len(items)}</span></h2>"
+        f'<div class="pub-grid">'
+        + "".join(_row_html(s, i) for i in items)
+        + "</div></section>"
+        for s, items in shelves
+    )
+
+    body = (
+        '<div class="pub-wrap">'
+        f'<div class="pub-id"><h1>{html.escape(who)}</h1>'
+        f'<span class="sub">{total} things · {stamp}</span></div>'
+        f'<div class="stats">{stats}</div>'
+        f'<div class="jump">{jump}</div>'
+        f"{sections}"
+        '<div class="pub-foot">Kept with <a href="/">Your Loot</a></div>'
+        "</div>"
+    )
+
+    return HTMLResponse(
+        _page(
+            title=f"{who} · Your Loot",
+            description=f"{who} keeps {total} things in "
+            + ", ".join(TITLES.get(s, s).lower() for s in scopes)
+            + ".",
+            body=body,
+            # PUBLIC_URL, not the request. Behind nginx the request says
+            # whatever the internal hop was called — "http://localhost" —
+            # and og:url and canonical are the two places that must be the
+            # address people actually type.
+            url=f"{(settings.public_url or '').rstrip('/')}/u/{row.name}",
+        )
+    )
+
+
+def _thumb(item) -> str:
+    """The picture, for a page anybody can open.
+
+    Two kinds of URL end up on an item and they are not equally public.
+    Catalogue art is somebody else's asset host and needs nothing — it is a
+    plain link. A photograph the owner took is served by this application from
+    /images/, which refuses without a session, so on a public page it would
+    render as a broken frame.
+
+    So local ones get a signed token, minted fresh on every render. That is
+    the reason it is done here rather than stored: the token is short-lived by
+    design, and a page held in a cache longer than the token lives would show
+    exactly the broken frames this avoids. Worth remembering if edge caching
+    is ever put in front of profiles — the tokens are what makes it unsafe to
+    cache for long.
+
+    Publishing a shelf is publishing its pictures. That is what the tick box
+    said it would do.
+    """
+    url = item.image_url or ""
+    if not url:
+        return '<div class="placeholder"></div>'
+    if url.startswith("/images/"):
+        name = url.rsplit("/", 1)[-1]
+        url = f"/images/{name}?token={sign_image(name)}"
+    return (
+        f'<img class="art" src="{html.escape(url)}" alt="" '
+        'loading="lazy" decoding="async">'
+    )
+
+
+def _row_html(scope: str, item) -> str:
+    """One card in the grid, built from share.py's row for this collection.
+
+    Reused rather than rewritten: that function is the answer to what is safe
+    to publish — name, the line of metadata, and the condition badge, with
+    nothing that came out of a free-text box — and it has already been thought
+    about once.
+    """
+    from app.share import SPECS
+
+    spec = SPECS.get(scope)
+    if spec is None:
+        return ""
+    r = spec["row"](item)
+    name = html.escape(str(r.get("title") or ""))
+    meta = html.escape(str(r.get("meta") or ""))
+    badge = html.escape(str(r.get("badge") or ""))
+    square = " square" if scope in _SQUARE else ""
+    return (
+        f'<article class="pub-item{square}">{_thumb(item)}<div class="txt">'
+        f"<strong>{name}</strong>"
+        + (f"<small>{meta}</small>" if meta else "")
+        + (f'<span class="cond">{badge}</span>' if badge else "")
+        + "</div></article>"
+    )

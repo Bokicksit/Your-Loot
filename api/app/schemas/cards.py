@@ -45,6 +45,10 @@ class CardCreate(BaseModel):
     (brand-new promos, prereleases, Japanese exclusives)."""
 
     title: str = Field(min_length=1, max_length=300)
+    # Which catalogue it belongs to. A card typed in while looking at the
+    # Japanese one is Japanese — otherwise it answers English searches and is
+    # let into binders that said English only.
+    language: str = Field(default="en", pattern="^(en|ja)$")
     set_name: str | None = Field(default=None, max_length=100)
     set_abbr: str | None = Field(default=None, max_length=10)
     card_number: str | None = Field(default=None, max_length=20)

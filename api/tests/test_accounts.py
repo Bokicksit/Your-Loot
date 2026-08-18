@@ -92,10 +92,21 @@ def signed_up():
     """A fresh account on the open API, with its client. Cleaned up after."""
     c = httpx.Client(base_url=OPEN, timeout=60)
     email = an_email()
-    r = c.post("/api/auth/signup", json={"email": email, "password": PASSWORD, "accept_terms": True})
+    r = c.post(
+        "/api/auth/signup",
+        # a screen name is required from 3.34 on — it is the address of a
+        # public profile, so it is chosen at signup and never changed
+        json={"email": email, "password": PASSWORD, "accept_terms": True,
+              "screen_name": a_name()},
+    )
     r.raise_for_status()
     yield c, email, r.json()
     c.close()
+
+
+def a_name() -> str:
+    """A screen name nothing else will have taken."""
+    return f"t{uuid.uuid4().hex[:10]}"
 
 
 def _user(odb, email):
@@ -110,7 +121,8 @@ def test_signup_is_off_unless_it_is_turned_on():
     accounts. A stranger who finds it must not be able to make one."""
     r = httpx.post(
         f"{BASE}/api/auth/signup",
-        json={"email": an_email(), "password": PASSWORD, "accept_terms": True},
+        json={"email": an_email(), "password": PASSWORD, "accept_terms": True,
+              "screen_name": a_name()},
         timeout=60,
     )
     assert r.status_code == 404, "an invite-only install offered open signup"
@@ -149,7 +161,8 @@ def test_the_two_flags_are_separate_questions():
 @pytest.mark.skipif(not SOLO, reason="no single-user API configured")
 def test_a_single_user_install_has_none_of_this():
     for path, body in [
-        ("/api/auth/signup", {"email": an_email(), "password": PASSWORD}),
+        ("/api/auth/signup",
+         {"email": an_email(), "password": PASSWORD, "screen_name": a_name()}),
         ("/api/auth/forgot", {"email": an_email()}),
     ]:
         r = httpx.post(f"{SOLO}{path}", json=body, timeout=60)
@@ -180,7 +193,11 @@ def test_signing_up_signs_you_in(signed_up):
 def test_the_same_address_cannot_sign_up_twice(signed_up):
     _c, email, _ = signed_up
     r = httpx.post(
-        f"{OPEN}/api/auth/signup", json={"email": email, "password": PASSWORD, "accept_terms": True}, timeout=60
+        f"{OPEN}/api/auth/signup",
+        # a fresh name, so it is the address clashing and not the name
+        json={"email": email, "password": PASSWORD, "accept_terms": True,
+              "screen_name": a_name()},
+        timeout=60,
     )
     assert r.status_code == 409
 
@@ -376,15 +393,19 @@ def test_signing_up_without_agreeing_is_refused():
     anybody who opens the network tab."""
     r = httpx.post(
         f"{OPEN}/api/auth/signup",
-        json={"email": an_email(), "password": PASSWORD, "accept_terms": False},
+        json={"email": an_email(), "password": PASSWORD, "accept_terms": False,
+              "screen_name": a_name()},
         timeout=60,
     )
     assert r.status_code == 400
 
-    # and leaving it out entirely is not a way round it
+    # and leaving it out entirely is not a way round it. Everything else is
+    # present on purpose: a body missing a required field is refused by
+    # validation before the handler runs, which would pass this test for the
+    # wrong reason.
     r = httpx.post(
         f"{OPEN}/api/auth/signup",
-        json={"email": an_email(), "password": PASSWORD},
+        json={"email": an_email(), "password": PASSWORD, "screen_name": a_name()},
         timeout=60,
     )
     assert r.status_code == 400

@@ -24,7 +24,8 @@ from app.auth import OWNER_ID, require_admin
 from app.barcodes import stats as barcode_stats
 from app.config import settings
 from app.db import get_db
-from app.models import CollectionItem, Owned, User, Wanted
+from app import screennames
+from app.models import CollectionItem, Owned, ScreenName, User, Wanted
 from app.modules import available
 from app.plans import FREE, SUPPORTER, paid_modules, subscribed
 
@@ -47,6 +48,10 @@ def _disk_bytes(where: str) -> int:
 class AdminUser(BaseModel):
     id: int
     email: str | None = None
+    # The name their public profile answers to, if they have claimed one. Here
+    # because it is the one thing about an account that strangers can see, so
+    # it is the one thing that occasionally has to be taken away.
+    screen_name: str | None = None
     display_name: str | None = None
     is_admin: bool = False
     plan: str = FREE
@@ -127,9 +132,18 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
         ).all()
     )
     rows = db.scalars(select(User).order_by(User.id)).all()
+    # Every live name in one query rather than one per row.
+    names = dict(
+        db.execute(
+            select(ScreenName.user_id, ScreenName.display).where(
+                ScreenName.revoked.is_(False)
+            )
+        ).all()
+    )
     return [
         AdminUser(
             id=u.id,
+            screen_name=names.get(u.id),
             email=u.email,
             display_name=u.display_name,
             is_admin=u.is_admin,
@@ -183,3 +197,36 @@ def set_plan(
             select(func.count()).select_from(Owned).where(Owned.user_id == user.id)
         ) or 0,
     )
+
+
+@router.delete("/users/{user_id}/screen-name", status_code=204)
+def revoke_screen_name(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Take somebody's screen name away, permanently.
+
+    The only lever there is, and deliberately the only one: an administrator
+    can remove a name but cannot choose a replacement. Picking names for
+    people would make you responsible for the next one, and there is no
+    version of that which ends well.
+
+    What happens: the name is spent — nobody can claim it again, including
+    them — their profile stops answering, and they may claim one different
+    name. Their collection is untouched, because this is about a word in a
+    URL and nothing else.
+
+    This exists because the word list in screennames.py catches the obvious
+    and nothing more. It was never going to be the whole answer, and pretending
+    otherwise in the terms would be the mistake.
+    """
+    row = db.scalar(
+        select(ScreenName).where(
+            ScreenName.user_id == user_id, ScreenName.revoked.is_(False)
+        )
+    )
+    if row is None:
+        raise HTTPException(404, "that account has no screen name")
+    screennames.revoke(db, row.name)
+    db.commit()

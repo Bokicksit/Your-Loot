@@ -85,6 +85,18 @@ export function useHasJapanese() {
   return !!settings?.has_japanese;
 }
 
+/** Does this install offer public profiles?
+ *
+ *  One switch, two consequences. Where profiles exist they replace the
+ *  downloadable share — a link beats a file when there is a server to answer
+ *  it. Where they do not, the file is the only thing that could ever have
+ *  worked, because nobody outside the house can reach a home server.
+ */
+export function usePublicProfiles() {
+  const { settings } = useSettings();
+  return !!settings?.public_profiles;
+}
+
 export function useEnabledModules() {
   const { settings } = useSettings();
   if (!settings) return [];

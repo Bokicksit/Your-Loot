@@ -50,6 +50,17 @@ class Settings(BaseSettings):
     free_dex_limit: int = 0     # how far up the Pokédex the binder goes
     free_binder_limit: int = 0  # binders besides the Pokédex
     open_signup: bool = False
+    # Public profiles at /u/<name>, and the shelves people choose to show on
+    # them. Off by default, which is the honest answer for the install this
+    # ships as: a home server nobody outside the house can reach has nothing
+    # to publish to, and offering a "public page" that resolves for one person
+    # would be a worse feature than not having one.
+    #
+    # It is one switch with two consequences on purpose. Where profiles are on
+    # they replace the downloadable share — a link is simply better than a
+    # file when there is a server to answer it. Where they are off the file is
+    # the only thing that could ever have worked.
+    public_profiles: bool = False
     # New accounts allowed per hour from one address. See ratelimit.py.
     signup_limit: int = 20
     # Where this install is reachable, for the links inside emails. A verify

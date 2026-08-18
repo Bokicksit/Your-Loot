@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
+from app.config import settings as settings_cfg
 from app.db import get_db
 from app.limits import binder_limit, card_limit, dex_limit, limited
 from app.models import CardAttrs, CollectionItem, Module, Owned, Setting, User
@@ -76,6 +77,10 @@ class SettingsOut(BaseModel):
     # Japanese switch in a binder's settings — have to know whether to exist.
     # A tick that can only ever return nothing is worse than no tick.
     has_japanese: bool = False
+    # Whether this install offers public profiles. One switch with two
+    # consequences: where it is on the downloadable share is redundant, and
+    # where it is off a profile could never have been reached anyway.
+    public_profiles: bool = False
     # What a free account gets here, so the screens can say so before somebody
     # runs into it. All zero on a self-hosted install, where nothing is
     # limited and none of this is drawn.
@@ -126,6 +131,7 @@ def _current(db: Session, user_id: int) -> SettingsOut:
         has_japanese=bool(
             db.scalar(select(CardAttrs.item_id).where(CardAttrs.language == "ja").limit(1))
         ),
+        public_profiles=settings_cfg.public_profiles,
         limits={
             # what applies to this person right now, not what the install
             # could impose — a supporter is told nothing is limited, because

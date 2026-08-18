@@ -233,6 +233,23 @@ docker compose exec postgres psql -U getloot -d getloot \
 ```
 That takes the Japanese catalogue with it and leaves everything you own alone.
 
+**Public profiles** turn a collection into a page you can send somebody —
+`/u/yourname`, showing only the shelves you tick, with thumbnails. Off by
+default, and that is the honest setting for the install this ships as: a home
+server nobody outside the house can reach has nothing to publish to. Turn it
+on with `PUBLIC_PROFILES=true` in `.env`.
+
+It is one switch with two consequences. Where profiles are on they replace the
+downloadable share in Settings, because a link is better than a file when
+there is a server to answer it; where they are off the file is the only thing
+that could ever have worked. Names are claimed once and never changed — the
+URL is an address, and an address that moves breaks every link you gave out —
+so an administrator can take one away but nobody can swap theirs.
+
+Nothing is public until you tick it, notes and tags and serial numbers are
+never included, and a profile with nothing ticked returns "not found" rather
+than an empty page.
+
 **Running this for a lot of people?** Card pictures are seeded pointing at
 `images.pokemontcg.io`, which belongs to the project publishing the card
 database — fine for a household, less fine as somebody else's bandwidth bill.

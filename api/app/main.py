@@ -28,6 +28,7 @@ from app.routers import (
     lego,
     lookup,
     movies,
+    profile,
     records,
     share,
     tags,
@@ -112,6 +113,9 @@ app.include_router(lookup.router)
 app.include_router(tags.router)
 app.include_router(binders.router)
 app.include_router(share.router)
+# /api/profile needs a session; /u/<name> is the one page that must not,
+# so the guard is on the handlers rather than the router.
+app.include_router(profile.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
 

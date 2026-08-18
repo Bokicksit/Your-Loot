@@ -15,6 +15,18 @@ export function IconDefs() {
         <symbol id="i-vinyl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"></circle> <circle cx="12" cy="12" r="4.4"></circle> <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"></circle></symbol>
         <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"></circle> <circle cx="12" cy="12" r="6.2"></circle> <path d="M14.1 9.5a2.1 2.1 0 00-2-1.2h-.4a1.9 1.9 0 00-.3 3.75l1.6.3a1.9 1.9 0 01-.3 3.75h-.4a2.1 2.1 0 01-2-1.2M12 7v1.3M12 15.7V17"></path></symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h9.5M4.5 17h5.5" /><circle cx="17" cy="12" r="2" /><circle cx="13.5" cy="17" r="2" /></symbol>
+        {/* The settings accordion's glyphs, from the design system. One per
+            section, so a head is recognisable before it is read. */}
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8" /><path d="M4.8 20a7.4 7.4 0 0114.4 0" /></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.3 3.6 8.5S14.4 18.1 12 20.5c-2.4-2.4-3.6-5.3-3.6-8.5S9.6 5.9 12 3.5z" /></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.4" /><path d="M8 10.5V8a4 4 0 018 0v2.5" /><path d="M12 14.2v2.4" /></symbol>
+        <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8.2l8-3.7 8 3.7v7.6l-8 3.7-8-3.7z" /><path d="M4 8.2l8 3.7 8-3.7M12 11.9V19.5" /></symbol>
+        {/* points down when shut and is rotated when open — one glyph, two
+            states, rather than two glyphs that can disagree */}
+        <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6.5 9.5L12 15l5.5-5.5" /></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.2" /><path d="M15 6.5A2.5 2.5 0 0012.5 4h-6A2.5 2.5 0 004 6.5v6A2.5 2.5 0 006.5 15" /></symbol>
+        <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4.5v11M7.5 11.5L12 16l4.5-4.5M5 19.5h14" /></symbol>
+        <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9L12 4.5 16.5 9M5 19.5h14" /></symbol>
         {/* nine pockets to a page — the shape of a binder page, which is what
             it stands for */}
         <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M9.17 3.5v17M14.83 3.5v17M3.5 9.17h17M3.5 14.83h17" /></symbol>
@@ -50,9 +62,12 @@ export function IconDefs() {
   );
 }
 
-export function Icon({ id }) {
+export function Icon({ id, className = "" }) {
+  // `.i` always, plus whatever the caller needs to style this one — the
+  // accordion's chevron rotates, and that has to be aimed at the glyph
+  // rather than at a wrapper around it.
   return (
-    <svg className="i">
+    <svg className={`i ${className}`.trim()}>
       <use href={`#i-${id}`} />
     </svg>
   );

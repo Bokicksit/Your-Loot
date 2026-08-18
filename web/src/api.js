@@ -167,6 +167,11 @@ export const api = {
   binders: () => request("/api/binders"),
   binder: (id) => request(`/api/binders/${id}`),
   binderSets: () => request("/api/binders/sets/available"),
+  profile: () => request("/api/profile"),
+  saveProfile: (body) =>
+    request("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
+  revokeScreenName: (userId) =>
+    request(`/api/admin/users/${userId}/screen-name`, { method: "DELETE" }),
   createBinder: (body) =>
     request("/api/binders", { method: "POST", body: JSON.stringify(body) }),
   editBinder: (id, body) =>

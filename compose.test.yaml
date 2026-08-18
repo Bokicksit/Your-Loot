@@ -38,6 +38,7 @@ services:
       IMAGE_DIR: /data/images
       # accounts on, because the tenancy suite has nothing to say otherwise
       AUTH_MODE: multi
+      PUBLIC_PROFILES: "true"
       SECRET_KEY: test-only-not-a-secret
       # 20,000 cards is a slow start and no test needs the catalogue
       SEED_ON_START: "false"
@@ -55,6 +56,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/solo
       IMAGE_DIR: /data/images
       AUTH_MODE: single
+      PUBLIC_PROFILES: "true"
       SECRET_KEY: test-only-not-a-secret
       SEED_ON_START: "false"
     depends_on:
@@ -72,6 +74,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/opensignup
       IMAGE_DIR: /data/images
       AUTH_MODE: multi
+      PUBLIC_PROFILES: "true"
       OPEN_SIGNUP: "true"
       # the whole suite signs up from one container, so it looks like one very
       # busy household. Raised here rather than lowering the real default.

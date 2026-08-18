@@ -894,7 +894,19 @@ export default function CardsPage({ initialView = "collection" }) {
           {picked && panelAfter < 0 && addPanel}
           {results && !manual && (
             <div className="form-row wrap">
-              {results.length === 0 ? (
+              {/* The online catalogue answers in English and only in English:
+                  it returns nothing at all for リザードン and, asked for
+                  Charizard, hands back English cards. Offering it here would
+                  quietly file an English card under a Japanese search, so it
+                  is not offered — and the honest alternative is said instead. */}
+              {jp ? (
+                <p className="game-info-line" style={{ flex: 1 }}>
+                  <Icon id="info" />
+                  The online catalogue is English only. Japanese cards come
+                  from the offline catalogue, so if this one is not there yet,
+                  add it yourself — a photo and the set code are enough.
+                </p>
+              ) : results.length === 0 ? (
                 <p className="error" style={{ flex: 1 }}>
                   <Icon id="alert" />
                   Not in the offline card database — try the online catalog,
@@ -906,6 +918,7 @@ export default function CardsPage({ initialView = "collection" }) {
                   brand-new promo sets, or enter it yourself.
                 </p>
               )}
+              {!jp && (
               <button
                 type="button"
                 /* the loud action only when there's nothing else to click —
@@ -931,9 +944,12 @@ export default function CardsPage({ initialView = "collection" }) {
               >
                 {onlineBusy ? "Searching…" : "Search online catalog"}
               </button>
+              )}
               <button
                 type="button"
-                className="ghost"
+                /* the only thing left to press when the online catalogue is
+                   not on offer, so it stops being the quiet option */
+                className={jp || results.length === 0 ? "primary" : "ghost"}
                 onClick={() =>
                   setManual({
                     title: form.name.trim(),
@@ -1089,6 +1105,10 @@ export default function CardsPage({ initialView = "collection" }) {
                           ? Number(manual.national_dex_no)
                           : null,
                         image_url: manual.image_url,
+                        // added while looking at the Japanese catalogue, so
+                        // it is one — otherwise it would answer English
+                        // searches and be let into English binders
+                        language: jp ? "ja" : "en",
                       });
                       // hand off to the normal own/want panel
                       setResults([created]);

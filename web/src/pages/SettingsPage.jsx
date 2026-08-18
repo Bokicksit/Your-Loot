@@ -2,21 +2,79 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
-import { MODULES, useAvailableModules, useSettings } from "../settings.jsx";
+import {
+  MODULES,
+  useAvailableModules,
+  usePublicProfiles,
+  useSettings,
+} from "../settings.jsx";
 
 const REGIONS = ["NTSC-U", "PAL", "NTSC-J", "Region-free"];
 // mirrors the two book fields most shelves never change
 const BOOK_FORMATS = ["Hardcover", "Paperback", "Trade Paperback", "Mass Market"];
 const BOOK_JACKETS = ["With jacket", "No jacket"];
 
+// What the stamp beside the title says while a section is open. Keyed by the
+// same id the section is, so the two cannot drift apart.
+const SECTION_LABEL = {
+  name: "Collector name",
+  collections: "Collections",
+  display: "Display",
+  profile: "Public profile",
+  share: "Share",
+  lock: "Lock",
+  plan: "Plan",
+  account: "Account",
+  backup: "Backup",
+};
+
+/** One section of the settings accordion.
+ *
+ *  The head carries a summary of what is inside, so the page can be read
+ *  without opening anything — "all 8 on", "2 shared", "off". Opening one
+ *  closes the others, which is the whole reason a summary is needed: a
+ *  stack of six shut drawers that said nothing would be worse than the
+ *  scroll it replaced.
+ *
+ *  The body animates on grid-template-rows rather than height, so it does
+ *  not need a measured pixel value and cannot disagree with its contents.
+ */
+function Section({ id, icon, name, summary, open, onToggle, children, stagger = true }) {
+  return (
+    <div className={`sec ${open === id ? "open" : ""}`}>
+      <button
+        className="sec-head"
+        onClick={() => onToggle(open === id ? null : id)}
+        aria-expanded={open === id}
+      >
+        <span className="sec-glyph">
+          <Icon id={icon} />
+        </span>
+        <span className="sec-name">{name}</span>
+        <span className="sec-sum">{summary}</span>
+        <Icon id="chev" className="sec-chev" />
+      </button>
+      <div className="sec-body">
+        <div className="sec-inner">
+          <div className={`sec-pad ${stagger ? "stag" : ""}`}>{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { settings, save } = useSettings();
   // what this server carries, not what the code can draw
   const available = useAvailableModules();
+  const profiles = usePublicProfiles();
   const hasModule = (key) => available.some((m) => m.key === key);
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
   const [version, setVersion] = useState("");
+  // One at a time. Collections is open first because it is the section
+  // people came here for.
+  const [open, setOpen] = useState("collections");
 
   useEffect(() => {
     if (settings) setName(settings.owner_name || "");
@@ -47,18 +105,24 @@ export default function SettingsPage() {
 
   return (
     <div className="settings">
-      <div className="toolbar">
-        <h2 style={{ margin: 0, fontSize: "var(--f-5)" }}>Settings</h2>
-        {saved && <span className="saved-flash">saved</span>}
+      <div className="set-head">
+        <h2>Settings</h2>
+        <span className="stamp">{saved ? "saved" : open ? SECTION_LABEL[open] : "all closed"}</span>
       </div>
 
-      <section className="settings-card">
-        <h3>Collector name</h3>
-        <p>Shown in the header — “{name.trim() || "Your"}’s Loot”.</p>
-        <div className="form-row">
+      <div className="set-stack">
+      <Section
+        id="name"
+        icon="user"
+        name="Collector name"
+        summary={name.trim() || "not set"}
+        open={open}
+        onToggle={setOpen}
+      >
+        <div className="set-field">
+          <span className="set-label">Shown in the header</span>
           <input
             type="text"
-            className="grow"
             maxLength={50}
             placeholder="Leave blank for “Your Loot”"
             value={name}
@@ -67,37 +131,52 @@ export default function SettingsPage() {
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
           />
         </div>
-      </section>
-
-      <section className="settings-card">
-        <h3>Collections</h3>
-        <p>
-          What's on here is what's on the Collections tab. Turn off what you
-          don't collect and it goes — nothing is deleted, the items stay in the
-          database and stop appearing anywhere, and turning it back on returns
-          everything exactly as it was.
+        <p className="sec-note">
+          The header reads “{name.trim() || "Your"}’s Loot”.
+          {profiles && " It is also the title of your public profile."}
         </p>
-        <div className="settings-modules">
+      </Section>
+
+      <Section
+        id="collections"
+        icon="box"
+        name="Collections"
+        summary={
+          enabled.length === available.length
+            ? `all ${available.length} on`
+            : `${enabled.length} of ${available.length} on`
+        }
+        open={open}
+        onToggle={setOpen}
+        stagger={false}
+      >
+        <p className="sec-note">
+          Turn off what you don't collect and it goes — nothing is deleted.
+          Items stay in the database and stop appearing anywhere; turning it
+          back on returns everything exactly as it was.
+        </p>
+        <div className="optrows stag">
           {available.map((m) => {
             const on = enabled.includes(m.key);
             return (
-              <div key={m.key} className={`module-row ${on ? "" : "off"}`}>
+              <div key={m.key} className={`optrow ${on ? "on" : ""}`}>
                 <Icon id={m.icon} />
-                <span className="sheet-text">
+                <span className="opttext">
                   <strong>{m.label}</strong>
                   <small>{m.blurb}</small>
                 </span>
                 <button
-                  className={`toggle ${on ? "on" : ""}`}
+                  className="sw"
+                  role="switch"
+                  aria-checked={on}
+                  title={m.label}
                   onClick={() => toggleModule(m.key)}
-                >
-                  {on ? "On" : "Off"}
-                </button>
+                />
               </div>
             );
           })}
         </div>
-      </section>
+      </Section>
 
       {/* Every row here is a default for one collection, so each is drawn
           only where this server carries it — a "default region for games"
@@ -106,11 +185,21 @@ export default function SettingsPage() {
           row above the cards it affects, which is where you actually reach
           for it. Two switches for one setting is one too many. */}
       {(hasModule("books") || hasModule("games") || hasModule("hardware")) && (
-      <section className="settings-card">
-        <h3>Display</h3>
+      <Section
+        id="display"
+        icon="sliders"
+        name="Display"
+        summary={[
+          hasModule("books") && settings.default_book_format,
+          (hasModule("games") || hasModule("hardware")) && settings.default_region,
+        ].filter(Boolean).join(" · ")}
+        open={open}
+        onToggle={setOpen}
+      >
         {hasModule("books") && (
-          <div className="form-row">
-            <span className="settings-label">Books are usually</span>
+          <div className="set-field">
+            <span className="set-label">Books are usually</span>
+            <div className="duo">
             <select
               value={settings.default_book_format}
               onChange={(e) => flash({ default_book_format: e.target.value })}
@@ -127,12 +216,13 @@ export default function SettingsPage() {
                 <option key={j}>{j}</option>
               ))}
             </select>
+            </div>
           </div>
         )}
         {(hasModule("games") || hasModule("hardware")) && (
-          <div className="form-row">
-            <span className="settings-label">
-              Default region for new games &amp; hardware
+          <div className="set-field">
+            <span className="set-label">
+              Default region — games &amp; hardware
             </span>
             <select
               value={settings.default_region}
@@ -144,16 +234,25 @@ export default function SettingsPage() {
             </select>
           </div>
         )}
-      </section>
+        <p className="sec-note">
+          Defaults only. Any item can be changed when you add it.
+        </p>
+      </Section>
       )}
 
-      <ShareCard enabled={enabled} />
-      <LockCard />
-      <PlanCard />
-      <AccountCard />
-      <BackupCard />
-      <PolicyLinks />
+      {/* One or the other, never both — see usePublicProfiles. */}
+      {profiles ? (
+        <ProfileCard open={open} onToggle={setOpen} />
+      ) : (
+        <ShareCard enabled={enabled} open={open} onToggle={setOpen} />
+      )}
+      <LockCard open={open} onToggle={setOpen} />
+      <PlanCard open={open} onToggle={setOpen} />
+      <AccountCard open={open} onToggle={setOpen} />
+      <BackupCard open={open} onToggle={setOpen} />
+      </div>
 
+      <PolicyLinks />
       {version && <p className="version-tag">Your Loot v{version}</p>}
     </div>
   );
@@ -164,6 +263,183 @@ const TOTAL = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
 const SIZE = (b) =>
   b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`;
 
+/** The public profile: a name chosen once, and shelves you opt in to.
+ *
+ *  Two decisions that look similar and are not. Which collections are public
+ *  can be changed whenever, because it only affects what a page shows today.
+ *  The name cannot be changed at all — it is the address, and an address that
+ *  moves breaks every link anybody wrote down. So the form says so before it
+ *  is used rather than explaining it afterwards.
+ *
+ *  Absent entirely on an install with no profiles: the endpoint answers, but
+ *  a home server that nobody can reach has nothing to publish to.
+ */
+function ProfileCard({ open, onToggle }) {
+  const [me, setMe] = useState(null);
+  const [wanted, setWanted] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    api.profile().then(setMe).catch(() => {});
+  }, []);
+  if (!me) return null;
+
+  const origin = window.location.origin;
+
+  const claim = async () => {
+    if (!wanted.trim()) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      setMe(await api.saveProfile({ screen_name: wanted.trim() }));
+      setWanted("");
+    } catch (e) {
+      setProblem(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggle = async (scope) => {
+    const next = me.collections.includes(scope)
+      ? me.collections.filter((s) => s !== scope)
+      : [...me.collections, scope];
+    setMe({ ...me, collections: next }); // the tick should land immediately
+    try {
+      setMe(await api.saveProfile({ collections: next }));
+    } catch (e) {
+      setProblem(e.message);
+      api.profile().then(setMe).catch(() => {});
+    }
+  };
+
+  return (
+    <Section
+
+      id="profile"
+
+      icon="globe"
+
+      name="Public profile"
+
+      summary={
+          me.can_claim
+            ? "no name yet"
+            : me.collections.length
+              ? `${me.collections.length} shared`
+              : "private"
+        }
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
+
+      {me.can_claim ? (
+        <>
+          <p>
+            A page you can send anybody, showing only the collections you pick
+            below. It needs a name, and that name{" "}
+            <strong>cannot be changed later</strong> — it is the address, and
+            an address that moves breaks every link you have given out. Choose
+            it as carefully as you would a username anywhere else.
+          </p>
+          {me.name_revoked && (
+            <p className="error">
+              <Icon id="alert" />
+              Your previous name was removed by an administrator. You can
+              choose one more.
+            </p>
+          )}
+          <div className="form-row">
+            <span className="game-info-line">{origin}/u/</span>
+            <input
+              type="text"
+              className="grow"
+              maxLength={30}
+              placeholder="yourname"
+              value={wanted}
+              onChange={(e) => setWanted(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), claim())}
+            />
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || wanted.trim().length < 3}
+              onClick={claim}
+            >
+              {busy ? "…" : "Claim it"}
+            </button>
+          </div>
+          {problem && <p className="error">{problem}</p>}
+        </>
+      ) : (
+        <>
+          {/* The address, and a way to take it somewhere. Copying is what
+              people actually do with this — the whole point of the page is
+              being pasted into a chat. */}
+          <div className="urlrow">
+            <a className="url" href={me.url} target="_blank" rel="noopener noreferrer">
+              {origin.replace(/^https?:\/\//, "")}
+              <em>{me.url}</em>
+            </a>
+            <button
+              type="button"
+              className="ghost icon"
+              title={copied ? "Copied" : "Copy link"}
+              onClick={() => {
+                navigator.clipboard?.writeText(origin + me.url).then(
+                  () => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1400);
+                  },
+                  () => setProblem("Could not copy — select the link instead."),
+                );
+              }}
+            >
+              <Icon id={copied ? "check" : "copy"} />
+            </button>
+          </div>
+          {problem && <p className="error">{problem}</p>}
+        </>
+      )}
+
+      <div className="set-field">
+        <span className="set-label">Show publicly</span>
+        <div className="shelf">
+          {me.available.map((a) => (
+            <button
+              key={a.scope}
+              type="button"
+              className={`chip ${me.collections.includes(a.scope) ? "active" : ""}`}
+              disabled={me.can_claim}
+              title={me.can_claim ? "Claim a name first" : ""}
+              onClick={() => toggle(a.scope)}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="sec-note">
+        Anybody with the link can see it and search engines can find it.
+        Nothing is public until you tick it. Notes, tags, serial and
+        certificate numbers are never included, whatever you choose.
+        {!me.can_claim && " The name is fixed — contact support if there is a problem with it."}
+      </p>
+      {!me.can_claim && me.collections.length === 0 && (
+        <p className="sec-note">
+          Nothing ticked, so the page does not answer at all — the link returns
+          “not found” rather than an empty shelf.
+        </p>
+      )}
+    </Section>
+  );
+}
+
 /** Sharing is an export, not a link.
  *
  *  A link would need this server to be reachable from wherever the other
@@ -173,7 +449,7 @@ const SIZE = (b) =>
  *  delete it — no public URL left listening after you have forgotten about
  *  it.
  */
-function ShareCard({ enabled }) {
+function ShareCard({ enabled, open, onToggle }) {
   const [images, setImages] = useState(true);
   const [busy, setBusy] = useState(null);
   const [note, setNote] = useState(null);
@@ -218,8 +494,21 @@ function ShareCard({ enabled }) {
   };
 
   return (
-    <section className="settings-card">
-      <h3>Share a collection</h3>
+    <Section
+
+      id="share"
+
+      icon="down"
+
+      name="Share a collection"
+
+      summary={"a file you send"}
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
       <p>
         One HTML file holding a plain list — cover, title, and what shape it's
         in. Send it however you'd send a photo. It opens in any browser, works
@@ -265,7 +554,7 @@ function ShareCard({ enabled }) {
           {error}
         </p>
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -273,7 +562,7 @@ function ShareCard({ enabled }) {
  *  they're right to: turning the lock on is a decision you make once you've
  *  already got the app open, not something you want to restart a container
  *  for. */
-function LockCard() {
+function LockCard({ open, onToggle }) {
   const [me, setMe] = useState(null);
   const [secret, setSecret] = useState("");
   const [current, setCurrent] = useState("");
@@ -313,8 +602,21 @@ function LockCard() {
   };
 
   return (
-    <section className="settings-card">
-      <h3>Lock this app</h3>
+    <Section
+
+      id="lock"
+
+      icon="lock"
+
+      name="Lock this app"
+
+      summary={me.locked ? "on" : "off"}
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
       <p>
         {me.locked
           ? "This app asks for a password before it opens."
@@ -358,7 +660,7 @@ function LockCard() {
         <code>docker compose exec api python -m app.resetpw --clear</code> on
         the host.
       </p>
-    </section>
+    </Section>
   );
 }
 
@@ -372,7 +674,7 @@ function LockCard() {
  *  somebody who wants to stop paying should not have to go through the
  *  people being paid.
  */
-function PlanCard() {
+function PlanCard({ open, onToggle }) {
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -406,8 +708,21 @@ function PlanCard() {
   const names = paidModules.map((m) => m.label).join(", ");
 
   return (
-    <section className="settings-card">
-      <h3>Your plan</h3>
+    <Section
+
+      id="plan"
+
+      icon="coin"
+
+      name="Your plan"
+
+      summary={state.subscribed ? "Supporter" : "Free"}
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
       {paying ? (
         <>
           <p>
@@ -472,7 +787,7 @@ function PlanCard() {
         date you've paid for. Nothing is ever deleted, and you can take a copy
         of everything from Share a collection whether you're paying or not.
       </p>
-    </section>
+    </Section>
   );
 }
 
@@ -513,7 +828,7 @@ function PolicyLinks() {
  *  to confirm and nowhere to go if it deleted itself — LockCard is the whole
  *  of its account settings.
  */
-function AccountCard() {
+function AccountCard({ open, onToggle }) {
   const [me, setMe] = useState(null);
   const [note, setNote] = useState(null);
   const [error, setError] = useState(null);
@@ -568,8 +883,21 @@ function AccountCard() {
   };
 
   return (
-    <section className="settings-card">
-      <h3>Your account</h3>
+    <Section
+
+      id="account"
+
+      icon="user"
+
+      name="Your account"
+
+      summary={me?.user?.email || ""}
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
       <p>
         Signed in as <strong>{user.email}</strong>
         {user.email_verified_at ? " — address confirmed." : "."}
@@ -649,11 +977,11 @@ function AccountCard() {
           </button>
         </>
       )}
-    </section>
+    </Section>
   );
 }
 
-function BackupCard() {
+function BackupCard({ open, onToggle }) {
   const fileInput = useRef(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
@@ -702,8 +1030,21 @@ function BackupCard() {
   if (me && me.multi_user && !me.user?.is_admin) return null;
 
   return (
-    <section className="settings-card">
-      <h3>Backup &amp; restore</h3>
+    <Section
+
+      id="backup"
+
+      icon="box"
+
+      name="Backup & restore"
+
+      summary={""}
+
+      open={open}
+
+      onToggle={onToggle}
+
+    >
       <p>
         A backup is a single zip holding your whole collection — every item,
         every copy with its condition, the wanted list, the Pokédex, your
@@ -752,6 +1093,6 @@ function BackupCard() {
           </button>
         </div>
       )}
-    </section>
+    </Section>
   );
 }

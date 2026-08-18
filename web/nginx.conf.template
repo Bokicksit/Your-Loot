@@ -95,4 +95,16 @@ server {
     location /images/ {
         proxy_pass http://$backend$request_uri;
     }
+
+    # Public profiles, rendered by the API rather than the app.
+    #
+    # They have to be a real document in the first response: a link pasted
+    # into a chat is unfurled by something that reads og: tags and does not
+    # run JavaScript, and the SPA would hand it an empty shell. So this is one
+    # of the few paths that must NOT fall through to index.html.
+    location /u/ {
+        proxy_pass http://$backend$request_uri;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
 }

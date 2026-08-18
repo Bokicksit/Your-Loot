@@ -37,6 +37,7 @@ def test_an_ordinary_account_is_refused():
                 "email": f"nosy-{uuid.uuid4().hex[:8]}@example.com",
                 "password": "a-real-password-1",
                 "accept_terms": True,
+                    "screen_name": f"t{uuid.uuid4().hex[:10]}",
             },
         ).raise_for_status()
 

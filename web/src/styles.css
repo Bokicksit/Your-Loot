@@ -4005,3 +4005,306 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   flex-wrap: wrap;
   gap: var(--s-2);
 }
+
+/* ======================= settings, as an accordion =======================
+   From the design system: one section open at a time, each head carrying a
+   live summary of what is inside it so the page can be read without opening
+   anything. Everything below uses tokens this stylesheet already defines —
+   it is new structure rather than a new theme.
+*/
+.set-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-4) var(--s-4);
+}
+.set-head h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: var(--w-bold);
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+.set-head .stamp {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.set-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0 var(--s-4) var(--s-6);
+}
+
+.sec {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-3);
+  background:
+    linear-gradient(rgba(255,255,255,.024), rgba(255,255,255,0) 42%),
+    var(--bg-1);
+  box-shadow: var(--shadow-1);
+  transition: border-color .24s var(--ease), box-shadow .24s var(--ease), background .24s var(--ease);
+}
+.sec.open {
+  border-color: var(--line);
+  box-shadow: var(--shadow-2);
+}
+
+.sec-head {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: var(--s-3) var(--s-3) var(--s-3) var(--s-3);
+  border: 0;
+  background: none;
+  border-radius: var(--r-3);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.sec-head:hover .sec-name { color: var(--gold-bright); }
+.sec-head .sec-glyph {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-soft);
+  color: var(--text-mute);
+  transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+}
+.sec-head .sec-glyph svg.i { width: 16px; height: 16px; stroke-width: 1.7; }
+.sec.open .sec-head .sec-glyph {
+  color: var(--gold);
+  background: var(--gold-wash);
+  border-color: var(--gold-line);
+}
+.sec-name {
+  min-width: 0;
+  font-size: var(--f-4);
+  font-weight: var(--w-bold);
+  letter-spacing: -.01em;
+  transition: color .18s var(--ease);
+}
+.sec-sum {
+  font-family: var(--font-num);
+  font-size: var(--f-2);
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42cqw;
+  transition: opacity .22s var(--ease), transform .22s var(--ease);
+}
+.sec.open .sec-sum { opacity: 0; transform: translateX(6px); }
+.sec-chev {
+  width: 18px;
+  height: 18px;
+  color: var(--text-mute);
+  transition: transform .34s var(--ease), color .2s var(--ease);
+}
+.sec.open .sec-chev { transform: rotate(180deg); color: var(--gold); }
+
+.sec-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .40s var(--ease);
+}
+.sec.open .sec-body { grid-template-rows: 1fr; }
+.sec-body > .sec-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .26s var(--ease), transform .3s var(--ease);
+}
+.sec.open .sec-body > .sec-inner { opacity: 1; transform: none; transition-delay: .08s; }
+.sec-pad {
+  padding: 0 var(--s-3) var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.sec-note {
+  margin: 0;
+  font-size: var(--f-2);
+  line-height: 1.5;
+  color: var(--text-mute);
+  text-wrap: pretty;
+}
+.sec-note code {
+  font-family: var(--font-num);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg-3);
+  color: var(--text-dim);
+}
+.sec-note a { color: var(--gold); }
+
+/* staggered reveal of a section's rows when it opens */
+.stag > * {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.sec.open .stag > * {
+  animation: sec-rise .34s var(--ease) both;
+}
+.sec.open .stag > *:nth-child(1)  { animation-delay: .06s; }
+.sec.open .stag > *:nth-child(2)  { animation-delay: .10s; }
+.sec.open .stag > *:nth-child(3)  { animation-delay: .14s; }
+.sec.open .stag > *:nth-child(4)  { animation-delay: .18s; }
+.sec.open .stag > *:nth-child(5)  { animation-delay: .22s; }
+.sec.open .stag > *:nth-child(6)  { animation-delay: .26s; }
+.sec.open .stag > *:nth-child(7)  { animation-delay: .30s; }
+.sec.open .stag > *:nth-child(8)  { animation-delay: .34s; }
+.sec.open .stag > *:nth-child(n+9){ animation-delay: .38s; }
+@keyframes sec-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---- controls inside a section ---- */
+
+.set-field { display: flex; flex-direction: column; gap: 6px; }
+.set-label {
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.optrows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.optrow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 52px;
+  padding: 7px var(--s-2) 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  transition: background .18s var(--ease), border-color .18s var(--ease);
+}
+.optrow:hover { background: var(--bg-3); }
+.optrow.on { border-color: rgba(242,183,60,.22); }
+.optrow > svg.i {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.7;
+  color: var(--text-mute);
+  justify-self: center;
+  transition: color .18s var(--ease);
+}
+.optrow.on > svg.i { color: var(--gold); }
+.optrow .opttext { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.optrow .opttext strong {
+  font-size: var(--f-3);
+  font-weight: var(--w-med);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.optrow .opttext small {
+  font-size: var(--f-1);
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* switch — the press has weight: track lights, knob slides and squashes */
+.sw {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 27px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  cursor: pointer;
+  transition: background .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+.sw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--text-mute);
+  transition: transform .28s var(--ease), background .22s var(--ease), width .12s var(--ease);
+}
+.sw:hover { border-color: var(--bg-4); }
+.sw:active::after { width: 25px; }
+.sw[aria-checked="true"] {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.3) inset, 0 6px 16px -8px var(--gold-glow);
+}
+.sw[aria-checked="true"]::after {
+  transform: translateX(19px);
+  background: var(--gold-ink);
+}
+.sw[aria-checked="true"]:active::after { transform: translateX(15px); }
+
+/* two-up select rows for Display */
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-2);
+}
+@container (max-width: 380px) {
+  .duo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* profile URL row */
+.urlrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 10px var(--s-2) 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+}
+.urlrow .url {
+  min-width: 0;
+  font-family: var(--font-num);
+  font-size: var(--f-2);
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.urlrow .url em { font-style: normal; color: var(--text-mute); }
+
+/* share chips — wrap, never clip off the edge */
+.shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.shelf .chip { flex: none; }
