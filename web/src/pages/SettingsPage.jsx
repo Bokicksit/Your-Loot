@@ -742,7 +742,10 @@ function PlanCard({ open, onToggle }) {
     }
   };
 
-  const paying = state.plan === "supporter";
+  // On the tier, however they got there — bought, granted, or never billed
+  // because they run the place. The plan string alone answered "which one did
+  // you buy", which is a different question and read as Free to an admin.
+  const onTier = state.subscribed;
   const names = paidModules.map((m) => m.label).join(", ");
 
   return (
@@ -761,16 +764,18 @@ function PlanCard({ open, onToggle }) {
       onToggle={onToggle}
 
     >
-      {paying ? (
+      {onTier ? (
         <>
           <p>
             You're on <strong>Supporter</strong>
-            {state.plan_until
-              ? ` — paid until ${new Date(state.plan_until).toLocaleDateString()}.`
-              : "."}{" "}
-            Thank you, genuinely.
+            {state.never_billed
+              ? " — you run this server, so you are never billed for it."
+              : state.plan_until
+                ? ` — paid until ${new Date(state.plan_until).toLocaleDateString()}.`
+                : "."}{" "}
+            {state.never_billed ? "" : "Thank you, genuinely."}
           </p>
-          {state.can_manage && (
+          {state.can_manage && !state.never_billed && (
             <button type="button" onClick={() => leave(api.billingPortal)} disabled={busy}>
               <Icon id="link" />
               {busy ? "…" : "Manage or cancel"}

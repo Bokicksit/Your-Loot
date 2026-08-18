@@ -23,7 +23,13 @@ router = APIRouter(prefix="/api/share", tags=["share"])
 # would show somebody a collection that is not quite yours.
 LISTS = {
     "records":  lambda **kw: records.list_records(**kw),
-    "cards":    lambda **kw: cards.list_cards(**kw),
+    # include_binder, and it is the difference between a collection and a
+    # fraction of one. The cards list hides binder-filed cards by default
+    # because the app draws the binder on its own page — but a share and a
+    # profile have no other page to send somebody to, and for most people the
+    # binders are where the collection actually lives. Without this a Pokedex
+    # of nine hundred cards exports as the handful that were never filed.
+    "cards":    lambda **kw: cards.list_cards(include_binder=True, **kw),
     "games":    lambda **kw: games.list_games(is_hardware=False, **kw),
     "hardware": lambda **kw: games.list_games(is_hardware=True, **kw),
     "movies":   lambda **kw: movies.list_movies(**kw),

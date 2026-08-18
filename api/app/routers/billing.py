@@ -35,7 +35,7 @@ from app.billing import (
 from app.config import settings
 from app.db import get_db
 from app.models import User
-from app.plans import FREE, SUPPORTER
+from app.plans import FREE, SUPPORTER, subscribed
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -55,6 +55,13 @@ def status(user: User = Depends(current_user)):
     return {
         "available": configured(),
         "plan": user.plan or FREE,
+        # Whether they are *on* the tier, which is not the same question as
+        # which plan they bought: an admin is never billed and holds it
+        # anyway, and a plan that has run out is still the string "supporter".
+        # The screen was asking the plan and calling it the answer, so an
+        # administrator read their own account as Free.
+        "subscribed": subscribed(user),
+        "never_billed": user.is_admin,
         "plan_until": user.plan_until,
         # only somebody Stripe already knows can be sent to the portal
         "can_manage": bool(configured() and user.stripe_customer_id),

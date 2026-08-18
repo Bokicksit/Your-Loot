@@ -333,6 +333,64 @@ def test_the_loose_box_can_be_left_off_the_shelf(profile, named):
         profile.delete(f"/api/cards/{item}")
 
 
+@pytest.mark.skipif(not os.environ.get("LOOT_OPEN_URL"), reason="needs a fresh account")
+def test_a_card_that_lives_in_a_binder_is_still_part_of_the_collection():
+    """Found on a live profile that said "0 things" while holding a card.
+
+    The cards list hides binder-filed cards, because in the app the binder is
+    its own page. A profile has no other page to send anybody to, and for most
+    people the binders are where the collection actually is — so a shelf that
+    left them out reported a Pokedex of nine hundred cards as the handful
+    nobody had filed yet, and an account whose one card was filed as nothing
+    at all.
+
+    Asked of a brand new account, because the number has to be the whole
+    answer: on a shelf that already has things on it, one more is invisible.
+    """
+    import re
+
+    open_url = os.environ["LOOT_OPEN_URL"]
+    mark = uuid.uuid4().hex[:6]
+    with httpx.Client(base_url=open_url, timeout=60) as me:
+        me.post("/api/auth/signup", json={
+            "email": f"binderonly-{mark}@example.com",
+            "password": "a-long-enough-password",
+            "accept_terms": True, "screen_name": f"bo{mark}",
+        }).raise_for_status()
+
+        item = me.post(
+            "/api/cards", json={"title": f"Filed Only {mark}", "card_number": "1"}
+        ).json()["id"]
+        copies = me.post(
+            f"/api/items/{item}/owned", json={"condition": "NM"}
+        ).json()["owned"]
+        made = me.post(
+            "/api/binders", json={"name": f"Shelf {mark}", "kind": "custom", "pages": 1}
+        )
+        if made.status_code == 402:
+            pytest.skip("this install caps binders on the free plan")
+        binder = made.json()["id"]
+        slot = me.get(f"/api/binders/{binder}").json()["entries"][0]["key"]
+        me.put(
+            f"/api/binders/{binder}/slots/{slot}",
+            json={"owned_id": copies[-1]["id"], "item_id": item},
+        ).raise_for_status()
+
+        # the card is now in a binder and nowhere else
+        loose = me.get("/api/cards", params={"limit": 5}).json()["total"]
+        assert loose == 0, "the card was supposed to be filed away"
+
+        me.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+
+    with httpx.Client(base_url=open_url, timeout=60) as stranger:
+        body = stranger.get(f"/u/bo{mark}").text
+    said = re.search(r"(\d+) things", body)
+    assert said, "the profile did not say how much is on it"
+    assert int(said.group(1)) == 1, (
+        f"a filed card counted as {said.group(1)} things on the profile"
+    )
+
+
 # --- what a Supporter gets -------------------------------------------------
 
 

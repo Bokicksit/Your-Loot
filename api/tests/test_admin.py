@@ -172,3 +172,24 @@ def test_an_admin_is_never_billed_and_never_marked(owner):
 
     row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == me["id"])
     assert row["subscribed"] is True, "an admin should hold the tier"
+
+
+def test_the_plan_screen_is_told_whether_you_are_on_the_tier(owner):
+    """Not which plan you bought — whether you hold it.
+
+    They come apart in two ordinary cases: an administrator is never billed
+    and holds it anyway, and a lapsed plan is still the string "supporter".
+    The settings screen was reading the plan and calling it the answer, so an
+    admin read their own account as Free while the admin panel said otherwise.
+    """
+    said = owner.get("/api/billing/status").json()
+    assert "subscribed" in said, "the plan screen has nothing to read"
+
+    me = owner.get("/api/auth/me").json().get("user") or {}
+    if me.get("is_admin"):
+        assert said["subscribed"] is True, "an admin read as not on the tier"
+        assert said["never_billed"] is True
+        row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == me["id"])
+        assert row["subscribed"] == said["subscribed"], (
+            "the admin panel and the settings screen disagree about the same account"
+        )
