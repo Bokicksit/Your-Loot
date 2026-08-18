@@ -37,6 +37,10 @@ PUBLIC = {
     ("POST", "/api/billing/webhook"): "Stripe has no session; the signature is the proof",
     ("GET", "/images/{name}"): "a session or a signed token, checked inside the handler",
     ("GET", "/u/{name}"): "a public profile — the one page that must answer a stranger",
+    ("GET", "/u/{name}/binder/{binder_id}"): (
+        "the pockets of a binder on that same page, too big to put in it — "
+        "and it re-asks every question the page asked"
+    ),
 }
 
 

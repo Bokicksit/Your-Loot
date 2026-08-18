@@ -55,5 +55,29 @@ def subscribed(user: User) -> bool:
     return user.plan_until > datetime.now(UTC).replace(tzinfo=None)
 
 
+def sells_anything() -> bool:
+    """Does this install charge for anything at all?
+
+    False on every self-hosted one — no paid collections and no limits set —
+    and that is the answer to "is there a tier here", which is a different
+    question from "has this person paid".
+    """
+    from app import limits  # imports plans, so not at module scope
+
+    return bool(paid_modules()) or any(
+        (limits.card_limit(), limits.dex_limit(), limits.binder_limit())
+    )
+
+
+def themed(user: User) -> bool:
+    """Does this account's public profile get the room?
+
+    Where nothing is sold there is no tier to be outside of, so everybody in
+    the house gets it — the same reasoning as limits.limited(). Where the
+    service does sell something, the room is what a Supporter bought.
+    """
+    return not sells_anything() or subscribed(user)
+
+
 def may_open(user: User, module: str) -> bool:
     return not costs_money(module) or subscribed(user)

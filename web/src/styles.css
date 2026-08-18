@@ -4308,3 +4308,61 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   gap: 6px;
 }
 .shelf .chip { flex: none; }
+
+/* Two actions in one cell on a wide screen, stacked when there is no room —
+   a table cell that scrolls sideways is a table nobody can use on a phone. */
+.admin-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  align-items: center;
+}
+.admin-acts .ghost { white-space: nowrap; }
+/* a link, but it sits in the same quiet line as the display name */
+a.admin-name { color: var(--gold); text-decoration: none; }
+a.admin-name:hover { color: var(--gold-bright); text-decoration: underline; }
+
+/* The public page, from the header. Sits with the title rather than in the
+   menu because it is the same collection seen from outside — one press to
+   check what anybody else would see. */
+.brand-public {
+  display: grid;
+  place-items: center;
+  flex: none;          /* the header is a flex row and will squash it otherwise */
+  width: 30px;
+  height: 30px;
+  margin-left: var(--s-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.brand-public:hover { color: var(--gold); border-color: var(--gold-line); }
+.brand-public svg.i { width: 16px; height: 16px; }
+
+/* A binder on the shelf, with its settings a press away. The pencil is a
+   sibling of the card rather than a button inside a link — nesting one in
+   the other is not something a browser should have to guess about. */
+.binder-slot { position: relative; display: flex; }
+.binder-slot > .binder-card { flex: 1 1 auto; min-width: 0; }
+.binder-edit {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--bg-1);
+  color: var(--text-mute);
+  cursor: pointer;
+  opacity: .75;
+  transition: opacity .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease);
+}
+.binder-slot:hover .binder-edit { opacity: 1; }
+.binder-edit:hover { color: var(--gold); border-color: var(--gold-line); }
+.binder-edit svg.i { width: 15px; height: 15px; }

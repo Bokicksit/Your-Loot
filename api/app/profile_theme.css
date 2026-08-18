@@ -62,6 +62,17 @@
   --ease: cubic-bezier(.32,.72,.28,1);
 }
 
+/* The page itself, and both halves of this are load-bearing.
+
+   The white frame around every profile was the browser's own margin on
+   <body>. It showed rather than being painted over because the body
+   declares `container-type` for the container queries this design is built
+   on — and an element with containment does not hand its background to the
+   canvas the way a plain body does. So the colour is said twice: once for
+   the element, and once for the page behind it. */
+html { background: var(--bg-0); }
+html, body { margin: 0; padding: 0; min-height: 100%; }
+
 /* ============================ public profile ============================ */
 
 .pub {
@@ -86,21 +97,40 @@
   .pub-grid { --pub-cols: 5; }
 }
 
-.pub-id { display: flex; flex-direction: column; gap: 6px; }
-.pub-id h1 {
+/* The title bar, and it is the app's — the same mark, the same "someone's
+   Loot", the same gold on the second word. A profile is this collection seen
+   from outside and it should look like part of the same thing.
+
+   Not the app's header wholesale: no link back to a profile somebody is
+   already reading, and no build number, which is a fact about the server
+   and means nothing to a visitor. */
+.pub-brand { display: flex; flex-direction: column; gap: 6px; }
+.pub-brand h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   margin: 0;
   font-size: 30px;
   font-weight: var(--w-bold);
   letter-spacing: -.025em;
 }
-@container (min-width: 700px) {
-  .pub-id h1 { font-size: 46px; }
+/* the mark carries its own stroke weights and must not pick up any others */
+.pub-brand svg.mark { flex: none; overflow: visible; }
+.pub-brand em {
+  font-style: normal;
+  color: var(--gold);
+  text-shadow: 0 0 18px var(--gold-glow);
 }
-.pub-id .sub {
+.pub-brand .sub {
   font-family: var(--font-num);
   font-size: var(--f-2);
-  letter-spacing: .06em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
   color: var(--text-mute);
+}
+@container (min-width: 720px) {
+  .pub-brand h1 { font-size: 40px; }
+  .pub-brand svg.mark { width: 34px; height: 34px; }
 }
 
 /* stat strip */
@@ -250,16 +280,26 @@
 .pub-item .art,
 .pub-item .placeholder {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   border-radius: var(--r-2);
   overflow: hidden;
   display: block;
   background: var(--bg-2);
 }
-/* the picture is the element here rather than something inside it */
-.pub-item img.art { object-fit: cover; }
+/* The picture is the element here rather than something inside it — and it
+   is fitted into the frame rather than cropped to it. One shelf holds
+   portrait game boxes, landscape LEGO boxes and square sleeves at once, and
+   filling the frame takes the edges off most of them. 4:5 is the ratio that
+   wastes the least across the lot; the app's own game shelf makes the same
+   trade for the same reason. */
+.pub-item img.art { object-fit: contain; }
 /* nothing to show: a frame rather than a gap, so the grid keeps its rhythm */
 .pub-item .placeholder { border: 1px dashed var(--line); }
+/* A Pokemon card is the one thing here with a shape of its own — every card
+   ever printed is 63 by 88 — so it gets that frame and fills it. */
+.pub-item.tall .art,
+.pub-item.tall .placeholder { aspect-ratio: 63 / 88; }
+.pub-item.tall img.art { object-fit: cover; }
 .pub-item.square .art,
 .pub-item.square .placeholder { aspect-ratio: 1 / 1; }
 .pub-item .txt { display: flex; flex-direction: column; gap: 3px; padding: 2px 4px 4px; }

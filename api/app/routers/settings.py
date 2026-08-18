@@ -81,6 +81,11 @@ class SettingsOut(BaseModel):
     # consequences: where it is on the downloadable share is redundant, and
     # where it is off a profile could never have been reached anyway.
     public_profiles: bool = False
+    # The name this person's profile lives at, or null if they have not
+    # claimed one. Here because the header wants to offer a way to look at
+    # it, and asking a second endpoint for one string on every page load is
+    # a request nobody needs to make.
+    screen_name: str | None = None
     # What a free account gets here, so the screens can say so before somebody
     # runs into it. All zero on a self-hosted install, where nothing is
     # limited and none of this is drawn.
@@ -112,6 +117,15 @@ class SettingsUpdate(BaseModel):
     default_book_jacket: str | None = Field(default=None, max_length=30)
 
 
+def _screen_name(db: Session, user_id: int) -> str | None:
+    if not settings_cfg.public_profiles:
+        return None
+    from app import screennames
+
+    now = screennames.current_for(db, user_id)
+    return now.name if now else None
+
+
 def _current(db: Session, user_id: int) -> SettingsOut:
     who = db.get(User, user_id)
     stored = {
@@ -132,6 +146,7 @@ def _current(db: Session, user_id: int) -> SettingsOut:
             db.scalar(select(CardAttrs.item_id).where(CardAttrs.language == "ja").limit(1))
         ),
         public_profiles=settings_cfg.public_profiles,
+        screen_name=_screen_name(db, user_id),
         limits={
             # what applies to this person right now, not what the install
             # could impose — a supporter is told nothing is limited, because

@@ -82,6 +82,7 @@ export default function SignIn({ children }) {
       // one account: the address is implied, so the form is one field
       soloLock={!state.multi_user}
       openSignup={state.open_signup}
+      wantsName={state.public_profiles}
       canEmail={state.email_enabled}
       // /signin is a door, not a place: it matches no route inside the app,
       // so somebody who signs in there would land on an empty page under a
@@ -287,10 +288,13 @@ function ResetScreen() {
   );
 }
 
-function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setError }) {
+function Gate({ needsSetup, soloLock, openSignup, wantsName, canEmail, onDone, error, setError }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  // Only where this server has public profiles. Everywhere else there is no
+  // address to choose and the field would be a question about nothing.
+  const [screenName, setScreenName] = useState("");
   const [busy, setBusy] = useState(false);
   // signin | signup | forgot. Only ever leaves "signin" where the server said
   // it offers accounts to anybody.
@@ -318,6 +322,7 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
           email,
           password,
           display_name: name.trim() || null,
+          screen_name: wantsName ? screenName.trim() : null,
           accept_terms: agreed,
         });
       } else if (mode === "forgot") {
@@ -405,6 +410,29 @@ function Gate({ needsSetup, soloLock, openSignup, canEmail, onDone, error, setEr
             onChange={(e) => setName(e.target.value)}
             autoComplete="nickname"
           />
+        )}
+        {wantsName && mode === "signup" && (
+          <>
+            <input
+              type="text"
+              placeholder="Choose your profile name"
+              value={screenName}
+              onChange={(e) => setScreenName(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck="false"
+              minLength={3}
+              maxLength={30}
+              required
+            />
+            {/* Said before it is chosen rather than after. It is the address
+                of a page other people will have a link to, and it cannot be
+                changed later without breaking every one of those links. */}
+            <p className="signin-note">
+              Your profile lives at /u/{(screenName.trim() || "name").toLowerCase()} —
+              chosen once, and it cannot be changed later.
+            </p>
+          </>
         )}
         {!soloLock && (
           <input

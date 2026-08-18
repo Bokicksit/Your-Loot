@@ -38,8 +38,10 @@ from app.config import settings
 from app.db import get_db
 from app.models import Setting, User
 from app.modules import available
-from app.plans import subscribed
+from app.plans import themed
 from app.imgauth import sign as sign_image
+from app import drill as drill_view
+from app import room as room_view
 from app.share import TITLES
 
 router = APIRouter()
@@ -48,6 +50,10 @@ router = APIRouter()
 # key/value table `owner_name` lives in — it is a preference about
 # presentation, which is what that table is for.
 PUBLIC_KEY = "public_collections"
+# Whether the box of cards that are not in any binder is on the shelf too.
+# On unless it is turned off: publishing the cards shelf publishes the cards,
+# and a collection is not only what is in binders. Some of it is a box.
+LOOSE_KEY = "public_loose"
 
 
 def _shown(db: Session, user_id: int) -> list[str]:
@@ -57,6 +63,11 @@ def _shown(db: Session, user_id: int) -> list[str]:
     # Intersected with what this install carries, so a shelf switched off at
     # the service level cannot be published by a setting that outlived it.
     return [s for s in (x.strip() for x in raw.split(",")) if s and s in here]
+
+
+def _loose_shown(db: Session, user_id: int) -> bool:
+    row = db.get(Setting, (user_id, LOOSE_KEY))
+    return (row.value if row else "1") != "0"
 
 
 def _display_name(db: Session, user_id: int) -> str:
@@ -76,6 +87,7 @@ class ProfileIn(BaseModel):
     # absurd payload before it is worth thinking about.
     screen_name: str | None = Field(default=None, max_length=100)
     collections: list[str] | None = None
+    loose: bool | None = None
 
 
 def _must_be_on() -> None:
@@ -104,8 +116,9 @@ def my_profile(db: Session = Depends(get_db), user: User = Depends(current_user)
         # not told simply finds a broken URL and cannot act on it.
         "name_revoked": screennames.was_revoked(db, user.id),
         "collections": _shown(db, user.id),
+        "loose": _loose_shown(db, user.id),
         "available": [{"scope": s, "label": TITLES.get(s, s)} for s in available()],
-        "themed": subscribed(user),
+        "themed": themed(user),
     }
 
 
@@ -126,6 +139,13 @@ def set_profile(
         except screennames.NameProblem as e:
             raise HTTPException(409, str(e))
 
+    if body.loose is not None:
+        row = db.get(Setting, (user.id, LOOSE_KEY))
+        if row is None:
+            row = Setting(user_id=user.id, key=LOOSE_KEY)
+            db.add(row)
+        row.value = "1" if body.loose else "0"
+
     if body.collections is not None:
         here = set(available())
         keep = [s for s in body.collections if s in here]
@@ -145,9 +165,14 @@ def set_profile(
 # Read once at import. The page has no application stylesheet to inherit
 # from — a stranger arriving from a link has never loaded this app — so the
 # rules travel with it.
-_CSS = (Path(__file__).resolve().parents[1] / "profile_theme.css").read_text(
-    encoding="utf-8"
-)
+_HERE = Path(__file__).resolve().parents[1]
+_CSS = (_HERE / "profile_theme.css").read_text(encoding="utf-8")
+# Only sent to a Supporter's page. It is 30 KB of furniture and there is no
+# reason to make everybody else download a room they do not have.
+_ROOM_CSS = (_HERE / "profile_room.css").read_text(encoding="utf-8")
+_ROOM_CSS += (_HERE / "profile_drill.css").read_text(encoding="utf-8")
+_JS = (_HERE / "profile.js").read_text(encoding="utf-8")
+_DRILL_JS = (_HERE / "profile_drill.js").read_text(encoding="utf-8")
 
 # The icons the jump rail uses, one per collection, from the design's sprite.
 _GLYPHS = {
@@ -161,8 +186,9 @@ _GLYPHS = {
     "comics": '<rect x="4" y="4.5" width="16" height="15" rx="2.2"/><path d="M8 9h5M8 12.5h8M8 16h4"/>',
 }
 
-# Sleeves are square; everything else is a card or a cover.
-_SQUARE = {"records"}
+# What frame each shelf's pictures get. drill.py answers the same question
+# for the room, and it is the same answer — asked here through the same
+# function so the two pages cannot drift apart.
 
 
 def _icon(scope: str) -> str:
@@ -176,7 +202,7 @@ def _icon(scope: str) -> str:
     )
 
 
-def _page(title: str, description: str, body: str, url: str) -> str:
+def _page(title: str, description: str, body: str, url: str, room: bool = False) -> str:
     """A document, not an app shell.
 
     The og: tags are the point of rendering server-side, so they are not
@@ -197,24 +223,9 @@ def _page(title: str, description: str, body: str, url: str) -> str:
 <link rel="canonical" href="{html.escape(url)}">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/assets/favicon.svg">
-<style>{_CSS}</style>
-</head><body class="pub">{body}
-<script>
-/* The grid is visible without this. `rv` is added by script precisely so
-   that a browser with no JavaScript — or a crawler — sees the items rather
-   than a page of things waiting to be faded in. */
-(function () {{
-  var items = document.querySelectorAll(".pub-item");
-  if (!window.IntersectionObserver || !items.length) return;
-  for (var i = 0; i < items.length; i++) items[i].classList.add("rv");
-  var io = new IntersectionObserver(function (es) {{
-    es.forEach(function (e) {{
-      if (e.isIntersecting) {{ e.target.classList.add("in"); io.unobserve(e.target); }}
-    }});
-  }}, {{ threshold: 0.12 }});
-  for (var j = 0; j < items.length; j++) io.observe(items[j]);
-}})();
-</script>
+<style>{_CSS}{_ROOM_CSS if room else ''}</style>
+</head><body class="{"room2-page" if room else "pub"}">{body}
+<script>{_JS}{_DRILL_JS if room else ''}</script>
 </body></html>"""
 
 
@@ -283,10 +294,35 @@ def public_profile(
         for s, items in shelves
     )
 
+    # The room: the same shelves, drawn as furniture rather than as a grid.
+    # Who gets it is plans.themed() — a Supporter where the service sells
+    # something, everybody where it does not. It falls back on its own —
+    # render() returns nothing if no published shelf has a builder — so a
+    # room is never an empty stage.
+    room = ""
+    if themed(owner):
+        labels = {s: TITLES.get(s, s) for s in scopes}
+        drills = "".join(
+            drill_view.shell(
+                scope,
+                labels.get(scope, scope),
+                str(len(items)),
+                _crumb(scope, items),
+                drill_view.shelf(db, owner, items, _loose_shown(db, owner.id))
+                if scope == "cards"
+                else drill_view.carousels(scope, items),
+            )
+            for scope, items in shelves
+            if items
+        )
+        room = room_view.render(
+            who, shelves, labels, stamp, total, name=row.name, drills=drills
+        )
+
     body = (
         '<div class="pub-wrap">'
-        f'<div class="pub-id"><h1>{html.escape(who)}</h1>'
-        f'<span class="sub">{total} things · {stamp}</span></div>'
+        + room_view.heading(who, f"{total} things · {stamp}")
+        +
         f'<div class="stats">{stats}</div>'
         f'<div class="jump">{jump}</div>'
         f"{sections}"
@@ -300,14 +336,68 @@ def public_profile(
             description=f"{who} keeps {total} things in "
             + ", ".join(TITLES.get(s, s).lower() for s in scopes)
             + ".",
-            body=body,
+            body=room or body,
             # PUBLIC_URL, not the request. Behind nginx the request says
             # whatever the internal hop was called — "http://localhost" —
             # and og:url and canonical are the two places that must be the
             # address people actually type.
             url=f"{(settings.public_url or '').rstrip('/')}/u/{row.name}",
+            room=bool(room),
         )
     )
+
+
+@router.get("/u/{name}/binder/{binder_id}")
+def public_binder(name: str, binder_id: int, db: Session = Depends(get_db)):
+    """One binder's pockets, for the profile that is already public.
+
+    Every gate the page passes, this passes again, in the same order and from
+    the same functions — profiles on, a name that is held, cards published,
+    and a room to draw them in. A page and the thing it fetches disagreeing
+    about who may look is how a feature like this leaks, so neither is
+    trusted to have already asked.
+
+    Empty slots are in the answer on purpose. A binder is as much what is
+    missing as what is there, and a list of only the cards somebody owns is a
+    different object — that one is already on the page as the grid.
+    """
+    _must_be_on()
+    row = screennames.holder(db, name)
+    if row is None or row.revoked:
+        raise HTTPException(404, "No such profile")
+    if "cards" not in _shown(db, row.user_id):
+        raise HTTPException(404, "No such profile")
+
+    owner = db.get(User, row.user_id)
+    if owner is None or not themed(owner):
+        raise HTTPException(404, "No such profile")
+
+    from app.models import Binder
+
+    binder = db.get(Binder, binder_id)
+    if binder is None or binder.user_id != owner.id or not binder.on_profile:
+        # A binder held back is absent, not merely undrawn. A page that does
+        # not show it and a route that hands it over on request are not the
+        # same feature, and the second one is the one that counts.
+        raise HTTPException(404, "No such binder")
+    return drill_view.pages(db, binder, owner.id)
+
+
+def _crumb(scope: str, items) -> str:
+    """The line under the heading: what this shelf is divided by.
+
+    Cards say binders because that is what they are kept in; everything else
+    says the field its carousels are grouped by, so the drill announces how
+    it is arranged rather than making somebody work it out.
+    """
+    if scope == "cards":
+        return "Binders and loose cards"
+    noun = drill_view.GROUPS.get(scope, (None, None))[1]
+    if not noun:
+        return ""
+    seen = {drill_view._group_of(scope, i) for i in items}
+    seen.discard("")
+    return f"{len(seen)} {noun}{'' if len(seen) == 1 else 's'}"
 
 
 def _thumb(item) -> str:
@@ -358,9 +448,9 @@ def _row_html(scope: str, item) -> str:
     name = html.escape(str(r.get("title") or ""))
     meta = html.escape(str(r.get("meta") or ""))
     badge = html.escape(str(r.get("badge") or ""))
-    square = " square" if scope in _SQUARE else ""
+    frame = " " + drill_view.shape(scope)
     return (
-        f'<article class="pub-item{square}">{_thumb(item)}<div class="txt">'
+        f'<article class="pub-item{frame}">{_thumb(item)}<div class="txt">'
         f"<strong>{name}</strong>"
         + (f"<small>{meta}</small>" if meta else "")
         + (f'<span class="cond">{badge}</span>' if badge else "")

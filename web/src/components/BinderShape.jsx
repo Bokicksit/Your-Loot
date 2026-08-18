@@ -39,6 +39,7 @@ export default function BinderShape({
   showPages = false,
   pageHint,
   showJapanese = false,
+  showProfile = false,
 }) {
   const set = (patch) => onChange({ ...value, ...patch });
   const rows = value.rows ?? 3;
@@ -157,6 +158,26 @@ export default function BinderShape({
             fill it. Off, they are never offered for this binder and never
             take a slot in it — which keeps a binder you built in English the
             way you built it.
+          </p>
+        </>
+      )}
+
+      {showProfile && (
+        <>
+          <div className="shape-row">
+            <span className="shape-label">Public profile</span>
+            <button
+              type="button"
+              className={`toggle ${value.on_profile !== false ? "on" : ""}`}
+              onClick={() => set({ on_profile: value.on_profile === false })}
+            >
+              {value.on_profile !== false ? "On the shelf" : "Kept back"}
+            </button>
+          </div>
+          <p className="settings-note">
+            Whether this binder is one of the ones on your public page. Kept
+            back, it is not shown and its pages cannot be read — the cards in
+            it stay where they are and do not turn up loose.
           </p>
         </>
       )}

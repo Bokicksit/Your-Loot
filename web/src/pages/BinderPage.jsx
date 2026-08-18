@@ -12,7 +12,7 @@ import {
 } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
 import EbayLink from "../components/EbayLink.jsx";
-import { useHasJapanese } from "../settings.jsx";
+import { useHasJapanese, usePublicProfiles } from "../settings.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
 
@@ -530,6 +530,7 @@ export default function BinderPage() {
  */
 function Rename({ binder, onDone, onCover }) {
   const hasJapanese = useHasJapanese();
+  const profiles = usePublicProfiles();
   const [name, setName] = useState(binder.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -538,6 +539,7 @@ function Rename({ binder, onDone, onCover }) {
     cols: binder.cols ?? 3,
     double_page: !!binder.double_page,
     allow_ja: !!binder.allow_ja,
+    on_profile: binder.on_profile !== false,
     color: binder.color || null,
     pages: binder.pages ?? 0,
   });
@@ -576,6 +578,9 @@ function Rename({ binder, onDone, onCover }) {
       patch.double_page = shape.double_page;
     }
     if (shape.allow_ja !== !!binder.allow_ja) patch.allow_ja = shape.allow_ja;
+    if (shape.on_profile !== (binder.on_profile !== false)) {
+      patch.on_profile = shape.on_profile;
+    }
     if ((shape.color || null) !== (binder.color || null)) {
       patch.color = shape.color || "";
     }
@@ -612,6 +617,7 @@ function Rename({ binder, onDone, onCover }) {
         onChange={setShape}
         showPages={binder.kind === "custom"}
         showJapanese={binder.kind === "custom" && hasJapanese}
+        showProfile={profiles}
         pageHint={
           "Grows the binder with empty pages, or takes empty ones off the " +
           "end. It will not drop a page that still has a card in it."

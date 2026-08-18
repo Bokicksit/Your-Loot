@@ -192,6 +192,20 @@ function Shell() {
             {name ? `${name}’s` : "Your"} <em>Loot</em>
           </h1>
         </Link>
+        {/* The page other people see, one press from the page you see. A
+            plain link rather than a router one: it is a document this app
+            does not draw, served straight by the API. */}
+        {settings?.public_profiles && settings?.screen_name && (
+          <a
+            className="brand-public"
+            href={`/u/${settings.screen_name}`}
+            target="_blank"
+            rel="noreferrer"
+            title="Your public profile"
+          >
+            <Icon id="globe" />
+          </a>
+        )}
         <BuildTag />
       </header>
 

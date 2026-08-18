@@ -5,6 +5,7 @@ import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
+import { useHasJapanese, usePublicProfiles } from "../settings.jsx";
 
 /** A binder with no cover still needs a front.
  *
@@ -40,6 +41,8 @@ export default function BindersPage() {
   const [adding, setAdding] = useState(null); // null | "set" | "custom"
   const [error, setError] = useState(null);
   const [arranging, setArranging] = useState(false);
+  // which binder's settings are open, if any — the shelf stays where it is
+  const [editing, setEditing] = useState(null);
   const [lifted, setLifted] = useState(null); // the binder in your hand
   const [tiles] = useTileView("binders");
 
@@ -142,10 +145,21 @@ export default function BindersPage() {
         </p>
       )}
 
+      {editing && (
+        <BinderSettings
+          binder={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      )}
+
       <div className={`binder-shelf ${tiles ? "as-tiles" : ""}`}>
         {(shelf || []).map((b) => (
+          <div className="binder-slot" key={b.id}>
           <Link
-            key={b.id}
             // straight to the Pokédex rather than through a binder page that
             // only redirects there
             to={b.kind === "dex" ? "/pokedex" : `/binders/${b.id}`}
@@ -197,9 +211,117 @@ export default function BindersPage() {
               </span>
             )}
           </Link>
+          {/* Not while the shelf is being rearranged: a tap then means
+              "put it here", and a second thing to hit would be a trap. */}
+          {!arranging && (
+            <button
+              type="button"
+              className="binder-edit"
+              title={`Settings for ${b.name}`}
+              aria-label={`Settings for ${b.name}`}
+              onClick={() => setEditing(b)}
+            >
+              <Icon id="pencil" />
+            </button>
+          )}
+          </div>
         ))}
       </div>
     </div>
+  );
+}
+
+/** A binder's settings, from the shelf.
+ *
+ *  The same control the binder's own page uses, in front of the shelf rather
+ *  than inside the binder — changing how a binder is set up is not a reason
+ *  to have to open it, and on a shelf of eight it is the difference between
+ *  one press and three.
+ *
+ *  Deliberately not everything: the cover picker belongs where the cards are,
+ *  and a shelf is not where somebody sets about photographing a folder.
+ */
+function BinderSettings({ binder, onClose, onSaved }) {
+  const hasJapanese = useHasJapanese();
+  const profiles = usePublicProfiles();
+  const [name, setName] = useState(binder.name);
+  const [shape, setShape] = useState({
+    rows: binder.rows ?? 3,
+    cols: binder.cols ?? 3,
+    double_page: !!binder.double_page,
+    allow_ja: !!binder.allow_ja,
+    on_profile: binder.on_profile !== false,
+    color: binder.color || null,
+    pages: binder.pages ?? 0,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const save = async (ev) => {
+    ev.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      // Only what changed. A binder's shape is safe to send whole, but its
+      // page count is not — "pages" on an untouched binder would resize it
+      // to whatever the shelf happened to report.
+      const patch = {};
+      if (name.trim() && name.trim() !== binder.name) patch.name = name.trim();
+      if (shape.rows !== (binder.rows ?? 3)) patch.rows = shape.rows;
+      if (shape.cols !== (binder.cols ?? 3)) patch.cols = shape.cols;
+      if (shape.double_page !== !!binder.double_page) {
+        patch.double_page = shape.double_page;
+      }
+      if (shape.allow_ja !== !!binder.allow_ja) patch.allow_ja = shape.allow_ja;
+      if (shape.on_profile !== (binder.on_profile !== false)) {
+        patch.on_profile = shape.on_profile;
+      }
+      if ((shape.color || null) !== (binder.color || null)) {
+        patch.color = shape.color || "";
+      }
+      if (binder.kind === "custom" && shape.pages !== (binder.pages ?? 0)) {
+        patch.pages = shape.pages;
+      }
+      if (Object.keys(patch).length) await api.editBinder(binder.id, patch);
+      onSaved();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form className="filter-sheet" onSubmit={save}>
+      <label className="set-field">
+        <span className="set-label">Name</span>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={60}
+          required
+        />
+      </label>
+      <BinderShape
+        value={shape}
+        onChange={setShape}
+        showPages={binder.kind === "custom"}
+        showJapanese={binder.kind !== "set" && hasJapanese}
+        showProfile={profiles}
+        pageHint={
+          "Grows the binder with empty pages, or takes empty ones off the " +
+          "end. It will not drop a page that still has a card in it."
+        }
+      />
+      {error && <p className="error">{error}</p>}
+      <button type="submit" className="primary" disabled={busy}>
+        <Icon id="check" />
+        {busy ? "…" : "Save"}
+      </button>
+      <button type="button" className="ghost" onClick={onClose}>
+        Cancel
+      </button>
+    </form>
   );
 }
 

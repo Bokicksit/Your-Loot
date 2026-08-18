@@ -56,7 +56,9 @@ services:
       DATABASE_URL: postgresql+psycopg2://getloot:test@postgres:5432/solo
       IMAGE_DIR: /data/images
       AUTH_MODE: single
-      PUBLIC_PROFILES: "true"
+      # Off, which is what a home install ships as — and the only place in
+      # this stack where the absence can be tested rather than assumed.
+      PUBLIC_PROFILES: "false"
       SECRET_KEY: test-only-not-a-secret
       SEED_ON_START: "false"
     depends_on:

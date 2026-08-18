@@ -222,17 +222,323 @@ def test_only_an_administrator_may_hold_a_two_character_name(profile):
         ).raise_for_status()
 
 
+# --- what goes on the shelf ------------------------------------------------
+
+
+def test_a_binder_kept_back_is_gone_rather_than_undrawn(profile, named):
+    """The switch that would be worth nothing if it only changed the drawing.
+
+    A binder held back must not answer on its own route either — a page that
+    does not show it and a route that hands it over on request are not the
+    same feature, and the second one is the one that decides.
+    """
+    mine = named
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+
+    made = profile.post(
+        "/api/binders", json={"name": "Kept Back", "kind": "custom", "pages": 1}
+    )
+    if made.status_code == 402:
+        pytest.skip("this account is at its binder limit")
+    made.raise_for_status()
+    binder = made.json()["id"]
+    try:
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            assert "Kept Back" in stranger.get(f"/u/{mine}").text
+            assert stranger.get(f"/u/{mine}/binder/{binder}").status_code == 200
+
+        profile.patch(f"/api/binders/{binder}", json={"on_profile": False}).raise_for_status()
+
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            assert "Kept Back" not in stranger.get(f"/u/{mine}").text, "still on the shelf"
+            assert stranger.get(f"/u/{mine}/binder/{binder}").status_code == 404, (
+                "a binder kept back still handed over its pages"
+            )
+    finally:
+        profile.delete(f"/api/binders/{binder}")
+
+
+def test_hiding_a_binder_does_not_tip_its_cards_into_the_loose_box(profile, named):
+    """The trap under the last test. Loose means "in no binder", so a binder
+    that is skipped rather than merely undrawn would publish every card in it
+    as loose — hiding the shelf by scattering it."""
+    mine = named
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+
+    mark = uuid.uuid4().hex[:6]
+    item = profile.post(
+        "/api/cards", json={"title": f"Filed Away {mark}", "card_number": "1"}
+    ).json()["id"]
+    made = profile.post(
+        "/api/binders", json={"name": f"Private {mark}", "kind": "custom", "pages": 1}
+    )
+    if made.status_code == 402:
+        profile.delete(f"/api/cards/{item}")
+        pytest.skip("this account is at its binder limit")
+    binder = made.json()["id"]
+    try:
+        # the response is the item's whole status, so the new copy is the
+        # one on the end of it
+        copies = profile.post(
+            f"/api/items/{item}/owned", json={"condition": "NM"}
+        ).json()["owned"]
+        slot = profile.get(f"/api/binders/{binder}").json()["entries"][0]["key"]
+        profile.put(
+            f"/api/binders/{binder}/slots/{slot}",
+            json={"owned_id": copies[-1]["id"], "item_id": item},
+        ).raise_for_status()
+        profile.patch(f"/api/binders/{binder}", json={"on_profile": False}).raise_for_status()
+
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            body = stranger.get(f"/u/{mine}").text
+        assert f"Private {mark}" not in body, "the binder is still shown"
+        assert f"Filed Away {mark}" not in body, "a card in a hidden binder came out loose"
+    finally:
+        profile.delete(f"/api/binders/{binder}")
+        profile.delete(f"/api/cards/{item}")
+
+
+def test_the_loose_box_can_be_left_off_the_shelf(profile, named):
+    """Some of a collection is in binders and some is in a box, and they are
+    separate decisions — a shelf of binders is a thing somebody may want to
+    show without the pile beside it."""
+    mine = named
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+    assert me["loose"] is True, "the box should be shown until it is turned off"
+
+    mark = uuid.uuid4().hex[:6]
+    item = profile.post(
+        "/api/cards", json={"title": f"Loose One {mark}", "card_number": "2"}
+    ).json()["id"]
+    try:
+        profile.post(f"/api/items/{item}/owned", json={"condition": "NM"}).raise_for_status()
+
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            assert f"Loose One {mark}" in stranger.get(f"/u/{mine}").text
+
+        after = profile.put("/api/profile", json={"loose": False}).json()
+        assert after["loose"] is False
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            assert f"Loose One {mark}" not in stranger.get(f"/u/{mine}").text, (
+                "the box was turned off and its cards are still on the page"
+            )
+    finally:
+        profile.put("/api/profile", json={"loose": True})
+        profile.delete(f"/api/cards/{item}")
+
+
+# --- what a Supporter gets -------------------------------------------------
+
+
+def _looks_like(body: str) -> str:
+    if 'class="room2-page"' in body:
+        assert ".scene-strip" in body, "a room without the stylesheet to draw it"
+        return "room"
+    assert 'class="pub"' in body
+    assert ".scene-strip" not in body, "a plain page carried 30 KB of furniture"
+    return "grid"
+
+
+def test_the_page_a_stranger_gets_is_the_one_the_owner_was_promised(profile, named):
+    """The room is the one thing a tier changes about a public page — and both
+    pages publish exactly the same shelves and items, so what changes is how
+    they are drawn, never what is shown.
+
+    Asserted against what /api/profile told the owner rather than against a
+    hard-coded tier, because the answer differs by install on purpose: where
+    nothing is sold there is no tier to be outside of and everybody in the
+    house gets the room.
+    """
+    mine = named
+    me = profile.put(
+        "/api/profile", json={"collections": ["cards"]}
+    ).json()
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        body = stranger.get(f"/u/{mine}").text
+    want = "room" if me["themed"] else "grid"
+    assert _looks_like(body) == want, "the owner was promised the other page"
+
+
+def test_an_ordinary_account_is_told_the_same_thing_a_stranger_sees(profile):
+    """The half of it an administrator cannot test on themselves: admins are
+    never billed, so this account always gets the room where one is on offer."""
+    who = profile.get("/api/auth/me").json()
+    if not who.get("multi_user"):
+        pytest.skip("single-user install: the only account is the administrator")
+
+    mark = uuid.uuid4().hex[:6]
+    email = f"freetier-{mark}@example.com"
+    profile.post(
+        "/api/auth/users", json={"email": email, "password": "other-password-3"}
+    ).raise_for_status()
+    with httpx.Client(base_url=BASE, timeout=30) as free:
+        free.post(
+            "/api/auth/login", json={"email": email, "password": "other-password-3"}
+        ).raise_for_status()
+        # Something on the shelf. An empty room is not drawn at all — a stage
+        # with no furniture on it says something untrue about the person — so
+        # an account with nothing would fall back to the grid whatever it was
+        # promised, and would not be testing the tier.
+        item = free.post(
+            "/api/cards", json={"title": f"Free Tier {mark}", "card_number": "1"}
+        ).json()["id"]
+        free.post(f"/api/items/{item}/owned", json={"condition": "NM"}).raise_for_status()
+        told = free.put(
+            "/api/profile",
+            json={"screen_name": f"ft{mark}", "collections": ["cards"]},
+        ).json()
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        body = stranger.get(f"/u/ft{mark}").text
+    assert _looks_like(body) == ("room" if told["themed"] else "grid")
+
+
+# --- what is inside the furniture ------------------------------------------
+
+
+def test_a_room_can_be_opened_and_a_binder_is_not_in_the_page(profile, named):
+    """The drill: the room says how much, this says what.
+
+    The carousels are in the document, because they are the same items the
+    plain page lists and a crawler should still find them. A binder's pockets
+    are not — a Pokedex is 1,025 of them, and building that into a page for a
+    binder most visitors never open would cost more than the collection it is
+    showing.
+    """
+    mine = named
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install, so nothing to drill into")
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        body = stranger.get(f"/u/{mine}").text
+    assert 'id="drill-cards"' in body, "the furniture does not open"
+    assert 'class="binder-rail"' in body, "no shelf of binders inside it"
+    assert '"slots"' not in body, "a binder's pockets were built into the page"
+
+
+def test_a_binder_answers_the_same_stranger_the_page_does(profile, named):
+    """And answers with the empty slots too. A binder is as much what is
+    missing as what is in it, and a list of only the cards somebody owns is
+    the grid, which they can already see."""
+    mine = named
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+
+    # An empty binder of two pages: a shelf that is mostly gaps, which is the
+    # half of a binder a grid of owned cards can never show.
+    made = profile.post(
+        "/api/binders", json={"name": "Public Shelf", "kind": "custom", "pages": 2}
+    )
+    if made.status_code == 402:
+        pytest.skip("this account is at its binder limit")
+    made.raise_for_status()
+    binder = made.json()["id"]
+    try:
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            r = stranger.get(f"/u/{mine}/binder/{binder}")
+            assert r.status_code == 200, "a public binder refused a stranger"
+            data = r.json()
+        assert data["name"] == "Public Shelf"
+        assert data["slots"], "a binder with no pockets"
+        assert len(data["slots"]) == data["total"]
+        assert any(s[3] == 0 for s in data["slots"]), "the gaps were left out"
+        assert data["pages"] >= 1
+
+        # and it is gone the moment the shelf is unpublished
+        profile.put("/api/profile", json={"collections": []}).raise_for_status()
+        with httpx.Client(base_url=BASE, timeout=30) as stranger:
+            assert stranger.get(f"/u/{mine}/binder/{binder}").status_code == 404
+    finally:
+        profile.delete(f"/api/binders/{binder}")
+
+
+def test_a_binder_is_only_public_through_its_own_profile(profile, named):
+    """The URL names a person and a binder, and the two have to agree. A
+    binder belonging to somebody else is a 404 even where the profile in the
+    path is perfectly public — otherwise one published profile would be a
+    door to every binder on the server."""
+    mine = named
+    profile.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+
+    with httpx.Client(base_url=BASE, timeout=30) as stranger:
+        # a binder id that cannot belong to anybody
+        assert stranger.get(f"/u/{mine}/binder/99999999").status_code == 404
+        assert stranger.get(f"/u/{mine}/binder/0").status_code == 404
+
+
 def test_where_profiles_are_off_there_are_none(owner):
-    """The default install. A home server nobody outside the house can reach
-    has nothing to publish to, so the endpoints are absent rather than
-    forbidden — 404, which is a different statement from "you may not"."""
-    import os
+    """The default install, and the answer to "is this only for the hosted
+    service".
+
+    It is not a different build — it is the same image with the switch off,
+    which is how everything else in this app is decided too. But off has to
+    mean gone rather than hidden: no endpoint to claim a name with, no page
+    to find, and nothing in the settings answer that would make a client draw
+    a profile card for a feature this server does not have.
+    """
+    said = owner.get("/api/settings").json()
+    assert said["public_profiles"] is True, "the flag did not reach the client"
 
     solo = os.environ.get("LOOT_SOLO_URL")
     if not solo:
-        pytest.skip("no second API to compare against")
-    # every api in the test stack has profiles on, so this asserts the
-    # reporting rather than the absence — the flag has to reach the client or
-    # the settings screen cannot choose which card to draw
-    said = owner.get("/api/settings").json()
-    assert said["public_profiles"] is True, "the flag did not reach the client"
+        pytest.skip("no install with profiles off to compare against")
+
+    with httpx.Client(base_url=solo, timeout=30) as home:
+        assert home.get("/api/settings").json()["public_profiles"] is False
+        # absent, not forbidden — a different statement from "you may not"
+        assert home.get("/api/profile").status_code == 404
+        assert home.put("/api/profile", json={"screen_name": _name()}).status_code == 404
+        assert home.get("/u/anybody").status_code == 404
+        assert home.get("/u/anybody/binder/1").status_code == 404
+
+
+def test_signing_up_where_there_are_no_profiles_asks_for_no_name(owner):
+    """A name is the address of a public page. Where there are none there is
+    no address to choose, and requiring one would be asking somebody to name
+    a page that does not exist on their server.
+
+    This is the shape the sign-up form is drawn from, which is why the flag
+    is on /api/auth/me as well: the form and the handler have to agree about
+    whether the field exists, and they did not — the server required a name
+    the form never asked for, and open sign-up answered 422 to everybody.
+    """
+    solo = os.environ.get("LOOT_SOLO_URL")
+    if not solo:
+        pytest.skip("no install with profiles off to compare against")
+    with httpx.Client(base_url=solo, timeout=30) as home:
+        assert home.get("/api/auth/me").json().get("public_profiles") is False
+
+
+def test_signing_up_where_there_are_profiles_requires_a_name(owner):
+    """And the other half, on the install that has them: a name is part of
+    making the account, refused in a sentence rather than as a schema error,
+    because it is a thing to choose rather than a field to fill in."""
+    open_url = os.environ.get("LOOT_OPEN_URL")
+    if not open_url:
+        pytest.skip("no install with open sign-up to test against")
+
+    with httpx.Client(base_url=open_url, timeout=60) as anyone:
+        assert anyone.get("/api/auth/me").json().get("public_profiles") is True
+
+        mark = uuid.uuid4().hex[:8]
+        body = {
+            "email": f"noname-{mark}@example.com",
+            "password": "a-long-enough-password",
+            "accept_terms": True,
+        }
+        r = anyone.post("/api/auth/signup", json=body)
+        assert r.status_code == 409, "signed up with no name where names are the point"
+        assert r.json()["detail"], "refused without saying why"
+
+        # and the payload the form actually sends goes through
+        body["screen_name"] = f"nm{mark}"
+        anyone.post("/api/auth/signup", json=body).raise_for_status()

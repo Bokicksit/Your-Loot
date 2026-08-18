@@ -302,6 +302,17 @@ function ProfileCard({ open, onToggle }) {
     }
   };
 
+  const setLoose = async (on) => {
+    setMe({ ...me, loose: on });          // the switch should move at once
+    setProblem(null);
+    try {
+      setMe(await api.saveProfile({ loose: on }));
+    } catch (e) {
+      setProblem(e.message);
+      api.profile().then(setMe).catch(() => {});
+    }
+  };
+
   const toggle = async (scope) => {
     const next = me.collections.includes(scope)
       ? me.collections.filter((s) => s !== scope)
@@ -424,6 +435,28 @@ function ProfileCard({ open, onToggle }) {
           ))}
         </div>
       </div>
+      {me.collections.includes("cards") && (
+        <div className="optrows">
+          <label className={`optrow ${me.loose ? "on" : ""}`}>
+            <div className="opt-text">
+              <strong>Loose cards</strong>
+              <small>
+                Cards that are not in any binder, in a box beside the shelf.
+                Off, only your binders are shown.
+              </small>
+            </div>
+            <span className="sw" data-on={me.loose ? "1" : "0"}>
+              <input
+                type="checkbox"
+                checked={!!me.loose}
+                disabled={me.can_claim}
+                onChange={(e) => setLoose(e.target.checked)}
+              />
+              <i />
+            </span>
+          </label>
+        </div>
+      )}
       <p className="sec-note">
         Anybody with the link can see it and search engines can find it.
         Nothing is public until you tick it. Notes, tags, serial and

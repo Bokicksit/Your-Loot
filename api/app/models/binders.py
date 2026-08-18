@@ -69,6 +69,14 @@ class Binder(TimestampMixin, Base):
     allow_ja: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
+    # Whether it is drawn on the public profile. On by default: publishing
+    # the cards shelf publishes the shelf, and this is how one binder is held
+    # back rather than how each one is let out. Hidden means the binder is
+    # not shown and its pages cannot be fetched — its cards do not fall into
+    # the loose box, which would publish the thing just hidden.
+    on_profile: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
     # where it sits on the shelf; null means never placed, and those sort
     # after the ones that have been
     position: Mapped[int | None] = mapped_column(Integer)

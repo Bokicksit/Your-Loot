@@ -59,6 +59,11 @@ class MeOut(BaseModel):
     locked: bool = False
     # whether this install offers a "create an account" link at all
     open_signup: bool = False
+    # Whether a name is part of signing up here, which is the same question
+    # as whether this install has public profiles at all. Reported for the
+    # same reason as open_signup: the client asks this first to find out
+    # which form to draw.
+    public_profiles: bool = False
     # Whether this server can send mail, which is a different question from
     # whether anybody may sign up. A family install with a provider set wants
     # password resets without wanting strangers; one without a provider must
@@ -120,6 +125,10 @@ def me(request: Request, db: Session = Depends(get_db)):
         return MeOut(
             multi_user=False,
             locked=locked,
+            # Answered here too. A single-user install has no sign-up form to
+            # draw, but "false because it is off" and "false because nobody
+            # said" are different answers and a client cannot tell them apart.
+            public_profiles=settings.public_profiles,
             user=UserOut.model_validate(owner) if signed_in and owner else None,
         )
     if needs_setup(db):
@@ -127,6 +136,7 @@ def me(request: Request, db: Session = Depends(get_db)):
             multi_user=True,
             needs_setup=True,
             open_signup=settings.open_signup,
+            public_profiles=settings.public_profiles,
             email_enabled=mail_configured(),
         )
     uid = request.session.get("uid")
@@ -134,6 +144,7 @@ def me(request: Request, db: Session = Depends(get_db)):
     return MeOut(
         multi_user=True,
         open_signup=settings.open_signup,
+        public_profiles=settings.public_profiles,
         email_enabled=mail_configured(),
         user=UserOut.model_validate(user) if user else None,
     )
@@ -238,11 +249,16 @@ class SignupIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=MIN_PASSWORD, max_length=200)
     display_name: str | None = Field(default=None, max_length=50)
-    # Required from here on, and chosen once — it is the address of a public
-    # profile, so it cannot be changed later without breaking every link
-    # anybody wrote down. Accounts made before this exists have none, and
-    # claim one in settings when they want a profile.
-    screen_name: str = Field(min_length=3, max_length=100)
+    # Chosen once — it is the address of a public profile, so it cannot be
+    # changed later without breaking every link anybody wrote down. Accounts
+    # made before this exists have none, and claim one in settings when they
+    # want a profile.
+    #
+    # Optional here and required in the handler, because whether it is
+    # required is not a property of the request: where this install has no
+    # public profiles there is no address to choose, and demanding one would
+    # be asking somebody to name a page that does not exist on their server.
+    screen_name: str | None = Field(default=None, max_length=100)
     # Required, and required *here* rather than only in the browser. A tick
     # box the server does not check proves nothing later and can be skipped
     # by anybody who opens the network tab.
@@ -309,12 +325,16 @@ def signup(
     # Checked before the account is made rather than after: a signup that
     # creates the account and then rejects the name leaves somebody signed in
     # with no name and no obvious way to get one.
-    try:
-        wanted = screennames.check(body.screen_name)
-    except screennames.NameProblem as e:
-        raise HTTPException(409, str(e))
-    if screennames.holder(db, wanted) is not None:
-        raise HTTPException(409, "Somebody already has that name.")
+    wanted = None
+    if settings.public_profiles:
+        if not body.screen_name:
+            raise HTTPException(409, "Choose a name for your profile.")
+        try:
+            wanted = screennames.check(body.screen_name)
+        except screennames.NameProblem as e:
+            raise HTTPException(409, str(e))
+        if screennames.holder(db, wanted) is not None:
+            raise HTTPException(409, "Somebody already has that name.")
 
     signups.failed(key)
     user = User(
@@ -327,7 +347,8 @@ def signup(
     )
     db.add(user)
     db.flush()           # the name needs the id
-    screennames.claim(db, user.id, body.screen_name)
+    if wanted:
+        screennames.claim(db, user.id, body.screen_name)
     db.commit()
     db.refresh(user)
 

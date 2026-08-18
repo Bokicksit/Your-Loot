@@ -61,6 +61,8 @@ class BinderEdit(BaseModel):
     cols: int | None = Field(default=None, ge=1, le=engine.MAX_SIDE)
     double_page: bool | None = None
     allow_ja: bool | None = None
+    # whether this one is on the public profile, where this install has them
+    on_profile: bool | None = None
     # "" clears it back to the shelf's own colour
     color: str | None = Field(default=None, pattern=f"{HEX}|^$")
 
@@ -222,6 +224,7 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
             "color": b.color, "position": b.position,
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
             "allow_ja": b.allow_ja,
+            "on_profile": b.on_profile,
             "pages": engine.page_count(b, total),
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
@@ -330,6 +333,7 @@ def create_binder(
             "image_url": b.image_url, "color": b.color, "master": b.master,
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
             "allow_ja": b.allow_ja,
+            "on_profile": b.on_profile,
             "printings": learned}
 
 
@@ -364,6 +368,8 @@ def edit_binder(
         b.double_page = bool(fields["double_page"])
     if fields.get("allow_ja") is not None:
         b.allow_ja = bool(fields["allow_ja"])
+    if fields.get("on_profile") is not None:
+        b.on_profile = bool(fields["on_profile"])
 
     # Pages last, so it is measured against the shape you just set rather than
     # the one you are replacing — "three by three, four pages" in one press

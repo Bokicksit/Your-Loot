@@ -371,6 +371,7 @@ def render(db: Session, binder, user_id: int) -> dict:
             "cols": binder.cols,
             "double_page": binder.double_page,
             "allow_ja": binder.allow_ja,
+            "on_profile": binder.on_profile,
             "pages": page_count(binder, len(entries)),
             "total": len(entries),
             "filled": filled,

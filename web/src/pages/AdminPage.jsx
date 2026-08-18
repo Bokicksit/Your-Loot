@@ -48,6 +48,39 @@ export default function AdminPage() {
     load();
   }, []);
 
+  /** Take somebody's screen name away.
+   *
+   *  The only lever there is, and deliberately the only one: it removes a
+   *  name but cannot choose a replacement. Picking names for people would
+   *  make you responsible for the next one.
+   *
+   *  Confirmed because it cannot be undone — the name is spent afterwards,
+   *  for them and for everybody else, which is the point of it.
+   */
+  const revokeName = async (u) => {
+    if (
+      !window.confirm(
+        `Remove the name “${u.screen_name}”?
+
+` +
+          "Their profile stops answering and nobody can ever claim that name " +
+          "again, including them. They may choose one different name. " +
+          "Their collection is untouched.",
+      )
+    )
+      return;
+    setBusy(u.id);
+    setError(null);
+    try {
+      await api.revokeScreenName(u.id);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const setPlan = async (id, plan) => {
     setBusy(id);
     setError(null);
@@ -140,6 +173,18 @@ export default function AdminPage() {
                   <td>
                     <span className="admin-who">{u.email || `#${u.id}`}</span>
                     {u.display_name && <span className="admin-name">{u.display_name}</span>}
+                    {/* the one thing about an account strangers can see, which
+                        is why it is the one thing occasionally taken away */}
+                    {u.screen_name && (
+                      <a
+                        className="admin-name"
+                        href={`/u/${u.screen_name.toLowerCase()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        /u/{u.screen_name}
+                      </a>
+                    )}
                     {!u.email_verified_at && <span className="admin-flag">unconfirmed</span>}
                   </td>
                   <td className="admin-num">{fmtDate(u.created_at)}</td>
@@ -156,7 +201,7 @@ export default function AdminPage() {
                       <span className="admin-plan">free</span>
                     )}
                   </td>
-                  <td>
+                  <td className="admin-acts">
                     {!u.is_admin && (
                       <button
                         type="button"
@@ -165,6 +210,17 @@ export default function AdminPage() {
                         onClick={() => setPlan(u.id, u.subscribed ? "free" : "supporter")}
                       >
                         {busy === u.id ? "…" : u.subscribed ? "Make free" : "Give supporter"}
+                      </button>
+                    )}
+                    {u.screen_name && (
+                      <button
+                        type="button"
+                        className="ghost danger"
+                        disabled={busy === u.id}
+                        title="Remove this screen name — permanent"
+                        onClick={() => revokeName(u)}
+                      >
+                        Remove name
                       </button>
                     )}
                   </td>
@@ -176,6 +232,9 @@ export default function AdminPage() {
         <p className="settings-note">
           Granting a plan here has no end date — it stays until you take it
           back. Admins are never billed and cannot be put on a plan.
+          {" "}Removing a screen name is permanent: nobody can claim it again,
+          the person may choose one replacement, and their collection is not
+          touched.
         </p>
       </section>
     </div>
