@@ -60,9 +60,13 @@ server {
         try_files $uri =404;
     }
 
-    # a restore uploads the whole collection at once, so it needs both a much
-    # larger body and longer than the default 60s to finish inserting
-    location /api/backup/restore {
+    # Backups go up and come down whole, so both routes under here need a
+    # much larger body than an image upload and longer than the default 60s
+    # to finish inserting. This block covers the whole-server restore AND
+    # /api/backup/mine — the personal one shipped later, fell into the
+    # general 20m/60s block below, and a 19MB collection died mid-upload as
+    # a browser "Failed to fetch". A prefix match keeps the next one covered.
+    location /api/backup {
         proxy_pass http://$backend$request_uri;
         proxy_set_header Host $host;
         # so the API can tell callers apart when rate limiting logins

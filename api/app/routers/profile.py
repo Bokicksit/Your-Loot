@@ -24,6 +24,7 @@ a 404, not an empty page: somebody who has not opted in does not have a URL.
 """
 
 import html
+import random
 from datetime import date
 from pathlib import Path
 
@@ -285,14 +286,24 @@ def public_profile(
         for s, items in shelves
     )
 
-    sections = "".join(
-        f'<section class="pub-sec" id="s-{s}">'
-        f"<h2>{html.escape(TITLES.get(s, s))} <span>{len(items)}</span></h2>"
-        f'<div class="pub-grid">'
-        + "".join(_row_html(s, i) for i in items)
-        + "</div></section>"
-        for s, items in shelves
-    )
+    if total == 0:
+        # A published page with nothing on it yet. A grid of zero items and a
+        # jump rail to empty sections would present absence as a layout bug;
+        # one line says it on purpose.
+        sections = (
+            '<section class="pub-sec pub-empty"><p>'
+            + html.escape(random.choice(TAGLINES))
+            + "</p></section>"
+        )
+    else:
+        sections = "".join(
+            f'<section class="pub-sec" id="s-{s}">'
+            f"<h2>{html.escape(TITLES.get(s, s))} <span>{len(items)}</span></h2>"
+            f'<div class="pub-grid">'
+            + "".join(_row_html(s, i) for i in items)
+            + "</div></section>"
+            for s, items in shelves
+        )
 
     # The room: the same shelves, drawn as furniture rather than as a grid.
     # Who gets it is plans.themed() — a Supporter where the service sells
@@ -322,12 +333,11 @@ def public_profile(
     body = (
         '<div class="pub-wrap">'
         + room_view.heading(who, f"{total} things · {stamp}")
-        +
-        f'<div class="stats">{stats}</div>'
-        f'<div class="jump">{jump}</div>'
-        f"{sections}"
-        '<div class="pub-foot">Kept with <a href="/">Your Loot</a></div>'
-        "</div>"
+        + f'<div class="stats">{stats}</div>'
+        + (f'<div class="jump">{jump}</div>' if total else "")
+        + sections
+        + '<div class="pub-foot">Kept with <a href="/">Your Loot</a></div>'
+        + "</div>"
     )
 
     return HTMLResponse(
@@ -381,6 +391,39 @@ def public_binder(name: str, binder_id: int, db: Session = Depends(get_db)):
         # same feature, and the second one is the one that counts.
         raise HTTPException(404, "No such binder")
     return drill_view.pages(db, binder, owner.id)
+
+
+# What an empty profile says instead of a grid of nothing. One is drawn at
+# random on every view — no per-person assignment, nothing stored — so the
+# page stays alive without anybody having chosen anything. Bo approved the
+# list; the register is the app's own: dry, no exclamation marks.
+TAGLINES = [
+    "Nothing on the shelves yet.",
+    "Nothing here yet.",
+    "The shelves are up. Nothing on them yet.",
+    "Empty shelves, for now.",
+    "Nothing catalogued yet.",
+    "Not a thing on it yet.",
+    "This page is waiting on its collection.",
+    "This one's still in boxes.",
+    "Shelves built. Collection pending.",
+    "Blank shelves and good intentions.",
+    "Still at the shelf-building stage.",
+    "The room is furnished. The shelves are not.",
+    "Nothing on show — nothing hidden either.",
+    "Come back when the boxes are unpacked.",
+    "All the shelf, none of the stuff.",
+    "Furniture first, collection second.",
+    "Every collection starts here.",
+    "Nothing yet — which is what a start looks like.",
+    "An empty shelf is still a shelf.",
+    "First card, first game, first anything — still to come.",
+    "Give it a week.",
+    "The collecting is happening. The cataloguing hasn't caught up.",
+    "Ask them again in a month.",
+    "Somebody is about to start.",
+    "Early days.",
+]
 
 
 def _crumb(scope: str, items) -> str:

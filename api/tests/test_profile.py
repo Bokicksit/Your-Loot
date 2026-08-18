@@ -391,6 +391,37 @@ def test_a_card_that_lives_in_a_binder_is_still_part_of_the_collection():
     )
 
 
+@pytest.mark.skipif(not os.environ.get("LOOT_OPEN_URL"), reason="needs a fresh account")
+def test_an_empty_published_profile_says_so_in_words_that_change():
+    """A shelf published before anything is on it. A grid of zero items and a
+    jump rail to empty sections present absence as a layout bug; one line —
+    drawn at random from a pool on every view, assigned to nobody — says it
+    on purpose and keeps the page alive."""
+    import re
+
+    open_url = os.environ["LOOT_OPEN_URL"]
+    mark = uuid.uuid4().hex[:6]
+    with httpx.Client(base_url=open_url, timeout=60) as me:
+        me.post("/api/auth/signup", json={
+            "email": f"blank-{mark}@example.com",
+            "password": "a-long-enough-password",
+            "accept_terms": True, "screen_name": f"bl{mark}",
+        }).raise_for_status()
+        me.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+
+    lines = set()
+    with httpx.Client(base_url=open_url, timeout=60) as stranger:
+        for _ in range(25):
+            page = stranger.get(f"/u/bl{mark}").text
+            body = page.split("</style>", 1)[1]  # the stylesheet mentions the classes too
+            m = re.search(r'pub-empty"><p>([^<]+)</p>', body)
+            assert m, "an empty profile had no line to say so"
+            lines.add(m.group(1))
+            assert 'class="pub-grid"' not in body, "an empty grid was drawn anyway"
+            assert 'class="jump"' not in body, "a jump rail to nothing"
+    assert len(lines) > 1, "the line never changed — that is a motto, not a rotation"
+
+
 # --- what a Supporter gets -------------------------------------------------
 
 
