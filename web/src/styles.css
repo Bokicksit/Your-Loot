@@ -4366,3 +4366,20 @@ a.admin-name:hover { color: var(--gold-bright); text-decoration: underline; }
 .binder-slot:hover .binder-edit { opacity: 1; }
 .binder-edit:hover { color: var(--gold); border-color: var(--gold-line); }
 .binder-edit svg.i { width: 15px; height: 15px; }
+
+/* "Friend": on the tier, off the books. A checkbox rather than a button
+   because it is a fact about the person that stays true while plans come
+   and go, not an action taken once. */
+.admin-friend {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--f-1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.admin-friend input { accent-color: var(--gold); }
+.admin-friend:hover { color: var(--text-dim); }

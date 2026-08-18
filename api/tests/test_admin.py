@@ -127,3 +127,48 @@ def test_a_nonsense_plan_is_refused(owner):
     target = next((u for u in users if not u["is_admin"]), users[0])
     r = owner.put(f"/api/admin/users/{target['id']}/plan", json={"plan": "vip"})
     assert r.status_code == 422
+
+
+def test_a_friend_is_on_the_tier_but_off_the_books(owner, somebody):
+    """The one number this changes, and the one it must not.
+
+    A comped account opens everything a paying one opens — the plan is real.
+    What it stays out of is "subscribers", which is a question about the
+    business, and answering it with the people you gave it to would be wrong
+    by the same amount every month in the same direction.
+    """
+    before = owner.get("/api/admin/stats").json()["accounts"]
+
+    owner.put(
+        f"/api/admin/users/{somebody}/plan", json={"plan": "supporter"}
+    ).raise_for_status()
+    paid = owner.get("/api/admin/stats").json()["accounts"]
+    assert paid["subscribers"] == before["subscribers"] + 1
+
+    marked = owner.put(f"/api/admin/users/{somebody}/comped", json={"comped": True})
+    marked.raise_for_status()
+    assert marked.json()["comped"] is True
+    assert marked.json()["subscribed"] is True, "a gift is still a plan"
+
+    given = owner.get("/api/admin/stats").json()["accounts"]
+    assert given["subscribers"] == before["subscribers"], "a friend was counted as a sale"
+    assert given["comped"] == before.get("comped", 0) + 1, "and not counted at all"
+
+    # and it survives the plan being taken away and given again — it is a
+    # fact about the person, not about the plan
+    owner.put(f"/api/admin/users/{somebody}/plan", json={"plan": "free"}).raise_for_status()
+    row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == somebody)
+    assert row["comped"] is True and row["subscribed"] is False
+
+
+def test_an_admin_is_never_billed_and_never_marked(owner):
+    """Admins are already outside the count, so a second reason to be outside
+    it would only be a second thing to keep true."""
+    me = owner.get("/api/auth/me").json()["user"]
+    if not me.get("is_admin"):
+        pytest.skip("not an admin")
+    r = owner.put(f"/api/admin/users/{me['id']}/comped", json={"comped": True})
+    assert r.status_code == 400
+
+    row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == me["id"])
+    assert row["subscribed"] is True, "an admin should hold the tier"

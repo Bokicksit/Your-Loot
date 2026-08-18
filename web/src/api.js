@@ -170,6 +170,11 @@ export const api = {
   profile: () => request("/api/profile"),
   saveProfile: (body) =>
     request("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
+  adminSetComped: (userId, comped) =>
+    request(`/api/admin/users/${userId}/comped`, {
+      method: "PUT",
+      body: JSON.stringify({ comped }),
+    }),
   revokeScreenName: (userId) =>
     request(`/api/admin/users/${userId}/screen-name`, { method: "DELETE" }),
   createBinder: (body) =>

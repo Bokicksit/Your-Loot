@@ -437,24 +437,27 @@ function ProfileCard({ open, onToggle }) {
       </div>
       {me.collections.includes("cards") && (
         <div className="optrows">
-          <label className={`optrow ${me.loose ? "on" : ""}`}>
-            <div className="opt-text">
+          {/* The same row the module switches use — an icon, the text, the
+              switch — because it is the same kind of decision and a second
+              layout for it is a second thing to keep in step. */}
+          <div className={`optrow ${me.loose ? "on" : ""}`}>
+            <Icon id="card" />
+            <span className="opttext">
               <strong>Loose cards</strong>
               <small>
                 Cards that are not in any binder, in a box beside the shelf.
                 Off, only your binders are shown.
               </small>
-            </div>
-            <span className="sw" data-on={me.loose ? "1" : "0"}>
-              <input
-                type="checkbox"
-                checked={!!me.loose}
-                disabled={me.can_claim}
-                onChange={(e) => setLoose(e.target.checked)}
-              />
-              <i />
             </span>
-          </label>
+            <button
+              className="sw"
+              role="switch"
+              aria-checked={!!me.loose}
+              title="Loose cards"
+              disabled={me.can_claim}
+              onClick={() => setLoose(!me.loose)}
+            />
+          </div>
         </div>
       )}
       <p className="sec-note">

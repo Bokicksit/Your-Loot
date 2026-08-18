@@ -81,6 +81,21 @@ export default function AdminPage() {
     }
   };
 
+  /** A plan given rather than sold. Only the arithmetic changes — what they
+   *  can open is decided by the plan, which is real either way. */
+  const setComped = async (id, comped) => {
+    setBusy(id);
+    setError(null);
+    try {
+      await api.adminSetComped(id, comped);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const setPlan = async (id, plan) => {
     setBusy(id);
     setError(null);
@@ -118,7 +133,12 @@ export default function AdminPage() {
           <Stat
             label="Subscribers"
             value={a.subscribers}
-            note={`$${stats.revenue.monthly_gross_usd}/mo gross`}
+            note={
+              // The people you gave it to are not revenue, so they are not in
+              // the number — but they are on the tier, so they are said.
+              `$${stats.revenue.monthly_gross_usd}/mo gross` +
+              (a.comped ? ` · ${a.comped} given` : "")
+            }
           />
           <Stat label="New this week" value={a.new_7d} note={`${a.new_30d} in 30 days`} />
         </div>
@@ -191,11 +211,18 @@ export default function AdminPage() {
                   <td className="admin-num">{u.items.toLocaleString()}</td>
                   <td>
                     {u.is_admin ? (
-                      <span className="admin-plan admin">admin</span>
+                      // An admin is never billed and is on the tier anyway —
+                      // both are true and the row should say both, or the
+                      // owner reads their own account as free.
+                      <>
+                        <span className="admin-plan admin">admin</span>
+                        <span className="admin-plan on">supporter</span>
+                      </>
                     ) : u.subscribed ? (
                       <span className="admin-plan on">
                         supporter
                         {u.plan_until && <small> to {fmtDate(u.plan_until)}</small>}
+                        {u.comped && <small> · given</small>}
                       </span>
                     ) : (
                       <span className="admin-plan">free</span>
@@ -211,6 +238,17 @@ export default function AdminPage() {
                       >
                         {busy === u.id ? "…" : u.subscribed ? "Make free" : "Give supporter"}
                       </button>
+                    )}
+                    {!u.is_admin && (
+                      <label className="admin-friend" title="Not counted as a subscriber">
+                        <input
+                          type="checkbox"
+                          checked={!!u.comped}
+                          disabled={busy === u.id}
+                          onChange={(e) => setComped(u.id, e.target.checked)}
+                        />
+                        friend
+                      </label>
                     )}
                     {u.screen_name && (
                       <button

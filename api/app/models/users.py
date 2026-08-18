@@ -32,6 +32,13 @@ class User(TimestampMixin, Base):
     # Null `plan_until` on a supporter means it does not expire.
     plan: Mapped[str] = mapped_column(String(20), default="free", server_default="free")
     plan_until: Mapped[datetime | None] = mapped_column(DateTime)
+    # Given the plan rather than charged for it — a friend, a tester, a
+    # thank-you. The plan itself behaves identically; this only keeps them
+    # out of the subscriber count, which is a number about the business
+    # rather than about who may open what.
+    comped: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     # Whose account this is at Stripe. Kept so a later webhook — a renewal, a
     # cancellation — can be matched to a person without asking Stripe who
     # they are every time.

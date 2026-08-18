@@ -54,6 +54,10 @@ class AdminUser(BaseModel):
     screen_name: str | None = None
     display_name: str | None = None
     is_admin: bool = False
+    # Given the tier rather than charged for it. Kept out of the subscriber
+    # count and out of the revenue line; everything else about them is the
+    # same as anybody else on it.
+    comped: bool = False
     plan: str = FREE
     plan_until: datetime | None = None
     email_verified_at: datetime | None = None
@@ -78,7 +82,12 @@ def stats(db: Session = Depends(get_db), _: User = Depends(require_admin)):
         cutoff = now - timedelta(days=days)
         return sum(1 for u in users if u.created_at and u.created_at >= cutoff)
 
-    paying = [u for u in users if subscribed(u) and not u.is_admin]
+    # Who is actually paying. An admin is never billed and a comped account
+    # was never charged, so neither is revenue — and a subscriber count that
+    # included them would be wrong by the same amount every month, in the
+    # same direction, which is the kind of wrong nobody notices.
+    paying = [u for u in users if subscribed(u) and not u.is_admin and not u.comped]
+    given = [u for u in users if subscribed(u) and not u.is_admin and u.comped]
 
     by_module = dict(
         db.execute(
@@ -99,6 +108,9 @@ def stats(db: Session = Depends(get_db), _: User = Depends(require_admin)):
             "total": len(users),
             "verified": sum(1 for u in users if u.email_verified_at),
             "subscribers": len(paying),
+            # Said separately rather than folded in or left out — they are
+            # real accounts on the real tier, and the operator chose that.
+            "comped": len(given),
             "admins": sum(1 for u in users if u.is_admin),
             "new_7d": since(7),
             "new_30d": since(30),
@@ -147,6 +159,7 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
             email=u.email,
             display_name=u.display_name,
             is_admin=u.is_admin,
+            comped=u.comped,
             plan=u.plan or FREE,
             plan_until=u.plan_until,
             email_verified_at=u.email_verified_at,
@@ -188,7 +201,58 @@ def set_plan(
         email=user.email,
         display_name=user.display_name,
         is_admin=user.is_admin,
+        comped=user.comped,
         plan=user.plan,
+        plan_until=user.plan_until,
+        email_verified_at=user.email_verified_at,
+        created_at=user.created_at,
+        subscribed=subscribed(user),
+        items=db.scalar(
+            select(func.count()).select_from(Owned).where(Owned.user_id == user.id)
+        ) or 0,
+    )
+
+
+class CompedChange(BaseModel):
+    comped: bool
+
+
+@router.put("/users/{user_id}/comped", response_model=AdminUser)
+def set_comped(
+    user_id: int,
+    body: CompedChange,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Mark an account as given the tier rather than charged for it.
+
+    Changes nothing about what they can open — a comped supporter is a
+    supporter. It changes one number: how many subscribers this install has,
+    which is a question about the business and should not be answered with
+    the people you gave it to.
+
+    Separate from the plan itself on purpose. Somebody can be comped before
+    the plan is granted or after it lapses, and the flag surviving that is
+    what makes it a fact about the person rather than about the plan.
+    """
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(404, "No such user")
+    if user.is_admin:
+        # already outside the count, and a second reason to be outside it
+        # would only be a second thing to keep true
+        raise HTTPException(400, "An admin is never billed and never counted")
+
+    user.comped = bool(body.comped)
+    db.commit()
+    db.refresh(user)
+    return AdminUser(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        is_admin=user.is_admin,
+        comped=user.comped,
+        plan=user.plan or FREE,
         plan_until=user.plan_until,
         email_verified_at=user.email_verified_at,
         created_at=user.created_at,
