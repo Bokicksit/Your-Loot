@@ -45,31 +45,62 @@ const COVERS = [
   ["Black", "#1f2026"],
 ];
 
-/** The dex wall fills as the hero scrolls past — a collection being kept,
- *  compressed into the first screen and a bit. */
-function useScrollFill() {
+/** The dex wall fills as you scroll — a collection being kept, compressed
+ *  into the time the wall is in front of you.
+ *
+ *  Where "in front of you" is depends on the layout, which is why this asks
+ *  two different questions. Wide, the case sits in the hero beside the
+ *  headline and is on screen from the first frame, so page scroll is the
+ *  honest measure: you arrive, you scroll, it fills.
+ *
+ *  Stacked, it is underneath the hero text — five hundred pixels of scrolling
+ *  happen before any of it is visible, and driving the fill from page scroll
+ *  meant the first row was already at forty-five by the time you could see
+ *  it. Nothing appeared to happen, because it had all happened above the
+ *  fold. So on a narrow screen the fill is driven by the case's own travel
+ *  through the viewport: the cards light up as they arrive, rather than
+ *  arriving lit.
+ */
+function useScrollFill(caseRef) {
   const [fill, setFill] = useState(8);
   useEffect(() => {
     let raf = 0;
+    const read = () => {
+      const vh = window.innerHeight || 800;
+      const el = caseRef.current;
+      // the same 840px the stylesheet stacks the hero at
+      const stacked = (window.innerWidth || 1280) < 840;
+      let p;
+      if (stacked && el) {
+        // Measured against the wall itself, and against a line three
+        // quarters down the screen rather than the very bottom: the row
+        // being lit is then a little above the fold, so rows arrive dark
+        // and light up as you carry on — which is the thing worth watching.
+        const r = el.getBoundingClientRect();
+        p = (vh * 0.75 - r.top) / r.height;
+      } else {
+        const y = window.scrollY || document.documentElement.scrollTop || 0;
+        p = y / (vh * 1.05);
+      }
+      p = Math.max(0, Math.min(1, p));
+      setFill(Math.max(8, Math.min(100, Math.round(8 + p * 94))));
+    };
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        const vh = window.innerHeight || 800;
-        const y = window.scrollY || document.documentElement.scrollTop || 0;
-        const p = Math.min(1, y / (vh * 1.05));
-        setFill(Math.max(8, Math.min(100, Math.round(8 + p * 94))));
+        read();
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
-    onScroll();
+    read();
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [caseRef]);
   return fill;
 }
 
@@ -103,7 +134,8 @@ export default function LandingPage() {
   const rootRef = useRef(null);
   useReveals(rootRef);
 
-  const fill = useScrollFill();
+  const caseRef = useRef(null);
+  const fill = useScrollFill(caseRef);
   const owned = Math.round(DEX_TOTAL * Math.min(1, fill / 100));
 
   const [across, setAcross] = useState(4);
@@ -190,7 +222,7 @@ export default function LandingPage() {
                   }}
                 />
               </div>
-              <div className="dexwall">
+              <div className="dexwall" ref={caseRef}>
                 {Array.from({ length: DEX_TOTAL }, (_, i) => (
                   <span
                     key={i}
