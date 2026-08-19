@@ -331,7 +331,10 @@ export default function CardsPage({ initialView = "collection" }) {
         // copy of this card and the one just made is the last of them, which
         // is the only way to know which copy to file — there is nothing else
         // to tell four identical commons apart.
-        if (addVals.binderId) {
+        // belt and braces: the control is hidden in dex mode, and the value
+        // is cleared when it turns on, so this can only fire when neither
+        // happened — which is the case worth being sure about
+        if (addVals.binderId && !toBinder) {
           const fresh = status?.owned?.[status.owned.length - 1];
           if (fresh) await api.binderAddCards(Number(addVals.binderId), [fresh.id]);
         }
@@ -437,6 +440,11 @@ export default function CardsPage({ initialView = "collection" }) {
                         binder: !addVals.binder,
                         // IR/SIR pulls default to "the one"; else placeholder
                         keeper: !addVals.binder ? picked.attrs.layer === 3 : false,
+                        // The dex takes the card while this is on, so a
+                        // binder chosen for an earlier run is dropped rather
+                        // than left to apply from a control that is no
+                        // longer on screen.
+                        binderId: !addVals.binder ? "" : addVals.binderId,
                       })
                     }
                     title="This copy goes in the Pokédex"
@@ -456,8 +464,14 @@ export default function CardsPage({ initialView = "collection" }) {
                 )}
                 {/* Separate from the Pokédex switch beside it, and for the
                     same reason as in the edit sheet: that one picks a
-                    favourite among copies, this one puts the copy on a shelf. */}
-                {addVals.own && myBinders.length > 0 && (
+                    favourite among copies, this one puts the copy on a shelf.
+
+                    Not offered while the Pokédex switch is on. A copy can sit
+                    in both — that is what filing is for, and the binder pages
+                    still do it — but being asked twice in one breath, in the
+                    middle of a run of cards, is how a stack ends up somewhere
+                    nobody chose. */}
+                {addVals.own && !addVals.binder && myBinders.length > 0 && (
                   <select
                     value={addVals.binderId}
                     onChange={(e) => setAddVals({ ...addVals, binderId: e.target.value })}
