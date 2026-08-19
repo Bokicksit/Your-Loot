@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 
@@ -134,8 +134,20 @@ def uploaded_image(name: str, request: Request, token: str | None = None,
     """
     # Nothing but a bare filename. A name that can climb out of the directory
     # turns this route into "read any file on the server".
+    #
+    # Every response leaving here says "private", because a CDN in front of
+    # the service caches images by file extension unless told otherwise —
+    # which cached two different disasters at once. A 404 from an outage got
+    # stamped cacheable, so phones kept showing broken covers for hours after
+    # the server was healed; and a 200 authorised by somebody's session got
+    # cached at the edge, where anybody could fetch it with no session at
+    # all. "Private" keeps the browser's own cache and forbids the shared
+    # one, which is exactly the split an authorised response needs.
+    refuse = PlainTextResponse(
+        "Not found", status_code=404, headers={"Cache-Control": "no-store"}
+    )
     if "/" in name or "\\" in name or name.startswith("."):
-        raise HTTPException(404, "Not found")
+        return refuse
 
     allowed = verify_image_token(name, token)
     if not allowed:
@@ -144,12 +156,12 @@ def uploaded_image(name: str, request: Request, token: str | None = None,
         except HTTPException:
             allowed = False
     if not allowed:
-        raise HTTPException(404, "Not found")
+        return refuse
 
     path = Path(settings.image_dir) / name
     if not path.is_file():
-        raise HTTPException(404, "Not found")
-    return FileResponse(path)
+        return refuse
+    return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
 
 
 @app.get("/api/health")

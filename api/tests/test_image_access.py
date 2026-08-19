@@ -131,3 +131,21 @@ def test_the_route_cannot_be_walked_out_of(owner, attack):
     r = owner.get(f"/images/{attack}")
     assert r.status_code == 404, f"{attack!r} answered {r.status_code}"
     assert b"sqlalchemy" not in r.content.lower()
+
+
+def test_an_image_response_forbids_the_shared_cache(owner):
+    """A CDN caches images by file extension unless the origin says private.
+
+    That cached two disasters at once: outage 404s that phones kept showing
+    for hours after the server healed, and session-authorised pictures held
+    in a shared cache where anybody could fetch them with no session at all.
+    So every response from this route — the picture and the refusal alike —
+    must say what may hold it.
+    """
+    import uuid as u
+
+    r = owner.get(f"/images/{u.uuid4().hex}.jpg")
+    assert r.status_code == 404
+    assert r.headers.get("cache-control") == "no-store", (
+        "a refusal was left cacheable — this is how a broken cover outlives its fix"
+    )
