@@ -4854,3 +4854,8 @@ a.source-credit:hover { color: var(--gold); text-decoration: underline; }
 .dex-mode strong { font-size: var(--f-3); font-weight: var(--w-med); color: var(--gold-bright); }
 .dex-mode small { font-size: var(--f-1); line-height: 1.4; color: var(--text-dim); }
 .dex-mode .ghost { white-space: nowrap; }
+
+/* amiibo renders are transparent cut-outs of the figure, not box shots —
+   cropping one to a cover frame takes its head off. Contained, on the row
+   and in the expansion both. */
+img.game-cover.contain, img.expand-cover.contain { object-fit: contain; }

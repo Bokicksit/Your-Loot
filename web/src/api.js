@@ -268,6 +268,15 @@ export const api = {
       return /source returned 4\d\d/.test(e.message || "") ? null : url;
     }
   },
+  amiibo: (params = {}) => request(`/api/amiibo?${new URLSearchParams(params)}`),
+  amiiboFacets: () => request("/api/amiibo/facets"),
+  amiiboSearch: (params) =>
+    request(`/api/amiibo/search?${new URLSearchParams(params)}`),
+  addAmiibo: (body) =>
+    request("/api/amiibo", { method: "POST", body: JSON.stringify(body) }),
+  updateAmiibo: (itemId, body) =>
+    request(`/api/amiibo/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteAmiibo: (itemId) => request(`/api/amiibo/${itemId}`, { method: "DELETE" }),
   books: (params = {}) => request(`/api/books?${new URLSearchParams(params)}`),
   bookFacets: () => request("/api/books/facets"),
   addBook: (body) =>

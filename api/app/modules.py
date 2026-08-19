@@ -20,7 +20,8 @@ from app.config import settings
 
 # Every collection the code knows how to draw. Order is the order they appear.
 ALL = [
-    "cards", "games", "hardware", "movies", "books", "records", "lego", "comics",
+    "cards", "amiibo", "games", "hardware", "movies", "books", "records",
+    "lego", "comics",
 ]
 
 

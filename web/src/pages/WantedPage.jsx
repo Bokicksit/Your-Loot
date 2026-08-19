@@ -8,6 +8,7 @@ import {
   DEFAULT_VINYL_GRADE,
   GAME_COMPLETENESS,
   GAME_PARTS_ONLY,
+  AMIIBO_COMPLETENESS,
   LEGO_COMPLETENESS,
   LEGO_CONDITION,
   VINYL_GRADES,
@@ -22,8 +23,9 @@ import ViewToggle, {
 import { TagChips, TagFilter } from "../components/Tags.jsx";
 
 const MODULE_ICONS = {
-  cards: "card", games: "pad", hardware: "console", movies: "disc", books: "book",
-  records: "vinyl", lego: "brick", comics: "comic",
+  cards: "card", amiibo: "fig", games: "pad", hardware: "console",
+  movies: "disc", books: "book", records: "vinyl", lego: "brick",
+  comics: "comic",
 };
 
 // Left-edge badge: system logo for games, media-format tag for movies,
@@ -68,11 +70,13 @@ const CONDITIONS = {
   records: VINYL_GRADES,
   lego: LEGO_CONDITION,
   comics: COMIC_GRADES,
+  amiibo: LEGO_CONDITION,
 };
 // most acquisitions aren't mint, so default to the sensible middle of each scale
 const DEFAULT_CONDITION = {
   cards: "NM", games: "Good", hardware: "Good", movies: "Good",
   books: "Very Good", records: DEFAULT_VINYL_GRADE, lego: "used", comics: "VF",
+  amiibo: "used",
 };
 const BOX = ["loose", "CIB", "sealed"];
 // The optional second per-copy field, and which column it writes to. Cards
@@ -92,6 +96,7 @@ const SECOND_FIELD = {
     def: DEFAULT_VINYL_GRADE,
   },
   lego: { key: "completeness", options: LEGO_COMPLETENESS, def: "complete+box" },
+  amiibo: { key: "completeness", options: AMIIBO_COMPLETENESS, def: "boxed" },
   // comics have no second field: a slab's grade goes on grader/grade, edited
   // on the comics page, exactly like a graded card
 };

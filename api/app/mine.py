@@ -40,6 +40,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings as cfg
 from app.models import (
+    AmiiboAttrs,
     Binder,
     BinderSlot,
     BookAttrs,
@@ -70,6 +71,7 @@ CONFIRM = "RESTORE"
 
 ATTRS = {
     "cards": CardAttrs,
+    "amiibo": AmiiboAttrs,
     "games": GameAttrs,
     "movies": MovieAttrs,
     "books": BookAttrs,

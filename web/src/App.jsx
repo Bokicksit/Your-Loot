@@ -27,6 +27,7 @@ import HardwarePage from "./pages/HardwarePage.jsx";
 import MoviesPage from "./pages/MoviesPage.jsx";
 import BooksPage from "./pages/BooksPage.jsx";
 import RecordsPage from "./pages/RecordsPage.jsx";
+import AmiiboPage from "./pages/AmiiboPage.jsx";
 import LegoPage from "./pages/LegoPage.jsx";
 import ComicsPage from "./pages/ComicsPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
@@ -36,6 +37,7 @@ import BinderPage from "./pages/BinderPage.jsx";
 
 const PATHS = {
   cards: "/cards",
+  amiibo: "/amiibo",
   games: "/games",
   hardware: "/hardware",
   movies: "/movies",
@@ -224,6 +226,10 @@ function Shell() {
                 <CardsPage initialView="binder" />
               </RequireModule>
             }
+          />
+          <Route
+            path="/amiibo"
+            element={<RequireModule moduleKey="amiibo"><AmiiboPage /></RequireModule>}
           />
           <Route path="/wanted" element={<WantedPage />} />
           <Route

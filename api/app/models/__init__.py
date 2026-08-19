@@ -1,5 +1,6 @@
 from app.models.barcodes import BarcodeCache
 from app.models.base import Base
+from app.models.amiibo import AmiiboAttrs
 from app.models.books import BookAttrs
 from app.models.binders import Binder, BinderSlot
 from app.models.cards import CardAttrs, CardPrinting
@@ -22,6 +23,7 @@ __all__ = [
     "Base",
     "Binder",
     "BinderSlot",
+    "AmiiboAttrs",
     "BookAttrs",
     "CardAttrs",
     "CardPrinting",

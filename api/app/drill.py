@@ -44,6 +44,7 @@ GROUPS = {
     "records": ("artist", "artist"),
     "lego": ("theme", "theme"),
     "comics": ("series", "series"),
+    "amiibo": ("amiibo_series", "series"),
 }
 
 # What shape the frame is, and how the picture sits in it.

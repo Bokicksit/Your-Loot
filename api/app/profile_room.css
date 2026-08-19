@@ -773,6 +773,72 @@
   .scene { gap: 4cqh; padding: 0 5cqh 16cqh; }
 }
 
+/* ---------------------------------------------------- amiibo */
+.figcase {
+  position: relative;
+  width: 34cqh;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1.4cqh;
+  padding: 2cqh 2cqh 1.6cqh;
+  border-radius: 1cqh 1cqh .4cqh .4cqh;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.24)),
+    var(--furn-1);
+  box-shadow: inset 0 0 0 .35cqh rgba(255,255,255,.05), 0 3cqh 6cqh -3cqh #000;
+}
+.figcase .tier {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.4cqh;
+  min-height: 5cqh;
+  padding: 0 1cqh .5cqh;
+  border-bottom: .45cqh solid rgba(255,255,255,.08);
+}
+/* a little figure: a head, a body, and the round base they all stand on */
+.fig {
+  position: relative;
+  width: 2.1cqh;
+  background: currentColor;
+  border-radius: 1cqh 1cqh .3cqh .3cqh;
+  filter: saturate(.85);
+}
+.fig::before {              /* the head */
+  content: "";
+  position: absolute;
+  top: -1.3cqh; left: 50%;
+  width: 1.5cqh; height: 1.5cqh;
+  margin-left: -.75cqh;
+  border-radius: 50%;
+  background: currentColor;
+}
+.fig::after {               /* the amiibo base */
+  content: "";
+  position: absolute;
+  bottom: -.55cqh; left: 50%;
+  width: 3cqh; height: .55cqh;
+  margin-left: -1.5cqh;
+  border-radius: 50%;
+  background: rgba(230,230,235,.85);
+}
+/* the card-type amiibo, standing in a little rack */
+.cardstand {
+  position: absolute;
+  right: 2.2cqh; bottom: 2cqh;
+  width: 3.4cqh; height: 4.6cqh;
+  border-radius: .3cqh;
+  background-color: currentColor;
+  background-image: linear-gradient(165deg, rgba(255,255,255,.4), rgba(0,0,0,.25));
+  box-shadow: -0.7cqh .4cqh 0 -0.1cqh rgba(255,255,255,.14);
+}
+.plinth {
+  width: 36cqh;
+  height: 2.2cqh;
+  border-radius: .4cqh;
+  background: linear-gradient(180deg, var(--furn-1), var(--furn-2));
+  box-shadow: 0 2cqh 4cqh -2cqh #000;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .zone, .sp, .prop, .issue, .sleeve, .binder-open, .crt, .tv { animation-duration: .01ms; }
   .turntable .platter, .turntable .arm, .speaker i, .tv .screen, .crt .screen::before,

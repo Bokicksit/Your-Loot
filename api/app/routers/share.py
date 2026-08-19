@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.auth import current_user
 from app.db import get_db
 from app.models import Setting, User
-from app.routers import books, cards, comics, games, lego, movies, records
+from app.routers import amiibo, books, cards, comics, games, lego, movies, records
 from app.routers.collection import wanted_list
 from app.share import SPECS, TITLES, build_collection, build_pokedex
 
@@ -36,6 +36,7 @@ LISTS = {
     "books":    lambda **kw: books.list_books(**kw),
     "lego":     lambda **kw: lego.list_lego(**kw),
     "comics":   lambda **kw: comics.list_comics(**kw),
+    "amiibo":   lambda **kw: amiibo.list_amiibo(**kw),
 }
 
 # Under every list's own ceiling, so this asks for nothing a caller over HTTP

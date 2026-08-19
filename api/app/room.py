@@ -218,6 +218,36 @@ def _lego(items):
     return '<div class="vitrine">' + tiers + '<div class="tier">' + figs + '</div></div>'
 
 
+def _amiibo(items):
+    """A backlit display shelf of little figures, each on its round base.
+
+    Three tiers, the way anybody actually arranges them, with the figures'
+    heights varying by position so the shelf reads as arranged rather than
+    stamped out. Cards-type amiibo become a small card stand on the bottom
+    tier — they are a different physical thing and should read as one.
+    """
+    figs = [i for i in items]
+    tiers = ""
+    for t in range(3):
+        chunk = figs[t * 6:(t + 1) * 6]
+        inner = '<span class="lightline"></span>'
+        for j, i in enumerate(chunk):
+            inner += (
+                '<span class="fig prop" style="--j:' + str(j) + ';color:'
+                + tint(_title(i), t * 6 + j) + ';height:'
+                + str(3.2 + ((t + j) % 3) * 0.7) + 'cqh"></span>'
+            )
+        tiers += '<div class="tier">' + inner + '</div>'
+    stand = ""
+    if len(items) > 18:
+        stand = ('<span class="cardstand prop" style="color:'
+                 + tint("cards" + str(len(items))) + '"></span>')
+    return (
+        '<div class="figcase furn">' + tiers + stand + '</div>'
+        '<div class="plinth"></div>'
+    )
+
+
 def _comics(items):
     """A face-out rack on the wall, long boxes below, one issue half pulled."""
     rack = "".join(
@@ -238,6 +268,7 @@ def _comics(items):
 
 BUILDERS = {
     "cards": _cards,
+    "amiibo": _amiibo,
     "games": _games,
     "hardware": _hardware,
     "movies": _movies,

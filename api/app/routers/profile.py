@@ -206,6 +206,7 @@ _DRILL_JS = (_HERE / "profile_drill.js").read_text(encoding="utf-8")
 
 # The icons the jump rail uses, one per collection, from the design's sprite.
 _GLYPHS = {
+    "amiibo": '<circle cx="12" cy="6.5" r="2.6"/><path d="M8.5 20v-4a3.5 3.5 0 017 0v4M6 20h12"/>',
     "cards": '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 7.5h6M9 11h4"/>',
     "games": '<rect x="2.5" y="7" width="19" height="11" rx="4.5"/><path d="M8 10.8v3.4M6.3 12.5h3.4"/><circle cx="15.8" cy="11.6" r="1.15"/><circle cx="18.4" cy="14.2" r="1.15"/>',
     "hardware": '<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M6.5 9.5h4M8.5 7.5v4"/><circle cx="16.5" cy="10.5" r="1.2"/><path d="M6 21h12"/>',
@@ -553,7 +554,9 @@ def _crumb(scope: str, items) -> str:
         return ""
     seen = {drill_view._group_of(scope, i) for i in items}
     seen.discard("")
-    return f"{len(seen)} {noun}{'' if len(seen) == 1 else 's'}"
+    # "series" is its own plural — "2 seriess" is what blind pluralising did
+    plural = noun if noun.endswith("s") else noun + "s"
+    return f"{len(seen)} {noun if len(seen) == 1 else plural}"
 
 
 def _thumb(item) -> str:

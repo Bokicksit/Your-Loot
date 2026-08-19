@@ -545,6 +545,21 @@ Poor). The chip shows the pair the way collectors write it: **VG+/VG**.
 Also tracked: format (12", 2x12", 10", 7", box set, CD, cassette), speed, and
 free-text pressing notes for things like *180g clear vinyl*.
 
+### amiibo
+
+The whole line lives in the catalogue — all 932 figures, cards, yarns and
+bands — so adding one is searching by figure, character or series and picking
+yours. No key and no external service: the catalogue is seeded once (see
+[Keeping it healthy](#keeping-it-healthy)) and searched locally.
+
+Your copy answers the question every amiibo collector actually asks: **new in
+box, boxed, or loose**, plus condition. Duplicates are normal — a loose one
+that gets scanned and a sealed one that never will are two copies of the same
+entry.
+
+Hand entry stays for what no catalogue has: prototypes, customs, or a figure
+newer than the last seed.
+
 ### LEGO
 
 Rebrickable-backed search by **set number** or name. Set numbers carry a
@@ -800,6 +815,14 @@ device or cloud storage.
 
 ```bash
 docker compose exec api python /seed/seed_cards.py --download
+```
+
+**Seed the amiibo catalogue** — all 932 figures and cards, once, from the
+open amiibo database. No key needed, and re-running after a new wave ships
+adds only what is new:
+
+```bash
+docker compose exec api python /seed/seed_amiibo.py
 ```
 
 This only ever adds and updates catalog entries. Your owned copies, wanted

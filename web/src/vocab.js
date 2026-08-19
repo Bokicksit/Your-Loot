@@ -47,6 +47,14 @@ export const GAME_PARTS_ONLY = new Set(["case+manual", "case only", "manual only
 // Two questions, not one. The box is a checkbox beside this — a built display
 // piece can still have its box in the loft, and "sealed" without one is a
 // contradiction the form refuses to let you make.
+// An amiibo is either still in its box, out of it with the box kept, or
+// loose — and boxed-ness is the whole price difference, so it leads.
+export const AMIIBO_COMPLETENESS = [
+  ["sealed", "New in box", "NIB"],
+  ["boxed", "Opened, with box", "Boxed"],
+  ["loose", "Loose", "Loose"],
+];
+
 export const LEGO_COMPLETENESS = [
   ["sealed", "Sealed", "Sealed"],
   ["open", "Opened, complete", "Complete"],

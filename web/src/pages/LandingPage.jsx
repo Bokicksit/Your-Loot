@@ -335,10 +335,16 @@ export default function LandingPage() {
             <h2>Cards are the hard part. The rest is already here.</h2>
             <p>
               Same app, same export, same shareable page — for whatever else
-              ends up on your shelves.
+              ends up on your shelves. amiibo arrive with the whole line
+              catalogued: all 932 figures and cards, searchable by character
+              or series, each copy marked new-in-box, boxed or loose.
             </p>
           </div>
           <div className="strip rv d1">
+            <span className="chip2">
+              <Icon id="fig" />
+              amiibo
+            </span>
             <span className="chip2">
               <Icon id="vinyl" />
               Records
@@ -423,7 +429,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <Icon id="check" />
-                  <span>Records with barcode scanning, wanted list, a public page</span>
+                  <span>amiibo and records — full catalogues, wanted list, a public page</span>
                 </li>
               </ul>
               <button type="button" className="btn gold" onClick={go}>

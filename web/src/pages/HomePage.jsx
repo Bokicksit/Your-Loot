@@ -11,7 +11,7 @@ import {
 import { DEFAULT_TAGLINE, pickTagline } from "../taglines.js";
 
 const PATHS = {
-  cards: "/cards", games: "/games", hardware: "/hardware",
+  cards: "/cards", amiibo: "/amiibo", games: "/games", hardware: "/hardware",
   movies: "/movies", books: "/books", records: "/records",
   lego: "/lego", comics: "/comics",
 };
@@ -20,8 +20,9 @@ const PATHS = {
 const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
                "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const UNIT = {
-  cards: "card", games: "title", hardware: "item", movies: "disc", books: "book",
-  records: "record", lego: "set", comics: "issue",
+  cards: "card", amiibo: "figure", games: "title", hardware: "item",
+  movies: "disc", books: "book", records: "record", lego: "set",
+  comics: "issue",
 };
 
 export default function HomePage() {

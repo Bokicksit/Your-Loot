@@ -7,6 +7,7 @@ const Ctx = createContext(null);
 
 export const MODULES = [
   { key: "cards", label: "Cards", icon: "card", blurb: "Pokémon TCG" },
+  { key: "amiibo", label: "amiibo", icon: "fig", blurb: "Figures & cards" },
   { key: "games", label: "Games", icon: "pad", blurb: "Cartridges & discs" },
   { key: "hardware", label: "Hardware", icon: "console", blurb: "Consoles & gear" },
   { key: "movies", label: "Movies", icon: "disc", blurb: "Physical media" },

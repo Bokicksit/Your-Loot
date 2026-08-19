@@ -14,6 +14,7 @@ from app.models import User
 from app.modules import available
 from app.plans import costs_money, may_open
 from app.routers import (
+    amiibo,
     admin,
     auth,
     backup,
@@ -74,6 +75,7 @@ app.include_router(collection.router)
 # served by games.
 _ROUTERS = {
     "cards": cards.router,
+    "amiibo": amiibo.router,
     "games": games.router,
     "movies": movies.router,
     "books": books.router,

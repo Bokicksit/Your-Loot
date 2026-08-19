@@ -54,7 +54,8 @@ SLOT_PX = 72
 IDX = "__idx"  # "sort by the order the rows were written in"
 
 TITLES = {
-    "records": "Records", "cards": "Cards", "games": "Games", "hardware": "Hardware",
+    "records": "Records", "cards": "Cards", "amiibo": "amiibo",
+    "games": "Games", "hardware": "Hardware",
     "movies": "Movies", "books": "Books", "lego": "LEGO", "comics": "Comics",
     "wanted": "Wanted list", "pokedex": "Pokédex binder",
 }
@@ -275,6 +276,23 @@ SPECS = {
             ("By set number", lambda i: _pad(i.attrs.set_number)),
             ("By year", lambda i: i.attrs.release_year),
             ("By piece count", lambda i: _pad(i.attrs.piece_count)),
+            ("Last added", IDX),
+            ("First added", IDX),
+        ],
+    },
+    "amiibo": {
+        "default": "By series",
+        "row": lambda i: {
+            "title": i.title,
+            "meta": _join(i.attrs.amiibo_series, i.attrs.figure_type,
+                          i.attrs.release_year),
+            "badge": _copy(i),
+        },
+        "sorts": [
+            ("By series", lambda i: i.attrs.amiibo_series),
+            ("A–Z", lambda i: i.title),
+            ("By character", lambda i: i.attrs.character),
+            ("By year", lambda i: i.attrs.release_year),
             ("Last added", IDX),
             ("First added", IDX),
         ],

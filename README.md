@@ -11,9 +11,9 @@
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-informational" alt="amd64 and arm64">
 </p>
 
-Self-hosted collection tracker for **Pokémon cards, video games, hardware,
-physical movies, books, records, LEGO, and comics** — one app, one database,
-one wanted list that spans all of them.
+Self-hosted collection tracker for **Pokémon cards, amiibo, video games,
+hardware, physical movies, books, records, LEGO, and comics** — one app, one
+database, one wanted list that spans all of them.
 
 Most trackers do a single category. This one is built for people whose shelf
 isn't that tidy: the Charizard you're hunting and the SNES console you're
@@ -94,6 +94,16 @@ edition, series, and per-copy jacket/provenance. Graphic novels, collected
 editions and manga live here rather than in Comics — they carry an ISBN, and
 filtering to *Graphic Novel* sorted by series gives you that shelf in reading
 order.
+
+**amiibo** — the whole line seeded as a catalogue, the way cards are: all
+932 figures, cards, yarns and bands from the open amiibo database, each under
+the head-and-tail id Nintendo burned into the figure itself. Adding one is
+searching and picking it — no key, no external API, nothing to run out of —
+and your copy records what matters at a glance: new in box, boxed, or loose.
+
+```bash
+docker compose exec api python /seed/seed_amiibo.py
+```
 
 **Records** — MusicBrainz search, or scan the barcode on the sleeve, which
 identifies the *pressing*: label, catalogue number, country, and year, so a
@@ -356,6 +366,7 @@ deploy/  TrueNAS compose
 - Books: [Open Library](https://openlibrary.org)
 - Records: [MusicBrainz](https://musicbrainz.org) and the
   [Cover Art Archive](https://coverartarchive.org)
+- amiibo: the [AmiiboAPI open database](https://github.com/N3evin/AmiiboAPI)
 - LEGO: [Rebrickable](https://rebrickable.com) · Comics:
   [Comic Vine](https://comicvine.gamespot.com)
 - Barcodes: [UPCitemdb](https://www.upcitemdb.com)

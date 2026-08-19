@@ -11,6 +11,7 @@ class Module(str, enum.Enum):
     change plus a new attrs table, never an ALTER TYPE on a PG enum."""
 
     cards = "cards"
+    amiibo = "amiibo"
     games = "games"
     movies = "movies"
     books = "books"
@@ -36,6 +37,7 @@ class CollectionItem(TimestampMixin, Base):
     # that nobody else agreed to — see tenancy.visible() and migration 0046.
     private_to: Mapped[int | None] = mapped_column(Integer, index=True)
 
+    amiibo_attrs = relationship("AmiiboAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     card_attrs = relationship("CardAttrs", back_populates="item", uselist=False, cascade="all, delete-orphan")
     game_attrs = relationship(
         "GameAttrs",
