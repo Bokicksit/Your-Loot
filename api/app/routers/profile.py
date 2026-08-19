@@ -278,7 +278,7 @@ def public_profile(
     if owner is None:
         raise HTTPException(404, "No such profile")
     who = _display_name(db, row.user_id) or row.display
-    return _render_profile(db, owner, who, f"/u/{row.name}")
+    return _render_profile(db, owner, who, f"/u/{row.name}", parked=True)
 
 
 @router.get("/loot", response_class=HTMLResponse)
@@ -307,19 +307,49 @@ def solo_profile(db: Session = Depends(get_db)):
     return _render_profile(db, owner, who, "/loot")
 
 
-def _render_profile(db: Session, owner: User, who: str, base: str):
+def _render_profile(
+    db: Session, owner: User, who: str, base: str, parked: bool = False
+):
     """The page itself, for whoever `base` points at.
 
     `base` is the one address this profile answers on — /u/<name>, or /loot on
     a home server — and everything the page fetches later hangs off it, so
     the page and its data always travel together through whatever is in
     front of the server.
+
+    `parked` says what an empty one does. A screen name is taken at sign-up,
+    so its address exists before anybody has chosen what to show, and a link
+    given out early should read as "not yet" rather than as a broken URL. A
+    home server's address is not handed out by anything — nobody has it until
+    its owner sends it — so there is nothing to park, and it stays absent
+    until there is something to see.
     """
     scopes = _shown(db, owner.id)
-    if not scopes:
-        # Not an empty page. Somebody who has published nothing does not have
-        # a profile, and saying so is different from saying "look, nothing".
+    if not scopes and not parked:
         raise HTTPException(404, "No such profile")
+    if not scopes:
+        # A name claimed, nothing chosen to show yet. The address is real —
+        # it was taken at sign-up and belongs to this person — so it answers
+        # with a page that has their name on it and nothing else: no counts,
+        # no shelves, no hint of what they keep. Publishing is still the same
+        # decision it was; this only stops the link somebody was given from
+        # reading as a mistake before they have made it.
+        return HTMLResponse(
+            _page(
+                title=f"{who} · Your Loot",
+                description=f"{who} keeps a collection on Your Loot.",
+                body=(
+                    '<div class="pub-wrap">'
+                    + room_view.heading(who, "Not published yet")
+                    + '<section class="pub-sec pub-empty"><p>'
+                    + html.escape(random.choice(TAGLINES))
+                    + "</p></section>"
+                    + '<div class="pub-foot">Show off <a href="/">Your Loot</a></div>'
+                    + "</div>"
+                ),
+                url=f"{(settings.public_url or '').rstrip('/')}{base}",
+            )
+        )
 
     from app.routers.share import everything  # circular at module scope
     shelves = [(scope, everything(scope, db, owner)) for scope in scopes]

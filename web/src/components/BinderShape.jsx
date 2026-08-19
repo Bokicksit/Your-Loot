@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Icon } from "./Icons.jsx";
 
 /** The presets people actually own.
@@ -177,7 +178,12 @@ export default function BinderShape({
           <p className="settings-note">
             Whether this binder is one of the ones on your public page. Kept
             back, it is not shown and its pages cannot be read — the cards in
-            it stay where they are and do not turn up loose.
+            it stay where they are and do not turn up loose.{" "}
+            {/* A binder on the shelf shows nothing until the profile
+                publishes cards at all, and that switch lives elsewhere —
+                so this points at it rather than leaving somebody to find
+                out by looking at an empty page. */}
+            <Link to="/settings#profile">Choose what your profile shows →</Link>
           </p>
         </>
       )}

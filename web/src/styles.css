@@ -4835,3 +4835,22 @@ a.source-credit:hover { color: var(--gold); text-decoration: underline; }
   text-transform: uppercase;
   opacity: .75;
 }
+
+/* "Filing into the Pokédex" — a mode that survives between cards, said
+   plainly at the top of the panel where the next card gets typed. */
+.dex-mode {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+  padding: 10px var(--s-3);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.dex-mode > svg.i { width: 20px; height: 20px; color: var(--gold); }
+.dex-mode span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dex-mode strong { font-size: var(--f-3); font-weight: var(--w-med); color: var(--gold-bright); }
+.dex-mode small { font-size: var(--f-1); line-height: 1.4; color: var(--text-dim); }
+.dex-mode .ghost { white-space: nowrap; }

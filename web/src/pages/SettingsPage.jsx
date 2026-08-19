@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
 import {
@@ -42,7 +42,7 @@ const SECTION_LABEL = {
  */
 function Section({ id, icon, name, summary, open, onToggle, children, stagger = true }) {
   return (
-    <div className={`sec ${open === id ? "open" : ""}`}>
+    <div className={`sec ${open === id ? "open" : ""}`} id={id}>
       <button
         className="sec-head"
         onClick={() => onToggle(open === id ? null : id)}
@@ -74,8 +74,26 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [version, setVersion] = useState("");
   // One at a time. Collections is open first because it is the section
-  // people came here for.
-  const [open, setOpen] = useState("collections");
+  // people came here for — unless something sent us to a particular one,
+  // which is what the hash is for: a binder's own settings link straight
+  // through to the profile section, because deciding a binder is public
+  // means nothing until the profile publishes cards at all.
+  const { hash } = useLocation();
+  const asked = hash.replace("#", "");
+  const [open, setOpen] = useState(
+    asked && SECTION_LABEL[asked] ? asked : "collections"
+  );
+
+  useEffect(() => {
+    if (!asked || !SECTION_LABEL[asked]) return;
+    setOpen(asked);
+    // after the section has had a frame to open, so the scroll lands on it
+    // rather than on where it used to be
+    const t = setTimeout(() => {
+      document.getElementById(asked)?.scrollIntoView({ block: "start" });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [asked]);
 
   useEffect(() => {
     if (settings) setName(settings.owner_name || "");

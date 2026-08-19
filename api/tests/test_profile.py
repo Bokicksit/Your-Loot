@@ -99,14 +99,34 @@ def test_the_url_does_not_care_about_capitals(profile, named):
 # --- publishing is a decision ----------------------------------------------
 
 
-def test_a_profile_with_nothing_published_is_not_a_profile(profile, named):
-    """A 404, not an empty page. Somebody who has not opted in does not have
-    a URL, and an empty page would suggest they do."""
+def test_a_name_with_nothing_published_is_parked_rather_than_missing(profile, named):
+    """A name is taken at sign-up, so an address exists before anything is
+    chosen to show. It answers with that person's name and nothing else —
+    no counts, no shelf names, no hint of what they keep — so a link given
+    out early reads as "not yet" rather than as a mistake.
+
+    The publishing decision is untouched: this page carries none of it.
+    """
     mine = named
     profile.put("/api/profile", json={"collections": []}).raise_for_status()
 
     with httpx.Client(base_url=BASE, timeout=30) as stranger:
-        assert stranger.get(f"/u/{mine}").status_code == 404
+        r = stranger.get(f"/u/{mine}")
+    assert r.status_code == 200, "a claimed name did not answer at all"
+    body = r.text
+    assert "Not published yet" in body
+    assert 'class="stats"' not in body, "a parked page counted something"
+    assert 'class="jump"' not in body, "a parked page listed shelves"
+    assert 'class="pub-grid"' not in body, "a parked page showed items"
+    for shelf in ("Cards", "Records", "Books", "LEGO"):
+        assert f"<h2>{shelf}" not in body, f"a parked page named {shelf}"
+
+
+def test_a_name_nobody_holds_is_still_missing(profile):
+    """The parked page is for a name somebody took. One nobody has is a 404,
+    or the address space becomes a way to ask whether a name is free."""
+    with httpx.Client(base_url=BASE, timeout=30) as stranger:
+        assert stranger.get(f"/u/nobody{uuid.uuid4().hex[:10]}").status_code == 404
 
 
 def test_a_published_profile_answers_a_stranger_with_a_real_document(profile, named):

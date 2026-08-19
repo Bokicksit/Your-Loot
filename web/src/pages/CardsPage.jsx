@@ -353,7 +353,6 @@ export default function CardsPage({ initialView = "collection" }) {
         condition: "NM",
         grader: "Raw",
         grade: "",
-        binder: false,
         keeper: false,
         variant: "Non-Holo",
         stamp: "",
@@ -361,6 +360,11 @@ export default function CardsPage({ initialView = "collection" }) {
         // adding a run of cards to the same one, and re-picking it for every
         // card is the tax this is meant to remove
         binderId: v.binderId,
+        // and the Pokédex switch with it. Filling the dex is a session —
+        // a stack of cards and a barcode scanner — and turning it back on
+        // for every card was the same tax charged one card at a time. It
+        // stays visible while it is on, so it can never be a surprise.
+        binder: v.binder,
       }));
       if (wantMode) {
         navigate("/wanted");
@@ -705,6 +709,26 @@ export default function CardsPage({ initialView = "collection" }) {
           already separated by position rather than by screen. */}
       <AddSheet open={showForm} title="Add a card" onClose={closeForm}>
         <div className="add-form">
+          {/* The switch stays on between cards, so it has to be visible
+              between cards too — a mode you cannot see is a mode that files
+              a hundred cards somewhere you did not mean. It sits above the
+              search box, where the next card is about to be typed. */}
+          {addVals.binder && (
+            <div className="dex-mode">
+              <Icon id="ball" />
+              <span>
+                <strong>Filing into the Pokédex</strong>
+                <small>Every card you add takes its species slot, until you turn this off.</small>
+              </span>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setAddVals((v) => ({ ...v, binder: false, keeper: false }))}
+              >
+                Stop
+              </button>
+            </div>
+          )}
           <div className="form-row">
             <input
               type="text"
