@@ -57,13 +57,23 @@ PUBLIC_KEY = "public_collections"
 LOOSE_KEY = "public_loose"
 
 
+def shown_scopes(raw: str | None) -> list[str]:
+    """Which shelves a stored setting actually publishes.
+
+    Intersected with what this install carries, so a shelf switched off at
+    the service level cannot be published by a setting that outlived it.
+
+    Split out from the lookup because the admin panel asks the same question
+    about everybody at once, and two answers to "is this profile published"
+    is exactly how the panel came to link pages that do not exist.
+    """
+    here = set(available())
+    return [s for s in (x.strip() for x in (raw or "").split(",")) if s and s in here]
+
+
 def _shown(db: Session, user_id: int) -> list[str]:
     row = db.get(Setting, (user_id, PUBLIC_KEY))
-    raw = (row.value if row else "") or ""
-    here = set(available())
-    # Intersected with what this install carries, so a shelf switched off at
-    # the service level cannot be published by a setting that outlived it.
-    return [s for s in (x.strip() for x in raw.split(",")) if s and s in here]
+    return shown_scopes(row.value if row else "")
 
 
 def _loose_shown(db: Session, user_id: int) -> bool:

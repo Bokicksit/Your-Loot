@@ -886,6 +886,4 @@ and restart with `docker compose up -d`.
 application, including a personal token on your own server. The app honours
 them for you — records picked from Discogs carry a "Data provided by Discogs"
 link to their release page, and the required trademark notice lives in
-Settings under "Where the data comes from". Their release *images* are
-restricted data: fine for personal use, so your install keeps them, but a
-server that charges for access drops them automatically.
+Settings under "Where the data comes from".

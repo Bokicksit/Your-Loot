@@ -25,7 +25,7 @@ from app.barcodes import stats as barcode_stats
 from app.config import settings
 from app.db import get_db
 from app import screennames
-from app.models import CollectionItem, Owned, ScreenName, User, Wanted
+from app.models import CollectionItem, Owned, ScreenName, Setting, User, Wanted
 from app.modules import available
 from app.plans import FREE, SUPPORTER, paid_modules, subscribed
 
@@ -52,6 +52,11 @@ class AdminUser(BaseModel):
     # because it is the one thing about an account that strangers can see, so
     # it is the one thing that occasionally has to be taken away.
     screen_name: str | None = None
+    # Whether that name actually answers. A name is claimed at sign-up and a
+    # profile is published later, or never — so most accounts have one and no
+    # page behind it, and a panel that linked every name would offer a row of
+    # links that all say "no such profile".
+    profile_public: bool = False
     display_name: str | None = None
     is_admin: bool = False
     # Given the tier rather than charged for it. Kept out of the subscriber
@@ -144,6 +149,16 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
         ).all()
     )
     rows = db.scalars(select(User).order_by(User.id)).all()
+    # Who has actually published something, asked the way the profile page
+    # asks it — one query for everybody rather than one per row.
+    from app.routers.profile import PUBLIC_KEY, shown_scopes
+
+    published = {
+        r.user_id: shown_scopes(r.value)
+        for r in db.scalars(
+            select(Setting).where(Setting.key == PUBLIC_KEY)
+        ).all()
+    }
     # Every live name in one query rather than one per row.
     names = dict(
         db.execute(
@@ -156,6 +171,7 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
         AdminUser(
             id=u.id,
             screen_name=names.get(u.id),
+            profile_public=bool(names.get(u.id) and published.get(u.id)),
             email=u.email,
             display_name=u.display_name,
             is_admin=u.is_admin,

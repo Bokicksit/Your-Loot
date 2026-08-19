@@ -193,18 +193,27 @@ export default function AdminPage() {
                   <td>
                     <span className="admin-who">{u.email || `#${u.id}`}</span>
                     {u.display_name && <span className="admin-name">{u.display_name}</span>}
-                    {/* the one thing about an account strangers can see, which
-                        is why it is the one thing occasionally taken away */}
-                    {u.screen_name && (
-                      <a
-                        className="admin-name"
-                        href={`/u/${u.screen_name.toLowerCase()}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        /u/{u.screen_name}
-                      </a>
-                    )}
+                    {/* The one thing about an account strangers can see,
+                        which is why it is the one thing occasionally taken
+                        away. Linked only where it answers: a name is claimed
+                        at sign-up and a profile is published later or never,
+                        so most names have no page behind them and a link to
+                        one is a link to "no such profile". */}
+                    {u.screen_name &&
+                      (u.profile_public ? (
+                        <a
+                          className="admin-name"
+                          href={`/u/${u.screen_name.toLowerCase()}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          /u/{u.screen_name}
+                        </a>
+                      ) : (
+                        <span className="admin-name unpublished" title="Claimed, but nothing published yet">
+                          /u/{u.screen_name} <em>unpublished</em>
+                        </span>
+                      ))}
                     {!u.email_verified_at && <span className="admin-flag">unconfirmed</span>}
                   </td>
                   <td className="admin-num">{fmtDate(u.created_at)}</td>

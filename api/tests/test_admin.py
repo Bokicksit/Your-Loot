@@ -193,3 +193,37 @@ def test_the_plan_screen_is_told_whether_you_are_on_the_tier(owner):
         assert row["subscribed"] == said["subscribed"], (
             "the admin panel and the settings screen disagree about the same account"
         )
+
+
+def test_the_panel_only_links_a_profile_that_answers(owner):
+    """A name is claimed at sign-up; a profile is published later, or never.
+
+    So an account normally has a name and no page behind it, and a panel that
+    linked every name offered links that all answer "no such profile" — which
+    is exactly how this was found.
+    """
+    me = owner.get("/api/auth/me").json().get("user") or {}
+    mine = owner.get("/api/profile")
+    if mine.status_code != 200:
+        pytest.skip("no public profiles on this install")
+
+    profile = mine.json()
+    # Claims one if this account has none yet — the suite's other files claim
+    # it later, and a test that depended on running after them would be a
+    # test about file order rather than about the panel.
+    if profile["can_claim"]:
+        profile = owner.put(
+            "/api/profile", json={"screen_name": f"ad{uuid.uuid4().hex[:8]}"}
+        ).json()
+    was = profile["collections"]
+    try:
+        owner.put("/api/profile", json={"collections": []}).raise_for_status()
+        row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == me["id"])
+        assert row["screen_name"], "the name is still theirs"
+        assert row["profile_public"] is False, "a page with nothing published was offered"
+
+        owner.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+        row = next(u for u in owner.get("/api/admin/users").json() if u["id"] == me["id"])
+        assert row["profile_public"] is True, "a published profile was not offered"
+    finally:
+        owner.put("/api/profile", json={"collections": was})

@@ -4823,3 +4823,15 @@ button.primary.danger:disabled { opacity: .45; }
 /* A data source's credit: present, legible, and not shouting. */
 a.source-credit { color: var(--text-mute); text-decoration: none; }
 a.source-credit:hover { color: var(--gold); text-decoration: underline; }
+
+/* A name with no page behind it: shown, because it is still claimed and
+   still theirs, but plainly not a link. */
+.admin-name.unpublished { color: var(--text-mute); }
+.admin-name.unpublished em {
+  font-style: normal;
+  font-family: var(--font-num);
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .75;
+}

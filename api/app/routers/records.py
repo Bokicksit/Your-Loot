@@ -130,7 +130,7 @@ def search_musicbrainz(
                 try:
                     hits = discogs_client.by_barcode(barcode)
                     if hits:
-                        return _within_terms(hits)
+                        return hits
                 except httpx.HTTPError:
                     pass
             hits = musicbrainz_client.search(barcode=barcode)
@@ -163,32 +163,12 @@ def search_musicbrainz(
             try:
                 hits = discogs_client.search(query=q, artist=artist)
                 if hits:
-                    return _within_terms(hits)
+                    return hits
             except httpx.HTTPError:
                 pass  # a dead token shouldn't take the search down with it
         return musicbrainz_client.search(query=q, artist=artist)
     except httpx.HTTPError as e:
         raise HTTPException(502, f"MusicBrainz unreachable: {e}")
-
-
-def _within_terms(hits: list[dict]) -> list[dict]:
-    """Discogs hits, minus what a commercial install may not use.
-
-    Titles, artists, formats, years and barcodes are CC0 — Discogs publishes
-    them as monthly CC0 dumps. Release images are Restricted Data, and their
-    terms bar commercial use of those outright. So where this install sells
-    anything, the covers are dropped and the hit shows a placeholder; a home
-    server is personal use and keeps them. The install's own commercial
-    status is the test — not whose token made the request, because the terms
-    bind the application, not the key.
-    """
-    from app.plans import sells_anything
-
-    if not sells_anything():
-        return hits
-    for h in hits:
-        h["image_url"] = None
-    return hits
 
 
 @router.get("/tracklist")
