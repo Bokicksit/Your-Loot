@@ -131,6 +131,9 @@ export default function RecordsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [art, setArt] = useState([]); // retailer photos of the actual package
   const [results, setResults] = useState(null);
+  // covers that turned out to be dead links, so their tiles show the
+  // placeholder instead of a broken image icon
+  const [deadCovers, setDeadCovers] = useState(new Set());
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -192,6 +195,7 @@ export default function RecordsPage() {
   const lookup = async (params) => {
     setSearching(true);
     setResults(null); // clear the old hits so the status stands alone
+    setDeadCovers(new Set()); // a fresh search judges its own covers
     try {
       setResults(await api.musicBrainzSearch(params));
     } catch (e) {
@@ -270,7 +274,7 @@ export default function RecordsPage() {
       country: r.country || "",
       barcode: r.barcode || f.barcode,
       track_count: r.track_count || "",
-      image_url: r.image_url || null,
+      image_url: deadCovers.has(r.mbid) ? null : r.image_url || null,
       tracklist: null,
       // where this pick came from — the row keeps it, and Discogs data
       // carries a link back to its release page as their terms require
@@ -551,8 +555,20 @@ export default function RecordsPage() {
                         : "Use this pressing"
                     }
                   >
-                    {r.image_url ? (
-                      <img src={r.image_url} alt={r.title} loading="lazy" />
+                    {/* MusicBrainz hits guess their Cover Art Archive URL —
+                        the archive has no art for many pressings, and a
+                        broken-image icon reads as our bug rather than their
+                        gap. A cover that fails becomes the same placeholder
+                        a coverless hit gets, and picking it stores nothing. */}
+                    {r.image_url && !deadCovers.has(r.mbid || i) ? (
+                      <img
+                        src={r.image_url}
+                        alt={r.title}
+                        loading="lazy"
+                        onError={() =>
+                          setDeadCovers((d) => new Set(d).add(r.mbid || i))
+                        }
+                      />
                     ) : (
                       <div className="placeholder" data-label="no cover" />
                     )}

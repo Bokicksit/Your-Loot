@@ -170,6 +170,8 @@ export const api = {
   profile: () => request("/api/profile"),
   saveProfile: (body) =>
     request("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
+  adminRepairCovers: () =>
+    request("/api/admin/repair-covers", { method: "POST" }),
   adminSetComped: (userId, comped) =>
     request(`/api/admin/users/${userId}/comped`, {
       method: "PUT",
@@ -248,14 +250,22 @@ export const api = {
   // photo is copied to our own storage. TMDB/IGDB CDNs are stable and stay
   // hotlinked. Falls back to the original URL if the copy fails — a picture
   // that might break later beats no picture.
+  /** Copy a remote image into our own storage before storing its URL.
+   *
+   *  Two different failures, two different answers. The source saying "no
+   *  such image" means the URL is dead — storing it would write a broken
+   *  frame into the collection permanently, which is how a shelf of records
+   *  ended up with no pictures. Nothing gets stored. A network hiccup, by
+   *  contrast, keeps the original URL: it may well load in the browser even
+   *  when the server could not reach it just now. */
   localiseImage: async (url) => {
     const stable = /image\.tmdb\.org|igdb\.com/i;
     if (!url || !/^https?:/i.test(url) || stable.test(url)) return url;
     try {
       const { url: local } = await api.fetchImage(url);
       return local;
-    } catch {
-      return url;
+    } catch (e) {
+      return /source returned 4\d\d/.test(e.message || "") ? null : url;
     }
   },
   books: (params = {}) => request(`/api/books?${new URLSearchParams(params)}`),

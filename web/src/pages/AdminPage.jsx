@@ -276,6 +276,34 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+        <div className="form-row wrap" style={{ marginTop: "var(--s-3)" }}>
+          {/* One pass settles every record cover still pointing at the Cover
+              Art Archive: live ones are copied into our storage, dead ones
+              cleared to the honest placeholder. Nothing to press twice —
+              after a pass nothing points there any more. */}
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy === "covers"}
+            onClick={async () => {
+              setBusy("covers");
+              setError(null);
+              try {
+                const r = await api.adminRepairCovers();
+                alert(
+                  `${r.checked} checked — ${r.copied} copied in, ` +
+                    `${r.cleared} cleared, ${r.kept} left for another try.`
+                );
+              } catch (e) {
+                setError(e.message);
+              } finally {
+                setBusy(null);
+              }
+            }}
+          >
+            {busy === "covers" ? "Checking covers…" : "Repair record covers"}
+          </button>
+        </div>
         <p className="settings-note">
           Granting a plan here has no end date — it stays until you take it
           back. Admins are never billed and cannot be put on a plan.

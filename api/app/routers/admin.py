@@ -279,6 +279,63 @@ def set_comped(
     )
 
 
+@router.post("/repair-covers")
+def repair_covers(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Heal record covers that were stored as dead links.
+
+    MusicBrainz results guess their Cover Art Archive URL, and for a while a
+    guess that turned out wrong was stored anyway — so a shelf of records
+    rendered as broken frames. This walks every record whose picture still
+    points at the archive and settles each one: an image that answers is
+    copied into our own storage, where it cannot break again; one the archive
+    says it does not have is cleared, so the tile shows the honest
+    placeholder and its owner can add a photo or re-pick the pressing.
+
+    Idempotent — after one pass nothing points at the archive any more —
+    and per-row: a failure on one record leaves the rest repaired.
+    """
+    import uuid as uuidlib
+    from pathlib import Path as FsPath
+
+    import httpx as _httpx
+
+    from app.config import settings as cfg
+    from app.routers.images import EXT_BY_TYPE, MAX_BYTES, _checked_get
+    from app.trim import trim_border
+
+    rows = db.scalars(
+        select(CollectionItem).where(
+            CollectionItem.module == "records",
+            CollectionItem.image_url.like("https://coverartarchive.org/%"),
+        )
+    ).all()
+
+    copied, cleared, kept = 0, 0, 0
+    for item in rows:
+        try:
+            resp = _checked_get(item.image_url)
+        except _httpx.HTTPError:
+            kept += 1  # unreachable is not the same as gone; try again later
+            continue
+        if resp.status_code in (404, 410):
+            item.image_url = None
+            cleared += 1
+            db.commit()
+            continue
+        ctype = (resp.headers.get("content-type") or "").split(";")[0].strip().lower()
+        ext = EXT_BY_TYPE.get(ctype)
+        if resp.status_code != 200 or not ext or len(resp.content) > MAX_BYTES:
+            kept += 1
+            continue
+        name = f"{uuidlib.uuid4().hex}{ext}"
+        (FsPath(cfg.image_dir) / name).write_bytes(trim_border(resp.content))
+        item.image_url = f"/images/{name}"
+        copied += 1
+        db.commit()
+
+    return {"checked": len(rows), "copied": copied, "cleared": cleared, "kept": kept}
+
+
 @router.delete("/users/{user_id}/screen-name", status_code=204)
 def revoke_screen_name(
     user_id: int,
