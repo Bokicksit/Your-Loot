@@ -277,10 +277,11 @@ export default function AdminPage() {
           </table>
         </div>
         <div className="form-row wrap" style={{ marginTop: "var(--s-3)" }}>
-          {/* One pass settles every record cover still pointing at the Cover
-              Art Archive: live ones are copied into our storage, dead ones
-              cleared to the honest placeholder. Nothing to press twice —
-              after a pass nothing points there any more. */}
+          {/* One pass settles the pictures that lie: archive covers that
+              never existed, and rows pointing at local files a deploy wiped
+              — which is what a server without a persistent volume does.
+              Live archive covers are copied in; the rest clear to the honest
+              placeholder so their owners can re-pick or photograph. */}
           <button
             type="button"
             className="ghost"
@@ -292,7 +293,9 @@ export default function AdminPage() {
                 const r = await api.adminRepairCovers();
                 alert(
                   `${r.checked} checked — ${r.copied} copied in, ` +
-                    `${r.cleared} cleared, ${r.kept} left for another try.`
+                    `${r.cleared + (r.missing_files || 0)} cleared ` +
+                    `(${r.missing_files || 0} pointed at files that no longer exist), ` +
+                    `${r.kept} left for another try.`
                 );
               } catch (e) {
                 setError(e.message);
@@ -301,7 +304,7 @@ export default function AdminPage() {
               }
             }}
           >
-            {busy === "covers" ? "Checking covers…" : "Repair record covers"}
+            {busy === "covers" ? "Checking pictures…" : "Repair broken pictures"}
           </button>
         </div>
         <p className="settings-note">

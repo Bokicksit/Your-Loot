@@ -303,6 +303,24 @@ def repair_covers(db: Session = Depends(get_db), _: User = Depends(require_admin
     from app.routers.images import EXT_BY_TYPE, MAX_BYTES, _checked_get
     from app.trim import trim_border
 
+    # Two ways a stored picture lies. A guessed archive URL that never
+    # existed — the original bug — and a local file that has since vanished,
+    # which is what a server without a persistent volume does to everything
+    # on its disk at every deploy. Both end the same way for the person
+    # looking: a broken frame where their cover was.
+    missing = 0
+    local = db.scalars(
+        select(CollectionItem).where(CollectionItem.image_url.like("/images/%"))
+    ).all()
+    root = FsPath(cfg.image_dir)
+    for item in local:
+        name = item.image_url.split("/")[-1].split("?")[0]
+        if name and not (root / name).is_file():
+            item.image_url = None
+            missing += 1
+    if missing:
+        db.commit()
+
     rows = db.scalars(
         select(CollectionItem).where(
             CollectionItem.module == "records",
@@ -333,7 +351,13 @@ def repair_covers(db: Session = Depends(get_db), _: User = Depends(require_admin
         copied += 1
         db.commit()
 
-    return {"checked": len(rows), "copied": copied, "cleared": cleared, "kept": kept}
+    return {
+        "checked": len(rows) + len(local),
+        "copied": copied,
+        "cleared": cleared,
+        "missing_files": missing,
+        "kept": kept,
+    }
 
 
 @router.delete("/users/{user_id}/screen-name", status_code=204)
