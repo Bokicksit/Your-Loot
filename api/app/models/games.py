@@ -28,6 +28,9 @@ class GameAttrs(Base):
     # describes your copy, not the game itself.
     # info panel metadata, captured from IGDB at add time (manual adds: blank)
     summary: Mapped[str | None] = mapped_column(Text)
+    # IGDB builds its URLs from a slug, so the numeric id we match on cannot
+    # produce the link their partnership asks us to show. See migration 0047.
+    igdb_slug: Mapped[str | None] = mapped_column(String(160))
     release_year: Mapped[int | None] = mapped_column()
     genres: Mapped[str | None] = mapped_column(String(120))
     developer: Mapped[str | None] = mapped_column(String(100))

@@ -4,6 +4,7 @@ from app.schemas.common import OwnedOut, WantedOut
 
 
 class GameAttrsOut(BaseModel):
+    igdb_slug: str | None = None
     platform_id: int | None = None
     platform_name: str | None = None
     platform_abbr: str | None = None
@@ -60,6 +61,8 @@ class GameCreate(BaseModel):
     image_url: str | None = None
     notes: str | None = None
     igdb_id: int | None = None  # set when the entry came from IGDB search
+    # their address for it, so the credit beside the data can link the game
+    igdb_slug: str | None = Field(default=None, max_length=160)
     summary: str | None = None
     release_year: int | None = None
     genres: str | None = None

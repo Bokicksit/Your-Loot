@@ -30,6 +30,7 @@ const EMPTY_FORM = {
   region: "NTSC-U",
   is_hardware: false,
   igdb_id: null,
+  igdb_slug: null,
   image_url: null,
   tags: [],
   notes: "",
@@ -243,6 +244,7 @@ export default function GamesPage() {
         ...f,
         title,
         igdb_id: null,
+        igdb_slug: null,
         image_url: boxArt[0]?.url || null,
       }));
       setSearching(true);
@@ -331,6 +333,8 @@ export default function GamesPage() {
       ...form,
       title: r.year ? `${r.title} (${r.year})` : r.title,
       igdb_id: r.igdb_id,
+      // their address for the game, so the credit beside it can link there
+      igdb_slug: r.igdb_slug || null,
       // a box photo from the barcode is the copy you own; IGDB's cover only
       // fills in when there isn't one
       image_url: form.image_url || r.cover_url,
@@ -369,6 +373,7 @@ export default function GamesPage() {
         region: form.region || null,
         is_hardware: form.is_hardware,
         igdb_id: form.igdb_id,
+        igdb_slug: form.igdb_slug,
         image_url: await api.localiseImage(form.image_url),
         notes: form.notes.trim() || null,
         summary: form.summary,
@@ -527,6 +532,7 @@ export default function GamesPage() {
                 ...form,
                 title: e.target.value,
                 igdb_id: null,
+                igdb_slug: null,
                 image_url: null,
                 summary: null,
                 release_year: null,
@@ -972,6 +978,20 @@ function GameRow({ game, platforms, onChange, onReload , onTagsChanged}) {
             {/* the system, not the region: a region code is something almost
                 no seller writes into a listing title */}
             <EbayLink title={game.title} terms={[a.platform_name]} />
+            {/* The attribution the IGDB partnership asks for: user-facing
+                credit next to their data, linking the game on their site.
+                Only where the entry actually came from them — a hand-typed
+                game has nothing to credit. */}
+            {a.igdb_slug && (
+              <a
+                className="game-info-line source-credit"
+                href={`https://www.igdb.com/games/${a.igdb_slug}`}
+                target="_blank"
+                rel="noopener"
+              >
+                View on IGDB.com
+              </a>
+            )}
           </div>
           <TagChips tags={game.tags} />
           {/* your own words about the thing, not about one copy */}

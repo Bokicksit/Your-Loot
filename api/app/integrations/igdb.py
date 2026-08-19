@@ -45,7 +45,9 @@ class IGDBClient:
         q = query.replace('"', "")
         body = (
             f'search "{q}"; '
-            "fields name,first_release_date,platforms.name,cover.url,"
+            # slug is what builds igdb.com/games/<slug>, the link the
+            # partnership asks us to show beside their data
+            "fields name,slug,first_release_date,platforms.name,cover.url,"
             "summary,genres.name,involved_companies.company.name,"
             "involved_companies.developer,involved_companies.publisher; "
             f"limit {limit};"
@@ -88,6 +90,7 @@ class IGDBClient:
             companies = g.get("involved_companies") or []
             results.append({
                 "igdb_id": g["id"],
+                "igdb_slug": g.get("slug"),
                 "title": g["name"],
                 "year": year,
                 "platforms": [p["name"] for p in g.get("platforms", [])],
