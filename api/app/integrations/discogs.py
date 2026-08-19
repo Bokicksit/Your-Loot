@@ -1,7 +1,10 @@
 """Discogs client — the pressing-level database for records.
 
-Free personal access token from https://www.discogs.com/settings/developers
-("Generate token"). Set it as DISCOGS_TOKEN.
+Two ways in, both from https://www.discogs.com/settings/developers. A person
+running their own server generates a personal access token ("Generate
+token") and sets DISCOGS_TOKEN. A service registers an application and sets
+DISCOGS_KEY and DISCOGS_SECRET — the same requests, made as the application
+Discogs knows about rather than as one person's account.
 
 Why it leads for records: Discogs is catalogued by collectors describing the
 exact object in their hands, so its barcode coverage on vinyl runs well past
@@ -55,17 +58,26 @@ def _split_title(text: str) -> tuple[str | None, str | None]:
 class DiscogsClient:
     def __init__(self):
         self.token = settings.discogs_token
+        self.key = settings.discogs_key
+        self.secret = settings.discogs_secret
 
     @property
     def configured(self) -> bool:
-        return bool(self.token)
+        return bool(self.token or (self.key and self.secret))
+
+    def _auth(self) -> str:
+        # the registered application outranks a personal token where both
+        # are set — it is the identity Discogs actually knows the service by
+        if self.key and self.secret:
+            return f"Discogs key={self.key}, secret={self.secret}"
+        return f"Discogs token={self.token}"
 
     def _get(self, path: str, params: dict) -> dict:
         r = httpx.get(
             f"{API}{path}",
             params=params,
             headers={
-                "Authorization": f"Discogs token={self.token}",
+                "Authorization": self._auth(),
                 "User-Agent": UA,
                 "Accept": "application/json",
             },

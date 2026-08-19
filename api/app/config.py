@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     rebrickable_api_key: str = ""
     comicvine_api_key: str = ""
     discogs_token: str = ""
+    # A registered Discogs application's credentials — the proper form for a
+    # service, where the personal token above is the right one for a person's
+    # own server. Either works; the key/secret pair wins when both are set.
+    discogs_key: str = ""
+    discogs_secret: str = ""
 
 
 settings = Settings()
