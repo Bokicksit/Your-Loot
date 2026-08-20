@@ -6,7 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
-import HelpTip from "../components/HelpTip.jsx";
+import HelpTip, { ShelfHelp } from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -416,6 +416,7 @@ export default function HardwarePage() {
         <span className="rail-spacer" />
         <ViewToggle module="hardware" />
         {tiles && inlineDensity && <TileDensity module="hardware" />}
+        <ShelfHelp noun="a machine" />
       </div>
       {filtersOpen && (
         <div className="filter-sheet">

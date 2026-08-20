@@ -6,7 +6,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
-import HelpTip from "../components/HelpTip.jsx";
+import HelpTip, { ShelfHelp } from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -355,6 +355,7 @@ export default function LegoPage() {
         <span className="rail-spacer" />
         <ViewToggle module="lego" />
         {tiles && inlineDensity && <TileDensity module="lego" />}
+        <ShelfHelp noun="a set" />
       </div>
       {filtersOpen && (
         <div className="filter-sheet">

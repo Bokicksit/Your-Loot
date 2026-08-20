@@ -6,7 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
-import HelpTip from "../components/HelpTip.jsx";
+import HelpTip, { ShelfHelp } from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
@@ -374,6 +374,7 @@ export default function MoviesPage() {
         <span className="rail-spacer" />
         <ViewToggle module="movies" />
         {tiles && inlineDensity && <TileDensity module="movies" />}
+        <ShelfHelp noun="a film" />
       </div>
       {filtersOpen && (
         <div className="filter-sheet">

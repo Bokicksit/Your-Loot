@@ -23,6 +23,11 @@ Full detail is in the commit log, where every change has its own note.
   else" strip, the hero names every collection, and a new section previews
   the collector's room in miniature: the same CSS furniture idea, postage-
   stamp sized.
+- **The toolbar explains itself too.** A "?" at the end of every shelf's
+  rail covers the dice (random pick, filter-aware, whole-shelf), the eBay
+  coin, the layout toggle and the row buttons — and the help page gained
+  matching sections, including the add form's quiet helpers (duplicate
+  notice, retail photos, sticky defaults).
 - **A "?" in every add and edit form.** Each collection's add sheet and
   entry editor now carries a small help note — what the search reaches, what
   the buttons do, and the difference between the entry and your copy. The

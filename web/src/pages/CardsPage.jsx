@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
 import { TagFilter } from "../components/Tags.jsx";
+import { ShelfHelp } from "../components/HelpTip.jsx";
 import AddSheet, { Searching } from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
@@ -647,6 +648,12 @@ export default function CardsPage({ initialView = "collection" }) {
         <span className="rail-spacer" />
         <ViewToggle module="cards" />
         {tiles && inlineDensity && <TileDensity module="cards" min={3} />}
+        <ShelfHelp noun="a card" rows={false}>
+          {" "}Cards work by the chip: tap the little condition chip on a card
+          to grade it or file it into a binder, and press-and-hold to select
+          several and file them all at once. <b>Binder cards</b> above the
+          list shows the ones already filed away.
+        </ShelfHelp>
       </div>
       {filtersOpen && (
         <div className="filter-sheet">

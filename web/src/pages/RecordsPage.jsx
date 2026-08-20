@@ -6,7 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
-import HelpTip from "../components/HelpTip.jsx";
+import HelpTip, { ShelfHelp } from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -415,6 +415,7 @@ export default function RecordsPage() {
         <span className="rail-spacer" />
         <ViewToggle module="records" />
         {tiles && inlineDensity && <TileDensity module="records" />}
+        <ShelfHelp noun="a record" />
       </div>
       {filtersOpen && (
         <div className="filter-sheet">

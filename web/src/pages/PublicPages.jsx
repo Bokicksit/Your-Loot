@@ -200,6 +200,56 @@ export function HelpPage() {
         of something and it's one entry with two chips.
       </p>
 
+      <h2>The dice, the coin, and the other small buttons</h2>
+      <p>
+        Every shelf carries the same toolbar, and each collection's own{" "}
+        <strong>?</strong> explains it in place — but for the record:
+      </p>
+      <ul>
+        <li>
+          <strong>The dice</strong> picks one thing from the shelf at random —
+          for "what should it be tonight?". It rolls across your whole
+          collection, not just the page on screen, and it honours the filters:
+          narrow to one platform or author and it rolls inside that.
+        </li>
+        <li>
+          <strong>The coin</strong> on a row opens eBay's sold listings for
+          that item — what copies actually go for, not what sellers ask. It's
+          on the wanted list too, where the question matters most.
+        </li>
+        <li>
+          <strong>Tiles or list</strong> is per collection, and the slider
+          sets how many tiles share a row — covers on a wall or details in a
+          line, whichever suits that shelf.
+        </li>
+        <li>
+          <strong>Tap a cover</strong> and the row opens up with the entry's
+          details and blurb.
+        </li>
+      </ul>
+
+      <h2>Small things the add form does for you</h2>
+      <ul>
+        <li>
+          <strong>It warns about duplicates, without stopping you.</strong>{" "}
+          Type a title you already have and a quiet note says so, with how
+          many copies. Just a note — a second copy is an ordinary thing to
+          own, and only the person holding it knows if it's a spare.
+        </li>
+        <li>
+          <strong>It offers photos of the actual package.</strong> Catalogue
+          art is the publisher's artwork; a shop's listing is a photograph of
+          the thing in its box, which is what you own and often the only way
+          to tell editions apart. Both are offered — your own camera wins
+          over either.
+        </li>
+        <li>
+          <strong>Your defaults stick.</strong> The region you buy, the book
+          format on your shelf, the binder you're filing into — set once,
+          remembered between adds.
+        </li>
+      </ul>
+
       <h2>Games and hardware</h2>
       <p>
         Games are looked up by title, with the platform picked from the
