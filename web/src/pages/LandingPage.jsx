@@ -336,8 +336,10 @@ export default function LandingPage() {
             <p>
               Same app, same export, same shareable page — for whatever else
               ends up on your shelves. amiibo arrive with the whole line
-              catalogued: all 932 figures and cards, searchable by character
-              or series, each copy marked new-in-box, boxed or loose.
+              catalogued — all 932 figures and cards — and consoles come the
+              same way: 170+ North American machines, famous colourways,
+              controllers and accessories, picked instead of typed, with the
+              serial number and working status of your own unit on your copy.
             </p>
           </div>
           <div className="strip rv d1">
@@ -348,6 +350,14 @@ export default function LandingPage() {
             <span className="chip2">
               <Icon id="vinyl" />
               Records
+            </span>
+            <span className="chip2">
+              <Icon id="pad" />
+              Games
+            </span>
+            <span className="chip2">
+              <Icon id="console" />
+              Hardware
             </span>
             <span className="chip2">
               <Icon id="book" />
@@ -458,6 +468,10 @@ export default function LandingPage() {
                 <li>
                   <Icon id="check" />
                   <span>All 1,025 slots, cards and binders without limits</span>
+                </li>
+                <li>
+                  <Icon id="check" />
+                  <span>Games and hardware — with the console catalogue built in</span>
                 </li>
                 <li>
                   <Icon id="check" />
