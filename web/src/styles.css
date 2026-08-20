@@ -3031,6 +3031,17 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-align: center;
 }
 .lp-hero .hero-lead .lp-lede { margin-inline: auto; }
+/* It carries the hero alone now that the tagline has moved down the page,
+   so it is sized to be read as a statement rather than as a sub-line. */
+.lp-hero .hero-statement {
+  max-width: 40ch;
+  font-size: var(--f-6);
+  line-height: 1.45;
+  color: var(--text);
+}
+@container (min-width: 840px) {
+  .lp-hero .hero-statement { font-size: 30px; line-height: 1.38; }
+}
 @container (min-width: 840px) {
   .lp-hero { padding: 92px 0 60px; }
 }
@@ -3208,6 +3219,7 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-transform: uppercase;
   color: var(--gold);
 }
+.lp-head h1,
 .lp-head h2 {
   margin: 10px 0 12px;
   font-size: 32px;
@@ -3217,7 +3229,26 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-wrap: balance;
   color: var(--text);
 }
-@container (min-width: 840px) { .lp-head h2 { font-size: 42px; } }
+@container (min-width: 840px) {
+  .lp-head h1,
+  .lp-head h2 { font-size: 42px; }
+}
+
+/* The old hero tagline, split in two and hung over the sections it was
+   describing all along: "Build the binder." over the Pokédex, "Send the
+   link." over the room. Display type rather than a heading — the section's
+   own kicker and title follow immediately underneath, and two headings
+   stacked would read as a mistake. */
+.lp-flourish {
+  margin: 0 0 14px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: var(--w-bold);
+  letter-spacing: -.035em;
+  color: var(--text);
+}
+.lp-flourish.gold { color: var(--gold); }
+@container (min-width: 840px) { .lp-flourish { font-size: 56px; } }
 .lp-head p {
   margin: 0;
   font-size: var(--f-4);

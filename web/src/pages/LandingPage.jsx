@@ -207,21 +207,19 @@ export default function LandingPage() {
         </button>
       </nav>
 
-      {/* The headline and what the thing is, and nothing else. The buttons
-          used to sit here, but somebody who has not yet been told what this
-          keeps is not ready to be asked to start — so they come after the
-          shelves, which are the answer to the only question a first visit
-          actually has. */}
+      {/* What the thing is, in one breath. The tagline used to sit here as a
+          headline over this paragraph, saying "build the binder, send the
+          link" to somebody who did not yet know what a binder was for. Its
+          two halves are section flourishes now — one over the Pokédex, which
+          is the building, one over the room, which is the sending — so each
+          lands on the thing it describes instead of promising both up front. */}
       <header className="lp-hero">
         <div className="lp-wrap hero-lead">
           <span className="eyebrow rv in">
             <Icon id="card" />
             Pokémon TCG · and everything else you keep
           </span>
-          <h1 className="rv in d1">
-            Build the binder. <em>Send the link.</em>
-          </h1>
-          <p className="lp-lede rv in d2">
+          <p className="lp-lede hero-statement rv in d1">
             One app for the whole hobby: Pokémon cards, games, consoles,
             records, books, amiibo and LEGO — each with a real catalogue
             behind the search, your copy's condition on every entry, and a
@@ -235,7 +233,9 @@ export default function LandingPage() {
         <div className="lp-wrap">
           <div className="lp-head rv">
             <span className="kicker">What it keeps</span>
-            <h2>Seven collections. One shelf.</h2>
+            {/* the page's h1 now that the hero carries none: the first thing
+                said in headline type should be the thing this actually is */}
+            <h1>Seven collections. One shelf.</h1>
             <p>
               Each one has a real catalogue behind the search, so adding a
               thing means finding it — what's left to say is about your copy:
@@ -284,6 +284,7 @@ export default function LandingPage() {
 
       <section className="lp-band alt" id="pokedex">
         <div className="lp-wrap">
+          <p className="lp-flourish rv">Build the binder.</p>
           <div className="lp-head rv">
             <span className="kicker">The Pokédex</span>
             <h2>Every set. Every printing. One slot per Pokémon.</h2>
@@ -416,6 +417,7 @@ export default function LandingPage() {
 
       <section className="lp-band alt" id="room">
         <div className="lp-wrap">
+          <p className="lp-flourish gold rv">Send the link.</p>
           <div className="lp-head rv">
             <span className="kicker">The collector's room</span>
             <h2>A public page drawn as a room, not a spreadsheet.</h2>

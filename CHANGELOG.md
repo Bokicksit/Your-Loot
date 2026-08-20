@@ -23,6 +23,11 @@ Full detail is in the commit log, where every change has its own note.
   pass. Found in a security audit; covered by new tenancy tests.
 
 ### Changed
+- **The tagline sits on the things it describes.** "Build the binder. Send
+  the link." has left the hero, where it promised both halves to somebody
+  who did not yet know what a binder was for. "Build the binder." now hangs
+  over the Pokédex and "Send the link." over the collector's room, so each
+  lands on the section that earns it.
 - **The front page leads with the shelves.** What it keeps comes first now,
   the two ways in sit under it once that question is answered, and the
   Pokédex has its own section below rather than sharing the hero. The dex
