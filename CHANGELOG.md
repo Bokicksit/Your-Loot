@@ -9,6 +9,11 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Fixed
+- **The room's shelves actually fill now.** Book, game and film spines in
+  the collector's room had no height, so a seventeen-book case drew as empty
+  furniture. Each spine now sizes itself from its own title — hashed like
+  its colour, so the shelf is stable between visits — and the games unit's
+  rows gained the height they stand in.
 - **Editing and deleting an entry now checks whose it is.** On a multi-user
   install, the write endpoints took any item id — one account could rewrite
   or cascade-delete another's shelf. One guard now covers all eight

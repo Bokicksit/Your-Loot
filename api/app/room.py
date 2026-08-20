@@ -62,6 +62,27 @@ def _props(items, cap, cls, style=""):
     return "".join(out)
 
 
+def _spines(items, cap, cls="sp"):
+    """A run of spines, each sized by its own title.
+
+    Every other prop has fixed dimensions in the stylesheet, but a spine's
+    height is the one thing that makes a shelf read as a collection rather
+    than a product run — and `.sp` deliberately has no height of its own.
+    Without one written here the spines rendered zero-height, which drew a
+    seventeen-book case as empty furniture. Hashed from the title, like the
+    colour, so the shelf is stable between visits.
+    """
+    out = []
+    for j, i in enumerate(items[:cap]):
+        d = hashlib.sha1(_title(i).encode("utf-8")).digest()
+        h = 58 + d[1] % 38  # 58–95% of the shelf it stands on
+        out.append(
+            '<span class="' + cls + '" style="--j:' + str(j)
+            + ';color:' + tint(_title(i), j) + ';height:' + str(h) + '%"></span>'
+        )
+    return "".join(out)
+
+
 # ---------------------------------------------------------------- the zones
 #
 # One builder per collection. Each returns the inside of its zone; the wrapper,
@@ -108,7 +129,10 @@ def _games(items):
         chunk = items[r * per:(r + 1) * per]
         if not chunk:
             break
-        rows += '<div class="row">' + _props(chunk, per, "sp") + '</div>'
+        # the unit has no height of its own — a shelf of empty rows would
+        # collapse, so each row states the height its spines stand in
+        rows += ('<div class="row" style="height:6.5cqh">'
+                 + _spines(chunk, per) + '</div>')
     return (
         '<div class="crt"><div class="spill"></div><div class="screen"></div>'
         '<div class="knobs"><i></i><i></i></div><span class="led"></span></div>'
@@ -149,13 +173,13 @@ def _movies(items):
         '<div class="plank" style="width:52cqh;height:1cqh;margin-bottom:2cqh">'
         '<span class="lightline"></span><span class="wash"></span></div>'
         '<div class="row" style="width:52cqh;height:7cqh;margin-bottom:2cqh">'
-        + _props(items[:half], 26, "sp slim bluray") + '</div>'
+        + _spines(items[:half], 26, "sp slim bluray") + '</div>'
         '<div class="tv"><div class="spill"></div><div class="screen"></div>'
         '<span class="stand"></span></div>'
         '<div style="height:2cqh"></div>'
         '<span class="soundbar prop"></span>'
         '<div class="row" style="width:56cqh;height:7cqh">'
-        + _props(items[half:], 26, "sp slim dvd") + '</div>'
+        + _spines(items[half:], 26, "sp slim dvd") + '</div>'
         '<div class="mediaunit furn" style="height:3cqh"></div>'
     )
 
@@ -184,7 +208,7 @@ def _books(items):
     per = 16
     for t in range(4):
         chunk = items[t * per:(t + 1) * per]
-        tiers += '<div class="tier">' + (_props(chunk, per, "sp") if chunk else "") + '</div>'
+        tiers += '<div class="tier">' + (_spines(chunk, per) if chunk else "") + '</div>'
     return (
         '<div class="bookcase">' + tiers + '</div>'
         '<span class="pot prop" style="position:absolute;left:-7cqh;bottom:0"></span>'
