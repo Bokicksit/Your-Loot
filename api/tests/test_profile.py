@@ -747,3 +747,90 @@ def test_where_there_are_accounts_there_is_no_loot_page(owner):
     page about whoever runs it that they never asked for."""
     r = owner.get("/loot")
     assert r.status_code == 404, "/loot answered on a multi-user install"
+
+
+# --- reserved names --------------------------------------------------------
+#
+# A name is claimed once, which makes the moment of claiming the only one
+# that matters. A reservation lets the operator get ahead of it: hold a name
+# for somebody who has no account yet, and point it at their email when they
+# finally do.
+
+
+def _invite(owner, email):
+    owner.post(
+        "/api/auth/users", json={"email": email, "password": "test-password-9"}
+    ).raise_for_status()
+    c = httpx.Client(base_url=BASE, timeout=30)
+    c.post(
+        "/api/auth/login", json={"email": email, "password": "test-password-9"}
+    ).raise_for_status()
+    return c
+
+
+def test_a_reserved_name_waits_for_its_person(owner):
+    held = _name()
+    r = owner.post("/api/admin/reserved-names", json={"name": held})
+    assert r.status_code == 201, r.text
+    res_id = r.json()["id"]
+
+    stranger = _invite(owner, f"s-{uuid.uuid4().hex[:8]}@example.com")
+    kid_email = f"k-{uuid.uuid4().hex[:8]}@example.com"
+    kid = _invite(owner, kid_email)
+    try:
+        # held for nobody yet: everybody bounces
+        r = stranger.put("/api/profile", json={"screen_name": held})
+        assert r.status_code >= 400, "a stranger claimed a reserved name"
+
+        # assigned to the kid: the stranger still bounces, the kid gets in
+        owner.patch(
+            f"/api/admin/reserved-names/{res_id}", json={"email": kid_email}
+        ).raise_for_status()
+        r = stranger.put("/api/profile", json={"screen_name": held})
+        assert r.status_code >= 400, "assigning it did not keep a stranger out"
+        r = kid.put("/api/profile", json={"screen_name": held})
+        assert r.status_code == 200, r.text
+        assert r.json()["url"].endswith("/" + held)
+
+        # spent by the claiming: no longer on the admin's list
+        names = {
+            row["name"] for row in owner.get("/api/admin/reserved-names").json()
+        }
+        assert held not in names, "a claimed reservation is still listed"
+    finally:
+        stranger.close()
+        kid.close()
+
+
+def test_a_released_name_goes_back_in_circulation(owner):
+    held = _name()
+    res = owner.post("/api/admin/reserved-names", json={"name": held}).json()
+    someone = _invite(owner, f"r-{uuid.uuid4().hex[:8]}@example.com")
+    try:
+        assert someone.put("/api/profile", json={"screen_name": held}).status_code >= 400
+        owner.delete(f"/api/admin/reserved-names/{res['id']}").raise_for_status()
+        r = someone.put("/api/profile", json={"screen_name": held})
+        assert r.status_code == 200, "a released name could not be claimed"
+    finally:
+        someone.close()
+
+
+def test_a_reservation_cannot_take_a_held_name(owner, named):
+    """Reserving gets ahead of a claim; it never undoes one. The lever for a
+    name somebody holds is revocation, which spends it for everybody."""
+    r = owner.post("/api/admin/reserved-names", json={"name": named})
+    assert r.status_code == 409, "a reservation displaced a held name"
+
+
+def test_reservations_are_the_admins_business(owner):
+    other = _invite(owner, f"n-{uuid.uuid4().hex[:8]}@example.com")
+    try:
+        assert other.get("/api/admin/reserved-names").status_code == 403
+        assert (
+            other.post(
+                "/api/admin/reserved-names", json={"name": _name()}
+            ).status_code
+            == 403
+        )
+    finally:
+        other.close()

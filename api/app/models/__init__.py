@@ -11,7 +11,7 @@ from app.models.games import GameAttrs, Platform
 from app.models.item import CollectionItem, Module
 from app.models.movies import MovieAttrs
 from app.models.records import RecordAttrs
-from app.models.settings import ScreenName, Setting
+from app.models.settings import ReservedName, ScreenName, Setting
 from app.models.tags import ItemTag, Tag, tag_key
 from app.models.tokens import ApiToken, AuthToken
 from app.models.users import ItemOverride, User
@@ -38,6 +38,7 @@ __all__ = [
     "Owned",
     "Platform",
     "RecordAttrs",
+    "ReservedName",
     "ScreenName",
     "Setting",
     "Tag",

@@ -49,3 +49,25 @@ class ScreenName(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
+
+
+class ReservedName(Base):
+    """A name set aside before anybody has claimed it.
+
+    An operator's tool: hold "ben" until the kid it belongs to has an
+    account, or park a name that shouldn't circulate. A reservation may
+    carry an email — then the account signed in with that address is the one
+    allowed to claim through it, and claiming consumes the reservation.
+    Without an email the name is simply off the market until an
+    administrator releases it.
+    """
+
+    __tablename__ = "reserved_name"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
+    display: Mapped[str] = mapped_column(String(30), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )

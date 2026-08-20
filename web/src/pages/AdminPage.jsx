@@ -29,6 +29,172 @@ function Stat({ label, value, note }) {
   );
 }
 
+/** Names set aside before anybody claims them.
+ *
+ *  A screen name is claimed once and never changed, so the moment of
+ *  claiming is the only one that matters — this gets ahead of it. Reserve
+ *  "ben" today; assign it to the kid's email whenever he finally has one,
+ *  and his claim goes through where everybody else's bounces.
+ */
+function ReservedNames() {
+  const [rows, setRows] = useState(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [drafts, setDrafts] = useState({}); // id -> email being retyped
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(null);
+
+  const load = () =>
+    api.reservedNames().then((r) => {
+      setRows(r);
+      setDrafts({});
+    });
+
+  useEffect(() => {
+    load().catch((e) => setErr(e.message));
+  }, []);
+
+  const reserve = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy("new");
+    setErr(null);
+    try {
+      await api.reserveName(name.trim(), email.trim() || null);
+      setName("");
+      setEmail("");
+      await load();
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const assign = async (r) => {
+    setBusy(r.id);
+    setErr(null);
+    try {
+      await api.assignReservation(r.id, (drafts[r.id] ?? "").trim() || null);
+      await load();
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const release = async (r) => {
+    if (
+      !window.confirm(
+        `Release “${r.display}”?\n\nThe name goes back in circulation — the next person to want it gets it.`,
+      )
+    )
+      return;
+    setBusy(r.id);
+    setErr(null);
+    try {
+      await api.releaseReservation(r.id);
+      await load();
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (rows === null && !err) return null;
+
+  return (
+    <section className="settings-card">
+      <h3>Reserved names</h3>
+      {err && (
+        <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>{err}</p>
+      )}
+      <form className="form-row wrap" onSubmit={reserve}>
+        <input
+          type="text"
+          placeholder="Name to hold (ben)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ maxWidth: 200 }}
+        />
+        <input
+          type="email"
+          className="grow"
+          placeholder="Email allowed to claim it (optional)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <button type="submit" className="ghost" disabled={busy === "new" || !name.trim()}>
+          {busy === "new" ? "…" : "Reserve"}
+        </button>
+      </form>
+      {rows && rows.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <tbody>
+              <tr>
+                <th>Name</th>
+                <th>Who may claim it</th>
+                <th />
+              </tr>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td>
+                    <span className="admin-who">/u/{r.name}</span>
+                  </td>
+                  <td>
+                    <input
+                      type="email"
+                      placeholder="Nobody yet — add an email"
+                      value={drafts[r.id] ?? r.email ?? ""}
+                      onChange={(e) =>
+                        setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                      }
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), assign(r))}
+                      style={{ width: "100%", maxWidth: 320 }}
+                    />
+                  </td>
+                  <td className="admin-acts">
+                    {drafts[r.id] !== undefined &&
+                      (drafts[r.id] ?? "") !== (r.email ?? "") && (
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={busy === r.id}
+                          onClick={() => assign(r)}
+                        >
+                          {busy === r.id ? "…" : "Save"}
+                        </button>
+                      )}
+                    <button
+                      type="button"
+                      className="ghost danger"
+                      disabled={busy === r.id}
+                      title="Put the name back in circulation"
+                      onClick={() => release(r)}
+                    >
+                      Release
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="settings-note">
+        A reserved name can't be claimed by anyone — except the account signed
+        in with the email you put on it, whose claim goes through and uses the
+        reservation up. Reserving can't take a name somebody already holds;
+        that's what Remove name above is for, and it spends the name for
+        everybody.
+      </p>
+    </section>
+  );
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState(null);
@@ -315,6 +481,8 @@ export default function AdminPage() {
           touched.
         </p>
       </section>
+
+      <ReservedNames />
     </div>
   );
 }

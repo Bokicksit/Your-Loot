@@ -179,6 +179,19 @@ export const api = {
     }),
   revokeScreenName: (userId) =>
     request(`/api/admin/users/${userId}/screen-name`, { method: "DELETE" }),
+  reservedNames: () => request("/api/admin/reserved-names"),
+  reserveName: (name, email) =>
+    request("/api/admin/reserved-names", {
+      method: "POST",
+      body: JSON.stringify({ name, email: email || null }),
+    }),
+  assignReservation: (id, email) =>
+    request(`/api/admin/reserved-names/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ email: email || null }),
+    }),
+  releaseReservation: (id) =>
+    request(`/api/admin/reserved-names/${id}`, { method: "DELETE" }),
   createBinder: (body) =>
     request("/api/binders", { method: "POST", body: JSON.stringify(body) }),
   editBinder: (id, body) =>

@@ -21,7 +21,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import ScreenName
+from app.models import ReservedName, ScreenName, User
 
 # Letters, digits and single separators, starting and ending on something
 # alphanumeric. No leading or trailing punctuation and no runs of it — "b..o"
@@ -154,8 +154,51 @@ def claim(db: Session, user_id: int, wanted: str, *, floor: int = MIN_NAME) -> S
         # name was banned" tells somebody something about another person.
         raise NameProblem("Somebody already has that one.")
 
+    res = reservation(db, folded)
+    if res is not None:
+        account = db.get(User, user_id)
+        theirs = bool(
+            res.email
+            and getattr(account, "email", None)
+            and res.email.strip().lower() == account.email.strip().lower()
+        )
+        if not theirs:
+            # The same words the built-in list uses. "Reserved for somebody"
+            # would tell a stranger a fact about another person's household.
+            raise NameProblem("That one is reserved. Try another.")
+        # Theirs to take: the reservation has done its job and is spent.
+        # The ScreenName row created below is what holds the name from here.
+        db.delete(res)
+
     row = ScreenName(
         user_id=user_id, name=folded, display=wanted.strip(), revoked=False
+    )
+    db.add(row)
+    return row
+
+
+def reservation(db: Session, name: str) -> ReservedName | None:
+    return db.scalar(select(ReservedName).where(ReservedName.name == fold(name)))
+
+
+def reserve(db: Session, wanted: str, email: str | None = None) -> ReservedName:
+    """Set a name aside, optionally for one email address.
+
+    Held to the administrator's floor (two characters), because an
+    administrator is the one doing the reserving — but a two-character name
+    reserved for an ordinary account still can't be claimed by them, since
+    the claim runs the claimant's own floor. Reserve at the length the
+    person can actually take.
+    """
+    folded = check(wanted, floor=MIN_NAME_ADMIN)
+    if holder(db, folded) is not None:
+        raise NameProblem("Somebody already has that one — a reservation can't take it back.")
+    if reservation(db, folded) is not None:
+        raise NameProblem("That one is already reserved.")
+    row = ReservedName(
+        name=folded,
+        display=wanted.strip(),
+        email=(email or "").strip().lower() or None,
     )
     db.add(row)
     return row

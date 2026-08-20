@@ -25,7 +25,9 @@ from app.barcodes import stats as barcode_stats
 from app.config import settings
 from app.db import get_db
 from app import screennames
-from app.models import CollectionItem, Owned, ScreenName, Setting, User, Wanted
+from app.models import (
+    CollectionItem, Owned, ReservedName, ScreenName, Setting, User, Wanted,
+)
 from app.modules import available
 from app.plans import FREE, SUPPORTER, paid_modules, subscribed
 
@@ -390,4 +392,96 @@ def revoke_screen_name(
     if row is None:
         raise HTTPException(404, "that account has no screen name")
     screennames.revoke(db, row.name)
+    db.commit()
+
+
+# ------------------------------------------------------------ reserved names
+#
+# A screen name is claimed once and never changed, which makes the moment of
+# claiming the only one that matters. These let the operator get ahead of it:
+# hold a name for somebody who doesn't have their account yet — a kid whose
+# cards will live here eventually — or park one that shouldn't circulate.
+
+
+class ReservationIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    # the address allowed to claim it; empty holds the name for nobody
+    email: str | None = Field(default=None, max_length=255)
+
+
+class ReservationEmail(BaseModel):
+    email: str | None = Field(default=None, max_length=255)
+
+
+class ReservationOut(BaseModel):
+    id: int
+    name: str
+    display: str
+    email: str | None = None
+    created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/reserved-names", response_model=list[ReservationOut])
+def list_reserved_names(
+    db: Session = Depends(get_db), _: User = Depends(require_admin)
+):
+    """Every name currently set aside. Claimed ones are gone from here —
+    claiming consumes the reservation, and the name lives on as a screen
+    name like any other."""
+    return db.scalars(
+        select(ReservedName).order_by(ReservedName.name)
+    ).all()
+
+
+@router.post("/reserved-names", response_model=ReservationOut, status_code=201)
+def reserve_name(
+    body: ReservationIn,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Set a name aside. Refused if somebody already holds it — a
+    reservation gets ahead of a claim, it never undoes one (that lever is
+    the revoke above, and it spends the name for everybody)."""
+    try:
+        row = screennames.reserve(db, body.name, body.email)
+    except screennames.NameProblem as e:
+        raise HTTPException(409, str(e))
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.patch("/reserved-names/{res_id}", response_model=ReservationOut)
+def assign_reservation(
+    res_id: int,
+    body: ReservationEmail,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Point a held name at an email — or clear it, which keeps the name
+    held but claimable by nobody. This is the "assign it to my son once he
+    has an address" step."""
+    row = db.get(ReservedName, res_id)
+    if row is None:
+        raise HTTPException(404, "no such reservation")
+    row.email = (body.email or "").strip().lower() or None
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.delete("/reserved-names/{res_id}", status_code=204)
+def release_reservation(
+    res_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Put the name back in circulation — first claim wins again."""
+    row = db.get(ReservedName, res_id)
+    if row is None:
+        raise HTTPException(404, "no such reservation")
+    db.delete(row)
     db.commit()

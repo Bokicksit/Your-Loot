@@ -23,6 +23,13 @@ Full detail is in the commit log, where every change has its own note.
   pass. Found in a security audit; covered by new tenancy tests.
 
 ### Added
+- **Reserved names, for the operator.** The admin panel can set a screen
+  name aside before anybody claims it — and point it at an email address,
+  so the one account signed in with that address may claim it (which uses
+  the reservation up). Hold "ben" today; assign it to the kid when he
+  finally has an address. Releasing a reservation puts the name back in
+  circulation; reserving can never take a name somebody already holds.
+  Migration 0050 — table `reserved_name`.
 - **The front page says what the app is.** A collections section — one card
   per shelf with its actual features — replaces the amiibo-heavy "everything
   else" strip, the hero names every collection, and a new section previews
