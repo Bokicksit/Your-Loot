@@ -9,6 +9,9 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **A typed ISBN finds the book.** The number on the back cover works in the
+  title box now, hyphens and all — the same exact-edition lookup the barcode
+  scanner does, for the machines that have no camera to scan with.
 - **Tiles on the wanted list**, same toggle as everywhere else.
 - **Book defaults in Settings** — hardcover or paperback, jacket or no jacket.
   A shelf leans one way, so those two get answered once instead of on every

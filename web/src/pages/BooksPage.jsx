@@ -196,12 +196,26 @@ export default function BooksPage() {
   // the ISBN barcode on the back of a book resolves in a single call
   const onBarcode = (code) => lookup({ isbn: code });
 
+  // The same number, typed instead of scanned — a laptop has no camera worth
+  // pointing at a book, and the ISBN is right there on the back. Hyphens and
+  // spaces are how ISBNs are printed, so they're allowed and stripped.
+  const typedIsbn = (text) => {
+    const bare = text.replace(/[\s-]/g, "");
+    if (/^\d{9}[\dXx]$/.test(bare)) return bare; // ISBN-10, X check digit
+    if (/^97[89]\d{10}$/.test(bare)) return bare; // ISBN-13
+    return null;
+  };
+
   // Title and author together is the precise query, but Open Library indexes
   // plenty of editions without a usable author string, so a miss falls back to
   // the title on its own rather than reporting nothing found.
   const textSearch = async () => {
     const title = form.title.trim();
     const author = form.author.trim();
+    // an ISBN in the title box is a request for that exact edition, not a
+    // text search that happens to be made of digits
+    const isbn = typedIsbn(title);
+    if (isbn) return lookup({ isbn });
     const q = [title, author].filter(Boolean).join(" ");
     if (q.length < 2) return;
     setSearching(true);
@@ -462,7 +476,7 @@ export default function BooksPage() {
             type="text"
             className="grow"
             autoFocus
-            placeholder="Title"
+            placeholder="Title or ISBN"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), textSearch())}
