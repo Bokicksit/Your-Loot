@@ -22,6 +22,13 @@ Full detail is in the commit log, where every change has its own note.
   single-user install is unaffected — the owner is the admin, and admins
   pass. Found in a security audit; covered by new tenancy tests.
 
+### Changed
+- **The front page leads with the shelves.** What it keeps comes first now,
+  the two ways in sit under it once that question is answered, and the
+  Pokédex has its own section below rather than sharing the hero. The dex
+  wall fills from its own travel through the screen at every width, since
+  it is below the fold at all of them now.
+
 ### Added
 - **Reserved names, for the operator.** The admin panel can set a screen
   name aside before anybody claims it — and point it at an email address,

@@ -99,18 +99,18 @@ const COVERS = [
 /** The dex wall fills as you scroll — a collection being kept, compressed
  *  into the time the wall is in front of you.
  *
- *  Where "in front of you" is depends on the layout, which is why this asks
- *  two different questions. Wide, the case sits in the hero beside the
- *  headline and is on screen from the first frame, so page scroll is the
- *  honest measure: you arrive, you scroll, it fills.
+ *  Measured against the wall's own travel through the viewport, not against
+ *  page scroll. It used to do both: page scroll while the case sat in the
+ *  hero beside the headline, where it was on screen from the first frame,
+ *  and element travel once the layout stacked and put it below the fold.
+ *  The case has its own section now, so it is below the fold at every width
+ *  and only the second measure is ever right — driving it from page scroll
+ *  would mean arriving at a wall that had already filled itself while you
+ *  were reading something else.
  *
- *  Stacked, it is underneath the hero text — five hundred pixels of scrolling
- *  happen before any of it is visible, and driving the fill from page scroll
- *  meant the first row was already at forty-five by the time you could see
- *  it. Nothing appeared to happen, because it had all happened above the
- *  fold. So on a narrow screen the fill is driven by the case's own travel
- *  through the viewport: the cards light up as they arrive, rather than
- *  arriving lit.
+ *  The line is three quarters down the screen rather than the very bottom,
+ *  so the row being lit is a little above the fold: rows arrive dark and
+ *  light up as you carry on, which is the thing worth watching.
  */
 function useScrollFill(caseRef) {
   const [fill, setFill] = useState(8);
@@ -119,20 +119,9 @@ function useScrollFill(caseRef) {
     const read = () => {
       const vh = window.innerHeight || 800;
       const el = caseRef.current;
-      // the same 840px the stylesheet stacks the hero at
-      const stacked = (window.innerWidth || 1280) < 840;
-      let p;
-      if (stacked && el) {
-        // Measured against the wall itself, and against a line three
-        // quarters down the screen rather than the very bottom: the row
-        // being lit is then a little above the fold, so rows arrive dark
-        // and light up as you carry on — which is the thing worth watching.
-        const r = el.getBoundingClientRect();
-        p = (vh * 0.75 - r.top) / r.height;
-      } else {
-        const y = window.scrollY || document.documentElement.scrollTop || 0;
-        p = y / (vh * 1.05);
-      }
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      let p = (vh * 0.75 - r.top) / r.height;
       p = Math.max(0, Math.min(1, p));
       setFill(Math.max(8, Math.min(100, Math.round(8 + p * 94))));
     };
@@ -204,6 +193,7 @@ export default function LandingPage() {
         </span>
         <span className="links">
           <a href="#collections">Collections</a>
+          <a href="#pokedex">Pokédex</a>
           <a href="#binders">Binders</a>
           <a href="#room">The room</a>
           <a href="#get">Get it</a>
@@ -217,90 +207,31 @@ export default function LandingPage() {
         </button>
       </nav>
 
+      {/* The headline and what the thing is, and nothing else. The buttons
+          used to sit here, but somebody who has not yet been told what this
+          keeps is not ready to be asked to start — so they come after the
+          shelves, which are the answer to the only question a first visit
+          actually has. */}
       <header className="lp-hero">
-        <div className="lp-wrap hero-grid">
-          <div>
-            <span className="eyebrow rv in">
-              <Icon id="card" />
-              Pokémon TCG · and everything else you keep
-            </span>
-            <h1 className="rv in d1">
-              Build the binder. <em>Send the link.</em>
-            </h1>
-            <p className="lp-lede rv in d2">
-              One app for the whole hobby: Pokémon cards, games, consoles,
-              records, books, amiibo and LEGO — each with a real catalogue
-              behind the search, your copy's condition on every entry, and a
-              page you can hand to a friend. Free and open source — or let
-              us host it.
-            </p>
-            <div className="lp-cta rv in d3">
-              <button type="button" className="btn gold" onClick={go}>
-                <Icon id="cloud" />
-                Start a collection — free
-              </button>
-              <a className="btn line" href={REPO}>
-                <Icon id="term" />
-                Self-host it instead
-              </a>
-              <span className="note">No card needed · leaves in one file</span>
-            </div>
-          </div>
-
-          <div className="rv in d1">
-            <div className="lp-head" style={{ marginBottom: 18 }}>
-              <span className="kicker">The Pokédex</span>
-              <h2 style={{ fontSize: 26 }}>
-                Every set. Every printing. One slot per Pokémon.
-              </h2>
-              <p style={{ fontSize: 14 }}>
-                The dex is the spine of the app: one numbered slot per
-                Pokémon, and behind each slot every printing that exists —
-                base, promo, reverse, illustration rare. File the one you
-                actually own and the slot lights up.
-              </p>
-            </div>
-            <div className="dexcase rv in d2">
-              <div className="bar">
-                <strong>Pokédex</strong>
-                <span className="scroll-hint">Gen I · scroll to fill</span>
-                <span className="count">
-                  {owned} / {DEX_TOTAL}
-                </span>
-              </div>
-              <div className="meter">
-                <i
-                  style={{
-                    width: `${Math.min(100, (owned / DEX_TOTAL) * 100).toFixed(1)}%`,
-                  }}
-                />
-              </div>
-              <div className="dexwall" ref={caseRef}>
-                {Array.from({ length: DEX_TOTAL }, (_, i) => (
-                  <span
-                    key={i}
-                    className={i < owned ? "dexslot got" : "dexslot"}
-                    style={{ color: ART[i % ART.length] }}
-                  >
-                    {/* The hashed colour stays behind it as the loading
-                        state, so a slow image still reads as a filled slot.
-                        Not loading="lazy": an image only exists once its
-                        slot lights up, so the conditional render is already
-                        the laziness, and everything that mounts is on
-                        screen by definition. */}
-                    {i < owned && (
-                      <img src={cardArt(i + 1)} alt="" decoding="async" />
-                    )}
-                    <span className="no">{i + 1}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div className="lp-wrap hero-lead">
+          <span className="eyebrow rv in">
+            <Icon id="card" />
+            Pokémon TCG · and everything else you keep
+          </span>
+          <h1 className="rv in d1">
+            Build the binder. <em>Send the link.</em>
+          </h1>
+          <p className="lp-lede rv in d2">
+            One app for the whole hobby: Pokémon cards, games, consoles,
+            records, books, amiibo and LEGO — each with a real catalogue
+            behind the search, your copy's condition on every entry, and a
+            page you can hand to a friend. Free and open source — or let
+            us host it.
+          </p>
         </div>
       </header>
 
-      <section className="lp-band alt" id="collections">
+      <section className="lp-band" id="collections">
         <div className="lp-wrap">
           <div className="lp-head rv">
             <span className="kicker">What it keeps</span>
@@ -332,6 +263,71 @@ export default function LandingPage() {
                 barcode scanning, a public page — and the whole collection
                 leaves in one file whenever you ask.
               </p>
+            </div>
+          </div>
+          {/* The ask, once the shelves have answered "what is this". Both
+              routes side by side and equally weighted: the point of the
+              project is that hosting it yourself is not the lesser door. */}
+          <div className="cta-band rv d2">
+            <button type="button" className="btn gold" onClick={go}>
+              <Icon id="cloud" />
+              Start a collection — free
+            </button>
+            <a className="btn line" href={REPO}>
+              <Icon id="term" />
+              Self-host it instead
+            </a>
+            <span className="note">No card needed · leaves in one file</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-band alt" id="pokedex">
+        <div className="lp-wrap">
+          <div className="lp-head rv">
+            <span className="kicker">The Pokédex</span>
+            <h2>Every set. Every printing. One slot per Pokémon.</h2>
+            <p>
+              The dex is the spine of the app: one numbered slot per Pokémon,
+              and behind each slot every printing that exists — base, promo,
+              reverse, illustration rare. File the one you actually own and
+              the slot lights up.
+            </p>
+          </div>
+          <div className="dexcase rv d1">
+            <div className="bar">
+              <strong>Pokédex</strong>
+              <span className="scroll-hint">Gen I · scroll to fill</span>
+              <span className="count">
+                {owned} / {DEX_TOTAL}
+              </span>
+            </div>
+            <div className="meter">
+              <i
+                style={{
+                  width: `${Math.min(100, (owned / DEX_TOTAL) * 100).toFixed(1)}%`,
+                }}
+              />
+            </div>
+            <div className="dexwall" ref={caseRef}>
+              {Array.from({ length: DEX_TOTAL }, (_, i) => (
+                <span
+                  key={i}
+                  className={i < owned ? "dexslot got" : "dexslot"}
+                  style={{ color: ART[i % ART.length] }}
+                >
+                  {/* The hashed colour stays behind it as the loading
+                      state, so a slow image still reads as a filled slot.
+                      Not loading="lazy": an image only exists once its
+                      slot lights up, so the conditional render is already
+                      the laziness, and everything that mounts is on
+                      screen by definition. */}
+                  {i < owned && (
+                    <img src={cardArt(i + 1)} alt="" decoding="async" />
+                  )}
+                  <span className="no">{i + 1}</span>
+                </span>
+              ))}
             </div>
           </div>
         </div>

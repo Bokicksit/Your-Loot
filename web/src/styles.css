@@ -3021,15 +3021,18 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
     radial-gradient(70% 50% at 20% 0%, rgba(242,183,60,.12), transparent 70%),
     radial-gradient(60% 50% at 90% 10%, rgba(88,217,168,.06), transparent 70%);
 }
-.lp-hero .hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 36px;
-  align-items: center;
+/* The hero is the headline and the lede, centred — the Pokédex that used to
+   sit beside it has its own section now, so there is no second column to
+   balance against and a left-aligned column of text under a full-width band
+   reads as though something failed to load. */
+.lp-hero .hero-lead {
+  max-width: 780px;
+  margin-inline: auto;
+  text-align: center;
 }
+.lp-hero .hero-lead .lp-lede { margin-inline: auto; }
 @container (min-width: 840px) {
   .lp-hero { padding: 92px 0 60px; }
-  .lp-hero .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; }
 }
 .lp .eyebrow {
   display: inline-flex;
@@ -3067,6 +3070,21 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-wrap: pretty;
 }
 .lp-cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+/* The ask, under the shelves that earned it. Centred and generous with the
+   space above it so it reads as the end of that section's argument rather
+   than another row of the grid. */
+.cta-band {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 34px;
+  padding-top: 30px;
+  border-top: 1px solid var(--line-soft);
+  text-align: center;
+}
+.cta-band .note,
 .lp-cta .note {
   font-family: var(--font-num);
   font-size: var(--f-1);
@@ -3129,8 +3147,12 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
   gap: 5px;
 }
+/* Twelve fixed columns were right when the case shared the hero with the
+   headline. It has the full width now, and twelve of those would be twelve
+   playing cards across — so the wall keeps filling by card size instead,
+   and 151 of them stay a wall rather than becoming a poster. */
 @container (min-width: 840px) {
-  .dexwall { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .dexwall { grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); }
 }
 .dexslot {
   position: relative;
