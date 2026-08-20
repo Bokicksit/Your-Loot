@@ -1297,6 +1297,17 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* card search-result picker tiles */
 .pick-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 
+/* heading over a run of pick tiles, when two sources can answer at once
+   (the console catalogue above, shop listings below) */
+.pick-label {
+  margin: 0;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
 /* Pokédex slot: choosing another copy you own to occupy the slot */
 .replace-panel {
   display: grid;
@@ -4859,3 +4870,15 @@ a.source-credit:hover { color: var(--gold); text-decoration: underline; }
    cropping one to a cover frame takes its head off. Contained, on the row
    and in the expansion both. */
 img.game-cover.contain, img.expand-cover.contain { object-fit: contain; }
+
+/* what kind of hardware a row is — quiet, uppercase, next to the system */
+.kind-badge {
+  font-family: var(--font-num);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-pill);
+  color: var(--text-mute);
+}

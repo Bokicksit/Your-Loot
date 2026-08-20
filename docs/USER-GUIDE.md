@@ -202,9 +202,10 @@ boxes that describe your copy:
    The **←** in the corner goes back to the search if you picked the wrong
    thing.
 
-Two collections skip step 1, for good reasons. **Hardware** has no online
-catalogue worth searching, so it opens straight to the details. **Cards** show
-each result's add panel directly under the card you picked, which already
+Two collections bend step 1, for good reasons. **Hardware** opens straight
+to the details, and the catalogue comes to you: typing the name offers
+matches from the built-in console catalogue as you go. **Cards** show each
+result's add panel directly under the card you picked, which already
 separates finding from describing.
 
 ### 1. Scan a barcode
@@ -472,17 +473,23 @@ The last three are **spare parts** — see below.
 
 ### Hardware
 
-Consoles and accessories. Name, system, region, **model number** (SNS-001),
-**serial number**, and **working status** (works / partial / broken /
-untested).
+Consoles, controllers and accessories — each entry knows **which kind** it
+is, and the filter can show one shelf at a time (entries from before kinds
+existed sit under *Unsorted* until you file them; nothing gets guessed).
+Name, system, region, **model number** (SNS-001), **serial number**, and
+**working status** (works / partial / broken / untested).
+
+Start typing the name and the **console catalogue** answers as you go: a
+built-in, openly licensed dataset of 170+ North American consoles, famous
+colourways, controllers and accessories. Picking one fills the name, kind,
+system, model number and a public-domain photo in one tap — the serial
+number and working status stay yours to fill in, because they belong to the
+unit on your shelf.
 
 Boxed hardware has a barcode like anything else — scan it and the name and
 photos of the box come along. Loose retro consoles have no barcode, so those
-stay typed in; the model number and serial always are, since no database knows
-which unit is yours.
-
-Accessories can be linked to a console with **Part of**, so a controller lives
-under the machine it belongs to rather than floating on its own.
+stay typed in; the serial always is, since no database knows which unit is
+yours.
 
 ### Movies
 

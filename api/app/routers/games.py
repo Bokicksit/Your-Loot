@@ -26,6 +26,7 @@ def game_to_out(item: CollectionItem, uid: int, tags=()) -> GameOut:
         notes=item.notes,
         attrs=GameAttrsOut(
             igdb_slug=a.igdb_slug,
+            hardware_kind=a.hardware_kind,
             platform_id=a.platform_id,
             platform_name=a.platform.name if a.platform else None,
             platform_abbr=a.platform.abbreviation if a.platform else None,
@@ -107,6 +108,60 @@ def list_platforms(db: Session = Depends(get_db),
     return [{"id": p.id, "name": p.name, "abbreviation": p.abbreviation} for p in rows]
 
 
+@router.get("/hardware/catalogue")
+def hardware_catalogue(
+    q: str | None = None,
+    kind: str | None = Query(None, pattern="^(console|controller|accessory)$"),
+    limit: int = Query(60, le=200),
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """The seeded NA console-variant catalogue, for pick-to-prefill.
+
+    Template rows (source="yourloot", from seed_consoles.py) that nobody
+    owns — picking one prefills the add form and the user's submit creates
+    their own row, because serial number and working state belong to the
+    unit on their shelf, not to the catalogue. Keyless and instant, like the
+    card and amiibo catalogues: the whole dataset lives in this database.
+    """
+    filters = [
+        CollectionItem.source == "yourloot",
+        GameAttrs.is_hardware.is_(True),
+        visible(user.id),
+    ]
+    if q and q.strip():
+        term = q.strip()
+        filters.append(
+            contains(CollectionItem.title, term)
+            | contains(GameAttrs.model_number, term)
+            | GameAttrs.platform.has(contains(Platform.name, term))
+        )
+    if kind:
+        filters.append(GameAttrs.hardware_kind == kind)
+
+    items = db.scalars(
+        _base_query()
+        .where(*filters)
+        .order_by(
+            GameAttrs.release_year.asc().nulls_last(), CollectionItem.title
+        )
+        .limit(limit)
+    ).unique().all()
+    return {
+        "items": [game_to_out(i, user.id) for i in items],
+        "seeded": bool(
+            db.scalar(
+                select(CollectionItem.id)
+                .where(
+                    CollectionItem.module == Module.games.value,
+                    CollectionItem.source == "yourloot",
+                )
+                .limit(1)
+            )
+        ),
+    }
+
+
 @router.get("/igdb/search")
 def igdb_search(q: str = Query(min_length=2), user: User = Depends(current_user)):
     if not igdb_client.configured:
@@ -128,6 +183,7 @@ def list_games(
     search: str | None = None,
     platform_id: int | None = None,
     is_hardware: bool | None = None,
+    hardware_kind: str | None = None,
     tag: str | None = None,
     sort: str = Query("title", pattern="^(title|platform|year|added|oldest)$"),
     include_wanted_only: bool = False,
@@ -151,6 +207,13 @@ def list_games(
         filters.append(GameAttrs.platform_id == platform_id)
     if is_hardware is not None:
         filters.append(GameAttrs.is_hardware == is_hardware)
+    if hardware_kind is not None:
+        # "unsorted" is a real answer — every row made before kinds existed
+        filters.append(
+            GameAttrs.hardware_kind.is_(None)
+            if hardware_kind == "unsorted"
+            else GameAttrs.hardware_kind == hardware_kind
+        )
     # A shelf is what you own; the Wanted tab is where a wish lives. Asking
     if tag:
         filters.append(tagged(user.id, ("hardware" if is_hardware else "games"), tag, CollectionItem.id))
@@ -223,6 +286,7 @@ def create_game(body: GameCreate, db: Session = Depends(get_db),
         notes=body.notes,
         game_attrs=GameAttrs(
             igdb_slug=body.igdb_slug,
+            hardware_kind=body.hardware_kind if body.is_hardware else None,
             platform_id=body.platform_id,
             region=body.region,
             is_hardware=body.is_hardware,
@@ -249,6 +313,11 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.games.value:
         raise HTTPException(404, "game not found")
+    if item.source == "yourloot":
+        # Templates prefill everybody's add form; your own row is the one
+        # that takes a serial number. Nothing in the UI edits these — this
+        # catches a mistake, not a workflow.
+        raise HTTPException(409, "that is a catalogue entry — add it to edit your own")
     data = body.model_dump(exclude_unset=True)
     if "platform_id" in data and data["platform_id"] is not None:
         if db.get(Platform, data["platform_id"]) is None:
@@ -257,7 +326,7 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db),
         if field in data:
             setattr(item, field, data[field])
     for field in (
-        "platform_id", "region", "is_hardware",
+        "platform_id", "region", "is_hardware", "hardware_kind",
         "model_number", "serial_number", "working", "parent_id",
     ):
         if field in data:
@@ -275,5 +344,9 @@ def delete_game(item_id: int, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.games.value:
         raise HTTPException(404, "game not found")
+    if item.source == "yourloot":
+        # A catalogue template is everybody's — your own console made from
+        # it is a separate row, and that one deletes fine.
+        raise HTTPException(409, "that is a catalogue entry — it has no copies to remove")
     db.delete(item)
     db.commit()

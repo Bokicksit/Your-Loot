@@ -1,0 +1,1565 @@
+{
+ "name": "yourloot-consoles-na",
+ "version": 1,
+ "region": "NA",
+ "license": "CC0-1.0 (facts); images are Wikimedia Commons files under their own licences",
+ "entries": [
+  {
+   "slug": "atari-2600-heavy-sixer",
+   "title": "Atari 2600 (Heavy Sixer)",
+   "kind": "console",
+   "platform": "Atari 2600",
+   "model_number": "CX2600",
+   "release_year": 1977,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-2600-Wood-4Sw-Set.png"
+  },
+  {
+   "slug": "atari-2600-jr",
+   "title": "Atari 2600 Jr.",
+   "kind": "console",
+   "platform": "Atari 2600",
+   "model_number": "CX2600 Jr",
+   "release_year": 1986,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-2600-Jr-FL.png"
+  },
+  {
+   "slug": "atari-5200",
+   "title": "Atari 5200",
+   "kind": "console",
+   "platform": "Atari 5200",
+   "model_number": "CX5200",
+   "release_year": 1982,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-5200-4-Port-wController-L.jpg"
+  },
+  {
+   "slug": "atari-7800",
+   "title": "Atari 7800",
+   "kind": "console",
+   "platform": "Atari 7800",
+   "model_number": "CX7800",
+   "release_year": 1986,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-7800-wControl-Pad-L.jpg"
+  },
+  {
+   "slug": "atari-lynx",
+   "title": "Atari Lynx",
+   "kind": "console",
+   "platform": "Atari Lynx",
+   "model_number": "PAG-0200",
+   "release_year": 1989,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-Lynx-I-Handheld.png"
+  },
+  {
+   "slug": "atari-lynx-ii",
+   "title": "Atari Lynx II",
+   "kind": "console",
+   "platform": "Atari Lynx",
+   "model_number": "PAG-0401",
+   "release_year": 1991,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-Lynx-II-Handheld-Angled.jpg"
+  },
+  {
+   "slug": "atari-jaguar",
+   "title": "Atari Jaguar",
+   "kind": "console",
+   "platform": "Atari Jaguar",
+   "model_number": "J8001",
+   "release_year": 1993,
+   "image": null
+  },
+  {
+   "slug": "atari-cx40-joystick",
+   "title": "Atari CX40 Joystick",
+   "kind": "controller",
+   "platform": "Atari 2600",
+   "model_number": "CX40",
+   "release_year": 1977,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-2600-Joystick.jpg"
+  },
+  {
+   "slug": "magnavox-odyssey",
+   "title": "Magnavox Odyssey",
+   "kind": "console",
+   "platform": null,
+   "model_number": "1TL200",
+   "release_year": 1972,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Magnavox-Odyssey-Console-Set.png"
+  },
+  {
+   "slug": "magnavox-odyssey-2",
+   "title": "Magnavox Odyssey 2",
+   "kind": "console",
+   "platform": null,
+   "model_number": "BK7600",
+   "release_year": 1978,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Magnavox-Odyssey-2-Console-01.jpg"
+  },
+  {
+   "slug": "intellivision",
+   "title": "Intellivision",
+   "kind": "console",
+   "platform": null,
+   "model_number": "2609",
+   "release_year": 1980,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Mattel-Intellivision-Console-FL.jpg"
+  },
+  {
+   "slug": "colecovision",
+   "title": "ColecoVision",
+   "kind": "console",
+   "platform": null,
+   "model_number": null,
+   "release_year": 1982,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/ColecoVision-wController-L.png"
+  },
+  {
+   "slug": "vectrex",
+   "title": "Vectrex",
+   "kind": "console",
+   "platform": null,
+   "model_number": "HP-3000",
+   "release_year": 1982,
+   "image": null
+  },
+  {
+   "slug": "nes-control-deck",
+   "title": "NES Control Deck",
+   "kind": "console",
+   "platform": "NES",
+   "model_number": "NES-001",
+   "release_year": 1985,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/NES-Console-Set.png"
+  },
+  {
+   "slug": "nes-top-loader",
+   "title": "NES Top Loader",
+   "kind": "console",
+   "platform": "NES",
+   "model_number": "NES-101",
+   "release_year": 1993,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/NES-101-Console-Set.jpg"
+  },
+  {
+   "slug": "super-nintendo",
+   "title": "Super Nintendo",
+   "kind": "console",
+   "platform": "SNES",
+   "model_number": "SNS-001",
+   "release_year": 1991,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Super-NES-Console-FL.jpg"
+  },
+  {
+   "slug": "super-nintendo-mini",
+   "title": "Super Nintendo (Mini)",
+   "kind": "console",
+   "platform": "SNES",
+   "model_number": "SNS-101",
+   "release_year": 1997,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/SNES-Model-2-Set.png"
+  },
+  {
+   "slug": "nintendo-64",
+   "title": "Nintendo 64",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1996,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/N64-Console-Set.png"
+  },
+  {
+   "slug": "nintendo-64-atomic-purple-funtastic",
+   "title": "Nintendo 64 \u2014 Atomic Purple (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-101",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-jungle-green-funtastic",
+   "title": "Nintendo 64 \u2014 Jungle Green (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-fire-orange-funtastic",
+   "title": "Nintendo 64 \u2014 Fire Orange (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-ice-blue-funtastic",
+   "title": "Nintendo 64 \u2014 Ice Blue (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-grape-purple-funtastic",
+   "title": "Nintendo 64 \u2014 Grape Purple (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-smoke-grey-funtastic",
+   "title": "Nintendo 64 \u2014 Smoke Grey (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-watermelon-red-funtastic",
+   "title": "Nintendo 64 \u2014 Watermelon Red (Funtastic)",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-001",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "nintendo-64-pikachu-edition",
+   "title": "Nintendo 64 Pikachu Edition",
+   "kind": "console",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-101",
+   "release_year": 2000,
+   "image": null
+  },
+  {
+   "slug": "gamecube-indigo",
+   "title": "GameCube \u2014 Indigo",
+   "kind": "console",
+   "platform": "GameCube",
+   "model_number": "DOL-001",
+   "release_year": 2001,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/GameCube-Set.jpg"
+  },
+  {
+   "slug": "gamecube-jet-black",
+   "title": "GameCube \u2014 Jet Black",
+   "kind": "console",
+   "platform": "GameCube",
+   "model_number": "DOL-001",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "gamecube-platinum",
+   "title": "GameCube \u2014 Platinum",
+   "kind": "console",
+   "platform": "GameCube",
+   "model_number": "DOL-001",
+   "release_year": 2002,
+   "image": null
+  },
+  {
+   "slug": "gamecube-spice-orange",
+   "title": "GameCube \u2014 Spice Orange",
+   "kind": "console",
+   "platform": "GameCube",
+   "model_number": "DOL-001",
+   "release_year": 2002,
+   "image": null
+  },
+  {
+   "slug": "wii-white",
+   "title": "Wii \u2014 White",
+   "kind": "console",
+   "platform": "Wii",
+   "model_number": "RVL-001",
+   "release_year": 2006,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Wii-Console.png"
+  },
+  {
+   "slug": "wii-black",
+   "title": "Wii \u2014 Black",
+   "kind": "console",
+   "platform": "Wii",
+   "model_number": "RVL-001",
+   "release_year": 2010,
+   "image": null
+  },
+  {
+   "slug": "wii-mini",
+   "title": "Wii Mini",
+   "kind": "console",
+   "platform": "Wii",
+   "model_number": "RVL-201",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Wii-Mini-Console-Set-H.jpg"
+  },
+  {
+   "slug": "wii-u-basic-white",
+   "title": "Wii U Basic (White)",
+   "kind": "console",
+   "platform": "Wii U",
+   "model_number": "WUP-001",
+   "release_year": 2012,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Wii-U-Console-FL.jpg"
+  },
+  {
+   "slug": "wii-u-deluxe-black",
+   "title": "Wii U Deluxe (Black)",
+   "kind": "console",
+   "platform": "Wii U",
+   "model_number": "WUP-101",
+   "release_year": 2012,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch",
+   "title": "Nintendo Switch",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HAC-001",
+   "release_year": 2017,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Switch-Console-Docked-wJoyConRB.jpg"
+  },
+  {
+   "slug": "nintendo-switch-v2",
+   "title": "Nintendo Switch (V2)",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HAC-001(-01)",
+   "release_year": 2019,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-oled-white",
+   "title": "Nintendo Switch \u2014 OLED White",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HEG-001",
+   "release_year": 2021,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-oled-neon",
+   "title": "Nintendo Switch \u2014 OLED Neon",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HEG-001",
+   "release_year": 2021,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-lite-turquoise",
+   "title": "Nintendo Switch Lite \u2014 Turquoise",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HDH-001",
+   "release_year": 2019,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-lite-grey",
+   "title": "Nintendo Switch Lite \u2014 Grey",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HDH-001",
+   "release_year": 2019,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-lite-yellow",
+   "title": "Nintendo Switch Lite \u2014 Yellow",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HDH-001",
+   "release_year": 2019,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-lite-coral",
+   "title": "Nintendo Switch Lite \u2014 Coral",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HDH-001",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-lite-blue",
+   "title": "Nintendo Switch Lite \u2014 Blue",
+   "kind": "console",
+   "platform": "Switch",
+   "model_number": "HDH-001",
+   "release_year": 2021,
+   "image": null
+  },
+  {
+   "slug": "nintendo-switch-2",
+   "title": "Nintendo Switch 2",
+   "kind": "console",
+   "platform": "Switch 2",
+   "model_number": null,
+   "release_year": 2025,
+   "image": null
+  },
+  {
+   "slug": "game-boy",
+   "title": "Game Boy",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "DMG-01",
+   "release_year": 1989,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Game-Boy-FL.png"
+  },
+  {
+   "slug": "game-boy-play-it-loud-red",
+   "title": "Game Boy Play It Loud \u2014 Red",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "DMG-01",
+   "release_year": 1995,
+   "image": null
+  },
+  {
+   "slug": "game-boy-play-it-loud-yellow",
+   "title": "Game Boy Play It Loud \u2014 Yellow",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "DMG-01",
+   "release_year": 1995,
+   "image": null
+  },
+  {
+   "slug": "game-boy-play-it-loud-black",
+   "title": "Game Boy Play It Loud \u2014 Black",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "DMG-01",
+   "release_year": 1995,
+   "image": null
+  },
+  {
+   "slug": "game-boy-pocket-silver",
+   "title": "Game Boy Pocket \u2014 Silver",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "MGB-001",
+   "release_year": 1996,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Game-Boy-Pocket-FL.png"
+  },
+  {
+   "slug": "game-boy-pocket-red",
+   "title": "Game Boy Pocket \u2014 Red",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "MGB-001",
+   "release_year": 1996,
+   "image": null
+  },
+  {
+   "slug": "game-boy-pocket-black",
+   "title": "Game Boy Pocket \u2014 Black",
+   "kind": "console",
+   "platform": "Game Boy",
+   "model_number": "MGB-001",
+   "release_year": 1996,
+   "image": null
+  },
+  {
+   "slug": "game-boy-color-berry",
+   "title": "Game Boy Color \u2014 Berry",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": null
+  },
+  {
+   "slug": "game-boy-color-grape",
+   "title": "Game Boy Color \u2014 Grape",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": null
+  },
+  {
+   "slug": "game-boy-color-kiwi",
+   "title": "Game Boy Color \u2014 Kiwi",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": null
+  },
+  {
+   "slug": "game-boy-color-teal",
+   "title": "Game Boy Color \u2014 Teal",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Game-Boy-Color-FL.jpg"
+  },
+  {
+   "slug": "game-boy-color-dandelion",
+   "title": "Game Boy Color \u2014 Dandelion",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": null
+  },
+  {
+   "slug": "game-boy-color-atomic-purple",
+   "title": "Game Boy Color \u2014 Atomic Purple",
+   "kind": "console",
+   "platform": "Game Boy Color",
+   "model_number": "CGB-001",
+   "release_year": 1998,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-indigo",
+   "title": "Game Boy Advance \u2014 Indigo",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGB-001",
+   "release_year": 2001,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Game-Boy-Advance-Purple-FL.jpg"
+  },
+  {
+   "slug": "game-boy-advance-arctic-white",
+   "title": "Game Boy Advance \u2014 Arctic White",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGB-001",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-glacier",
+   "title": "Game Boy Advance \u2014 Glacier",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGB-001",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-fuchsia",
+   "title": "Game Boy Advance \u2014 Fuchsia",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGB-001",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-sp-cobalt",
+   "title": "Game Boy Advance SP \u2014 Cobalt",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGS-001",
+   "release_year": 2003,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo Game Boy Advance SP.png"
+  },
+  {
+   "slug": "game-boy-advance-sp-platinum",
+   "title": "Game Boy Advance SP \u2014 Platinum",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGS-001",
+   "release_year": 2003,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-sp-onyx",
+   "title": "Game Boy Advance SP \u2014 Onyx",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGS-001",
+   "release_year": 2003,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-sp-flame-red",
+   "title": "Game Boy Advance SP \u2014 Flame Red",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGS-001",
+   "release_year": 2003,
+   "image": null
+  },
+  {
+   "slug": "game-boy-advance-sp-backlit",
+   "title": "Game Boy Advance SP (Backlit)",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "AGS-101",
+   "release_year": 2005,
+   "image": null
+  },
+  {
+   "slug": "game-boy-micro",
+   "title": "Game Boy Micro",
+   "kind": "console",
+   "platform": "Game Boy Advance",
+   "model_number": "OXY-001",
+   "release_year": 2005,
+   "image": null
+  },
+  {
+   "slug": "nintendo-ds",
+   "title": "Nintendo DS",
+   "kind": "console",
+   "platform": "Nintendo DS",
+   "model_number": "NTR-001",
+   "release_year": 2004,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-DS-Fat-Blue.png"
+  },
+  {
+   "slug": "nintendo-ds-lite",
+   "title": "Nintendo DS Lite",
+   "kind": "console",
+   "platform": "Nintendo DS",
+   "model_number": "USG-001",
+   "release_year": 2006,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-DS-Lite-Black-Open.png"
+  },
+  {
+   "slug": "nintendo-dsi",
+   "title": "Nintendo DSi",
+   "kind": "console",
+   "platform": "Nintendo DS",
+   "model_number": "TWL-001",
+   "release_year": 2009,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo DSi Photo.jpg"
+  },
+  {
+   "slug": "nintendo-dsi-xl",
+   "title": "Nintendo DSi XL",
+   "kind": "console",
+   "platform": "Nintendo DS",
+   "model_number": "UTL-001",
+   "release_year": 2010,
+   "image": null
+  },
+  {
+   "slug": "nintendo-3ds",
+   "title": "Nintendo 3DS",
+   "kind": "console",
+   "platform": "Nintendo 3DS",
+   "model_number": "CTR-001",
+   "release_year": 2011,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-3DS-AquaOpen.png"
+  },
+  {
+   "slug": "nintendo-3ds-xl",
+   "title": "Nintendo 3DS XL",
+   "kind": "console",
+   "platform": "Nintendo 3DS",
+   "model_number": "SPR-001",
+   "release_year": 2012,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-3DS-XL-angled.png"
+  },
+  {
+   "slug": "nintendo-2ds",
+   "title": "Nintendo 2DS",
+   "kind": "console",
+   "platform": "Nintendo 3DS",
+   "model_number": "FTR-001",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-2DS-angle.jpg"
+  },
+  {
+   "slug": "new-nintendo-3ds-xl",
+   "title": "New Nintendo 3DS XL",
+   "kind": "console",
+   "platform": "Nintendo 3DS",
+   "model_number": "RED-001",
+   "release_year": 2015,
+   "image": null
+  },
+  {
+   "slug": "new-nintendo-2ds-xl",
+   "title": "New Nintendo 2DS XL",
+   "kind": "console",
+   "platform": "Nintendo 3DS",
+   "model_number": "JAN-001",
+   "release_year": 2017,
+   "image": null
+  },
+  {
+   "slug": "virtual-boy",
+   "title": "Virtual Boy",
+   "kind": "console",
+   "platform": null,
+   "model_number": "VUE-01",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Virtual-Boy-Set.png"
+  },
+  {
+   "slug": "nes-controller",
+   "title": "NES Controller",
+   "kind": "controller",
+   "platform": "NES",
+   "model_number": "NES-004",
+   "release_year": 1985,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Entertainment-System-NES-Controller-FL.jpg"
+  },
+  {
+   "slug": "nes-zapper",
+   "title": "NES Zapper",
+   "kind": "controller",
+   "platform": "NES",
+   "model_number": "NES-005",
+   "release_year": 1985,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Entertainment-System-NES-Zapper-Gray-R.jpg"
+  },
+  {
+   "slug": "nes-r-o-b",
+   "title": "NES R.O.B.",
+   "kind": "accessory",
+   "platform": "NES",
+   "model_number": "NES-012",
+   "release_year": 1985,
+   "image": null
+  },
+  {
+   "slug": "super-nintendo-controller",
+   "title": "Super Nintendo Controller",
+   "kind": "controller",
+   "platform": "SNES",
+   "model_number": "SNS-005",
+   "release_year": 1991,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/SNES-Controller.jpg"
+  },
+  {
+   "slug": "super-scope",
+   "title": "Super Scope",
+   "kind": "controller",
+   "platform": "SNES",
+   "model_number": "SNS-013",
+   "release_year": 1992,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-SNES-Super-Scope-L.jpg"
+  },
+  {
+   "slug": "snes-mouse",
+   "title": "SNES Mouse",
+   "kind": "controller",
+   "platform": "SNES",
+   "model_number": "SNS-016",
+   "release_year": 1992,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/SNES-Mouse-and-Pad.jpg"
+  },
+  {
+   "slug": "nintendo-64-controller-grey",
+   "title": "Nintendo 64 Controller \u2014 Grey",
+   "kind": "controller",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-005",
+   "release_year": 1996,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/N64-Controller-Gray.jpg"
+  },
+  {
+   "slug": "nintendo-64-controller-atomic-purple",
+   "title": "Nintendo 64 Controller \u2014 Atomic Purple",
+   "kind": "controller",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-005",
+   "release_year": 1999,
+   "image": null
+  },
+  {
+   "slug": "n64-rumble-pak",
+   "title": "N64 Rumble Pak",
+   "kind": "accessory",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-013",
+   "release_year": 1997,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/N64-Rumble-Pak.jpg"
+  },
+  {
+   "slug": "n64-expansion-pak",
+   "title": "N64 Expansion Pak",
+   "kind": "accessory",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-007",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/N64-Expansion-Pak.jpg"
+  },
+  {
+   "slug": "n64-controller-pak",
+   "title": "N64 Controller Pak",
+   "kind": "accessory",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-004",
+   "release_year": 1996,
+   "image": null
+  },
+  {
+   "slug": "n64-transfer-pak",
+   "title": "N64 Transfer Pak",
+   "kind": "accessory",
+   "platform": "Nintendo 64",
+   "model_number": "NUS-019",
+   "release_year": 1999,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/N64-Transfer-Pak.jpg"
+  },
+  {
+   "slug": "gamecube-controller-indigo",
+   "title": "GameCube Controller \u2014 Indigo",
+   "kind": "controller",
+   "platform": "GameCube",
+   "model_number": "DOL-003",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "wavebird-wireless-controller",
+   "title": "WaveBird Wireless Controller",
+   "kind": "controller",
+   "platform": "GameCube",
+   "model_number": "DOL-004",
+   "release_year": 2002,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-GameCube-Wavebird-Silver.jpg"
+  },
+  {
+   "slug": "gamecube-memory-card-59",
+   "title": "GameCube Memory Card 59",
+   "kind": "accessory",
+   "platform": "GameCube",
+   "model_number": "DOL-008",
+   "release_year": 2001,
+   "image": null
+  },
+  {
+   "slug": "game-boy-player",
+   "title": "Game Boy Player",
+   "kind": "accessory",
+   "platform": "GameCube",
+   "model_number": "DOL-017",
+   "release_year": 2003,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/GameCube-Game-Boy-Player.jpg"
+  },
+  {
+   "slug": "wii-remote-white",
+   "title": "Wii Remote \u2014 White",
+   "kind": "controller",
+   "platform": "Wii",
+   "model_number": "RVL-003",
+   "release_year": 2006,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Wii-Remote-wNunchuck.jpg"
+  },
+  {
+   "slug": "wii-nunchuk",
+   "title": "Wii Nunchuk",
+   "kind": "controller",
+   "platform": "Wii",
+   "model_number": "RVL-004",
+   "release_year": 2006,
+   "image": null
+  },
+  {
+   "slug": "wii-classic-controller",
+   "title": "Wii Classic Controller",
+   "kind": "controller",
+   "platform": "Wii",
+   "model_number": "RVL-005",
+   "release_year": 2006,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Wii-Classic-Controller-White.jpg"
+  },
+  {
+   "slug": "wii-balance-board",
+   "title": "Wii Balance Board",
+   "kind": "accessory",
+   "platform": "Wii",
+   "model_number": "RVL-021",
+   "release_year": 2008,
+   "image": null
+  },
+  {
+   "slug": "wii-u-gamepad",
+   "title": "Wii U GamePad",
+   "kind": "controller",
+   "platform": "Wii U",
+   "model_number": "WUP-010",
+   "release_year": 2012,
+   "image": null
+  },
+  {
+   "slug": "wii-u-pro-controller",
+   "title": "Wii U Pro Controller",
+   "kind": "controller",
+   "platform": "Wii U",
+   "model_number": "WUP-005",
+   "release_year": 2012,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Wii-U-Pro-Controller-Black.jpg"
+  },
+  {
+   "slug": "joy-con-pair-grey",
+   "title": "Joy-Con Pair \u2014 Grey",
+   "kind": "controller",
+   "platform": "Switch",
+   "model_number": "HAC-015/016",
+   "release_year": 2017,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo Switch Joy-Con Controllers.png"
+  },
+  {
+   "slug": "joy-con-pair-neon-red-blue",
+   "title": "Joy-Con Pair \u2014 Neon Red/Blue",
+   "kind": "controller",
+   "platform": "Switch",
+   "model_number": "HAC-015/016",
+   "release_year": 2017,
+   "image": null
+  },
+  {
+   "slug": "switch-pro-controller",
+   "title": "Switch Pro Controller",
+   "kind": "controller",
+   "platform": "Switch",
+   "model_number": "HAC-013",
+   "release_year": 2017,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-Switch-Pro-Controller-FL.jpg"
+  },
+  {
+   "slug": "game-boy-camera",
+   "title": "Game Boy Camera",
+   "kind": "accessory",
+   "platform": "Game Boy",
+   "model_number": "MGB-006",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Game-Boy-Camera.jpg"
+  },
+  {
+   "slug": "game-boy-printer",
+   "title": "Game Boy Printer",
+   "kind": "accessory",
+   "platform": "Game Boy",
+   "model_number": "MGB-007",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Game Boy Printer.jpg"
+  },
+  {
+   "slug": "nes-advantage",
+   "title": "NES Advantage",
+   "kind": "accessory",
+   "platform": "NES",
+   "model_number": "NES-026",
+   "release_year": 1987,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-NES-Advantage-Controller.jpg"
+  },
+  {
+   "slug": "sega-master-system",
+   "title": "Sega Master System",
+   "kind": "console",
+   "platform": "Master System",
+   "model_number": "3010",
+   "release_year": 1986,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Master-System-Set.png"
+  },
+  {
+   "slug": "sega-master-system-ii",
+   "title": "Sega Master System II",
+   "kind": "console",
+   "platform": "Master System",
+   "model_number": "3010-A",
+   "release_year": 1990,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Master-System-MkII-Console-FL.png"
+  },
+  {
+   "slug": "sega-genesis-model-1",
+   "title": "Sega Genesis (Model 1)",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "1601",
+   "release_year": 1989,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-Mod1-Set.jpg"
+  },
+  {
+   "slug": "sega-genesis-model-2",
+   "title": "Sega Genesis (Model 2)",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-1631",
+   "release_year": 1993,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-Mod2-Set.png"
+  },
+  {
+   "slug": "sega-genesis-model-3",
+   "title": "Sega Genesis (Model 3)",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-1461",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-3-Console-FL.jpg"
+  },
+  {
+   "slug": "sega-cd-model-1",
+   "title": "Sega CD (Model 1)",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-4102",
+   "release_year": 1992,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-CD-Model-1-Bare.jpg"
+  },
+  {
+   "slug": "sega-cd-model-2",
+   "title": "Sega CD (Model 2)",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-4102A",
+   "release_year": 1993,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-CD-Model2-Set.png"
+  },
+  {
+   "slug": "sega-32x",
+   "title": "Sega 32X",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-84000",
+   "release_year": 1994,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-Model2-32X.jpg"
+  },
+  {
+   "slug": "sega-nomad",
+   "title": "Sega Nomad",
+   "kind": "console",
+   "platform": "Genesis",
+   "model_number": "MK-6100",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Nomad-Front.jpg"
+  },
+  {
+   "slug": "sega-saturn-model-1",
+   "title": "Sega Saturn (Model 1)",
+   "kind": "console",
+   "platform": "Saturn",
+   "model_number": "MK-80000",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Saturn-Console-Set-Mk1.png"
+  },
+  {
+   "slug": "sega-saturn-model-2",
+   "title": "Sega Saturn (Model 2)",
+   "kind": "console",
+   "platform": "Saturn",
+   "model_number": "MK-80000A",
+   "release_year": 1996,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Saturn-Mk-II-NA-BR.jpg"
+  },
+  {
+   "slug": "sega-dreamcast",
+   "title": "Sega Dreamcast",
+   "kind": "console",
+   "platform": "Dreamcast",
+   "model_number": "HKT-3020",
+   "release_year": 1999,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Dreamcast-Console-FL.jpg"
+  },
+  {
+   "slug": "sega-game-gear",
+   "title": "Sega Game Gear",
+   "kind": "console",
+   "platform": "Game Gear",
+   "model_number": "2110",
+   "release_year": 1991,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Game-Gear-Handheld.jpg"
+  },
+  {
+   "slug": "genesis-3-button-controller",
+   "title": "Genesis 3-Button Controller",
+   "kind": "controller",
+   "platform": "Genesis",
+   "model_number": "1650",
+   "release_year": 1989,
+   "image": null
+  },
+  {
+   "slug": "genesis-6-button-controller",
+   "title": "Genesis 6-Button Controller",
+   "kind": "controller",
+   "platform": "Genesis",
+   "model_number": "MK-1653",
+   "release_year": 1993,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Genesis-6But-Cont.jpg"
+  },
+  {
+   "slug": "dreamcast-controller",
+   "title": "Dreamcast Controller",
+   "kind": "controller",
+   "platform": "Dreamcast",
+   "model_number": "HKT-7700",
+   "release_year": 1999,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Dreamcast-Controller-FL.jpg"
+  },
+  {
+   "slug": "dreamcast-vmu",
+   "title": "Dreamcast VMU",
+   "kind": "accessory",
+   "platform": "Dreamcast",
+   "model_number": "HKT-7000",
+   "release_year": 1999,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sega-Dreamcast-VMU.jpg"
+  },
+  {
+   "slug": "playstation",
+   "title": "PlayStation",
+   "kind": "console",
+   "platform": "PlayStation",
+   "model_number": "SCPH-1001",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PSX-Console-wController.png"
+  },
+  {
+   "slug": "playstation-dual-shock-bundle",
+   "title": "PlayStation (Dual Shock bundle)",
+   "kind": "console",
+   "platform": "PlayStation",
+   "model_number": "SCPH-7501",
+   "release_year": 1997,
+   "image": null
+  },
+  {
+   "slug": "psone",
+   "title": "PSone",
+   "kind": "console",
+   "platform": "PlayStation",
+   "model_number": "SCPH-101",
+   "release_year": 2000,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PSone-Console-FL.jpg"
+  },
+  {
+   "slug": "playstation-2",
+   "title": "PlayStation 2",
+   "kind": "console",
+   "platform": "PlayStation 2",
+   "model_number": "SCPH-30001",
+   "release_year": 2000,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PS2-Fat-Console-Set.png"
+  },
+  {
+   "slug": "playstation-2-slim",
+   "title": "PlayStation 2 Slim",
+   "kind": "console",
+   "platform": "PlayStation 2",
+   "model_number": "SCPH-70012",
+   "release_year": 2004,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation-2-70001-Console-FL.jpg"
+  },
+  {
+   "slug": "playstation-2-slim-silver",
+   "title": "PlayStation 2 Slim \u2014 Silver",
+   "kind": "console",
+   "platform": "PlayStation 2",
+   "model_number": "SCPH-79001",
+   "release_year": 2007,
+   "image": null
+  },
+  {
+   "slug": "playstation-3-60gb-backwards-compatible",
+   "title": "PlayStation 3 (60GB, backwards compatible)",
+   "kind": "console",
+   "platform": "PlayStation 3",
+   "model_number": "CECHA01",
+   "release_year": 2006,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation-3-CECHA01-wController-L.jpg"
+  },
+  {
+   "slug": "playstation-3-slim",
+   "title": "PlayStation 3 Slim",
+   "kind": "console",
+   "platform": "PlayStation 3",
+   "model_number": "CECH-2001A",
+   "release_year": 2009,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation-PS3-Slim-Console-FL.jpg"
+  },
+  {
+   "slug": "playstation-3-super-slim",
+   "title": "PlayStation 3 Super Slim",
+   "kind": "console",
+   "platform": "PlayStation 3",
+   "model_number": "CECH-4001B",
+   "release_year": 2012,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation-PS3-SuperSlim-Console-FL.jpg"
+  },
+  {
+   "slug": "playstation-4",
+   "title": "PlayStation 4",
+   "kind": "console",
+   "platform": "PlayStation 4",
+   "model_number": "CUH-1001A",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation-4-wController.jpg"
+  },
+  {
+   "slug": "playstation-4-slim",
+   "title": "PlayStation 4 Slim",
+   "kind": "console",
+   "platform": "PlayStation 4",
+   "model_number": "CUH-2015A",
+   "release_year": 2016,
+   "image": null
+  },
+  {
+   "slug": "playstation-4-pro",
+   "title": "PlayStation 4 Pro",
+   "kind": "console",
+   "platform": "PlayStation 4",
+   "model_number": "CUH-7015B",
+   "release_year": 2016,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sony-PlayStation4-Pro-Console-FL.png"
+  },
+  {
+   "slug": "playstation-5-disc",
+   "title": "PlayStation 5 (Disc)",
+   "kind": "console",
+   "platform": "PlayStation 5",
+   "model_number": "CFI-1015A",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "playstation-5-digital-edition",
+   "title": "PlayStation 5 Digital Edition",
+   "kind": "console",
+   "platform": "PlayStation 5",
+   "model_number": "CFI-1015B",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "playstation-5-slim-disc",
+   "title": "PlayStation 5 Slim (Disc)",
+   "kind": "console",
+   "platform": "PlayStation 5",
+   "model_number": "CFI-2015",
+   "release_year": 2023,
+   "image": null
+  },
+  {
+   "slug": "playstation-5-pro",
+   "title": "PlayStation 5 Pro",
+   "kind": "console",
+   "platform": "PlayStation 5",
+   "model_number": "CFI-7019",
+   "release_year": 2024,
+   "image": null
+  },
+  {
+   "slug": "psp-1000",
+   "title": "PSP-1000",
+   "kind": "console",
+   "platform": "PSP",
+   "model_number": "PSP-1001",
+   "release_year": 2005,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Psp-1000.jpg"
+  },
+  {
+   "slug": "psp-2000-slim-lite",
+   "title": "PSP-2000 (Slim & Lite)",
+   "kind": "console",
+   "platform": "PSP",
+   "model_number": "PSP-2001",
+   "release_year": 2007,
+   "image": null
+  },
+  {
+   "slug": "psp-3000",
+   "title": "PSP-3000",
+   "kind": "console",
+   "platform": "PSP",
+   "model_number": "PSP-3001",
+   "release_year": 2008,
+   "image": null
+  },
+  {
+   "slug": "psp-go",
+   "title": "PSP Go",
+   "kind": "console",
+   "platform": "PSP",
+   "model_number": "PSP-N1001",
+   "release_year": 2009,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PSP-Go-FL-Open.jpg"
+  },
+  {
+   "slug": "playstation-vita-oled",
+   "title": "PlayStation Vita (OLED)",
+   "kind": "console",
+   "platform": "PS Vita",
+   "model_number": "PCH-1001",
+   "release_year": 2012,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PlayStation-Vita-1101-FL.png"
+  },
+  {
+   "slug": "playstation-vita-slim",
+   "title": "PlayStation Vita Slim",
+   "kind": "console",
+   "platform": "PS Vita",
+   "model_number": "PCH-2001",
+   "release_year": 2014,
+   "image": null
+  },
+  {
+   "slug": "playstation-controller",
+   "title": "PlayStation Controller",
+   "kind": "controller",
+   "platform": "PlayStation",
+   "model_number": "SCPH-1080",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PSX-Original-Controller.png"
+  },
+  {
+   "slug": "dualshock",
+   "title": "DualShock",
+   "kind": "controller",
+   "platform": "PlayStation",
+   "model_number": "SCPH-1200",
+   "release_year": 1998,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PSX-DualShock-Controller.jpg"
+  },
+  {
+   "slug": "dualshock-2",
+   "title": "DualShock 2",
+   "kind": "controller",
+   "platform": "PlayStation 2",
+   "model_number": "SCPH-10010",
+   "release_year": 2000,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/DualShock 2.jpg"
+  },
+  {
+   "slug": "dualshock-3",
+   "title": "DualShock 3",
+   "kind": "controller",
+   "platform": "PlayStation 3",
+   "model_number": "CECHZC2U",
+   "release_year": 2007,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/DualShock 3.jpg"
+  },
+  {
+   "slug": "dualshock-4",
+   "title": "DualShock 4",
+   "kind": "controller",
+   "platform": "PlayStation 4",
+   "model_number": "CUH-ZCT1U",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/DualShock 4.jpg"
+  },
+  {
+   "slug": "dualsense",
+   "title": "DualSense",
+   "kind": "controller",
+   "platform": "PlayStation 5",
+   "model_number": "CFI-ZCT1W",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "ps1-memory-card",
+   "title": "PS1 Memory Card",
+   "kind": "accessory",
+   "platform": "PlayStation",
+   "model_number": "SCPH-1020",
+   "release_year": 1995,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PSX-Memory-Card.jpg"
+  },
+  {
+   "slug": "ps2-memory-card-8mb",
+   "title": "PS2 Memory Card (8MB)",
+   "kind": "accessory",
+   "platform": "PlayStation 2",
+   "model_number": "SCPH-10020",
+   "release_year": 2000,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/PS2-8MB-Mem-Card.jpg"
+  },
+  {
+   "slug": "ps1-multitap",
+   "title": "PS1 Multitap",
+   "kind": "accessory",
+   "platform": "PlayStation",
+   "model_number": "SCPH-1070",
+   "release_year": 1996,
+   "image": null
+  },
+  {
+   "slug": "xbox",
+   "title": "Xbox",
+   "kind": "console",
+   "platform": "Xbox",
+   "model_number": null,
+   "release_year": 2001,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-console.jpg"
+  },
+  {
+   "slug": "xbox-360-pro",
+   "title": "Xbox 360 (Pro)",
+   "kind": "console",
+   "platform": "Xbox 360",
+   "model_number": null,
+   "release_year": 2005,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-360-Pro-Flat-wController-L.jpg"
+  },
+  {
+   "slug": "xbox-360-s",
+   "title": "Xbox 360 S",
+   "kind": "console",
+   "platform": "Xbox 360",
+   "model_number": "1439",
+   "release_year": 2010,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-360S-Console-Set.png"
+  },
+  {
+   "slug": "xbox-360-e",
+   "title": "Xbox 360 E",
+   "kind": "console",
+   "platform": "Xbox 360",
+   "model_number": "1538",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-360-E-wController.jpg"
+  },
+  {
+   "slug": "xbox-one",
+   "title": "Xbox One",
+   "kind": "console",
+   "platform": "Xbox One",
+   "model_number": "1540",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-One-Console-Set-wKinect.jpg"
+  },
+  {
+   "slug": "xbox-one-s",
+   "title": "Xbox One S",
+   "kind": "console",
+   "platform": "Xbox One",
+   "model_number": "1681",
+   "release_year": 2016,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-One-S-Console-FL.png"
+  },
+  {
+   "slug": "xbox-one-x",
+   "title": "Xbox One X",
+   "kind": "console",
+   "platform": "Xbox One",
+   "model_number": "1787",
+   "release_year": 2017,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-One-X-Console.png"
+  },
+  {
+   "slug": "xbox-series-x",
+   "title": "Xbox Series X",
+   "kind": "console",
+   "platform": "Xbox Series X",
+   "model_number": "1882",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "xbox-series-s",
+   "title": "Xbox Series S",
+   "kind": "console",
+   "platform": "Xbox Series X",
+   "model_number": "1883",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "xbox-controller-duke",
+   "title": "Xbox Controller (Duke)",
+   "kind": "controller",
+   "platform": "Xbox",
+   "model_number": null,
+   "release_year": 2001,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-Controller-Duke-FL.jpg"
+  },
+  {
+   "slug": "xbox-controller-s",
+   "title": "Xbox Controller S",
+   "kind": "controller",
+   "platform": "Xbox",
+   "model_number": null,
+   "release_year": 2002,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-s-controller.jpg"
+  },
+  {
+   "slug": "xbox-360-wireless-controller",
+   "title": "Xbox 360 Wireless Controller",
+   "kind": "controller",
+   "platform": "Xbox 360",
+   "model_number": null,
+   "release_year": 2005,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-360-S-Controller.png"
+  },
+  {
+   "slug": "xbox-one-wireless-controller",
+   "title": "Xbox One Wireless Controller",
+   "kind": "controller",
+   "platform": "Xbox One",
+   "model_number": "1537",
+   "release_year": 2013,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft-Xbox-One-controller.jpg"
+  },
+  {
+   "slug": "xbox-wireless-controller-series",
+   "title": "Xbox Wireless Controller (Series)",
+   "kind": "controller",
+   "platform": "Xbox Series X",
+   "model_number": "1914",
+   "release_year": 2020,
+   "image": null
+  },
+  {
+   "slug": "xbox-360-kinect",
+   "title": "Xbox 360 Kinect",
+   "kind": "accessory",
+   "platform": "Xbox 360",
+   "model_number": "1414",
+   "release_year": 2010,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-360-Kinect-Standalone.png"
+  },
+  {
+   "slug": "turbografx-16",
+   "title": "TurboGrafx-16",
+   "kind": "console",
+   "platform": "TurboGrafx-16",
+   "model_number": "PI-TG001",
+   "release_year": 1989,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/TurboGrafx16-Console-Set.png"
+  },
+  {
+   "slug": "neo-geo-aes",
+   "title": "Neo Geo AES",
+   "kind": "console",
+   "platform": null,
+   "model_number": "NEO-AES",
+   "release_year": 1990,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Neo-Geo-AES-FL.jpg"
+  },
+  {
+   "slug": "3do-panasonic-fz-1",
+   "title": "3DO (Panasonic FZ-1)",
+   "kind": "console",
+   "platform": null,
+   "model_number": "FZ-1",
+   "release_year": 1993,
+   "image": null
+  },
+  {
+   "slug": "3do-panasonic-fz-10",
+   "title": "3DO (Panasonic FZ-10)",
+   "kind": "console",
+   "platform": null,
+   "model_number": "FZ-10",
+   "release_year": 1994,
+   "image": "https://commons.wikimedia.org/wiki/Special:FilePath/3DO-FZ-10-Console-FL.png"
+  }
+ ]
+}

@@ -228,6 +228,9 @@ export const api = {
   platformsInUse: () => request("/api/games/platforms?in_use=true"),
   igdbSearch: (q) =>
     request(`/api/games/igdb/search?q=${encodeURIComponent(q)}`),
+  // the seeded NA console-variant catalogue — local, keyless, instant
+  hardwareCatalogue: (params) =>
+    request(`/api/games/hardware/catalogue?${new URLSearchParams(params)}`),
   movies: (params = {}) =>
     request(`/api/movies?${new URLSearchParams(params)}`),
   movieFormats: () => request("/api/movies/formats"),
@@ -259,13 +262,20 @@ export const api = {
    *  contrast, keeps the original URL: it may well load in the browser even
    *  when the server could not reach it just now. */
   localiseImage: async (url) => {
-    const stable = /image\.tmdb\.org|igdb\.com/i;
+    // Commons is on this list for a second reason too: it rate-limits
+    // server-side fetches hard (429), and the console catalogue's images
+    // live there — hotlinking is how that dataset says they are meant to
+    // be used.
+    const stable = /image\.tmdb\.org|igdb\.com|wikimedia\.org/i;
     if (!url || !/^https?:/i.test(url) || stable.test(url)) return url;
     try {
       const { url: local } = await api.fetchImage(url);
       return local;
     } catch (e) {
-      return /source returned 4\d\d/.test(e.message || "") ? null : url;
+      // 429 is "slow down", not "no such image" — dropping the URL over a
+      // rate limit would turn a busy afternoon into a permanently missing
+      // picture. Only the source's own "this does not exist" nulls it.
+      return /source returned (?!429)4\d\d/.test(e.message || "") ? null : url;
     }
   },
   amiibo: (params = {}) => request(`/api/amiibo?${new URLSearchParams(params)}`),

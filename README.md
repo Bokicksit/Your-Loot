@@ -81,8 +81,13 @@ consoles up to the Xbox 360 era it also offers a **scan of the actual box**
 from libretro-thumbnails — no key needed — instead of IGDB's key art, which
 looks the same whether you own the original or a download.
 
-**Hardware** — consoles and accessories with model number, serial, working
-status, and accessory→console links.
+**Hardware** — consoles, controllers and accessories, each knowing which of
+the three it is, with model number, serial, and working status. A built-in **North American console catalogue** —
+our own openly licensed dataset of 170+ consoles, famous colourways,
+controllers and accessories, seeded automatically — fills the form as you
+type: pick “Super Nintendo” and the model number, platform and a public-domain
+photo arrive with it. Your serial number and whether it still works stay
+yours to fill in, because they belong to the unit on your shelf.
 
 **Movies** — TMDB-backed, with the physical details that matter: format
 (4K/Blu-ray/DVD/VHS), edition, region code. Scanning the barcode also pulls
@@ -367,6 +372,9 @@ deploy/  TrueNAS compose
 - Records: [MusicBrainz](https://musicbrainz.org) and the
   [Cover Art Archive](https://coverartarchive.org)
 - amiibo: the [AmiiboAPI open database](https://github.com/N3evin/AmiiboAPI)
+- Console catalogue: our own [CC0 dataset](seed/data/consoles-na.json), photos
+  from [Wikimedia Commons](https://commons.wikimedia.org) (public domain /
+  CC0, most by Evan Amos)
 - LEGO: [Rebrickable](https://rebrickable.com) · Comics:
   [Comic Vine](https://comicvine.gamespot.com)
 - Barcodes: [UPCitemdb](https://www.upcitemdb.com)

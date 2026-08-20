@@ -30,12 +30,14 @@ const WORKING = ["works", "partial", "broken", "untested"];
 
 const EMPTY_FORM = {
   title: "",
+  // console | controller | accessory — the first question a manual entry
+  // answers, and the sub-shelf the list can filter by
+  hardware_kind: "console",
   platform_id: "",
   region: "NTSC-U",
   model_number: "",
   serial_number: "",
   working: "works",
-  parent_id: "",
   image_url: null,
   tags: [],
   notes: "",
@@ -119,6 +121,7 @@ export default function HardwarePage() {
   const [tileCols] = useTileCols("hardware");
   const inlineDensity = useInlineDensity();
   const [platformFilter, setPlatformFilter] = useListPref("hardware", "platformFilter", "");
+  const [kindFilter, setKindFilter] = useListPref("hardware", "kindFilter", "");
   const [tagFilter, setTagFilter] = useListPref("hardware", "tagFilter", "");
   // bumped whenever tags change, so the filter re-reads its counts
   const [tagsChanged, setTagsChanged] = useState(0);
@@ -128,7 +131,7 @@ export default function HardwarePage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   // sort is not counted: it never hides anything, and a badge for the
   // order you always use would announce a problem that is not there
-  const activeFilters = [platformFilter, tagFilter].filter(Boolean).length;
+  const activeFilters = [platformFilter, kindFilter, tagFilter].filter(Boolean).length;
   // One write. Each useListPref setter rebuilds the whole prefs object
   // from its render-time copy, so several in a row undo each other.
   const { settings: allSettings, save: saveSettings } = useSettings();
@@ -139,6 +142,7 @@ export default function HardwarePage() {
         hardware: {
           ...(allSettings?.list_prefs?.hardware || {}),
             platformFilter: "",
+            kindFilter: "",
             tagFilter: "",
         },
       },
@@ -155,6 +159,10 @@ export default function HardwarePage() {
   const [results, setResults] = useState(null); // null = nothing searched yet
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
+  // hits from the seeded console catalogue, offered as you type the name
+  const [catalogue, setCatalogue] = useState([]);
+  // a pick fills the form; stop re-searching what the pick just wrote
+  const [picked, setPicked] = useState(false);
 
   // A boxed console or controller carries a UPC like any other product, so the
   // same lookup games and movies use fills the name and offers photos of the
@@ -243,6 +251,7 @@ export default function HardwarePage() {
     if (search) params.search = search;
     if (tagFilter) params.tag = tagFilter;
     if (platformFilter) params.platform_id = platformFilter;
+    if (kindFilter) params.hardware_kind = kindFilter;
     api
       .games(params)
       .then((d) => {
@@ -263,16 +272,57 @@ export default function HardwarePage() {
     return () => clearTimeout(t);
   }, [showForm, form.title]);
 
+  // The seeded catalogue, asked as you type. Local and keyless, so it can
+  // afford to run on every pause — unlike the shop lookup, which spends a
+  // budget and therefore stays behind its button.
+  useEffect(() => {
+    if (!showForm || picked || form.title.trim().length < 2) {
+      setCatalogue([]);
+      return;
+    }
+    const t = setTimeout(
+      () =>
+        api
+          .hardwareCatalogue({ q: form.title.trim(), limit: 6 })
+          .then((d) => setCatalogue(d.items || []))
+          .catch(() => setCatalogue([])), // no catalogue is not an error
+      250
+    );
+    return () => clearTimeout(t);
+  }, [showForm, form.title, picked]);
+
+  // Everything the catalogue knows lands in the form; serial number and
+  // working state stay yours, because they belong to the unit on the shelf.
+  const pickCatalogue = (item) => {
+    const a = item.attrs || {};
+    if (a.platform_id && !platforms.some((p) => p.id === a.platform_id)) {
+      api.platforms().then(setPlatforms); // seeded after this page loaded
+    }
+    setForm((f) => ({
+      ...f,
+      title: item.title,
+      hardware_kind: a.hardware_kind || f.hardware_kind,
+      platform_id: a.platform_id ? String(a.platform_id) : f.platform_id,
+      model_number: a.model_number || f.model_number,
+      region: "NTSC-U", // it is the North American dataset
+      image_url: item.image_url || f.image_url,
+    }));
+    setCatalogue([]);
+    setPicked(true);
+  };
+
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [search, platformFilter, sort, tagFilter, tagsChanged]);
+  }, [search, platformFilter, kindFilter, sort, tagFilter, tagsChanged]);
 
   // settings arrive after mount, so the default region is picked up on open
   const openForm = () => {
     setForm(blankForm());
     setArt([]);
     setResults(null);
+    setCatalogue([]);
+    setPicked(false);
     setShowForm(true);
   };
 
@@ -286,10 +336,10 @@ export default function HardwarePage() {
         platform_id: form.platform_id ? Number(form.platform_id) : null,
         region: form.region || null,
         is_hardware: true,
+        hardware_kind: form.hardware_kind || null,
         model_number: form.model_number.trim() || null,
         serial_number: form.serial_number.trim() || null,
         working: form.working,
-        parent_id: form.parent_id ? Number(form.parent_id) : null,
         image_url: await api.localiseImage(form.image_url),
         notes: form.notes.trim() || null,
       });
@@ -385,6 +435,21 @@ export default function HardwarePage() {
           </select>
           </label>
           <label>
+            <span>Kind</span>
+            <select
+              className="chip-select"
+              title="Filter by kind"
+              value={kindFilter}
+              onChange={(e) => setKindFilter(e.target.value)}
+            >
+              <option value="">All kinds</option>
+              <option value="console">Consoles</option>
+              <option value="controller">Controllers</option>
+              <option value="accessory">Accessories</option>
+              <option value="unsorted">Unsorted</option>
+            </select>
+          </label>
+          <label>
             <span>Sort</span>
           <select
             className="chip-select"
@@ -430,9 +495,12 @@ export default function HardwarePage() {
               type="text"
               required
               className="grow"
-              placeholder="Name (SNES console, OEM controller…)"
+              placeholder="Name (Super Nintendo)"
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) => {
+                setPicked(false); // a changed name reopens the suggestions
+                setForm({ ...form, title: e.target.value });
+              }}
             />
             <button
               type="button"
@@ -445,6 +513,37 @@ export default function HardwarePage() {
             </button>
             <BarcodeScan onCode={onBarcode} />
           </div>
+          {catalogue.length > 0 && (
+            <>
+              {/* the built-in catalogue answers first — a known variant
+                  fills the whole form, not just the name */}
+              <p className="pick-label">From the console catalogue:</p>
+              <div className="grid pick-grid">
+                {catalogue.map((c) => (
+                  <div
+                    key={c.id}
+                    className="tile pick square"
+                    onClick={() => pickCatalogue(c)}
+                    title="Use this catalogue entry"
+                  >
+                    {c.image_url ? (
+                      <img src={c.image_url} alt={c.title} loading="lazy" />
+                    ) : (
+                      <div className="placeholder" data-label="no photo" />
+                    )}
+                    <div className="tile-info">
+                      <strong>{c.title}</strong>
+                      <small>
+                        {[c.attrs?.model_number, c.attrs?.release_year]
+                          .filter(Boolean)
+                          .join(" · ") || c.attrs?.hardware_kind}
+                      </small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           {searching && (
             <p className="empty" style={{ padding: "var(--s-3)" }}>Looking…</p>
           )}
@@ -526,24 +625,21 @@ export default function HardwarePage() {
           </div>
           <div className="form-row">
             <select
+              title="What kind of hardware"
+              value={form.hardware_kind}
+              onChange={(e) => setForm({ ...form, hardware_kind: e.target.value })}
+            >
+              <option value="console">Console</option>
+              <option value="controller">Controller</option>
+              <option value="accessory">Accessory</option>
+            </select>
+            <select
               title="Working status"
               value={form.working}
               onChange={(e) => setForm({ ...form, working: e.target.value })}
             >
               {WORKING.map((w) => (
                 <option key={w}>{w}</option>
-              ))}
-            </select>
-            <select
-              title="Part of (console)"
-              value={form.parent_id}
-              onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-            >
-              <option value="">Standalone…</option>
-              {rows.map((h) => (
-                <option key={h.id} value={h.id}>
-                  goes with: {h.title}
-                </option>
               ))}
             </select>
           </div>
@@ -634,7 +730,6 @@ export default function HardwarePage() {
           <HardwareRow
             key={h.id}
             hw={h}
-            all={rows}
             platforms={platforms}
             onChange={patchRow}
             onReload={load}
@@ -646,7 +741,7 @@ export default function HardwarePage() {
   );
 }
 
-function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) {
+function HardwareRow({ hw, platforms, onChange, onReload , onTagsChanged}) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // owned copy id
   const [editVals, setEditVals] = useState({ completeness: "loose", condition: "Good" });
@@ -667,8 +762,6 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
   );
 
   const a = hw.attrs;
-  const parent = a.parent_id ? all.find((x) => x.id === a.parent_id) : null;
-  const children = all.filter((x) => x.attrs.parent_id === hw.id);
 
   const run = async (fn) => {
     if (busy) return;
@@ -705,12 +798,12 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
   const openEntry = () => {
     const vals = {
       title: hw.title,
+      hardware_kind: a.hardware_kind || "",
       platform_id: a.platform_id ? String(a.platform_id) : "",
       region: a.region || "",
       model_number: a.model_number || "",
       serial_number: a.serial_number || "",
       working: a.working || "works",
-      parent_id: a.parent_id ? String(a.parent_id) : "",
       image_url: hw.image_url,
       tags: hw.tags || [],
       notes: hw.notes || "",
@@ -724,13 +817,13 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
     setBusy(true);
     try {
       await api.updateGame(hw.id, {
+        hardware_kind: entry.hardware_kind || null,
         title: entry.title.trim(),
         platform_id: entry.platform_id ? Number(entry.platform_id) : null,
         region: entry.region || null,
         model_number: entry.model_number.trim() || null,
         serial_number: entry.serial_number.trim() || null,
         working: entry.working,
-        parent_id: entry.parent_id ? Number(entry.parent_id) : null,
         image_url: await api.localiseImage(entry.image_url),
         notes: entry.notes.trim() || null,
       });
@@ -784,9 +877,9 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
         <strong>{hw.title}</strong>
         <small className="game-meta">
           {a.platform_abbr && <span className="plat-badge">{a.platform_abbr}</span>}
+          {a.hardware_kind && <span className="kind-badge">{a.hardware_kind}</span>}
           {a.model_number && <span>{a.model_number}</span>}
           {a.working && <span className={`hw-status ${a.working}`}>{a.working}</span>}
-          {parent && <span>↳ {parent.title}</span>}
         </small>
         {hw.owned.length > 0 && (
           <span className="copy-chips">
@@ -840,7 +933,6 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
                 {[
                   a.working && `Status: ${a.working}`,
                   a.serial_number && `S/N ${a.serial_number}`,
-                  parent && `Goes with ${parent.title}`,
                 ]
                   .filter(Boolean)
                   .join("  ·  ")}
@@ -853,11 +945,6 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
           <TagChips tags={hw.tags} />
           {/* your own words about the thing, not about one copy */}
           {hw.notes && <p className="game-summary">{hw.notes}</p>}
-          {children.length > 0 && (
-            <p className="game-summary">
-              Connected gear: {children.map((c) => c.title).join(", ")}
-            </p>
-          )}
         </span>
       )}
 
@@ -941,25 +1028,22 @@ function HardwareRow({ hw, all, platforms, onChange, onReload , onTagsChanged}) 
           </div>
           <div className="form-row">
             <select
+              title="What kind of hardware"
+              value={entry.hardware_kind}
+              onChange={(e) => setEntry({ ...entry, hardware_kind: e.target.value })}
+            >
+              <option value="">Unsorted</option>
+              <option value="console">Console</option>
+              <option value="controller">Controller</option>
+              <option value="accessory">Accessory</option>
+            </select>
+            <select
               value={entry.working}
               onChange={(e) => setEntry({ ...entry, working: e.target.value })}
             >
               {WORKING.map((w) => (
                 <option key={w}>{w}</option>
               ))}
-            </select>
-            <select
-              value={entry.parent_id}
-              onChange={(e) => setEntry({ ...entry, parent_id: e.target.value })}
-            >
-              <option value="">Standalone…</option>
-              {all
-                .filter((x) => x.id !== hw.id)
-                .map((h) => (
-                  <option key={h.id} value={h.id}>
-                    goes with: {h.title}
-                  </option>
-                ))}
             </select>
           </div>
           <div className="form-row">

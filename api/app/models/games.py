@@ -24,6 +24,10 @@ class GameAttrs(Base):
     platform_id: Mapped[int | None] = mapped_column(ForeignKey("platforms.id"))
     region: Mapped[str | None] = mapped_column(String(20))  # NTSC-U/PAL/NTSC-J...
     is_hardware: Mapped[bool] = mapped_column(Boolean, default=False)
+    # console | controller | accessory — hardware only, and a fixed
+    # vocabulary on purpose: the filter should be three choices, not a
+    # folksonomy. Null is unsorted, which every row made before this is.
+    hardware_kind: Mapped[str | None] = mapped_column(String(20), index=True)
     # NOTE: completeness (loose/CIB/sealed) lives on the `owned` record — it
     # describes your copy, not the game itself.
     # info panel metadata, captured from IGDB at add time (manual adds: blank)

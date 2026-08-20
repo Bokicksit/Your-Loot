@@ -5,6 +5,7 @@ from app.schemas.common import OwnedOut, WantedOut
 
 class GameAttrsOut(BaseModel):
     igdb_slug: str | None = None
+    hardware_kind: str | None = None
     platform_id: int | None = None
     platform_name: str | None = None
     platform_abbr: str | None = None
@@ -45,6 +46,7 @@ class GameUpdate(BaseModel):
     platform_id: int | None = None
     region: str | None = None
     is_hardware: bool | None = None
+    hardware_kind: str | None = Field(default=None, pattern="^(console|controller|accessory)$")
     image_url: str | None = None
     notes: str | None = None
     model_number: str | None = None
@@ -58,6 +60,8 @@ class GameCreate(BaseModel):
     platform_id: int | None = None
     region: str | None = None
     is_hardware: bool = False
+    # console | controller | accessory; only meaningful when is_hardware
+    hardware_kind: str | None = Field(default=None, pattern="^(console|controller|accessory)$")
     image_url: str | None = None
     notes: str | None = None
     igdb_id: int | None = None  # set when the entry came from IGDB search

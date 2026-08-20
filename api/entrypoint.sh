@@ -4,6 +4,14 @@ set -e
 
 alembic upgrade head
 
+# The hardware catalogue ships inside the image (seed/data/consoles-na.json,
+# our own dataset), so this needs no network and takes well under a second
+# for 173 rows. On every start rather than first run only: idempotent, and a
+# dataset correction in a release reaches every install without anybody
+# remembering a command. Non-fatal, because a broken catalogue seed should
+# never keep a working collection offline.
+python /seed/seed_consoles.py || echo "[seed] console catalogue failed; run it by hand later"
+
 # First run has an empty catalog, which makes the app look broken. Seed it in
 # the background so the UI is up immediately and fills in as cards land.
 # SEED_ON_START=false skips it; re-running the seed later is always safe.
