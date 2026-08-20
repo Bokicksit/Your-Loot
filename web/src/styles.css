@@ -3317,27 +3317,151 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   white-space: nowrap;
 }
 
-/* everything else */
-.lp .strip {
+/* the collections grid — one card per shelf, feature copy under each */
+.col-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@container (min-width: 640px) {
+  .col-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (min-width: 980px) {
+  .col-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.col-card {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.lp .strip .chip2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 14px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-3);
   background: var(--bg-1);
-  font-size: var(--f-3);
-  color: var(--text-dim);
-  transition: color .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+  transition: border-color .18s var(--ease), transform .18s var(--ease);
 }
-.lp .strip .chip2:hover { color: var(--text); border-color: var(--gold-line); transform: translateY(-2px); }
-.lp .strip .chip2 svg.i { width: 17px; height: 17px; color: var(--text-mute); }
-.lp .strip .chip2:hover svg.i { color: var(--gold); }
+.col-card:hover { border-color: var(--gold-line); transform: translateY(-2px); }
+.col-card .col-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+  color: var(--gold);
+}
+.col-card .col-icon svg.i { width: 18px; height: 18px; }
+.col-card strong { font-size: var(--f-3); color: var(--text); letter-spacing: -.01em; }
+.col-card p { margin: 0; font-size: var(--f-2); line-height: 1.55; color: var(--text-dim); }
+/* the shared-tools card reads as a footnote to the grid, not an eighth shelf */
+.col-card.more { border-style: dashed; background: transparent; }
+.col-card.more .col-icon { color: var(--text-mute); }
+
+/* The collector's room, in miniature. The real one (api/app/room.py) draws
+   furniture in CSS with colours hashed from the person's own titles — this
+   is the same idea at postage-stamp size: a lamp cone, a shelf of spines, an
+   open binder on a table, a record crate. Purely decorative, aria-hidden. */
+.room-demo {
+  position: relative;
+  overflow: hidden;
+  padding: 34px 26px 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: linear-gradient(180deg, #17131a, #0d0b10 70%);
+  box-shadow: 0 30px 70px -40px #000;
+}
+.room-demo .rd-lamp {
+  position: absolute;
+  top: 0; left: 50%;
+  width: 420px; height: 240px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(224,192,90,.16), transparent 68%);
+  pointer-events: none;
+}
+.room-demo .rd-scene {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 34px;
+  flex-wrap: wrap;
+  min-height: 130px;
+  padding-bottom: 10px;
+  /* the floor: one line, the way the room's furniture sits on one */
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+.room-demo .rd-shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px 6px 0 0;
+  background: rgba(255,255,255,.02);
+}
+.room-demo .rd-spine {
+  width: 7px;
+  /* pixel heights from the JSX: a percentage would need the shelf to have a
+     height of its own, and it takes its height from the tallest spine */
+  height: var(--h, 48px);
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, currentColor, color-mix(in srgb, currentColor 60%, #000));
+}
+.room-demo .rd-table {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 14px 0;
+  border-bottom: 4px solid #241e2b;
+}
+.room-demo .rd-binder {
+  display: grid;
+  grid-template-columns: repeat(3, 16px);
+  gap: 3px;
+  padding: 6px;
+  border-radius: 5px;
+  background: #1d1826;
+  box-shadow: 0 6px 18px -8px rgba(224,192,90,.25);
+}
+.room-demo .rd-binder i {
+  height: 21px;
+  border-radius: 2.5px;
+  background: linear-gradient(180deg, color-mix(in srgb, currentColor 88%, #fff), currentColor 55%);
+}
+.room-demo .rd-slabs { display: flex; gap: 5px; align-items: flex-end; }
+.room-demo .rd-slabs i {
+  width: 15px; height: 22px;
+  border-radius: 3px;
+  border: 1.5px solid rgba(255,255,255,.25);
+  background: currentColor;
+}
+.room-demo .rd-crate {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 10px 5px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+  background: rgba(255,255,255,.02);
+}
+.room-demo .rd-sleeve {
+  width: 34px; height: 34px;
+  margin-left: -22px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, color-mix(in srgb, currentColor 85%, #fff), currentColor 60%);
+  border: 1px solid rgba(0,0,0,.4);
+  transform: rotate(-8deg);
+  transform-origin: bottom left;
+}
+.room-demo .rd-sleeve:first-child { margin-left: 0; }
+.room-demo .rd-url {
+  position: absolute;
+  right: 14px; bottom: 10px;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .08em;
+  color: var(--text-mute);
+}
 
 /* routes */
 .routes {

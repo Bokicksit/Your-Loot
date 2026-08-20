@@ -18,6 +18,11 @@ Full detail is in the commit log, where every change has its own note.
   pass. Found in a security audit; covered by new tenancy tests.
 
 ### Added
+- **The front page says what the app is.** A collections section — one card
+  per shelf with its actual features — replaces the amiibo-heavy "everything
+  else" strip, the hero names every collection, and a new section previews
+  the collector's room in miniature: the same CSS furniture idea, postage-
+  stamp sized.
 - **A "?" in every add and edit form.** Each collection's add sheet and
   entry editor now carries a small help note — what the search reaches, what
   the buttons do, and the difference between the entry and your copy. The

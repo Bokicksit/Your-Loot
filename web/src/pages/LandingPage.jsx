@@ -38,6 +38,56 @@ const ART = [
   "#e0c37a", "#6fa8a0", "#d97f8f", "#9ec46f", "#8ab6d6",
 ];
 
+/** The shelves, one card each. Order matches the app's own tab order, and
+ *  every claim is a feature that exists — the catalogue names, the counts,
+ *  the per-copy facts. Movies and comics are absent on purpose: a hosted
+ *  service cannot carry those catalogues (api/app/modules.py), and this page
+ *  only ever shows on hosted installs. */
+const COLLECTIONS = [
+  {
+    icon: "card",
+    name: "Pokémon TCG",
+    blurb:
+      "Every set and every printing, found by the number printed on the card. A dex slot for every Pokémon, and binders built like the ones on your shelf.",
+  },
+  {
+    icon: "pad",
+    name: "Games",
+    blurb:
+      "Search IGDB or scan the case's barcode, pick the platform from the console's own list, and file each copy as loose, CIB or sealed.",
+  },
+  {
+    icon: "console",
+    name: "Hardware",
+    blurb:
+      "170+ consoles pre-catalogued with their famous colourways, controllers and accessories. Your unit keeps its serial number and whether it still works.",
+  },
+  {
+    icon: "vinyl",
+    name: "Records",
+    blurb:
+      "A scan of the sleeve's barcode names the exact pressing — the thing no title search can do. Media and sleeve graded separately, like a record shop would.",
+  },
+  {
+    icon: "book",
+    name: "Books",
+    blurb:
+      "Type or scan the ISBN on the back and the exact edition comes up. The jacket and condition belong to your copy, not the catalogue.",
+  },
+  {
+    icon: "fig",
+    name: "amiibo",
+    blurb:
+      "The whole line arrives catalogued — all 932 figures and cards. Boxed or loose, kept or hunted, ticked off as the shelf fills.",
+  },
+  {
+    icon: "brick",
+    name: "LEGO",
+    blurb:
+      "Sets by number straight from Rebrickable, piece counts included. Sealed, built, loose bricks or missing pieces — with the box tracked on its own.",
+  },
+];
+
 // the swatches the real binder settings offer
 const COVERS = [
   ["Red", "#c0392b"], ["Orange", "#e08a1e"], ["Yellow", "#e0c02b"],
@@ -153,9 +203,9 @@ export default function LandingPage() {
           Your <em>Loot</em>
         </span>
         <span className="links">
-          <a href="#top">Pokédex</a>
+          <a href="#collections">Collections</a>
           <a href="#binders">Binders</a>
-          <a href="#everything">Everything else</a>
+          <a href="#room">The room</a>
           <a href="#get">Get it</a>
         </span>
         <span className="sp" />
@@ -178,9 +228,11 @@ export default function LandingPage() {
               Build the binder. <em>Send the link.</em>
             </h1>
             <p className="lp-lede rv in d2">
-              A slot for every Pokémon, binders of your own for everything
-              else, and a page you can hand to a friend. Free and open source
-              — or let us host it.
+              One app for the whole hobby: Pokémon cards, games, consoles,
+              records, books, amiibo and LEGO — each with a real catalogue
+              behind the search, your copy's condition on every entry, and a
+              page you can hand to a friend. Free and open source — or let
+              us host it.
             </p>
             <div className="lp-cta rv in d3">
               <button type="button" className="btn gold" onClick={go}>
@@ -248,7 +300,44 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <section className="lp-band alt" id="binders">
+      <section className="lp-band alt" id="collections">
+        <div className="lp-wrap">
+          <div className="lp-head rv">
+            <span className="kicker">What it keeps</span>
+            <h2>Seven collections. One shelf.</h2>
+            <p>
+              Each one has a real catalogue behind the search, so adding a
+              thing means finding it — what's left to say is about your copy:
+              its condition, its completeness, its story. And more
+              collections are on the way.
+            </p>
+          </div>
+          <div className="col-grid rv d1">
+            {COLLECTIONS.map((c) => (
+              <div className="col-card" key={c.name}>
+                <span className="col-icon">
+                  <Icon id={c.icon} />
+                </span>
+                <strong>{c.name}</strong>
+                <p>{c.blurb}</p>
+              </div>
+            ))}
+            <div className="col-card more">
+              <span className="col-icon">
+                <Icon id="plus" />
+              </span>
+              <strong>Everything, everywhere</strong>
+              <p>
+                Every shelf shares the same tools: a wanted list, tags,
+                barcode scanning, a public page — and the whole collection
+                leaves in one file whenever you ask.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-band" id="binders">
         <div className="lp-wrap">
           <div className="lp-head rv">
             <span className="kicker">Binders</span>
@@ -329,50 +418,63 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="lp-band" id="everything">
+      <section className="lp-band alt" id="room">
         <div className="lp-wrap">
           <div className="lp-head rv">
-            <span className="kicker">Everything else</span>
-            <h2>Cards are the hard part. The rest is already here.</h2>
+            <span className="kicker">The collector's room</span>
+            <h2>A public page drawn as a room, not a spreadsheet.</h2>
             <p>
-              Same app, same export, same shareable page — for whatever else
-              ends up on your shelves. amiibo arrive with the whole line
-              catalogued — all 932 figures and cards — and consoles come the
-              same way: 170+ North American machines, famous colourways,
-              controllers and accessories, picked instead of typed, with the
-              serial number and working status of your own unit on your copy.
+              Hand out <strong>yourloot.app/u/you</strong> and a free account
+              shows a tidy grid. A Supporter's page gets furniture: cards on
+              a lamp-lit table, games under a CRT, records in a crate, LEGO
+              behind glass. Every prop is drawn in CSS and every colour is
+              hashed from your own titles — the shelf only fills with what
+              you actually keep, so your room looks like nobody else's.
             </p>
           </div>
-          <div className="strip rv d1">
-            <span className="chip2">
-              <Icon id="fig" />
-              amiibo
-            </span>
-            <span className="chip2">
-              <Icon id="vinyl" />
-              Records
-            </span>
-            <span className="chip2">
-              <Icon id="pad" />
-              Games
-            </span>
-            <span className="chip2">
-              <Icon id="console" />
-              Hardware
-            </span>
-            <span className="chip2">
-              <Icon id="book" />
-              Books
-            </span>
-            <span className="chip2">
-              <Icon id="brick" />
-              LEGO sets
-            </span>
+          <div className="room-demo rv d1" aria-hidden="true">
+            <span className="rd-lamp" />
+            <div className="rd-scene">
+              <div className="rd-shelf">
+                {Array.from({ length: 11 }, (_, i) => (
+                  <i
+                    key={i}
+                    className="rd-spine"
+                    style={{
+                      color: ART[(i * 7 + 2) % ART.length],
+                      "--h": `${38 + ((i * 13) % 22)}px`,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="rd-table">
+                <span className="rd-binder">
+                  {Array.from({ length: 9 }, (_, i) => (
+                    <i key={i} style={{ color: ART[(i * 3 + 1) % ART.length] }} />
+                  ))}
+                </span>
+                <span className="rd-slabs">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <i key={i} style={{ color: ART[(i * 5 + 4) % ART.length] }} />
+                  ))}
+                </span>
+              </div>
+              <div className="rd-crate">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <i
+                    key={i}
+                    className="rd-sleeve"
+                    style={{ color: ART[(i * 4 + 3) % ART.length] }}
+                  />
+                ))}
+              </div>
+            </div>
+            <span className="rd-url">yourloot.app/u/you</span>
           </div>
         </div>
       </section>
 
-      <section className="lp-band alt" id="get">
+      <section className="lp-band" id="get">
         <div className="lp-wrap">
           <div className="lp-head rv">
             <span className="kicker">Three ways in</span>
