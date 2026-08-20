@@ -335,6 +335,15 @@ def signup(
             raise HTTPException(409, str(e))
         if screennames.holder(db, wanted) is not None:
             raise HTTPException(409, "Somebody already has that name.")
+        # The reservation rules, before the account exists: a reserved name
+        # bounces a stranger with the same words the built-in list uses, and
+        # an address with a name waiting for it is told so — signing up under
+        # a different name would spend their once-ever claim while the name
+        # held for them waits forever.
+        try:
+            screennames.reservation_gate(db, wanted, body.email)
+        except screennames.NameProblem as e:
+            raise HTTPException(409, str(e))
 
     signups.failed(key)
     user = User(
@@ -348,7 +357,13 @@ def signup(
     db.add(user)
     db.flush()           # the name needs the id
     if wanted:
-        screennames.claim(db, user.id, body.screen_name)
+        try:
+            screennames.claim(db, user.id, body.screen_name)
+        except screennames.NameProblem as e:
+            # the pre-check above answers this before the account exists;
+            # reaching here means the name moved in the race between the two,
+            # and the rollback takes the half-made account with it
+            raise HTTPException(409, str(e))
     db.commit()
     db.refresh(user)
 

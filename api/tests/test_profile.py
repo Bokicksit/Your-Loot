@@ -788,6 +788,11 @@ def test_a_reserved_name_waits_for_its_person(owner):
         ).raise_for_status()
         r = stranger.put("/api/profile", json={"screen_name": held})
         assert r.status_code >= 400, "assigning it did not keep a stranger out"
+        # and the kid cannot accidentally spend their once-ever claim on a
+        # different name while this one waits — that would strand it forever
+        r = kid.put("/api/profile", json={"screen_name": _name()})
+        assert r.status_code >= 400, "a claim burned while a name was held for them"
+        assert "held" in r.json()["detail"].lower(), "refused without saying a name waits"
         r = kid.put("/api/profile", json={"screen_name": held})
         assert r.status_code == 200, r.text
         assert r.json()["url"].endswith("/" + held)
@@ -820,6 +825,74 @@ def test_a_reservation_cannot_take_a_held_name(owner, named):
     name somebody holds is revocation, which spends it for everybody."""
     r = owner.post("/api/admin/reserved-names", json={"name": named})
     assert r.status_code == 409, "a reservation displaced a held name"
+
+
+def test_a_reservation_holds_through_signup():
+    """The same gate at the door names are usually claimed through.
+
+    On the open-signup install the name is part of making the account, so
+    the reservation has to answer there too: a stranger asking for the held
+    name is refused in a sentence, the person it waits for is stopped from
+    burning their claim on something else, and signing up with the held
+    name works and spends the reservation.
+    """
+    open_url = os.environ.get("LOOT_OPEN_URL")
+    if not open_url:
+        pytest.skip("no install with open sign-up to test against")
+
+    # the same credentials test_accounts claims the open install's first
+    # account with — whichever file gets there first, the other signs in
+    creds = {"email": "open-owner@example.com", "password": "the-owner-password-1"}
+    admin = httpx.Client(base_url=open_url, timeout=60)
+    me = admin.get("/api/auth/me").json()
+    if me.get("needs_setup"):
+        admin.post("/api/auth/setup", json=creds).raise_for_status()
+    elif admin.post("/api/auth/login", json=creds).status_code != 200:
+        admin.close()
+        pytest.skip("the open install already belongs to somebody")
+
+    try:
+        held = _name()
+        kid_email = f"kid-{uuid.uuid4().hex[:8]}@example.com"
+        admin.post(
+            "/api/admin/reserved-names", json={"name": held, "email": kid_email}
+        ).raise_for_status()
+
+        password = "a-long-enough-password"
+        with httpx.Client(base_url=open_url, timeout=60) as stranger:
+            r = stranger.post("/api/auth/signup", json={
+                "email": f"x-{uuid.uuid4().hex[:8]}@example.com",
+                "password": password,
+                "accept_terms": True,
+                "screen_name": held,
+            })
+            assert r.status_code == 409, "a stranger signed up under a held name"
+            assert "reserved" in r.json()["detail"].lower()
+
+        with httpx.Client(base_url=open_url, timeout=60) as kid:
+            r = kid.post("/api/auth/signup", json={
+                "email": kid_email,
+                "password": password,
+                "accept_terms": True,
+                "screen_name": _name(),
+            })
+            assert r.status_code == 409, "signup burned a claim while a name waited"
+            assert "held" in r.json()["detail"].lower()
+
+            r = kid.post("/api/auth/signup", json={
+                "email": kid_email,
+                "password": password,
+                "accept_terms": True,
+                "screen_name": held,
+            })
+            assert r.status_code < 300, r.text
+
+        names = {
+            row["name"] for row in admin.get("/api/admin/reserved-names").json()
+        }
+        assert held not in names, "a signup-claimed reservation is still listed"
+    finally:
+        admin.close()
 
 
 def test_reservations_are_the_admins_business(owner):

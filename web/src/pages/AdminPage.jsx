@@ -185,11 +185,14 @@ function ReservedNames() {
         </div>
       )}
       <p className="settings-note">
-        A reserved name can't be claimed by anyone — except the account signed
-        in with the email you put on it, whose claim goes through and uses the
-        reservation up. Reserving can't take a name somebody already holds;
-        that's what Remove name above is for, and it spends the name for
-        everybody.
+        A reserved name can't be claimed by anyone — except the account with
+        the email you put on it, whose claim goes through and uses the
+        reservation up. That works at sign-up too: if they type the held name
+        it's theirs, and if they type a different one they're stopped and
+        told a name is waiting, so they can't accidentally spend their
+        once-ever claim on something else. Reserving can't take a name
+        somebody already holds; that's what Remove name above is for, and it
+        spends the name for everybody.
       </p>
     </section>
   );

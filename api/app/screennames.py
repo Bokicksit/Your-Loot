@@ -154,18 +154,9 @@ def claim(db: Session, user_id: int, wanted: str, *, floor: int = MIN_NAME) -> S
         # name was banned" tells somebody something about another person.
         raise NameProblem("Somebody already has that one.")
 
-    res = reservation(db, folded)
+    account = db.get(User, user_id)
+    res = reservation_gate(db, folded, getattr(account, "email", None))
     if res is not None:
-        account = db.get(User, user_id)
-        theirs = bool(
-            res.email
-            and getattr(account, "email", None)
-            and res.email.strip().lower() == account.email.strip().lower()
-        )
-        if not theirs:
-            # The same words the built-in list uses. "Reserved for somebody"
-            # would tell a stranger a fact about another person's household.
-            raise NameProblem("That one is reserved. Try another.")
         # Theirs to take: the reservation has done its job and is spent.
         # The ScreenName row created below is what holds the name from here.
         db.delete(res)
@@ -179,6 +170,41 @@ def claim(db: Session, user_id: int, wanted: str, *, floor: int = MIN_NAME) -> S
 
 def reservation(db: Session, name: str) -> ReservedName | None:
     return db.scalar(select(ReservedName).where(ReservedName.name == fold(name)))
+
+
+def reservation_gate(db: Session, folded: str, email: str | None) -> ReservedName | None:
+    """May this (name, email) pair proceed to a claim?
+
+    Returns the reservation to consume when the name is held for exactly
+    this address, None when reservations have nothing to say — and raises
+    in the two cases where the claim must not happen:
+
+    * the name is held for somebody else (or for nobody): the same words
+      the built-in list uses, because "reserved for somebody" is a fact
+      about another person's household;
+    * this address has a different name waiting for it. A claim is spent
+      the moment it is made, so somebody signing up as "benny" while "ben"
+      waits for them would burn their one claim and strand the reservation
+      forever. Stopping them costs a sentence; not stopping them costs the
+      name the reservation existed to protect.
+    """
+    email = (email or "").strip().lower()
+    res = reservation(db, folded)
+    if res is not None:
+        if not (res.email and email and res.email == email):
+            raise NameProblem("That one is reserved. Try another.")
+        return res
+    if email:
+        waiting = db.scalar(
+            select(ReservedName).where(ReservedName.email == email).limit(1)
+        )
+        if waiting is not None:
+            raise NameProblem(
+                f"“{waiting.display}” is being held for this account. "
+                "Claim that name — or ask the administrator to release it if "
+                "you'd rather have a different one."
+            )
+    return None
 
 
 def reserve(db: Session, wanted: str, email: str | None = None) -> ReservedName:

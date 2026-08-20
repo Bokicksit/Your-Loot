@@ -27,7 +27,11 @@ Full detail is in the commit log, where every change has its own note.
   name aside before anybody claims it — and point it at an email address,
   so the one account signed in with that address may claim it (which uses
   the reservation up). Hold "ben" today; assign it to the kid when he
-  finally has an address. Releasing a reservation puts the name back in
+  finally has an address. The gate holds at sign-up too — where names are
+  actually claimed — and in both directions: a stranger typing the held
+  name is refused in a sentence, and the person it waits for is stopped
+  from spending their once-ever claim on a different name while theirs
+  sits reserved. Releasing a reservation puts the name back in
   circulation; reserving can never take a name somebody already holds.
   Migration 0050 — table `reserved_name`.
 - **The front page says what the app is.** A collections section — one card
