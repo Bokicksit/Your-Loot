@@ -8,6 +8,15 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **Editing and deleting an entry now checks whose it is.** On a multi-user
+  install, the write endpoints took any item id — one account could rewrite
+  or cascade-delete another's shelf. One guard now covers all eight
+  collections: touching a shared row needs a stake in it (your copy or your
+  want), and a delete refuses while somebody else still holds the row. A
+  single-user install is unaffected — the owner is the admin, and admins
+  pass. Found in a security audit; covered by new tenancy tests.
+
 ### Added
 - **A "?" in every add and edit form.** Each collection's add sheet and
   entry editor now carries a small help note — what the search reaches, what

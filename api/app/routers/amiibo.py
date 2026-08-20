@@ -20,7 +20,7 @@ from app.db import get_db
 from app.models import AmiiboAttrs, CollectionItem, Module, User
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf, visible
+from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.amiibo import (
     AmiiboAttrsOut,
     AmiiboCreate,
@@ -233,6 +233,7 @@ def update_amiibo(item_id: int, body: AmiiboUpdate, db: Session = Depends(get_db
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.amiibo.value:
         raise HTTPException(404, "amiibo not found")
+    guard_entry_write(db, item, user)
     data = body.model_dump(exclude_unset=True)
     for field in ("title", "image_url", "notes"):
         if field in data:
@@ -256,5 +257,6 @@ def delete_amiibo(item_id: int, db: Session = Depends(get_db),
         # figure out of every collection on the server. Removing your copy
         # is done on the copy, and the row stays for the next person.
         raise HTTPException(409, "that is a catalogue entry — remove your copy instead")
+    guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()

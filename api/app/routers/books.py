@@ -11,7 +11,7 @@ from app.integrations.upcitemdb import BarcodeError
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted, User
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf, visible
+from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.books import (
     BookAttrsOut,
     BookCreate,
@@ -249,6 +249,7 @@ def update_book(item_id: int, body: BookUpdate, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.books.value:
         raise HTTPException(404, "book not found")
+    guard_entry_write(db, item, user)
     data = body.model_dump(exclude_unset=True)
     for field in ("title", "image_url", "notes"):
         if field in data:
@@ -267,5 +268,6 @@ def delete_book(item_id: int, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.books.value:
         raise HTTPException(404, "book not found")
+    guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()

@@ -18,7 +18,7 @@ from app.models import (
     BinderSlot, CardAttrs, CollectionItem, Module, Owned, User, Wanted,
 )
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf, visible
+from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
@@ -429,6 +429,7 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db),
         raise HTTPException(
             400, "only the image can be changed on cards from the card database"
         )
+    guard_entry_write(db, item, user)
     if "title" in data:
         item.title = data["title"].strip()
     if "image_url" in data:
@@ -462,6 +463,7 @@ def delete_card(item_id: int, db: Session = Depends(get_db),
             400,
             "cards from the offline dump can't be deleted; remove your copies instead",
         )
+    guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()
 

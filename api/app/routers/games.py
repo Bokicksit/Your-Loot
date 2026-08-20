@@ -9,7 +9,7 @@ from app.integrations import libretro
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted, User
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf, visible
+from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
 from app.search import contains
 from app.sorting import year_from_title
@@ -318,6 +318,7 @@ def update_game(item_id: int, body: GameUpdate, db: Session = Depends(get_db),
         # that takes a serial number. Nothing in the UI edits these — this
         # catches a mistake, not a workflow.
         raise HTTPException(409, "that is a catalogue entry — add it to edit your own")
+    guard_entry_write(db, item, user)
     data = body.model_dump(exclude_unset=True)
     if "platform_id" in data and data["platform_id"] is not None:
         if db.get(Platform, data["platform_id"]) is None:
@@ -348,5 +349,6 @@ def delete_game(item_id: int, db: Session = Depends(get_db),
         # A catalogue template is everybody's — your own console made from
         # it is a separate row, and that one deletes fine.
         raise HTTPException(409, "that is a catalogue entry — it has no copies to remove")
+    guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()

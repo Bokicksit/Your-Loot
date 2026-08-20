@@ -10,7 +10,7 @@ from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted, User
 from app.search import contains
 from app.sorting import leading_number
 from app.tagging import tagged, tags_for, tags_of
-from app.tenancy import my_copies, my_want, on_my_shelf, visible
+from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.comics import (
     ComicAttrsOut,
     ComicCreate,
@@ -251,6 +251,7 @@ def update_comic(item_id: int, body: ComicUpdate, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.comics.value:
         raise HTTPException(404, "issue not found")
+    guard_entry_write(db, item, user)
     data = body.model_dump(exclude_unset=True)
     for field in ("title", "image_url", "notes"):
         if field in data:
@@ -269,5 +270,6 @@ def delete_comic(item_id: int, db: Session = Depends(get_db),
     item = db.get(CollectionItem, item_id)
     if not item or item.module != Module.comics.value:
         raise HTTPException(404, "issue not found")
+    guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()

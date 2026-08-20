@@ -172,6 +172,71 @@ def test_the_binder_is_one_persons_binder(people):
     assert 493 not in occupied(bob), "Bob can see Alice's binder"
 
 
+@pytest.mark.parametrize("module", sorted(MODULES))
+def test_writes_to_another_persons_entry_bounce(people, module):
+    """The write half of the property the rest of this file checks on reads.
+
+    The list endpoints were always scoped, but PATCH and DELETE took any item
+    id — so one account could rewrite or cascade-delete another's shelf, and
+    the read filters would tidily hide the evidence. Guarded in one place now
+    (tenancy.guard_entry_write); this proves the guard holds from the outside.
+
+    Bob does the attacking, not Alice: the owner fixture is the install's
+    admin, and an admin passes the guard on purpose.
+    """
+    alice, bob = people
+    tag = uuid.uuid4().hex[:8]
+    title = f"Alice keeps {tag}"
+    mine = _own(alice, module, title)
+    path = f"{MODULES[module]}/{mine}"
+
+    assert bob.patch(path, json={"title": "defaced"}).status_code >= 400, (
+        f"{module}: Bob may rewrite Alice's entry"
+    )
+    assert bob.delete(path).status_code >= 400, (
+        f"{module}: Bob may delete Alice's entry"
+    )
+
+    rows = alice.get(
+        MODULES[module], params={"search": title, "limit": 100}
+    ).json()["items"]
+    row = next((i for i in rows if i["id"] == mine), None)
+    assert row is not None, f"{module}: Alice's item was deleted out from under her"
+    assert row["title"] == title, f"{module}: Alice's item was rewritten"
+
+
+def test_a_shared_row_survives_while_somebody_still_holds_it(people):
+    """Two people on one catalogue row is the intended model, and the delete
+    cascade takes every holder's copies with the row — so a holder may edit
+    the shared facts, but the row itself refuses to go while it is still
+    somebody else's shelf too."""
+    alice, bob = people
+    carol_email = f"carol-{uuid.uuid4().hex[:8]}@example.com"
+    alice.post(
+        "/api/auth/users",
+        json={"email": carol_email, "password": "carol-password-3"},
+    ).raise_for_status()
+    carol = _client()
+    carol.post(
+        "/api/auth/login", json={"email": carol_email, "password": "carol-password-3"}
+    ).raise_for_status()
+    try:
+        tag = uuid.uuid4().hex[:8]
+        item = bob.post("/api/games", json={"title": f"Shared keep {tag}"}).json()["id"]
+        bob.post(f"/api/items/{item}/owned", json={"condition": "NM"}).raise_for_status()
+        carol.post(f"/api/items/{item}/owned", json={"condition": "DMG"}).raise_for_status()
+
+        assert carol.delete(f"/api/games/{item}").status_code == 409, (
+            "a holder deleted a row somebody else still keeps"
+        )
+        rows = bob.get(
+            "/api/games", params={"search": f"Shared keep {tag}", "limit": 100}
+        ).json()["items"]
+        assert any(i["id"] == item for i in rows), "Bob's copy went with Carol's delete"
+    finally:
+        carol.close()
+
+
 def test_a_stranger_gets_nothing():
     with _client() as anon:
         if not anon.get("/api/auth/me").json()["multi_user"]:
