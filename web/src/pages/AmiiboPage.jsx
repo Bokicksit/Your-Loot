@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import useDismiss, { keepOpen } from "../useDismiss.js";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -327,6 +328,15 @@ export default function AmiiboPage() {
         open={showForm && step === "search"}
         title="Find an amiibo"
         onClose={closeForm}
+        help={
+          <>
+            The whole line is already catalogued — every figure and card. A
+            character, a game or a series name all work (<b>Ganondorf</b>,{" "}
+            <b>Splatoon</b>…); pick yours from the matches and its picture
+            and facts come along. <b>Enter it by hand</b> is there for
+            customs and oddities.
+          </>
+        }
       >
         <div className="form-row">
           <input
@@ -394,6 +404,14 @@ export default function AmiiboPage() {
           setPicked(null);
           setStep("search");
         }}
+        help={
+          <>
+            The catalogue already knows the figure — what's left to say is
+            about <b>your copy</b>: boxed or loose, its condition, a note.
+            <b> I own it</b> puts it on the shelf; <b>I want it</b> files a
+            wish instead. Everything stays editable later.
+          </>
+        }
       >
         <form className="add-form" onSubmit={submit}>
           {picked ? (
@@ -748,7 +766,15 @@ function AmiiboRow({ item, onChange, onReload, onTagsChanged }) {
 
       {entry && (
         <span className="entry-edit">
-          <span className="game-info-line">amiibo details</span>
+          <span className="game-info-line">
+            amiibo details
+            <HelpTip>
+              This edits the <b>entry</b> — the figure itself: name,
+              character, series. It doesn't touch what you own. Your copy —
+              boxed or loose, its condition — lives on the small chip on the
+              row, and the trash button deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

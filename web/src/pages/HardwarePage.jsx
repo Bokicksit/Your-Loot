@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -488,7 +489,20 @@ export default function HardwarePage() {
           database the scanner uses — by name when you have no box to scan.
           Still one step: the search is a shortcut on the form, not a gate
           in front of it. */}
-      <AddSheet open={showForm} title="Add hardware" onClose={closeForm}>
+      <AddSheet
+        open={showForm}
+        title="Add hardware"
+        onClose={closeForm}
+        help={
+          <>
+            Start typing and the built-in <b>console catalogue</b> answers —
+            machines, famous colourways, controllers, accessories — so a
+            known variant is picked, not typed. The <b>serial number</b> and
+            whether it <b>works</b> are yours to record; they belong to the
+            unit on your shelf, not the catalogue.
+          </>
+        }
+      >
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
             <input
@@ -977,6 +991,16 @@ function HardwareRow({ hw, platforms, onChange, onReload , onTagsChanged}) {
 
       {entryOpen && (
         <span className="entry-edit">
+          <span className="game-info-line">
+            Hardware details
+            <HelpTip>
+              Everything about this unit — name, model, <b>serial number</b>{" "}
+              and whether it <b>works</b> — is edited here; hardware is
+              one-of-a-kind, so the unit and the entry are the same thing.
+              Its condition sits on the small chip on the row, and the trash
+              button deletes it entirely.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

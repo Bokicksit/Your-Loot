@@ -9,6 +9,11 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **A "?" in every add and edit form.** Each collection's add sheet and
+  entry editor now carries a small help note — what the search reaches, what
+  the buttons do, and the difference between the entry and your copy. The
+  help page grew matching answers: barcode scanning across all shelves,
+  entry vs copy, games and hardware.
 - **A typed ISBN finds the book.** The number on the back cover works in the
   title box now, hyphens and all — the same exact-edition lookup the barcode
   scanner does, for the machines that have no camera to scan with.

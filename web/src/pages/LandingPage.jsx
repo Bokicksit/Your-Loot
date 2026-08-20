@@ -12,9 +12,10 @@ import { BrandMark, Icon } from "../components/Icons.jsx";
  *  you scroll, the binder configurator is live, and the three routes in are
  *  laid side by side. The copy is not the design's, deliberately — every
  *  claim on this page is checked against what the app actually does. Nothing
- *  about games, films or comics: those catalogues aren't carried here, and
- *  advertising a collection that is not there is how a first visit becomes
- *  the last one. Prices and limits match Settings, not the mock.
+ *  about films or comics: a hosted service can't legally carry those
+ *  catalogues (see api/app/modules.py), and advertising a collection that is
+ *  not there is how a first visit becomes the last one. Prices and limits
+ *  match Settings, not the mock.
  */
 
 const REPO = "https://github.com/Bokicksit/Your-Loot";
@@ -457,8 +458,9 @@ export default function LandingPage() {
                 $4<small>/ month</small>
               </div>
               <p>
-                Pays for the servers and keeps the free tier free. Cancel
-                whenever; nothing you made is deleted.
+                The bigger shelves are the ones that cost real server money —
+                storage, lookups, backups — so they're the part that can't be
+                free. Cancel whenever; nothing you made is deleted.
               </p>
               <ul>
                 <li>

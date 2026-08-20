@@ -43,6 +43,7 @@ export function IconDefs() {
         <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.6 3.6 0 010-5l2.5-2.5a3.6 3.6 0 015 5L16 13" /><path d="M14 10a3.6 3.6 0 010 5L11.5 17.5a3.6 3.6 0 01-5-5L8 11" /></symbol>
         <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10v4M12 16.6v.1" /></symbol>
         <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.7v.1" /></symbol>
+        <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M9.5 9.3a2.6 2.6 0 115 .9c-.55.9-2.5 1.3-2.5 2.9M12 16.4v.1" /></symbol>
         <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3.5 8.5h3l1.6-2.4h7.8l1.6 2.4h3v10a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5z" /><circle cx="12" cy="13.4" r="3.4" /></symbol>
         <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3.4" /><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" /></symbol>
         {/* a magnifier, for looking something up by name — the scan

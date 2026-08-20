@@ -721,7 +721,21 @@ export default function CardsPage({ initialView = "collection" }) {
       {/* Cards keep one step on purpose: picking a result opens its own
           panel directly under that card, so the search and the details are
           already separated by position rather than by screen. */}
-      <AddSheet open={showForm} title="Add a card" onClose={closeForm}>
+      <AddSheet
+        open={showForm}
+        title="Add a card"
+        onClose={closeForm}
+        help={
+          <>
+            Name plus the <b>printed number</b> — the little "58/102" in the
+            corner — is the search that lands on one exact card; two thousand
+            cards are called Pikachu. Letters count (<b>GG07</b>, <b>TG03</b>),
+            and the set box is only for when the number alone isn't enough.
+            The binder dropdown files the card as it's added, and sticks for
+            the next one.
+          </>
+        }
+      >
         <div className="add-form">
           {/* The switch stays on between cards, so it has to be visible
               between cards too — a mode you cannot see is a mode that files

@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
@@ -500,7 +501,20 @@ export default function ComicsPage() {
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="comics" />}
 
-      <AddSheet open={showForm && step === "search"} title="Find an issue" onClose={closeForm}>
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find an issue"
+        onClose={closeForm}
+        help={
+          <>
+            <b>Series + issue number</b> is the precise search — the volume
+            year tells five runs of the same name apart. Scanning the barcode
+            names the series (every issue of a run shares one code; the small
+            extra symbol fills the issue in when it reads). Comic Vine
+            answers; <b>Enter it by hand</b> covers what it doesn't know.
+          </>
+        }
+      >
           {/* three fields plus the scan button is too much for a phone on one
               line, so this row is allowed to wrap rather than crush the series
               name down to the width of an issue number */}
@@ -659,6 +673,15 @@ export default function ComicsPage() {
         open={showForm && step === "details"}
         title="Add an issue"
         onClose={closeForm}
+        help={
+          <>
+            The <b>variant</b> box is what separates two copies of the same
+            issue — a 1:25, a store exclusive, a later printing. <b>I own
+            it</b> files your copy with its condition or slab grade;{" "}
+            <b>I want it</b> puts it on the wanted list. Everything stays
+            editable later.
+          </>
+        }
         onBack={() => setStep("search")}
       >
         <form className="add-form" onSubmit={submit}>
@@ -1016,7 +1039,15 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
 
       {entry && (
         <span className="entry-edit">
-          <span className="game-info-line">Issue details</span>
+          <span className="game-info-line">
+            Issue details
+            <HelpTip>
+              This edits the <b>entry</b> — the issue itself: series, number,
+              variant, creators, cover. It doesn't touch what you own. Your
+              copy's condition or grade lives on the small chip on the row,
+              and the trash button deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

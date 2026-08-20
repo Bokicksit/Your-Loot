@@ -177,10 +177,37 @@ export function HelpPage() {
 
       <h2>Barcode scanning</h2>
       <p>
-        Works for <strong>records and books</strong>, where the barcode on the
-        sleeve or the ISBN on the back identifies the exact pressing or
-        edition. Trading cards don't carry barcodes, so those are found by
-        name and number instead.
+        Works wherever the thing in your hand carries one — records, books,
+        films, games, LEGO boxes and comics. Point the camera at the barcode
+        and the exact pressing or edition comes back. A book's ISBN can also
+        be <strong>typed straight into the title box</strong>, hyphens and
+        all: same lookup, no camera needed.
+      </p>
+      <p>
+        Two exceptions worth knowing. Trading cards don't carry barcodes, so
+        those are found by name and printed number. And comics share one
+        barcode across a whole run, so a scan names the series — the issue
+        number is on the cover in your hand.
+      </p>
+
+      <h2>What's the difference between the entry and my copy?</h2>
+      <p>
+        The <strong>entry</strong> is the thing itself — title, author or
+        platform, year, cover. The <strong>copy</strong> is the one on your
+        shelf: its condition, completeness, serial number, what you paid.
+        The pencil at the end of a row edits the entry; the little chip on
+        the row — "NM", "CIB", "set condition…" — opens your copy. Own two
+        of something and it's one entry with two chips.
+      </p>
+
+      <h2>Games and hardware</h2>
+      <p>
+        Games are looked up by title, with the platform picked from the
+        console's own list. Hardware doesn't need looking up at all: the
+        console catalogue is built in — the North American machines, famous
+        colourways, controllers and accessories — so you pick your exact
+        unit instead of typing it, then record its serial number and whether
+        it still works.
       </p>
 
       <h2>Can I get my collection out?</h2>

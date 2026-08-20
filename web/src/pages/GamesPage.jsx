@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
@@ -518,6 +519,15 @@ export default function GamesPage() {
         open={showForm && step === "search"}
         title="Find a game"
         onClose={closeForm}
+        help={
+          <>
+            Type the title and <b>Search</b> asks IGDB — picking a match
+            carries in the cover, year and the systems it shipped on. The
+            frame button scans the barcode on the case instead. For homebrew,
+            bootlegs and anything IGDB has never heard of, <b>Enter it by
+            hand</b> files it just the same.
+          </>
+        }
       >
         <div className="form-row">
           <input
@@ -586,6 +596,15 @@ export default function GamesPage() {
         title="Add to library"
         onClose={closeForm}
         onBack={() => setStep("search")}
+        help={
+          <>
+            Name the <b>platform</b> — the copy on your shelf, not just the
+            game — and a box scan for that system is looked up automatically.
+            <b> I own it</b> files it with completeness (loose, CIB, sealed…)
+            and condition; flip it to <b>I want it</b> and it lands on the
+            wanted list instead. Everything stays editable later.
+          </>
+        }
       >
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
@@ -1001,6 +1020,15 @@ function GameRow({ game, platforms, onChange, onReload , onTagsChanged}) {
       )}
       {entryOpen && (
         <span className="entry-edit">
+          <span className="game-info-line">
+            Game details
+            <HelpTip>
+              This edits the <b>entry</b> — the game itself: title, platform,
+              region, cover. It doesn't touch what you own. Your copy —
+              loose, CIB, sealed, its condition — lives on the small chip on
+              the row, and the trash button deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

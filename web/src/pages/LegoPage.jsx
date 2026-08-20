@@ -6,6 +6,7 @@ import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import ArtOptions from "../components/ArtOptions.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -412,7 +413,20 @@ export default function LegoPage() {
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="lego" />}
 
-      <AddSheet open={showForm && step === "search"} title="Find a set" onClose={closeForm}>
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find a set"
+        onClose={closeForm}
+        help={
+          <>
+            The <b>set number</b> printed on the box is the exact way in —
+            Rebrickable answers with that set alone. A name works too when
+            the number's long gone, and the frame button scans the box's
+            barcode. <b>Enter it by hand</b> files MOCs and anything else
+            without a number.
+          </>
+        }
+      >
           <div className="form-row">
             <input
               type="text"
@@ -485,6 +499,15 @@ export default function LegoPage() {
         title="Add a set"
         onClose={closeForm}
         onBack={() => setStep("search")}
+        help={
+          <>
+            The catalogue fills in the set's own facts — pieces, year, theme.
+            What it can't know is the box in your hands: <b>I own it</b> files
+            your copy with its state (sealed, built, loose bricks…) and
+            whether the box survived; <b>I want it</b> puts it on the wanted
+            list instead. Everything stays editable later.
+          </>
+        }
       >
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
@@ -848,7 +871,16 @@ function LegoRow({ set, onChange, onReload , onTagsChanged}) {
 
       {entry && (
         <span className="entry-edit">
-          <span className="game-info-line">Set details</span>
+          <span className="game-info-line">
+            Set details
+            <HelpTip>
+              This edits the <b>entry</b> — the set itself: name, number,
+              pieces, theme. It doesn't touch what you own. Your copy's
+              state — sealed, built, missing pieces, box or no box — lives
+              on the small chip on the row, and the trash button deletes the
+              whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

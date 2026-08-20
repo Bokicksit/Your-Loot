@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import ImagePicker from "../components/ImagePicker.jsx";
@@ -492,7 +493,20 @@ export default function RecordsPage() {
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="records" />}
 
-      <AddSheet open={showForm && step === "search"} title="Find a record" onClose={closeForm}>
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find a record"
+        onClose={closeForm}
+        help={
+          <>
+            Type the album (artist narrows it) and <b>Look up</b> asks Discogs
+            and MusicBrainz. Better: the frame button scans the barcode on the
+            sleeve, which names the exact pressing — the thing no title search
+            can do. Nothing found? <b>Enter it by hand</b> files white labels,
+            test pressings, anything.
+          </>
+        }
+      >
           <div className="form-row">
             <input
               type="text"
@@ -596,6 +610,15 @@ export default function RecordsPage() {
         title="Add a record"
         onClose={closeForm}
         onBack={() => setStep("search")}
+        help={
+          <>
+            The pressing details — label, catalogue number, weight, colour —
+            are what tell your copy apart from every other run of the same
+            album, so they get their own boxes. <b>I own it</b> shelves it
+            with media and sleeve condition; <b>I want it</b> files a wish
+            instead. Everything stays editable later.
+          </>
+        }
       >
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
@@ -968,7 +991,15 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
 
       {entry && (
         <span className="entry-edit">
-          <span className="game-info-line">Pressing details</span>
+          <span className="game-info-line">
+            Pressing details
+            <HelpTip>
+              This edits the <b>entry</b> — the record itself: title, artist,
+              label, catalogue number, pressing. It doesn't touch what you
+              own. Your copy's media and sleeve grades live on the small chip
+              on the row, and the trash button deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

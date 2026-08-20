@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
@@ -470,7 +471,20 @@ export default function BooksPage() {
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="books" />}
 
-      <AddSheet open={showForm && step === "search"} title="Find a book" onClose={closeForm}>
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find a book"
+        onClose={closeForm}
+        help={
+          <>
+            Type a title (author narrows it) and <b>Look up</b> searches Open
+            Library. The title box also takes an <b>ISBN</b> — hyphens and all
+            — for the exact edition, and the frame button scans that barcode
+            with your camera. Pick a match to carry its details in, or{" "}
+            <b>Enter it by hand</b> for anything the catalogue's never heard of.
+          </>
+        }
+      >
         <div className="form-row">
           <input
             type="text"
@@ -538,6 +552,15 @@ export default function BooksPage() {
         title="Add a book"
         onClose={closeForm}
         onBack={() => setStep("search")}
+        help={
+          <>
+            Everything here stays editable after filing. <b>I own it</b> puts
+            the book on your shelf with the jacket and condition you set;
+            switch it to <b>I want it</b> and it goes on the wanted list
+            instead. The cover can be the catalogue's art, a shop photo, or
+            one you take yourself.
+          </>
+        }
       >
         <form className="add-form" onSubmit={submit}>
           <div className="form-row">
@@ -865,7 +888,15 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
 
       {entry && (
         <span className="entry-edit">
-          <span className="game-info-line">Edition details</span>
+          <span className="game-info-line">
+            Edition details
+            <HelpTip>
+              This edits the <b>entry</b> — the book itself: title, author,
+              edition, ISBN, cover. It doesn't touch what you own. Your copy —
+              jacket, condition — lives on the small chip on the row, and the
+              trash button beside the pencil deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"

@@ -2268,6 +2268,33 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .sheet-head h2 { margin: 0; font-size: var(--f-4); }
 .sheet .add-form { display: contents; } /* the sheet already lays this out */
 
+/* The "?" and its note. A tap toggles it — hover doesn't exist on the
+   phones most of this gets used on. The note hangs under the icon;
+   HelpTip.jsx nudges it sideways when an edge would clip it. */
+.help-tip { position: relative; display: inline-flex; vertical-align: middle; }
+.help-tip .ghost.icon.on { color: var(--gold); }
+.help-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: min(330px, 76vw);
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--f-1);
+  font-weight: 400;
+  line-height: 1.55;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 36px -16px rgba(0, 0, 0, .55);
+}
+.help-pop b { color: var(--gold); font-weight: 600; }
+
 /* Results belong in the flow here, directly under the box you typed in.
    Everywhere else .igdb-results is an absolutely-positioned dropdown hung off
    `top: 100%` of the form; inside a sheet that anchors to the bottom of the

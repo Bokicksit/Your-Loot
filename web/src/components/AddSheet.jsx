@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons.jsx";
+import HelpTip from "./HelpTip.jsx";
 
 // The shell both halves of adding an item share.
 //
@@ -10,7 +11,10 @@ import { Icon } from "./Icons.jsx";
 //
 // Rendered through a portal: the page's add button lives inside the toolbar,
 // and a modal nested in there inherits its layout.
-export default function AddSheet({ open, title, onClose, onBack, children }) {
+// `help` is a short note on how this step works, behind a "?" in the header —
+// written per collection, because "how do I find a comic" and "how do I find
+// a record" have genuinely different answers.
+export default function AddSheet({ open, title, onClose, onBack, help, children }) {
   if (!open) return null;
   return createPortal(
     <div className="modal-scrim" onClick={onClose}>
@@ -22,6 +26,7 @@ export default function AddSheet({ open, title, onClose, onBack, children }) {
             </button>
           )}
           <h2>{title}</h2>
+          {help && <HelpTip label="How this works">{help}</HelpTip>}
           <button
             type="button"
             className="ghost icon"

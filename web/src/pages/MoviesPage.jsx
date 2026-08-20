@@ -6,6 +6,7 @@ import ArtOptions from "../components/ArtOptions.jsx";
 import AddSheet, { ByHand, Searching } from "../components/AddSheet.jsx";
 import BarcodeScan from "../components/BarcodeScan.jsx";
 import EbayLink from "../components/EbayLink.jsx";
+import HelpTip from "../components/HelpTip.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { ShuffleButton } from "../components/Shuffle.jsx";
 import { TagChips, TagEditor, TagFilter } from "../components/Tags.jsx";
@@ -427,7 +428,20 @@ export default function MoviesPage() {
           scrolls sideways it slid under the filter beside it */}
       {tiles && !inlineDensity && <TileDensity module="movies" />}
 
-      <AddSheet open={showForm && step === "search"} title="Find a film" onClose={closeForm}>
+      <AddSheet
+        open={showForm && step === "search"}
+        title="Find a film"
+        onClose={closeForm}
+        help={
+          <>
+            Type the title and <b>Search TMDB</b> brings back the film with
+            its poster and year. The frame button scans the barcode on the
+            case instead — that names the exact release, right down to the
+            edition. <b>Enter it by hand</b> covers anything the databases
+            don't carry.
+          </>
+        }
+      >
         <div className="form-row">
             <input
               type="text"
@@ -467,6 +481,15 @@ export default function MoviesPage() {
         open={showForm && step === "details"}
         title="Add to shelf"
         onClose={closeForm}
+        help={
+          <>
+            The <b>format</b> and <b>edition</b> boxes are what separate the
+            DVD, the Blu-ray and the steelbook of the same film — three
+            different objects on a shelf. <b>I own it</b> files your copy
+            with completeness and condition; <b>I want it</b> puts it on the
+            wanted list. Everything stays editable later.
+          </>
+        }
         onBack={() => setStep("search")}
       >
         <form className="add-form" onSubmit={submit}>
@@ -840,6 +863,15 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
       )}
       {entryOpen && (
         <span className="entry-edit">
+          <span className="game-info-line">
+            Release details
+            <HelpTip>
+              This edits the <b>entry</b> — the release itself: title,
+              format, edition, poster. It doesn't touch what you own. Your
+              copy — sealed, CIB, loose, its condition — lives on the small
+              chip on the row, and the trash button deletes the whole entry.
+            </HelpTip>
+          </span>
           <div className="form-row">
             <input
               type="text"
