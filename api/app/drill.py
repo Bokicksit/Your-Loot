@@ -228,6 +228,9 @@ def spine(binder, filled, j):
     colour = binder.color or tint(binder.name, j)
     return (
         '<button type="button" class="binder-spine" data-binder="' + str(binder.id) + '" '
+        # what kind of binder this is, so a link straight to somebody's
+        # Pokedex can find the right spine without knowing its id or its name
+        'data-kind="' + html.escape(binder.kind or "", quote=True) + '" '
         'style="--j:' + str(j) + ';color:' + html.escape(colour, quote=True) + '" '
         'data-name="' + html.escape(binder.name, quote=True) + '">'
         '<span class="name">' + html.escape(binder.name) + '</span>'

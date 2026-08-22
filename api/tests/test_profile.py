@@ -907,3 +907,118 @@ def test_reservations_are_the_admins_business(owner):
         )
     finally:
         other.close()
+
+
+# --- one shelf at its own address ------------------------------------------
+#
+# /u/<name>/games, /u/<name>/pokedex. Most people keep one collection, so the
+# link worth handing somebody is the link to that one — not to everything,
+# with the interesting part three scrolls down.
+
+
+def test_a_focused_link_opens_the_shelf_it_names(profile, named):
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install, so nothing to open into")
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        r = stranger.get(f"/u/{named}/cards")
+    assert r.status_code == 200, "a published shelf had no address of its own"
+    assert 'data-focus="cards"' in r.text, "the page did not arrive focused"
+    # the same document either way — a focused link is not a second page
+    assert _looks_like(r.text) == "room"
+
+
+def test_a_focused_link_to_an_unpublished_shelf_is_absent(profile, named):
+    """The address space must not become a way to ask what somebody keeps
+    but has not shared — the same reason a name nobody holds 404s."""
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        assert stranger.get(f"/u/{named}/records").status_code == 404
+        assert stranger.get(f"/u/{named}/nonsense").status_code == 404
+
+
+def test_the_pokedex_link_needs_a_pokedex_that_is_published(profile, named):
+    """A link that promises a binder and opens onto a shelf of other binders
+    is worse than one that says it is not there."""
+    me = profile.put("/api/profile", json={"collections": ["cards"]}).json()
+    if not me["themed"]:
+        pytest.skip("no room on this install")
+
+    binders = profile.get("/api/binders").json()
+    rows = binders["binders"] if isinstance(binders, dict) else binders
+    dex = next((b for b in rows if b.get("kind") == "dex"), None)
+    if dex is None:
+        pytest.skip("no Pokedex on this account to publish")
+
+    was = bool(dex.get("on_profile"))
+    try:
+        profile.patch(
+            f"/api/binders/{dex['id']}", json={"on_profile": False}
+        ).raise_for_status()
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            assert stranger.get(f"/u/{named}/pokedex").status_code == 404, (
+                "a held-back Pokedex still answered on its own address"
+            )
+
+        profile.patch(
+            f"/api/binders/{dex['id']}", json={"on_profile": True}
+        ).raise_for_status()
+        with httpx.Client(base_url=BASE, timeout=60) as stranger:
+            r = stranger.get(f"/u/{named}/pokedex")
+        assert r.status_code == 200, "a published Pokedex had no address"
+        assert 'data-focus="pokedex"' in r.text
+    finally:
+        profile.patch(f"/api/binders/{dex['id']}", json={"on_profile": was})
+
+
+def test_every_link_the_settings_screen_offers_actually_answers(profile, named):
+    """The property that keeps the two halves honest: the list of addresses
+    the app shows you is built from the same rules the routes enforce, so a
+    link it offers must never be one that 404s."""
+    profile.put("/api/profile", json={"collections": ["cards"]}).raise_for_status()
+    links = profile.get("/api/profile").json().get("links") or []
+    if not links:
+        pytest.skip("no room on this install, so no focused links are offered")
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        for link in links:
+            r = stranger.get(link["path"])
+            assert r.status_code == 200, f"{link['path']} was offered but answers {r.status_code}"
+
+
+def test_a_page_with_no_room_has_no_focused_links(profile):
+    """A free profile is a grid with nothing to drill, so the addresses that
+    open a layer would open onto nothing. They are absent rather than
+    falling back to the whole page."""
+    who = profile.get("/api/auth/me").json()
+    if not who.get("multi_user"):
+        pytest.skip("single-user install: the only account is the administrator")
+
+    mark = uuid.uuid4().hex[:6]
+    email = f"nolinks-{mark}@example.com"
+    profile.post(
+        "/api/auth/users", json={"email": email, "password": "other-password-3"}
+    ).raise_for_status()
+    with httpx.Client(base_url=BASE, timeout=30) as free:
+        free.post(
+            "/api/auth/login", json={"email": email, "password": "other-password-3"}
+        ).raise_for_status()
+        item = free.post(
+            "/api/cards", json={"title": f"No Links {mark}", "card_number": "1"}
+        ).json()["id"]
+        free.post(f"/api/items/{item}/owned", json={"condition": "NM"}).raise_for_status()
+        told = free.put(
+            "/api/profile",
+            json={"screen_name": f"nl{mark}", "collections": ["cards"]},
+        ).json()
+        if told["themed"]:
+            pytest.skip("this install gives everybody the room")
+        assert told.get("links") == [], "a room-less profile was offered focused links"
+
+    with httpx.Client(base_url=BASE, timeout=60) as stranger:
+        assert stranger.get(f"/u/nl{mark}").status_code == 200, "the plain page should still answer"
+        assert stranger.get(f"/u/nl{mark}/cards").status_code == 404

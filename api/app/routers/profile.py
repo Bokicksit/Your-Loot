@@ -132,6 +132,7 @@ def my_profile(db: Session = Depends(get_db), user: User = Depends(current_user)
                 {"scope": s, "label": TITLES.get(s, s)} for s in available()
             ],
             "themed": themed(user),
+            "links": focus_links(db, user, "/loot"),
         }
     now = screennames.current_for(db, user.id)
     return {
@@ -147,6 +148,10 @@ def my_profile(db: Session = Depends(get_db), user: User = Depends(current_user)
         "loose": _loose_shown(db, user.id),
         "available": [{"scope": s, "label": TITLES.get(s, s)} for s in available()],
         "themed": themed(user),
+        # One address per shelf, for pointing somebody at the collection they
+        # care about instead of at everything. Empty where there is no room to
+        # open into — see focus_links.
+        "links": focus_links(db, user, f"/u/{now.name}") if now else [],
     }
 
 
@@ -308,8 +313,21 @@ def solo_profile(db: Session = Depends(get_db)):
     return _render_profile(db, owner, who, "/loot")
 
 
+# The two shelves inside cards that are worth their own address. Both resolve
+# to the cards layer; what differs is which thing is open when you arrive and
+# what the link says about itself when it is pasted somewhere.
+FOCUS_ALIASES = {"pokedex": "cards", "binders": "cards"}
+FOCUS_TITLES = {"pokedex": "Pokédex", "binders": "Binders"}
+
+
+def focus_label(focus: str) -> str:
+    """What a focused link calls itself, in a share preview and a heading."""
+    return FOCUS_TITLES.get(focus) or TITLES.get(focus, focus)
+
+
 def _render_profile(
-    db: Session, owner: User, who: str, base: str, parked: bool = False
+    db: Session, owner: User, who: str, base: str, parked: bool = False,
+    focus: str = "",
 ):
     """The page itself, for whoever `base` points at.
 
@@ -421,7 +439,8 @@ def _render_profile(
             if items
         )
         room = room_view.render(
-            who, shelves, labels, stamp, total, base=base, drills=drills
+            who, shelves, labels, stamp, total, base=base, drills=drills,
+            focus=focus,
         )
 
     body = (
@@ -434,21 +453,150 @@ def _render_profile(
         + "</div>"
     )
 
+    # A focused link is a link to one shelf, so it says that where it is
+    # pasted: the preview names the collection and counts that shelf, not the
+    # whole room. Everything else about the page is identical — same document,
+    # same room, one layer already open.
+    if focus:
+        label = focus_label(focus)
+        shown = dict(shelves).get(FOCUS_ALIASES.get(focus, focus), [])
+        head = f"{who} · {label} · Your Loot"
+        blurb = f"{who} keeps {len(shown)} in {label.lower()} on Your Loot."
+    else:
+        head = f"{who} · Your Loot"
+        blurb = (
+            f"{who} keeps {total} things in "
+            + ", ".join(TITLES.get(s, s).lower() for s in scopes)
+            + "."
+        )
+
     return HTMLResponse(
         _page(
-            title=f"{who} · Your Loot",
-            description=f"{who} keeps {total} things in "
-            + ", ".join(TITLES.get(s, s).lower() for s in scopes)
-            + ".",
+            title=head,
+            description=blurb,
             body=room or body,
             # PUBLIC_URL, not the request. Behind nginx the request says
             # whatever the internal hop was called — "http://localhost" —
             # and og:url and canonical are the two places that must be the
             # address people actually type.
-            url=f"{(settings.public_url or '').rstrip('/')}{base}",
+            #
+            # The focus rides on this one and not on `base`: canonical should
+            # name the address that was actually asked for, while the room
+            # keeps fetching its binders from the profile root.
+            url=f"{(settings.public_url or '').rstrip('/')}{base}"
+                + (f"/{focus}" if focus else ""),
             room=bool(room),
         )
     )
+
+
+@router.get("/u/{name}/{focus}", response_class=HTMLResponse)
+def public_profile_focused(
+    name: str, focus: str, request: Request, db: Session = Depends(get_db)
+):
+    """One shelf of somebody's profile, at its own address.
+
+    /u/bo/games, /u/bo/records, /u/bo/pokedex. The same page /u/bo serves —
+    same document, same room — arriving with that shelf already open, so a
+    link can be about one collection instead of about everything somebody
+    keeps. Most people sign up for one collection; this is how they hand
+    somebody that one.
+
+    Supporter-only, and not as a paywall bolted on: the room is what these
+    open *into*, and the room is what a Supporter gets. A free profile is a
+    grid with nothing to drill, so a focused link to one would be a link to a
+    layer that does not exist there. It answers 404 rather than falling back
+    to the whole page, because a link that quietly shows something else is
+    worse than one that admits it is not there.
+
+    Every gate the plain profile passes, this passes first, in the same order
+    — and then two of its own: the shelf has to be one this person publishes,
+    and a binder link has to have a binder behind it.
+    """
+    _must_be_on()
+    row = screennames.holder(db, name)
+    if row is None or row.revoked:
+        raise HTTPException(404, "No such profile")
+    owner = db.get(User, row.user_id)
+    if owner is None:
+        raise HTTPException(404, "No such profile")
+
+    scope = FOCUS_ALIASES.get(focus, focus)
+    if scope not in _shown(db, row.user_id):
+        raise HTTPException(404, "No such profile")
+    # The room is the thing being linked into.
+    if not themed(owner):
+        raise HTTPException(404, "No such profile")
+    if focus in FOCUS_ALIASES and not _published_binders(db, owner, focus):
+        raise HTTPException(404, "No such profile")
+
+    who = _display_name(db, row.user_id) or row.display
+    return _render_profile(db, owner, who, f"/u/{row.name}", focus=focus)
+
+
+def _published_binders(db: Session, owner: User, focus: str) -> bool:
+    """Is there anything behind a binder link?
+
+    A Pokedex link wants the dex specifically; a binders link wants any shelf
+    at all. Both ask about `on_profile`, because a binder held back is absent
+    rather than merely undrawn — the same rule the binder route itself
+    applies, asked earlier so the address never opens onto nothing.
+    """
+    from app.models import Binder
+
+    q = db.query(Binder).filter(
+        Binder.user_id == owner.id, Binder.on_profile.is_(True)
+    )
+    if focus == "pokedex":
+        q = q.filter(Binder.kind == "dex")
+    return db.query(q.exists()).scalar()
+
+
+@router.get("/loot/{focus}", response_class=HTMLResponse)
+def solo_profile_focused(focus: str, db: Session = Depends(get_db)):
+    """The same one-shelf address on a home server, where the page is /loot.
+
+    Kept in step with the /u/ version deliberately rather than left to the
+    hosted service: on an install that sells nothing, themed() is true for
+    the one person there, so the gate below is the same gate and reads the
+    same way — it simply never refuses anybody.
+    """
+    _must_be_on()
+    if multi_user():
+        raise HTTPException(404, "Not found")
+    owner = db.get(User, OWNER_ID)
+    if owner is None:
+        raise HTTPException(404, "Not found")
+    scope = FOCUS_ALIASES.get(focus, focus)
+    if scope not in _shown(db, OWNER_ID) or not themed(owner):
+        raise HTTPException(404, "Not found")
+    if focus in FOCUS_ALIASES and not _published_binders(db, owner, focus):
+        raise HTTPException(404, "Not found")
+    who = _display_name(db, OWNER_ID) or "Your"
+    return _render_profile(db, owner, who, "/loot", focus=focus)
+
+
+def focus_links(db: Session, owner: User, base: str) -> list[dict]:
+    """Every one-shelf address this profile actually answers on.
+
+    Built here rather than assembled in the browser so that the settings
+    screen can only ever offer a link that works: the binder ones depend on
+    what is published inside cards, which is a question this side of the
+    wire. A profile with no room gets none of them, for the same reason the
+    routes refuse — there is no layer to open.
+    """
+    if not themed(owner):
+        return []
+    out = []
+    for scope in _shown(db, owner.id):
+        out.append({"path": f"{base}/{scope}", "label": TITLES.get(scope, scope)})
+        if scope == "cards":
+            for extra in ("pokedex", "binders"):
+                if _published_binders(db, owner, extra):
+                    out.append(
+                        {"path": f"{base}/{extra}", "label": FOCUS_TITLES[extra]}
+                    )
+    return out
 
 
 @router.get("/loot/binder/{binder_id}")

@@ -49,6 +49,15 @@ PUBLIC = {
         "its binder data, under the same prefix so a tunnel can expose "
         "exactly one path — same gates, re-asked"
     ),
+    ("GET", "/u/{name}/{focus}"): (
+        "the same public profile with one shelf already open, so a link can "
+        "be about one collection — every gate the page passes, plus the shelf "
+        "having been published and the room being on offer at all"
+    ),
+    ("GET", "/loot/{focus}"): (
+        "the same one-shelf address on a home server's fixed path — "
+        "single-user installs only, same gates re-asked"
+    ),
 }
 
 

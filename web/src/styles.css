@@ -4932,6 +4932,10 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .urlrow .url em { font-style: normal; color: var(--text-mute); }
 
+/* the per-shelf addresses, one row each — a stack rather than a wrapping
+   line, because these are read down the list to find one and copied */
+.focuslinks { display: flex; flex-direction: column; gap: 6px; }
+
 /* share chips — wrap, never clip off the edge */
 .shelf {
   display: flex;

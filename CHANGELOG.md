@@ -46,6 +46,16 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Added
+- **A link straight to one shelf.** `/u/bo/games`, `/u/bo/records`,
+  `/u/bo/pokedex` — the same public page, arriving with that collection
+  already open, so a link can be about the one thing somebody collects
+  rather than about everything they own. Cards get two extra addresses of
+  their own: `/pokedex` opens the dex itself, `/binders` the shelf of them.
+  Settings lists every address that answers, ready to copy, and the list is
+  built by the server from the same rules the routes enforce — so it can
+  never offer a link that 404s. Supporter-only, because the room is what
+  these open into; a free profile has no layer to open and says so with a
+  404 rather than quietly showing the whole page instead.
 - **Reserved names, for the operator.** The admin panel can set a screen
   name aside before anybody claims it — and point it at an email address,
   so the one account signed in with that address may claim it (which uses

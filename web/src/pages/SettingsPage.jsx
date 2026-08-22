@@ -429,18 +429,18 @@ function ProfileCard({ open, onToggle }) {
             <button
               type="button"
               className="ghost icon"
-              title={copied ? "Copied" : "Copy link"}
+              title={copied === "main" ? "Copied" : "Copy link"}
               onClick={() => {
                 navigator.clipboard?.writeText(origin + me.url).then(
                   () => {
-                    setCopied(true);
+                    setCopied("main");
                     setTimeout(() => setCopied(false), 1400);
                   },
                   () => setProblem("Could not copy — select the link instead."),
                 );
               }}
             >
-              <Icon id={copied ? "check" : "copy"} />
+              <Icon id={copied === "main" ? "check" : "copy"} />
             </button>
           </div>
           {problem && <p className="error">{problem}</p>}
@@ -487,6 +487,45 @@ function ProfileCard({ open, onToggle }) {
               onClick={() => setLoose(!me.loose)}
             />
           </div>
+        </div>
+      )}
+      {/* One address per shelf. Most people keep one collection, and the
+          link they want to hand somebody is the link to that — not to
+          everything they own with the interesting part three scrolls down.
+          The server decides which of these exist, so a link is never
+          offered that would answer "not found". */}
+      {me.links?.length > 0 && (
+        <div className="set-field">
+          <span className="set-label">Straight to one shelf</span>
+          <div className="focuslinks">
+            {me.links.map((l) => (
+              <div className="urlrow" key={l.path}>
+                <a className="url" href={l.path} target="_blank" rel="noopener noreferrer">
+                  {l.label}
+                  <em>{l.path}</em>
+                </a>
+                <button
+                  type="button"
+                  className="ghost icon"
+                  title={copied === l.path ? "Copied" : "Copy link"}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(origin + l.path).then(
+                      () => {
+                        setCopied(l.path);
+                        setTimeout(() => setCopied(false), 1400);
+                      },
+                      () => setProblem("Could not copy — select the link instead."),
+                    );
+                  }}
+                >
+                  <Icon id={copied === l.path ? "check" : "copy"} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="sec-note">
+            Each one opens your page with that collection already showing.
+          </p>
         </div>
       )}
       <p className="sec-note">

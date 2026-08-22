@@ -365,7 +365,7 @@ def _motes(n=16):
     return '<div class="motes2">' + "".join(out) + '</div>'
 
 
-def render(who, shelves, labels, stamp, total, base="", drills=""):
+def render(who, shelves, labels, stamp, total, base="", drills="", focus=""):
     """The whole room: one zone per published shelf, in the order they were
     published.
 
@@ -375,6 +375,11 @@ def render(who, shelves, labels, stamp, total, base="", drills=""):
     `drills` is what is inside the furniture, from drill.py, and it is the
     reason a zone is a button: clicking one is how you get from how much
     somebody has to what it actually is.
+
+    `focus` is a shelf to open on arrival, for the links that point at one
+    collection rather than at the whole room. It is carried as an attribute
+    rather than acted on here: the room is a document, and which layer is
+    open is the script's business.
     """
     zones = []
     i = 0
@@ -399,7 +404,9 @@ def render(who, shelves, labels, stamp, total, base="", drills=""):
     return (
         '<div class="room2-wrap">'
         + heading(who, str(total) + ' things · ' + stamp) +
-        '<div class="room2" data-base="' + html.escape(base, quote=True) + '">'
+        '<div class="room2" data-base="' + html.escape(base, quote=True) + '"'
+        + (' data-focus="' + html.escape(focus, quote=True) + '"' if focus else "")
+        + '>'
         '<div class="floor"></div><div class="rug"></div><div class="skirt"></div>'
         '<div class="scene"><div class="scene-strip">' + "".join(zones) + '</div></div>'
         + _motes() +

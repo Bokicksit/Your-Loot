@@ -537,4 +537,35 @@
      a phone turned on its side changes which side of 700px the page is on,
      and that decides where the layer lives, not only how big it is. */
   if (narrow.addEventListener) narrow.addEventListener("change", again);
+
+  /* ------------------------------------------------- arriving focused
+
+     A link that names one shelf — /u/<name>/games, /u/<name>/pokedex —
+     lands here with that shelf already decided, and opens it rather than
+     making somebody find the right piece of furniture first.
+
+     The server has already checked that the shelf is published and that
+     this profile gets a room at all; a name that survives that and still
+     matches nothing here simply leaves the room as it is, which is the
+     right answer for a link to a binder somebody has since put away.
+
+     Deliberately after every listener above is bound, and deliberately not
+     a redirect or a separate page: the room is the same document either
+     way, so the back button goes back to wherever the visitor came from
+     and the page still reads with scripting off. */
+  var focus = room.getAttribute("data-focus");
+  if (focus) {
+    var wanted = focus === "pokedex" || focus === "binders" ? "cards" : focus;
+    var layer = document.getElementById("drill-" + wanted);
+    if (layer) {
+      openDrill(layer);
+      if (focus === "pokedex") {
+        /* One binder in particular. Found by kind rather than by id or by
+           name: the id is nobody's business outside the server and the name
+           is whatever its owner called it. */
+        var dex = layer.querySelector('.binder-spine[data-kind="dex"]');
+        if (dex) dex.click();
+      }
+    }
+  }
 })();
