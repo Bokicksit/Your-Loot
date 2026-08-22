@@ -197,3 +197,44 @@ def test_restoring_twice_leaves_one_of_everything(owner):
     ).json()["items"]
     assert len(found) == 1, f"restoring twice left {len(found)} of it"
     assert len(found[0]["owned"]) == 1, "and two copies of the one it kept"
+
+
+def test_a_hand_typed_amiibo_keeps_its_details(owner):
+    """The export has to be able to read every module the import can rebuild.
+
+    `mine.ATTRS` knew how to make an AmiiboAttrs row from the day amiibo
+    shipped, but `_attrs_of` — the reading half — never listed
+    `amiibo_attrs`. So a figure exported as `attrs: null` and came back from
+    a restore as a bare title: no character, no series, no type.
+
+    A hand-typed one rather than a catalogue pick, because that is the case
+    that has nothing but the file to rebuild from. A seeded figure carries an
+    external id and would be found again whatever the attrs said, which is
+    exactly why this went unnoticed.
+    """
+    tag = uuid.uuid4().hex[:8]
+    title = f"Prototype {tag}"
+    item = owner.post(
+        "/api/amiibo",
+        json={
+            "title": title,
+            "character": f"Char {tag}",
+            "amiibo_series": f"Series {tag}",
+            "figure_type": "Figure",
+        },
+    ).json()
+    owner.post(
+        f"/api/items/{item['id']}/owned", json={"condition": "boxed"}
+    ).raise_for_status()
+
+    blob = _zip(owner)
+    owner.delete(f"/api/amiibo/{item['id']}").raise_for_status()
+
+    _restore(owner, blob).raise_for_status()
+
+    back = owner.get("/api/amiibo", params={"search": tag, "limit": 200}).json()["items"]
+    row = next((i for i in back if i["title"] == title), None)
+    assert row is not None, "the figure did not come back at all"
+    assert row["attrs"]["character"] == f"Char {tag}", "the character was lost"
+    assert row["attrs"]["amiibo_series"] == f"Series {tag}", "the series was lost"
+    assert row["attrs"]["figure_type"] == "Figure", "the figure type was lost"

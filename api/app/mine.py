@@ -127,8 +127,12 @@ def _identity(item: CollectionItem, mine: bool) -> dict:
 
 
 def _attrs_of(item: CollectionItem):
-    for name in ("card_attrs", "game_attrs", "movie_attrs", "book_attrs",
-                 "record_attrs", "lego_attrs", "comic_attrs"):
+    # Every module ATTRS knows how to rebuild has to be readable here too.
+    # amiibo was missing, so figures exported with attrs: null and came back
+    # from a restore with no character, series or type — the import side had
+    # been ready for them the whole time.
+    for name in ("card_attrs", "amiibo_attrs", "game_attrs", "movie_attrs",
+                 "book_attrs", "record_attrs", "lego_attrs", "comic_attrs"):
         row = getattr(item, name, None)
         if row is not None:
             return row

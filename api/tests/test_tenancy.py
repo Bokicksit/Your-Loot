@@ -23,20 +23,36 @@ import pytest
 
 BASE = os.environ.get("LOOT_URL", "http://localhost:8000")
 
-# every collection that lists things somebody owns
+# Every collection that lists things somebody owns.
+#
+# Hardware is here under its own name although it has no endpoint of its own:
+# it is the games module with a flag, and a shelf that is only a flag away
+# from another one is exactly the shelf a filter forgets. It was missing from
+# this sweep, along with amiibo, until they were added.
 MODULES = {
     "cards": "/api/cards",
+    "amiibo": "/api/amiibo",
     "games": "/api/games",
+    "hardware": "/api/games",
     "movies": "/api/movies",
     "books": "/api/books",
     "records": "/api/records",
     "lego": "/api/lego",
     "comics": "/api/comics",
 }
+# What the list endpoint needs to answer about this shelf rather than its
+# neighbour — only hardware has anything to say, and only because it shares
+# the games table.
+LIST_PARAMS = {
+    "games": {"is_hardware": False},
+    "hardware": {"is_hardware": True},
+}
 # how to create one, per module — the smallest body each endpoint accepts
 CREATE = {
     "cards": ("/api/cards", {"title": "T", "card_number": "1"}),
+    "amiibo": ("/api/amiibo", {"title": "T"}),
     "games": ("/api/games", {"title": "T"}),
+    "hardware": ("/api/games", {"title": "T", "is_hardware": True}),
     "movies": ("/api/movies", {"title": "T"}),
     "books": ("/api/books", {"title": "T"}),
     "records": ("/api/records", {"title": "T"}),
@@ -85,7 +101,8 @@ def test_one_persons_shelf_is_their_own(people, module):
     mine = _own(alice, module, f"Alice {module} {tag}")
     theirs = _own(bob, module, f"Bob {module} {tag}")
 
-    listed = {i["id"] for i in alice.get(MODULES[module], params={"limit": 100}).json()["items"]}
+    params = {"limit": 100, **LIST_PARAMS.get(module, {})}
+    listed = {i["id"] for i in alice.get(MODULES[module], params=params).json()["items"]}
     assert mine in listed, f"{module}: Alice cannot see her own item"
     assert theirs not in listed, f"{module}: Alice can see Bob's item"
 
@@ -198,7 +215,8 @@ def test_writes_to_another_persons_entry_bounce(people, module):
     )
 
     rows = alice.get(
-        MODULES[module], params={"search": title, "limit": 100}
+        MODULES[module],
+        params={"search": title, "limit": 100, **LIST_PARAMS.get(module, {})},
     ).json()["items"]
     row = next((i for i in rows if i["id"] == mine), None)
     assert row is not None, f"{module}: Alice's item was deleted out from under her"

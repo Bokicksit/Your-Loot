@@ -9,6 +9,17 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Fixed
+- **amiibo kept their details through an export.** The import side always
+  knew how to rebuild a figure; the export side never listed
+  `amiibo_attrs`, so every figure left as `attrs: null` and came back from a
+  restore as a bare title — no character, series or type. Hand-typed figures
+  were the ones that actually lost data, since a catalogue pick is found
+  again by its id whatever the file says.
+- **amiibo and hardware joined the tenancy sweep.** The cross-account test
+  covered seven collections and skipped those two, so their read filters and
+  the v3.57 write guard were never exercised. Hardware needed the sweep most:
+  it is the games module with a flag, and a shelf one flag away from another
+  is exactly the one a filter forgets.
 - **The room's shelves actually fill now.** Book, game and film spines in
   the collector's room had no height, so a seventeen-book case drew as empty
   furniture. Each spine now sizes itself from its own title — hashed like
