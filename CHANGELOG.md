@@ -55,6 +55,16 @@ Full detail is in the commit log, where every change has its own note.
   wall fills from its own travel through the screen at every width, since
   it is below the fold at all of them now.
 
+### Changed
+- **The card scanner forgives your hands.** It wanted the card perfectly
+  framed, perfectly level; now each frame is read about a dozen ways —
+  straight on, nudged off-centre, cropped tighter, tilted a few degrees
+  either way — and a card is scored by its best agreement with any reading.
+  The catalogue side is untouched (scans are straight; the photograph is
+  the crooked half), so nothing gets re-fingerprinted, and the extra work
+  is a handful of 9x8 resizes that cost less than the JPEG decode before
+  them. Tests now photograph the card badly on purpose.
+
 ### Added
 - **Card art has a curation room.** A new admin section lists every English
   set with how many of its cards still lack a picture, opens into a compact

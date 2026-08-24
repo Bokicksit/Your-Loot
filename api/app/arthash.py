@@ -43,6 +43,22 @@ BITS = 64
 NEAR = 12
 
 
+def _hash_image(im) -> int:
+    """The 64 bits, from an already-open greyscale-able image."""
+    from PIL import Image
+
+    small = im.convert("L").resize((HASH_W, HASH_H), Image.LANCZOS)
+    # tobytes rather than getdata: one byte per pixel in row order for an
+    # 8-bit greyscale, and not deprecated
+    px = small.tobytes()
+    bits = 0
+    for row in range(HASH_H):
+        base = row * HASH_W
+        for col in range(HASH_W - 1):
+            bits = (bits << 1) | int(px[base + col] > px[base + col + 1])
+    return bits
+
+
 def fingerprint(data: bytes) -> int | None:
     """Eight bytes describing what this picture looks like, or None.
 
@@ -54,19 +70,74 @@ def fingerprint(data: bytes) -> int | None:
         from PIL import Image
 
         with Image.open(io.BytesIO(data)) as im:
-            small = im.convert("L").resize((HASH_W, HASH_H), Image.LANCZOS)
-            # tobytes rather than getdata: one byte per pixel in row
-            # order for an 8-bit greyscale, and not deprecated
-            px = small.tobytes()
+            return _hash_image(im)
     except Exception:
         return None
 
-    bits = 0
-    for row in range(HASH_H):
-        base = row * HASH_W
-        for col in range(HASH_W - 1):
-            bits = (bits << 1) | int(px[base + col] > px[base + col + 1])
-    return bits
+
+# How the probe jitters. The catalogue side is hashed once, straight on —
+# it is a scan, and scans are straight. The photograph is the crooked half:
+# a hand holds the card a little off-centre, a little rotated, a little too
+# far away, and a dHash forgives none of that because every comparison
+# moves with the pixels. So the photo is hashed many ways and the best
+# agreement wins. Small numbers on purpose: this corrects a hand, not a
+# card lying sideways on a table.
+_ROTATIONS = (0, -5, 5)          # degrees
+_SCALES = (1.0, 0.88)            # centre crops — "a little too far away"
+_SHIFT = 0.07                    # off-centre crops, as a fraction of the frame
+
+
+def variants(data: bytes) -> list[int]:
+    """Every plausible reading of one photograph, as fingerprints.
+
+    Decoded once and jittered in memory: rotations of the whole frame,
+    tighter centre crops, and off-centre crops for the card that missed the
+    guide. About a dozen hashes, each a 9x8 resize — the whole set costs
+    less than the JPEG decode did. Deduplicated, since a small jitter often
+    lands on the same 64 bits.
+    """
+    try:
+        from PIL import Image
+
+        with Image.open(io.BytesIO(data)) as raw:
+            # Working copy at a modest size: the hash reads 9x8, so nothing
+            # above ~256px survives anyway, and rotations get cheap.
+            im = raw.convert("L")
+            im.thumbnail((256, 256))
+            im = im.copy()
+    except Exception:
+        return []
+
+    # The straight-on reading comes from the same pipeline the catalogue
+    # was hashed with, not from the thumbnail — resampling twice can move a
+    # few bits, and the exact-match case should stay exact.
+    out: set[int] = set()
+    straight = fingerprint(data)
+    if straight is not None:
+        out.add(straight)
+    for deg in _ROTATIONS:
+        frame = im if deg == 0 else im.rotate(deg, resample=Image.BICUBIC)
+        if deg != 0:
+            # rotation leaves dead corners in-frame; crop past them so the
+            # hash reads card, not wedge
+            fw, fh = frame.size
+            frame = frame.crop((int(fw * .08), int(fh * .08),
+                                int(fw * .92), int(fh * .92)))
+        fw, fh = frame.size
+        for scale in _SCALES:
+            cw, ch = int(fw * scale), int(fh * scale)
+            x0, y0 = (fw - cw) // 2, (fh - ch) // 2
+            out.add(_hash_image(frame.crop((x0, y0, x0 + cw, y0 + ch))))
+        if deg == 0:
+            # off-centre readings, straight-on only: a shifted AND rotated
+            # card is two mistakes, and every variant costs every scan
+            dx, dy = int(fw * _SHIFT), int(fh * _SHIFT)
+            cw, ch = int(fw * .88), int(fh * .88)
+            for ox, oy in ((dx, 0), (-dx, 0), (0, dy), (0, -dy)):
+                x0 = max(0, min(fw - cw, (fw - cw) // 2 + ox))
+                y0 = max(0, min(fh - ch, (fh - ch) // 2 + oy))
+                out.add(_hash_image(frame.crop((x0, y0, x0 + cw, y0 + ch))))
+    return list(out)
 
 
 def to_signed(value: int | None) -> int | None:

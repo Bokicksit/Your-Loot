@@ -2,8 +2,7 @@ import re
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import BigInteger, cast, func, literal, or_, select
-from sqlalchemy.dialects.postgresql import BIT
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 import httpx
@@ -187,30 +186,44 @@ async def scan_card(
     if not raw:
         raise HTTPException(400, "no image to scan")
 
-    probe = arthash.fingerprint(raw)
-    if probe is None:
+    probes = arthash.variants(raw)
+    if not probes:
         raise HTTPException(400, "that file is not an image this can read")
 
-    # XOR the two fingerprints and count the bits left standing. Done in the
-    # database rather than in Python so twenty thousand comparisons stay one
-    # round trip instead of twenty thousand rows crossing the wire.
-    #
-    # Through bit(64) both sides, because Postgres counts bits in a bit
-    # string or a bytea and not in a bigint — `bit_count(bigint)` is not a
-    # function that exists, however reasonable it looks.
-    mine = cast(CardAttrs.art_hash, BIT(64))
-    theirs = cast(literal(arthash.to_signed(probe), BigInteger), BIT(64))
-    apart = func.bit_count(mine.op("#")(theirs))
-    items = (
-        db.scalars(
-            _base_query()
-            .where(CardAttrs.art_hash.is_not(None), apart <= arthash.NEAR)
-            .order_by(apart, CardAttrs.language != "en", CardAttrs.set_code)
-            .limit(limit)
+    # A photograph is hashed a dozen ways — straight on, nudged, tilted —
+    # and each card is scored by its best agreement with any of them, which
+    # is what forgives the hand that held the card a little wrong. That
+    # many-to-many comparison is why this happens in Python now rather than
+    # as one SQL expression: the whole catalogue's fingerprints are 160KB,
+    # and half a million XOR-and-count operations cost less than the JPEG
+    # decode that preceded them.
+    mask = (1 << arthash.BITS) - 1
+    rows = db.execute(
+        select(CardAttrs.item_id, CardAttrs.art_hash, CardAttrs.language != "en")
+        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
+        .where(
+            CollectionItem.module == Module.cards.value,
+            CardAttrs.art_hash.is_not(None),
         )
-        .unique()
-        .all()
-    )
+    ).all()
+    near = []
+    for item_id, stored, foreign in rows:
+        h = stored & mask
+        d = min((h ^ p).bit_count() for p in probes)
+        if d <= arthash.NEAR:
+            near.append((d, foreign, item_id))
+    near.sort()
+    keep = [item_id for _d, _f, item_id in near[:limit]]
+
+    items = []
+    if keep:
+        by_id = {
+            i.id: i
+            for i in db.scalars(
+                _base_query().where(CollectionItem.id.in_(keep))
+            ).unique()
+        }
+        items = [by_id[k] for k in keep if k in by_id]
     tag_map = tags_for(db, user.id, [i.id for i in items])
     return CardListOut(
         total=len(items),

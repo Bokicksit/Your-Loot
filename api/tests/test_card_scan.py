@@ -24,22 +24,24 @@ pytest.importorskip("PIL", reason="Pillow is what does the fingerprinting")
 def _art(seed: int, size=(240, 336)) -> bytes:
     """A picture that is this card and no other.
 
-    Deterministic from `seed` and deliberately full of structure: a
-    fingerprint records which way brightness steps across the picture, so a
-    flat colour would hash the same as every other flat colour and prove
-    nothing. The blocks give it something to have an opinion about.
+    Deterministic from `seed`, and built from large blocks rather than
+    pixel-level gradients — deliberately. A fingerprint reads the picture at
+    nine by eight, and a pattern finer than that grid aliases into noise
+    where the smallest nudge decorrelates everything; real card art has big
+    smooth regions and survives a nudge, so the stand-in has to as well.
+    Different seeds give entirely different block layouts, which keeps two
+    cards further apart than any nudge brings them together.
     """
     from PIL import Image
 
     im = Image.new("RGB", size)
     px = im.load()
+    cw, ch = size[0] // 6, size[1] // 8
     for x in range(size[0]):
         for y in range(size[1]):
-            px[x, y] = (
-                (x * 7 + seed * 53) % 256,
-                (y * 5 + seed * 97) % 256,
-                ((x + y) * 3 + seed * 31) % 256,
-            )
+            c, r = x // cw, y // ch
+            v = ((seed * 2654435761) ^ (r * 97 + c * 57 + 11)) % 256
+            px[x, y] = (v, (v * 3 + seed) % 256, (v * 7 + r * 20) % 256)
     buf = io.BytesIO()
     im.save(buf, "PNG")
     return buf.getvalue()
@@ -133,3 +135,40 @@ def test_a_stranger_cannot_scan():
         if not anon.get("/api/auth/me").json()["multi_user"]:
             pytest.skip("needs AUTH_MODE=multi")
         assert _scan(anon, _photo(_art(7))).status_code == 401
+
+
+def _shifted(data: bytes) -> bytes:
+    """The card off-centre in the frame with table around it — the shot the
+    guide asked for and a hand didn't quite deliver."""
+    from PIL import Image
+
+    im = Image.open(io.BytesIO(data)).convert("RGB")
+    canvas = Image.new("RGB", (int(im.width * 1.18), int(im.height * 1.18)), (38, 38, 44))
+    canvas.paste(im, (int(im.width * 0.14), int(im.height * 0.03)))
+    buf = io.BytesIO()
+    canvas.save(buf, "JPEG", quality=72)
+    return buf.getvalue()
+
+
+def _tilted(data: bytes) -> bytes:
+    """The card a few degrees off level — the other way a hand holds it."""
+    from PIL import Image
+
+    im = Image.open(io.BytesIO(data)).convert("RGB")
+    im = im.rotate(4, resample=Image.BICUBIC, fillcolor=(38, 38, 44))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=72)
+    return buf.getvalue()
+
+
+def test_an_imperfect_photograph_still_finds_the_card(owner, scannable):
+    """The complaint that drove the probe jitter: a scan that only works on
+    a perfectly framed, perfectly level card is a scan nobody's hands can
+    use. The probe now reads the frame a dozen ways — nudged, tilted,
+    cropped tighter — so each single honest mistake is survivable."""
+    item, art = scannable
+    for name, warp in (("shifted", _shifted), ("tilted", _tilted)):
+        r = _scan(owner, warp(art))
+        assert r.status_code == 200, r.text
+        found = [c["id"] for c in r.json()["items"]]
+        assert item["id"] in found, f"a {name} photograph lost the card"
