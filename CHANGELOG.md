@@ -55,6 +55,15 @@ Full detail is in the commit log, where every change has its own note.
   wall fills from its own travel through the screen at every width, since
   it is below the fold at all of them now.
 
+### Fixed
+- **The scanner's own test stopped flipping a coin.** It generated a
+  different synthetic card every run — and only a few of those are
+  matchable once deliberately mis-photographed, so the same commit passed
+  locally, failed in CI, and passed on a re-run. The art is fixed now, and
+  the two seeds it uses were swept for and are documented with their
+  measured distances, so a failure means the matcher changed rather than
+  the dice.
+
 ### Changed
 - **The card scanner forgives your hands.** It wanted the card perfectly
   framed, perfectly level; now each frame is read about a dozen ways —
