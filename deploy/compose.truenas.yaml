@@ -56,6 +56,9 @@ services:
       # downloads the full card database on first start (safe to leave on;
       # it only runs when the catalog is empty)
       SEED_ON_START: "true"
+      # set "true" once you want the card scanner: fingerprints card art
+      # on each start (first run is long; later runs only do new sets)
+      HASH_CARD_ART: "false"
     volumes:
       - /mnt/tank/apps/getloot/images:/data/images
     depends_on:

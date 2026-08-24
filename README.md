@@ -295,6 +295,11 @@ says so. Cards with no artwork can't be scanned, and a scan names the card
 rather than the printing — a reverse holo is the same picture as the normal
 one, so you still pick which you're holding.
 
+Or set `HASH_CARD_ART=true` in `.env` and forget about it: every start then
+fingerprints whatever is new, in the background, which is how a freshly seeded
+set becomes scannable without anybody remembering a command. A catalogue with
+nothing new costs one database question and moves on.
+
 **Running it on a platform host** (Railway, Fly, Render) rather than compose?
 The web container assumes the API answers to `api` on port 8000, which is true
 under compose and nowhere else. Two variables on the **web** service fix it,

@@ -53,6 +53,13 @@ services:
       DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
       SEED_ON_START: ${SEED_ON_START:-false}
       SEED_JAPANESE: ${SEED_JAPANESE:-false}
+      # move card art onto TCGdex's asset host (set to "tcgdex"); documented
+      # in .env.example — declared here because compose only passes through
+      # what is named, and this one was documented but never passed
+      CARD_ART: ${CARD_ART:-}
+      # fingerprint card art for the camera scanner on each start (the first
+      # run is ~20k fetches; later runs do only what's new)
+      HASH_CARD_ART: ${HASH_CARD_ART:-false}
     volumes:
       - ./data/images:/data/images
       - ./seed:/seed # live-edit seed scripts without rebuilding

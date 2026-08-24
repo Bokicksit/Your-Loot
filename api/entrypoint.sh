@@ -12,6 +12,19 @@ alembic upgrade head
 # never keep a working collection offline.
 python /seed/seed_consoles.py || echo "[seed] console catalogue failed; run it by hand later"
 
+# The card scanner's homework: fingerprint any card art that has none yet
+# (seed/hash_cards.py), so a photograph can be matched against the catalogue.
+# Off by default — the first run is twenty thousand fetches from TCGdex's
+# CDN, which an operator should choose to start — but once opted in, every
+# restart quietly does only the cards added since, which is how a new set
+# becomes scannable without anybody remembering a command. A fully
+# fingerprinted catalogue costs one database question and exits.
+hash_art() {
+  if [ "${HASH_CARD_ART:-false}" = "true" ]; then
+    python /seed/hash_cards.py || echo "[seed] art fingerprints failed; run hash_cards.py by hand later"
+  fi
+}
+
 # First run has an empty catalog, which makes the app look broken. Seed it in
 # the background so the UI is up immediately and fills in as cards land.
 # SEED_ON_START=false skips it; re-running the seed later is always safe.
@@ -47,7 +60,15 @@ if [ "${SEED_ON_START:-true}" = "true" ]; then
           || echo "[seed] Japanese seed failed; run it by hand later"
       fi
     fi
+
+    # After the seeds, inside the same subshell: on a first boot the cards
+    # have to exist before there is anything to fingerprint.
+    hash_art
   ) &
+else
+  # Seeding switched off does not mean the catalogue is empty — it means it
+  # is managed by hand. Whatever is in it can still be fingerprinted.
+  ( hash_art ) &
 fi
 
 # 0.0.0.0 is every IPv4 address on this container, which is what compose

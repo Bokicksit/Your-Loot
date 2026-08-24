@@ -56,6 +56,13 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Added
+- **The scanner keeps itself current.** `HASH_CARD_ART=true` and every start
+  fingerprints whatever card art is new, in the background — so a freshly
+  seeded set becomes scannable without anybody remembering a command, and a
+  catalogue with nothing new costs one database question. Off by default:
+  the first run is twenty thousand fetches, and that is a thing to choose.
+  (Also declared `CARD_ART` in the compose files, which documented it
+  without ever passing it to the container.)
 - **Point the camera at a card.** Cards carry no barcode, so the scanner
   reads the picture instead: every card's artwork is reduced to sixty-four
   bits describing what it looks like, and a frame from the camera is matched
