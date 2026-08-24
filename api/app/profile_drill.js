@@ -27,6 +27,41 @@
 
   var narrow = window.matchMedia("(max-width: 700px)");
 
+  /* ------------------------------------------------- the address bar
+
+     Every shelf has an address of its own, so the one in the bar has to be
+     the shelf actually on screen: arrive at /u/bo/pokedex, back out to the
+     room, and a URL still saying "pokedex" is a link that copies wrong.
+
+     replaceState rather than pushState on purpose. Opening a piece of
+     furniture is looking around one page, not travelling to another, and a
+     back button that walked out through every shelf somebody glanced at —
+     before finally leaving the site — would be the more annoying bug. Back
+     still means "wherever I came from".
+
+     `settling` covers the one moment this must not fire: applying the focus
+     a link arrived with. /u/bo/binders and /u/bo/cards open the same layer,
+     and rewriting one into the other under somebody who just followed a
+     link would be answering a different question than the one they asked.
+  */
+  var settling = true;
+
+  function scopeOf(d) {
+    return d && d.id ? d.id.replace(/^drill-/, "") : "";
+  }
+
+  function address(suffix) {
+    if (settling || !window.history || !history.replaceState) return;
+    var next = base + (suffix ? "/" + suffix : "");
+    if (next === location.pathname) return;
+    try {
+      history.replaceState(null, "", next + location.search);
+    } catch (err) {
+      /* A file:// or sandboxed viewing of this page cannot rewrite its own
+         address. The room still works; only the bar goes stale. */
+    }
+  }
+
   function openDrill(d) {
     if (!d) return;
     document.querySelectorAll(".drill").forEach(function (x) {
@@ -36,6 +71,7 @@
     room.classList.add("drilled");
     d.classList.add("on");
     place(d);
+    address(scopeOf(d));
     var h = d.querySelector(".drill-head h3");
     if (h) h.setAttribute("tabindex", "-1"), h.focus({ preventScroll: true });
   }
@@ -63,6 +99,7 @@
   function close() {
     document.documentElement.style.overflow = "";
     room.classList.remove("drilled");
+    address("");
     document.querySelectorAll(".drill").forEach(function (x) {
       x.hidden = true;
       x.classList.remove("on", "full");
@@ -482,6 +519,9 @@
 
     if (e.target.closest(".drill-head .back")) {
       show(drill, "rail");
+      /* out of the binder and back onto the shelf of them, which is the
+         collection's own address again */
+      address(scopeOf(drill));
       var crumb = drill.querySelector(".crumb");
       if (crumb) crumb.textContent = crumb.getAttribute("data-was") || "";
       return;
@@ -503,6 +543,9 @@
     }
     host.innerHTML = "";
     show(drill, "binder");
+    /* One binder open is one of the two addresses cards has beyond its own:
+       the dex has its own name, everything else is the binders shelf. */
+    address(sp.getAttribute("data-kind") === "dex" ? "pokedex" : "binders");
     var crumb = drill.querySelector(".crumb");
     if (crumb && !crumb.getAttribute("data-was")) {
       crumb.setAttribute("data-was", crumb.textContent);
@@ -568,4 +611,6 @@
       }
     }
   }
+  /* Arrived. From here the address follows the room rather than the link. */
+  settling = false;
 })();

@@ -9,6 +9,16 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Fixed
+- **The address follows the room.** Arriving at `/u/bo/pokedex` and then
+  backing out left the bar still saying "pokedex" while you looked at games
+  or at the room — so copying it handed somebody a link to a different page
+  than the one on screen. Opening a shelf, opening a binder, and closing
+  back to the room each rewrite the address now, and copying it at any point
+  reproduces exactly what you are looking at. The address a link arrived
+  with is left alone, since `/binders` and `/cards` open the same layer and
+  rewriting one into the other under somebody who just followed a link would
+  answer a question they did not ask. It replaces rather than pushes: back
+  still means "wherever I came from", not a walk out through every shelf.
 - **amiibo kept their details through an export.** The import side always
   knew how to rebuild a figure; the export side never listed
   `amiibo_attrs`, so every figure left as `attrs: null` and came back from a
