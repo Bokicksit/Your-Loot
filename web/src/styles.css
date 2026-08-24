@@ -359,7 +359,7 @@ button {
   font: inherit;
   cursor: pointer;
 }
-button.primary, button.ghost, a.ghost, a.primary {
+button.primary, button.ghost, a.ghost, a.primary, label.btnish {
   appearance: none;
   min-height: var(--tap);
   min-width: var(--tap);
@@ -384,12 +384,12 @@ button.primary, a.primary {
 button.primary:hover, a.primary:hover { filter: brightness(1.07); text-decoration: none; }
 button.primary svg.i, a.primary svg.i { width: 18px; height: 18px; stroke-width: 2.3; }
 button.primary:active, a.primary:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(255,255,255,.2) inset; }
-button.ghost, a.ghost {
+button.ghost, a.ghost, label.btnish {
   color: var(--text-dim);
   background: var(--bg-3);
   border: 1px solid var(--line);
 }
-button.ghost:hover, a.ghost:hover {
+button.ghost:hover, a.ghost:hover, label.btnish:hover {
   color: var(--text);
   background: var(--bg-4);
   border-color: var(--gold-line);
@@ -4987,6 +4987,109 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 /* a link, but it sits in the same quiet line as the display name */
 a.admin-name { color: var(--gold); text-decoration: none; }
 a.admin-name:hover { color: var(--gold-bright); text-decoration: underline; }
+
+/* --- card-art curation: a shelf of sets, each opening onto its cards ---- */
+.admin-sets { display: flex; flex-direction: column; gap: 6px; }
+.admin-set { border: 1px solid var(--line-soft); border-radius: var(--r-2); overflow: hidden; }
+.admin-set-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--f-2);
+}
+.admin-set-head:hover { background: var(--bg-1); }
+.admin-set-head .sp { flex: 1; }
+.admin-set-head .admin-name { display: inline; }
+.admin-set-head svg.i { transition: transform .15s var(--ease); flex: none; }
+.admin-set-head svg.i.turned { transform: rotate(180deg); }
+.admin-set-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+
+/* the grid: enough of a card to recognise it, small enough that a set of
+   250 is a scroll and not an outing */
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.art-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--bg-1);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.art-tile:hover { border-color: var(--gold-line); }
+.art-tile.on { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-wash); }
+/* a card with no picture is the reason this screen exists — say so */
+.art-tile.artless { border-style: dashed; }
+.art-tile img,
+.art-tile .art-hole {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--bg-2);
+}
+.art-tile .art-hole {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-mute);
+}
+.art-tile .art-name {
+  font-size: var(--f-1);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.art-tile .art-no { font-family: var(--font-num); font-size: var(--f-1); color: var(--text-mute); }
+
+/* the editor for the picked card, pinned above the grid */
+.art-editor {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.art-editor > img,
+.art-editor > .art-hole {
+  width: 74px;
+  aspect-ratio: 5 / 7;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--bg-2);
+  flex: none;
+}
+.art-editor-fields { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.art-editor-fields strong small { color: var(--text-mute); font-weight: 400; }
+/* a label wearing button clothes, because a file input cannot */
+label.btnish {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+label.btnish.off { opacity: .5; pointer-events: none; }
 
 /* The public page, from the header. Sits with the title rather than in the
    menu because it is the same collection seen from outside — one press to

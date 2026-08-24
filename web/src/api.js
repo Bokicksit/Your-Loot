@@ -211,6 +211,11 @@ export const api = {
     }),
   releaseReservation: (id) =>
     request(`/api/admin/reserved-names/${id}`, { method: "DELETE" }),
+  adminCardSets: () => request("/api/admin/card-sets"),
+  adminSetCards: (setCode) =>
+    request(`/api/admin/card-sets/cards?${new URLSearchParams({ set_code: setCode })}`),
+  adminHashArt: () => request("/api/admin/hash-art", { method: "POST" }),
+  adminHashArtStatus: () => request("/api/admin/hash-art"),
   createBinder: (body) =>
     request("/api/binders", { method: "POST", body: JSON.stringify(body) }),
   editBinder: (id, body) =>

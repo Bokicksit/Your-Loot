@@ -12,10 +12,11 @@ knowing more than that about people who trusted you with their collection is
 not a feature, it is a temptation.
 """
 
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -24,12 +25,14 @@ from app.auth import OWNER_ID, require_admin
 from app.barcodes import stats as barcode_stats
 from app.config import settings
 from app.db import get_db
-from app import screennames
+from app import arthash_run, screennames
 from app.models import (
-    CollectionItem, Owned, ReservedName, ScreenName, Setting, User, Wanted,
+    CardAttrs, CollectionItem, Module, Owned, ReservedName, ScreenName,
+    Setting, User, Wanted,
 )
 from app.modules import available
 from app.plans import FREE, SUPPORTER, paid_modules, subscribed
+from app.sorting import leading_number
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -485,3 +488,136 @@ def release_reservation(
         raise HTTPException(404, "no such reservation")
     db.delete(row)
     db.commit()
+
+
+# ----------------------------------------------------------------- card art
+#
+# Curating the catalogue's pictures. The dump ships without art for some
+# cards, and what it does ship is sometimes the wrong scan — this is where
+# the operator fixes that, one card at a time, for everybody at once. The
+# picture itself arrives through the existing /api/images routes (upload, or
+# fetch-from-link) and lands on the card through the ordinary PATCH; these
+# endpoints only answer the questions the curation screen asks.
+
+
+@router.get("/card-sets")
+def card_sets(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Every English set, with how much of it still needs a picture.
+
+    English only by design: the curation screen is for art a person can
+    check against the card in their hand, and the Japanese catalogue is
+    opt-in, four-in-ten artless, and better served by a reseed.
+    """
+    # The grouping key falls back to the set name, because a hand-typed card
+    # has a name and no code — and a group the screen cannot open again is a
+    # group that should not have been offered.
+    key = func.coalesce(CardAttrs.set_code, CardAttrs.set_name)
+    rows = db.execute(
+        select(
+            key,
+            CardAttrs.set_name,
+            CardAttrs.set_abbr,
+            CardAttrs.set_year,
+            func.count(),
+            func.count().filter(CollectionItem.image_url.is_(None)),
+            func.count().filter(
+                CollectionItem.image_url.is_not(None), CardAttrs.art_hash.is_(None)
+            ),
+        )
+        .select_from(CollectionItem)
+        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+        .where(
+            CollectionItem.module == Module.cards.value,
+            CardAttrs.language == "en",
+            key.is_not(None),
+        )
+        .group_by(key, CardAttrs.set_name, CardAttrs.set_abbr, CardAttrs.set_year)
+        .order_by(CardAttrs.set_year.desc().nulls_last(), CardAttrs.set_name)
+    ).all()
+    return [
+        {
+            "set_code": code, "set_name": name, "set_abbr": abbr,
+            "set_year": year, "total": total, "missing": missing,
+            "unhashed": unhashed,
+        }
+        for code, name, abbr, year, total, missing, unhashed in rows
+    ]
+
+
+@router.get("/card-sets/cards")
+def cards_of_set(
+    set_code: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """One set's cards, in printed order, with what the curator needs:
+    the name, the number, the picture, and whether the scanner knows it."""
+    rows = db.execute(
+        select(
+            CollectionItem.id, CollectionItem.title, CollectionItem.image_url,
+            CardAttrs.card_number, CardAttrs.art_hash.is_not(None),
+        )
+        .select_from(CollectionItem)
+        .join(CardAttrs, CardAttrs.item_id == CollectionItem.id)
+        .where(
+            CollectionItem.module == Module.cards.value,
+            CardAttrs.language == "en",
+            func.lower(func.coalesce(CardAttrs.set_code, CardAttrs.set_name))
+            == set_code.strip().lower(),
+        )
+        .order_by(
+            leading_number(CardAttrs.card_number).asc().nulls_last(),
+            CardAttrs.card_number,
+        )
+    ).all()
+    return [
+        {"id": i, "title": t, "image_url": img, "card_number": n, "hashed": h}
+        for i, t, img, n, h in rows
+    ]
+
+
+# One pass at a time. A flag rather than a queue: the second click of an
+# impatient thumb should join the run that is already happening, not stack
+# another twenty-thousand-fetch job behind it.
+_hashing = threading.Lock()
+
+
+def _hash_pass():
+    from app.db import SessionLocal
+
+    db = SessionLocal()
+    try:
+        arthash_run.run_pending(db)
+    finally:
+        db.close()
+        _hashing.release()
+
+
+@router.get("/hash-art")
+def hash_art_status(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """How much the scanner does not know yet, and whether a pass is
+    running. Polled by the curation screen so the button can say what it is
+    doing rather than just being pressed."""
+    return {
+        "pending": arthash_run.pending_count(db),
+        "running": _hashing.locked(),
+    }
+
+
+@router.post("/hash-art")
+def hash_art(
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Fingerprint everything pending, in the background — the same pass the
+    seed script and the HASH_CARD_ART flag run, started from a button.
+
+    Returns at once with the count, because the run can be twenty items after
+    a curation session or twenty thousand on a first press, and a request
+    that might take an hour is a request that times out."""
+    pending = arthash_run.pending_count(db)
+    if pending and _hashing.acquire(blocking=False):
+        background.add_task(_hash_pass)
+        return {"pending": pending, "started": True}
+    return {"pending": pending, "started": False, "running": _hashing.locked()}

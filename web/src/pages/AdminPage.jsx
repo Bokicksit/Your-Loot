@@ -198,6 +198,287 @@ function ReservedNames() {
   );
 }
 
+/** One card of one set, compact enough that a 250-card set stays a page. */
+function ArtTile({ card, selected, onSelect }) {
+  return (
+    <button
+      type="button"
+      className={`art-tile ${card.image_url ? "" : "artless"} ${selected ? "on" : ""}`}
+      onClick={onSelect}
+      title={card.image_url ? "Change this picture" : "No picture — add one"}
+    >
+      {card.image_url ? (
+        <img src={card.image_url} alt="" loading="lazy" />
+      ) : (
+        <span className="art-hole">no art</span>
+      )}
+      <span className="art-name">{card.title}</span>
+      <span className="art-no">{card.card_number}</span>
+    </button>
+  );
+}
+
+/** Curating the catalogue's card art.
+ *
+ *  The dump ships some cards without a picture and some with the wrong one.
+ *  This is where the operator fixes that — and because the catalogue is
+ *  shared, a picture fixed here is fixed for every collection on the server
+ *  at once. English sets only: this screen is for art a person can check
+ *  against a card, and the Japanese catalogue is better served by a reseed.
+ */
+function CardArt() {
+  const [sets, setSets] = useState(null);
+  const [openSet, setOpenSet] = useState(null);   // set_code of the open panel
+  const [cards, setCards] = useState({});          // set_code -> [card]
+  const [picked, setPicked] = useState(null);      // the card being edited
+  const [link, setLink] = useState("");
+  const [onlyMissing, setOnlyMissing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const [hash, setHash] = useState(null);          // {pending, running}
+
+  const loadSets = () => api.adminCardSets().then(setSets);
+  const loadHash = () => api.adminHashArtStatus().then(setHash);
+
+  useEffect(() => {
+    loadSets().catch((e) => setErr(e.message));
+    loadHash().catch(() => {});
+  }, []);
+
+  // While a fingerprint pass runs, watch it: the button reads better
+  // counting down than saying "pressed".
+  useEffect(() => {
+    if (!hash?.running) return;
+    const t = setInterval(() => loadHash().catch(() => {}), 3000);
+    return () => clearInterval(t);
+  }, [hash?.running]);
+
+  const expand = async (code) => {
+    const next = openSet === code ? null : code;
+    setOpenSet(next);
+    setPicked(null);
+    setLink("");
+    if (next && !cards[next]) {
+      try {
+        const rows = await api.adminSetCards(next);
+        setCards((c) => ({ ...c, [next]: rows }));
+      } catch (e) {
+        setErr(e.message);
+      }
+    }
+  };
+
+  /** The new picture is on our server; put it on the card, for everybody.
+   *  The PATCH also clears the card's fingerprint, so the next pass —
+   *  or the button below — teaches the scanner the new face. */
+  const apply = async (localUrl) => {
+    await api.updateCard(picked.id, { image_url: localUrl });
+    setCards((c) => ({
+      ...c,
+      [openSet]: c[openSet].map((k) =>
+        k.id === picked.id ? { ...k, image_url: localUrl, hashed: false } : k
+      ),
+    }));
+    setPicked(null);
+    setLink("");
+    loadSets().catch(() => {});
+    loadHash().catch(() => {});
+  };
+
+  const pullLink = async () => {
+    if (!link.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      // copied onto our own disk first: a hotlink dies when the source
+      // moves, and this picture is about to be everybody's
+      const { url } = await api.fetchImage(link.trim());
+      await apply(url);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const uploadFile = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const { url } = await api.uploadImage(file);
+      await apply(url);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const fingerprint = async () => {
+    setErr(null);
+    try {
+      const r = await api.adminHashArt();
+      setHash({ pending: r.pending, running: r.started || r.running });
+    } catch (e) {
+      setErr(e.message);
+    }
+  };
+
+  if (sets === null && !err) return null;
+
+  const shown = (openSet && cards[openSet]) || [];
+  const visible = onlyMissing ? shown.filter((c) => !c.image_url) : shown;
+
+  return (
+    <section className="settings-card">
+      <h3>Card art</h3>
+      <p className="settings-note">
+        The catalogue's own pictures — fix one here and it is fixed for every
+        collection on this server. Pick a card, then hand it a link or a file.
+      </p>
+      {err && (
+        <p className="settings-note" style={{ color: "var(--danger, #ff8080)" }}>{err}</p>
+      )}
+
+      <div className="form-row wrap">
+        <button
+          type="button"
+          className="ghost"
+          disabled={hash?.running || !hash?.pending}
+          onClick={fingerprint}
+          title="Teach the scanner the pictures it does not know yet"
+        >
+          {hash?.running
+            ? `Fingerprinting… ${hash.pending} to go`
+            : hash?.pending
+              ? `Create fingerprints (${hash.pending} waiting)`
+              : "Scanner is up to date"}
+        </button>
+        <label className="admin-friend" title="Hide the cards that already have art">
+          <input
+            type="checkbox"
+            checked={onlyMissing}
+            onChange={(e) => setOnlyMissing(e.target.checked)}
+          />
+          only missing
+        </label>
+      </div>
+
+      <div className="admin-sets">
+        {sets?.map((s) => (
+          <div key={s.set_code} className="admin-set">
+            <button
+              type="button"
+              className={`admin-set-head ${openSet === s.set_code ? "open" : ""}`}
+              onClick={() => expand(s.set_code)}
+              aria-expanded={openSet === s.set_code}
+            >
+              <Icon id="chev" className={openSet === s.set_code ? "turned" : ""} />
+              <strong>{s.set_name || s.set_code}</strong>
+              {s.set_abbr && <span className="admin-name">{s.set_abbr}</span>}
+              {s.set_year && <span className="admin-name">{s.set_year}</span>}
+              <span className="sp" />
+              <span className="admin-name">{s.total} cards</span>
+              {s.missing > 0 && (
+                <span className="admin-flag">{s.missing} without art</span>
+              )}
+            </button>
+
+            {openSet === s.set_code && (
+              <div className="admin-set-body">
+                {picked && (
+                  <div className="art-editor">
+                    {picked.image_url ? (
+                      <img src={picked.image_url} alt="" />
+                    ) : (
+                      <span className="art-hole">no art</span>
+                    )}
+                    <div className="art-editor-fields">
+                      <strong>
+                        {picked.title}
+                        {picked.card_number && <small> · {picked.card_number}</small>}
+                      </strong>
+                      <div className="form-row">
+                        <input
+                          type="url"
+                          className="grow"
+                          placeholder="Paste an image link — it is copied to this server"
+                          value={link}
+                          onChange={(e) => setLink(e.target.value)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && (e.preventDefault(), pullLink())
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={busy || !link.trim()}
+                          onClick={pullLink}
+                        >
+                          {busy ? "…" : "Pull from link"}
+                        </button>
+                        <label className={`ghost btnish ${busy ? "off" : ""}`}>
+                          <Icon id="upload" />
+                          Upload
+                          <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            disabled={busy}
+                            onChange={(e) => uploadFile(e.target.files?.[0])}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="ghost icon"
+                          title="Close"
+                          onClick={() => {
+                            setPicked(null);
+                            setLink("");
+                          }}
+                        >
+                          <Icon id="x" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!cards[s.set_code] ? (
+                  <p className="settings-note">Loading…</p>
+                ) : visible.length === 0 ? (
+                  <p className="settings-note">
+                    {onlyMissing ? "Every card here has a picture." : "No cards."}
+                  </p>
+                ) : (
+                  <div className="art-grid">
+                    {visible.map((c) => (
+                      <ArtTile
+                        key={c.id}
+                        card={c}
+                        selected={picked?.id === c.id}
+                        onSelect={() => {
+                          setPicked(c);
+                          setLink("");
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="settings-note">
+        A changed picture clears that card's fingerprint, so the scanner
+        forgets the old face — press the button above (or let the
+        HASH_CARD_ART pass on restart do it) and it learns the new one.
+      </p>
+    </section>
+  );
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState(null);
@@ -486,6 +767,7 @@ export default function AdminPage() {
       </section>
 
       <ReservedNames />
+      <CardArt />
     </div>
   );
 }

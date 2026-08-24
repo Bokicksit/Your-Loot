@@ -56,6 +56,15 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Added
+- **Card art has a curation room.** A new admin section lists every English
+  set with how many of its cards still lack a picture, opens into a compact
+  grid of the set — name, number, art or a dashed hole — and fixes a card
+  in two clicks: paste a link (copied onto this server, so it cannot rot)
+  or upload a file. The picture lands on the shared catalogue row, so one
+  fix reaches every collection at once. A changed picture clears that
+  card's fingerprint, and a button runs the fingerprint pass in the
+  background — the same one the seed script and HASH_CARD_ART run, now
+  reading our own disk as happily as a CDN — counting down as it goes.
 - **The card scanner watches, and carries a light.** No capture button to
   press: hold the card in the outline and a frame goes quietly to the server
   about once a second, and when the same card comes back top twice running —

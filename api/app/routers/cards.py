@@ -502,6 +502,11 @@ def update_card(item_id: int, body: CardUpdate, db: Session = Depends(get_db),
         item.title = data["title"].strip()
     if "image_url" in data:
         item.image_url = data["image_url"]
+        # A fingerprint describes a picture; this row now has a different
+        # one. Cleared rather than recomputed here — the pass that fills
+        # these in (arthash_run) picks it up on its next run, and a PATCH
+        # should not stall on fetching an image.
+        item.card_attrs.art_hash = None
     for field in (
         "set_name", "set_abbr", "card_number", "set_total", "set_year",
         "rarity", "national_dex_no",
