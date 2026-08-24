@@ -42,6 +42,18 @@ BITS = 64
 # somebody to choose from.
 NEAR = 12
 
+# How close the best match must be before the scanner is allowed to decide
+# for you — as opposed to offering a list you choose from.
+#
+# Measured, not guessed. Against 160 real cards photographed three ways
+# (clean, slightly off, badly framed), every auto-lock at ten bits or under
+# was the right card: 100% of 55. Allowing twelve — the same bar the list
+# uses — dropped that to 94.6%, and every single mistake came from a badly
+# framed shot, which is exactly the moment the scanner should keep looking
+# rather than commit. A wrong card added quietly is the worst outcome this
+# feature has; waiting another second is the cheapest.
+SURE = 10
+
 
 def _hash_image(im) -> int:
     """The 64 bits, from an already-open greyscale-able image."""

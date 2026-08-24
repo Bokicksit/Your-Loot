@@ -85,3 +85,15 @@ class PokedexEntry(BaseModel):
 
 class PokedexOut(BaseModel):
     entries: list[PokedexEntry]
+
+
+class CardScanOut(CardListOut):
+    """What a scan found, and whether it is sure enough to act on.
+
+    The list is deliberately more generous than the confidence: a person
+    choosing between eight candidates wants near misses included, while the
+    scanner deciding on its own must only do so when it cannot reasonably
+    be wrong. One answer, two audiences — see arthash.NEAR and arthash.SURE.
+    """
+
+    sure: bool = False

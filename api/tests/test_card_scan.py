@@ -187,3 +187,25 @@ def test_an_imperfect_photograph_still_finds_the_card(owner, scannable):
         assert r.status_code == 200, r.text
         found = [c["id"] for c in r.json()["items"]]
         assert item["id"] in found, f"a {name} photograph lost the card"
+
+
+def test_a_clean_photograph_is_sure_and_a_poor_one_is_not(owner, scannable):
+    """The flag the camera acts on.
+
+    The list stays generous — a person choosing between candidates wants the
+    near misses — but the scanner is only allowed to decide by itself when
+    the match is close enough that it cannot reasonably be the wrong card.
+    Measured against 160 real cards: every auto-lock within ten bits was
+    right; allowing twelve let badly framed shots through, wrong.
+    """
+    item, art = scannable
+
+    r = _scan(owner, _photo(art))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["items"][0]["id"] == item["id"]
+    assert body["sure"] is True, "a clean shot of a known card was not acted on"
+
+    # nothing it has ever seen: not sure, and nothing offered
+    r = _scan(owner, _photo(_art(OTHER_SEED)))
+    assert r.json()["sure"] is False, "an unknown card came back confident"

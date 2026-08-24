@@ -20,7 +20,9 @@ from app.models import (
 )
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
-from app.schemas.cards import CardCreate, CardListOut, CardOut, CardUpdate
+from app.schemas.cards import (
+    CardCreate, CardListOut, CardOut, CardScanOut, CardUpdate,
+)
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
 
@@ -155,7 +157,7 @@ def search_cards(
     )
 
 
-@router.post("/scan", response_model=CardListOut)
+@router.post("/scan", response_model=CardScanOut)
 async def scan_card(
     file: UploadFile = File(...),
     limit: int = Query(8, le=20),
@@ -175,6 +177,11 @@ async def scan_card(
     one that shares its picture. Those are different rows and the person
     holding the card can see which they have; a scanner that picked for them
     would be confidently wrong about one card in three.
+
+    `sure` is the other half of the answer: true only when the best match is
+    close enough that it cannot reasonably be the wrong card, which is the
+    only case the camera is allowed to decide on its own. A list that comes
+    back unsure is still a good list — it just wants a person to look at it.
 
     Empty means nothing came close — a card whose art the catalogue never
     had, a photo of the back, a thumb over the frame. The add form's own
@@ -214,6 +221,9 @@ async def scan_card(
             near.append((d, foreign, item_id))
     near.sort()
     keep = [item_id for _d, _f, item_id in near[:limit]]
+    # Whether the scanner may act on this by itself. The list below is the
+    # generous answer for a person to choose from; this is the strict one.
+    sure = bool(near) and near[0][0] <= arthash.SURE
 
     items = []
     if keep:
@@ -225,8 +235,9 @@ async def scan_card(
         }
         items = [by_id[k] for k in keep if k in by_id]
     tag_map = tags_for(db, user.id, [i.id for i in items])
-    return CardListOut(
+    return CardScanOut(
         total=len(items),
+        sure=sure,
         items=[card_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
     )
 

@@ -140,9 +140,13 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       if (canvas) {
         try {
           const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.75));
-          const { items } = await api.scanCard(blob);
+          const { items, sure } = await api.scanCard(blob);
           if (dead) return;
-          const top = items?.[0]?.id ?? null;
+          // Only a confident match may decide for you. An unsure one is
+          // still a real answer — it is what "Identify now" shows — but
+          // acting on it is how a badly framed shot adds the wrong card
+          // without anybody noticing. Unsure means keep looking.
+          const top = sure ? items?.[0]?.id ?? null : null;
           if (top !== null && top === sightingRef.current) {
             navigator.vibrate?.(60);
             setShot(canvas.toDataURL("image/jpeg", 0.7));
@@ -222,7 +226,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
             {!results && (
             <p>
               {ready
-                ? "Fill the outline — it spots the card on its own"
+                ? "Fill the outline — it spots the card on its own. Stuck? Identify now lists the closest."
                 : "Starting the camera…"}
             </p>
             )}

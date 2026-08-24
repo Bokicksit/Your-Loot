@@ -56,6 +56,16 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **The scanner stopped guessing out loud.** Reading each frame a dozen ways
+  found the right card far more often, but it also let a badly framed shot
+  produce a confident wrong answer — and the camera was acting on whatever
+  came top, so wrong cards got picked for you. There are two bars now: the
+  list a person chooses from stays generous, while the camera only decides
+  by itself when the match is close enough that it cannot reasonably be
+  wrong. Benchmarked on 160 real cards photographed three ways — at the new
+  bar every automatic pick was correct, where the old one was wrong once in
+  twenty and always on the shots you would expect. A card that will not lock
+  is a card to reframe, and "Identify now" still lists the closest.
 - **Three things wrong with the card scanner in the hand.** Scrolling the
   list of matches dragged the shelf behind it instead of the list — every
   modal now scrolls inside itself, the recipe the add sheets already used.
