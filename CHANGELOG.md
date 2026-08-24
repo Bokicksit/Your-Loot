@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **Three things wrong with the card scanner in the hand.** Scrolling the
+  list of matches dragged the shelf behind it instead of the list — every
+  modal now scrolls inside itself, the recipe the add sheets already used.
+  "Scan another" came back to a black viewfinder, because hiding the
+  results had unmounted the `<video>` and dropped the camera with it; the
+  preview stays mounted now and the watcher picks up on the next frame.
+  And the light is gone: on a glossy card it lit a reflection across the
+  art, which is the one thing a fingerprint cannot see past.
 - **The scanner's own test stopped flipping a coin.** It generated a
   different synthetic card every run — and only a few of those are
   matchable once deliberately mis-photographed, so the same commit passed

@@ -43,8 +43,6 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
   const [results, setResults] = useState(null);
   const [shot, setShot] = useState(null);
   const [note, setNote] = useState(null);
-  const [torch, setTorch] = useState(false);
-  const [torchable, setTorchable] = useState(false);
   const videoRef = useRef(null);
   const trackRef = useRef(null);
   // what the auto loop saw last time, so a lock takes two agreeing looks
@@ -61,11 +59,6 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       dead = true;
       const track = trackRef.current;
       if (track) {
-        try {
-          track.applyConstraints({ advanced: [{ torch: false }] });
-        } catch {
-          /* torch is best-effort everywhere */
-        }
         track.stop();
         trackRef.current = null;
       }
@@ -84,9 +77,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
-      const track = stream.getVideoTracks()[0];
-      trackRef.current = track;
-      setTorchable(!!track.getCapabilities?.().torch);
+      trackRef.current = stream.getVideoTracks()[0];
       video.srcObject = stream;
       try {
         await video.play();
@@ -124,18 +115,6 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       .getContext("2d")
       .drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height);
     return canvas;
-  };
-
-  const toggleTorch = async () => {
-    const track = trackRef.current;
-    if (!track) return;
-    const next = !torch;
-    try {
-      await track.applyConstraints({ advanced: [{ torch: next }] });
-      setTorch(next);
-    } catch {
-      setTorchable(false); // it claimed the capability and then refused
-    }
   };
 
   /** Watching for the card, so nobody has to press anything.
@@ -228,43 +207,43 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       <div className="modal cardscan" onClick={(e) => e.stopPropagation()}>
         <h2>{results ? "Which one is it?" : "Scan a card"}</h2>
 
-        {!results && secure && !camError && (
+        {secure && !camError && (
           <>
-            <div className="scan-stage tall">
+            {/* Hidden rather than unmounted while the results show. Taking the
+                <video> out of the tree dropped the stream with it, so coming
+                back from "Scan another" mounted a fresh, sourceless element —
+                a black viewfinder that never recovered. Hidden, the camera
+                stays alive and clearing the results starts the watcher again
+                on the very next frame. */}
+            <div className="scan-stage tall" hidden={!!results}>
               <video ref={videoRef} className="scan-video" muted playsInline autoPlay />
               <div className="card-guide" aria-hidden="true" />
-              {torchable && (
-                <button
-                  type="button"
-                  className={`scan-torch ${torch ? "on" : ""}`}
-                  title={torch ? "Light off" : "Light on"}
-                  onClick={toggleTorch}
-                >
-                  <Icon id="bolt" />
-                </button>
-              )}
             </div>
+            {!results && (
             <p>
               {ready
                 ? "Fill the outline — it spots the card on its own"
                 : "Starting the camera…"}
             </p>
+            )}
             {/* The watcher's manual override: an immediate look at this
                 exact frame, for the card the auto loop stays unsure about —
                 and the only path that says "nothing matched" out loud. */}
-            <button
-              type="button"
-              className="ghost"
-              disabled={!ready || busy}
-              onClick={identify}
-            >
-              <Icon id="camera" />
-              {busy ? "Looking…" : "Identify now"}
-            </button>
+            {!results && (
+              <button
+                type="button"
+                className="ghost"
+                disabled={!ready || busy}
+                onClick={identify}
+              >
+                <Icon id="camera" />
+                {busy ? "Looking…" : "Identify now"}
+              </button>
+            )}
           </>
         )}
 
-        {!results && (!secure || camError) && (
+        {(!secure || camError) && !results && (
           <p>
             {camError
               ? `Camera failed (${camError}) — search by name instead.`

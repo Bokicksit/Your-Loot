@@ -2221,6 +2221,13 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   justify-items: center;
   gap: var(--s-3);
   width: min(360px, 100%);
+  /* The same recipe .sheet has, and for the same reason: a modal taller than
+     the screen used to overflow it, and the scroll went to the page behind
+     instead — you dragged a list of card matches and the shelf underneath
+     moved. `contain` is the half that stops the chaining. */
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--s-5);
   text-align: center;
   background: var(--bg-2);
@@ -2354,6 +2361,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    landscape — matching PREVIEW_RATIO in CardScan.jsx, which decides what the
    crop can actually see. */
 .scan-stage.tall { aspect-ratio: 3 / 4; }
+/* kept mounted while results show, so the camera stays alive */
+.scan-stage[hidden] { display: none; }
 
 /* The outline to fill with the card: 5:7, the shape of the card itself, so
    what gets cropped is the card and not the table under it. REGION in
