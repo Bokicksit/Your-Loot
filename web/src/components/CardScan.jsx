@@ -43,8 +43,12 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
   const [results, setResults] = useState(null);
   const [shot, setShot] = useState(null);
   const [note, setNote] = useState(null);
+  const [torch, setTorch] = useState(false);
+  const [torchable, setTorchable] = useState(false);
   const videoRef = useRef(null);
   const trackRef = useRef(null);
+  // what the auto loop saw last time, so a lock takes two agreeing looks
+  const sightingRef = useRef(null);
 
   const secure = typeof window !== "undefined" && window.isSecureContext;
 
@@ -57,6 +61,11 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       dead = true;
       const track = trackRef.current;
       if (track) {
+        try {
+          track.applyConstraints({ advanced: [{ torch: false }] });
+        } catch {
+          /* torch is best-effort everywhere */
+        }
         track.stop();
         trackRef.current = null;
       }
@@ -75,7 +84,9 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
-      trackRef.current = stream.getVideoTracks()[0];
+      const track = stream.getVideoTracks()[0];
+      trackRef.current = track;
+      setTorchable(!!track.getCapabilities?.().torch);
       video.srcObject = stream;
       try {
         await video.play();
@@ -114,6 +125,68 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       .drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height);
     return canvas;
   };
+
+  const toggleTorch = async () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const next = !torch;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next }] });
+      setTorch(next);
+    } catch {
+      setTorchable(false); // it claimed the capability and then refused
+    }
+  };
+
+  /** Watching for the card, so nobody has to press anything.
+   *
+   *  A frame goes to the server about once a second — a plain timer chained
+   *  on the response, so a slow network paces the loop instead of piling
+   *  requests onto it. The lock rule is the barcode scanner's: the same card
+   *  has to come back top twice running. One frame mid-movement can match
+   *  the wrong card of a similar set; the same wrong card leading two looks
+   *  in a row essentially cannot.
+   *
+   *  A miss just keeps watching. "Nothing matched" is only worth saying to
+   *  somebody who asked — the Identify button still does, and still says it.
+   */
+  useEffect(() => {
+    if (!ready || results || busy) return;
+    let dead = false;
+    let timer;
+
+    const look = async () => {
+      if (dead) return;
+      const canvas = capture();
+      if (canvas) {
+        try {
+          const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.75));
+          const { items } = await api.scanCard(blob);
+          if (dead) return;
+          const top = items?.[0]?.id ?? null;
+          if (top !== null && top === sightingRef.current) {
+            navigator.vibrate?.(60);
+            setShot(canvas.toDataURL("image/jpeg", 0.7));
+            setResults(items);
+            return; // locked — the effect re-runs and stays out
+          }
+          sightingRef.current = top;
+        } catch {
+          /* one bad look is not worth stopping the watch for */
+        }
+      }
+      timer = setTimeout(look, 900);
+    };
+
+    // a beat for the camera to focus before the first look — the first frame
+    // off a cold camera is reliably the blurriest one it will ever produce
+    timer = setTimeout(look, 700);
+    return () => {
+      dead = true;
+      clearTimeout(timer);
+      sightingRef.current = null;
+    };
+  }, [ready, results, busy]);
 
   const identify = async () => {
     const canvas = capture();
@@ -160,16 +233,33 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
             <div className="scan-stage tall">
               <video ref={videoRef} className="scan-video" muted playsInline autoPlay />
               <div className="card-guide" aria-hidden="true" />
+              {torchable && (
+                <button
+                  type="button"
+                  className={`scan-torch ${torch ? "on" : ""}`}
+                  title={torch ? "Light off" : "Light on"}
+                  onClick={toggleTorch}
+                >
+                  <Icon id="bolt" />
+                </button>
+              )}
             </div>
-            <p>{ready ? "Fill the outline with the card" : "Starting the camera…"}</p>
+            <p>
+              {ready
+                ? "Fill the outline — it spots the card on its own"
+                : "Starting the camera…"}
+            </p>
+            {/* The watcher's manual override: an immediate look at this
+                exact frame, for the card the auto loop stays unsure about —
+                and the only path that says "nothing matched" out loud. */}
             <button
               type="button"
-              className="primary"
+              className="ghost"
               disabled={!ready || busy}
               onClick={identify}
             >
               <Icon id="camera" />
-              {busy ? "Looking…" : "Identify"}
+              {busy ? "Looking…" : "Identify now"}
             </button>
           </>
         )}

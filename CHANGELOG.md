@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Added
+- **The card scanner watches, and carries a light.** No capture button to
+  press: hold the card in the outline and a frame goes quietly to the server
+  about once a second, and when the same card comes back top twice running —
+  the barcode scanner's own rule, because one blurry frame can match a
+  neighbour and two in a row cannot — it locks, buzzes, and moves to the
+  pick. "Identify now" stays as the manual override and is the only path
+  that says "nothing matched" out loud. Phones with a torch get the same
+  light button the barcode scanner has, for the card angled under a lamp.
 - **The scanner keeps itself current.** `HASH_CARD_ART=true` and every start
   fingerprints whatever card art is new, in the background — so a freshly
   seeded set becomes scannable without anybody remembering a command, and a
