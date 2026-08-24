@@ -56,6 +56,17 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Added
+- **Point the camera at a card.** Cards carry no barcode, so the scanner
+  reads the picture instead: every card's artwork is reduced to sixty-four
+  bits describing what it looks like, and a frame from the camera is matched
+  against the catalogue by how many of those bits disagree. No key, no
+  quota, no request leaving the server — the only lookup here that costs
+  nothing to ask. It offers a few candidates rather than picking one,
+  because a fingerprint sees artwork and a reverse holo is the same picture
+  as the normal print; which printing you own is a question about your copy,
+  and you can see the answer. Migration 0051 adds the column;
+  `seed/hash_cards.py` fills it in once, and until it has run the scanner
+  finds nothing and says so.
 - **A link straight to one shelf.** `/u/bo/games`, `/u/bo/records`,
   `/u/bo/pokedex` — the same public page, arriving with that collection
   already open, so a link can be about the one thing somebody collects

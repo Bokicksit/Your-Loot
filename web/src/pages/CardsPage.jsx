@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import CardTile, { isCatalogArt } from "../components/CardTile.jsx";
 import { TagFilter } from "../components/Tags.jsx";
 import { ShelfHelp } from "../components/HelpTip.jsx";
+import CardScan from "../components/CardScan.jsx";
 import AddSheet, { Searching } from "../components/AddSheet.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { BinderSwitch } from "../components/BinderGrid.jsx";
@@ -738,8 +739,10 @@ export default function CardsPage({ initialView = "collection" }) {
             corner — is the search that lands on one exact card; two thousand
             cards are called Pikachu. Letters count (<b>GG07</b>, <b>TG03</b>),
             and the set box is only for when the number alone isn't enough.
-            The binder dropdown files the card as it's added, and sticks for
-            the next one.
+            Or skip the typing: the <b>camera</b> button matches the card's
+            artwork against the catalogue — hold it in the outline and pick
+            from what comes back. The binder dropdown files the card as it's
+            added, and sticks for the next one.
           </>
         }
       >
@@ -784,6 +787,11 @@ export default function CardsPage({ initialView = "collection" }) {
               onChange={(e) => setForm({ ...form, number: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), doSearch())}
             />
+            {/* The catalogue already knows what every card looks like, so
+                the quickest way to name one is to show it the card. It hands
+                back the same rows the search does, and the pick is the same
+                pick — this only skips the typing. */}
+            <CardScan onPick={setPicked} />
           </div>
           <div className="form-row">
             <span className="set-field">

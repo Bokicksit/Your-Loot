@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import BigInteger, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -34,6 +34,10 @@ class CardAttrs(Base):
     # binder layer, classified from rarity at seed time:
     # 1 basic (incl. regular ex, vintage holos, golds) / 2 full-art / 3 IR-SIR
     layer: Mapped[int] = mapped_column(default=1, server_default="1")
+    # What this card looks like, in 64 bits — see app/arthash.py. Null until
+    # seed/hash_cards.py has been over the catalogue, and null forever for
+    # the roughly one card in twenty that has no artwork to fingerprint.
+    art_hash: Mapped[int | None] = mapped_column(BigInteger)
     set_total: Mapped[int | None] = mapped_column()  # printed size: "91/108" -> 108
     set_year: Mapped[int | None] = mapped_column()  # set release year (from dump)
     set_abbr: Mapped[str | None] = mapped_column(String(10))  # printed code: MEW, JTG

@@ -2350,6 +2350,37 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .scan-video { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+/* A card is held upright, so its stage is portrait where a barcode's is
+   landscape — matching PREVIEW_RATIO in CardScan.jsx, which decides what the
+   crop can actually see. */
+.scan-stage.tall { aspect-ratio: 3 / 4; }
+
+/* The outline to fill with the card: 5:7, the shape of the card itself, so
+   what gets cropped is the card and not the table under it. REGION in
+   CardScan.jsx is the same 82%. */
+.card-guide {
+  position: absolute;
+  top: 9%;
+  bottom: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+  aspect-ratio: 5 / 7;
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .45);
+  pointer-events: none;
+}
+/* the shot kept on screen while you choose, so the card in your hand and the
+   candidates are visible at once */
+.cardscan .scan-shot {
+  display: block;
+  width: 96px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  margin-inline: auto;
+}
+.cardscan .pick-grid { width: 100%; }
+
 /* The window the decoder actually reads — 86% x 42%, centred, matching REGION
    in BarcodeScan.jsx. Everything outside it is dimmed by the box-shadow. */
 .scan-frame {

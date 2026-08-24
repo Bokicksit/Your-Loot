@@ -1,12 +1,14 @@
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import BigInteger, cast, func, literal, or_, select
+from sqlalchemy.dialects.postgresql import BIT
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 import httpx
 
+from app import arthash
 from app.binder_view import species_names
 from app.cards_util import classify_layer
 from app.auth import current_user
@@ -27,6 +29,10 @@ router = APIRouter(prefix="/api/cards", tags=["cards"])
 
 
 MAX_DEX = 1025  # current national dex (through Scarlet & Violet)
+# A frame from a phone camera is a few hundred kilobytes. The cap is here
+# so a scan cannot be used to push a file at the server: nothing is stored,
+# but it is still read into memory to be fingerprinted.
+MAX_SCAN_BYTES = 8 * 1024 * 1024
 
 
 def card_to_out(item: CollectionItem, uid: int, tags=()) -> CardOut:
@@ -139,6 +145,68 @@ def search_cards(
                 CardAttrs.set_code,
                 CollectionItem.title,
             ).limit(limit)
+        )
+        .unique()
+        .all()
+    )
+    tag_map = tags_for(db, user.id, [i.id for i in items])
+    return CardListOut(
+        total=len(items),
+        items=[card_to_out(i, user.id, tag_map.get(i.id, ())) for i in items],
+    )
+
+
+@router.post("/scan", response_model=CardListOut)
+async def scan_card(
+    file: UploadFile = File(...),
+    limit: int = Query(8, le=20),
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Which card is this a photograph of?
+
+    A frame from the camera, fingerprinted the same way the catalogue was
+    (app/arthash.py) and ranked against it by how many of the sixty-four bits
+    disagree. No network, no key, no quota — the answer is already in the
+    database, which makes this the only lookup here that costs nothing.
+
+    It returns a short list rather than an answer, and that is the design
+    rather than a hedge. A fingerprint sees artwork, so it cannot separate a
+    reverse holo from the normal print, or an English card from the Japanese
+    one that shares its picture. Those are different rows and the person
+    holding the card can see which they have; a scanner that picked for them
+    would be confidently wrong about one card in three.
+
+    Empty means nothing came close — a card whose art the catalogue never
+    had, a photo of the back, a thumb over the frame. The add form's own
+    search is still right there.
+    """
+    raw = await file.read(MAX_SCAN_BYTES + 1)
+    if len(raw) > MAX_SCAN_BYTES:
+        raise HTTPException(413, "that image is too large to scan")
+    if not raw:
+        raise HTTPException(400, "no image to scan")
+
+    probe = arthash.fingerprint(raw)
+    if probe is None:
+        raise HTTPException(400, "that file is not an image this can read")
+
+    # XOR the two fingerprints and count the bits left standing. Done in the
+    # database rather than in Python so twenty thousand comparisons stay one
+    # round trip instead of twenty thousand rows crossing the wire.
+    #
+    # Through bit(64) both sides, because Postgres counts bits in a bit
+    # string or a bytea and not in a bigint — `bit_count(bigint)` is not a
+    # function that exists, however reasonable it looks.
+    mine = cast(CardAttrs.art_hash, BIT(64))
+    theirs = cast(literal(arthash.to_signed(probe), BigInteger), BIT(64))
+    apart = func.bit_count(mine.op("#")(theirs))
+    items = (
+        db.scalars(
+            _base_query()
+            .where(CardAttrs.art_hash.is_not(None), apart <= arthash.NEAR)
+            .order_by(apart, CardAttrs.language != "en", CardAttrs.set_code)
+            .limit(limit)
         )
         .unique()
         .all()

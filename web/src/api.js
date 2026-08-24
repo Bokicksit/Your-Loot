@@ -161,6 +161,25 @@ export const api = {
     request(`/api/cards/facets?${new URLSearchParams(params)}`),
   cardsSearch: (params) =>
     request(`/api/cards/search?${new URLSearchParams(params)}`),
+  // A frame from the camera, matched against the catalogue's own artwork.
+  // Around request() rather than through it, like uploadImage above: the
+  // browser has to set the multipart boundary itself and will not if we
+  // name a Content-Type.
+  scanCard: async (blob) => {
+    const fd = new FormData();
+    fd.append("file", blob, "scan.jpg");
+    const res = await fetch(url("/api/cards/scan"), {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(errorMessage(b, res));
+    }
+    return res.json();
+  },
   // Binders. The Pokédex is one of these too — it keeps its own endpoints
   // above because its slots are filled by choosing between the cards you own,
   // which the other kinds never have to do.

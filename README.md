@@ -282,6 +282,19 @@ Galleries and the Galarian Gallery — and those keep the picture they have.
 Photos you took yourself are never touched, the refresh above won't undo it,
 and `CARD_ART=tcgdex` in `.env` does it automatically on first start.
 
+**Scanning a card with the camera** needs one more pass, which fingerprints
+each card's artwork so a photograph can be matched against it:
+```bash
+docker compose exec api python /seed/hash_cards.py
+```
+It fetches every card picture once and keeps eight bytes per card — not the
+pictures. Twenty thousand requests to TCGdex, so start it on a quiet evening;
+it can be stopped and started again, and a later run does only the cards added
+since. Until it has run, the camera button on the add form finds nothing and
+says so. Cards with no artwork can't be scanned, and a scan names the card
+rather than the printing — a reverse holo is the same picture as the normal
+one, so you still pick which you're holding.
+
 **Running it on a platform host** (Railway, Fly, Render) rather than compose?
 The web container assumes the API answers to `api` on port 8000, which is true
 under compose and nowhere else. Two variables on the **web** service fix it,

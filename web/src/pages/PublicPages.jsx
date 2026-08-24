@@ -184,10 +184,32 @@ export function HelpPage() {
         all: same lookup, no camera needed.
       </p>
       <p>
-        Two exceptions worth knowing. Trading cards don't carry barcodes, so
-        those are found by name and printed number. And comics share one
-        barcode across a whole run, so a scan names the series — the issue
-        number is on the cover in your hand.
+        Two exceptions worth knowing. Comics share one barcode across a whole
+        run, so a scan names the series — the issue number is on the cover in
+        your hand. And trading cards carry no barcode at all, so they get a
+        scanner of their own, below.
+      </p>
+
+      <h2>Scanning a card</h2>
+      <p>
+        Cards have no barcode, so the camera reads the <strong>picture</strong>{" "}
+        instead: hold the card in the outline, tap <strong>Identify</strong>,
+        and the app matches what it sees against the artwork of every card in
+        the catalogue. Nothing is sent to anybody — the comparison happens on
+        your own server.
+      </p>
+      <p>
+        It offers a few candidates rather than picking one, and that's on
+        purpose: the match is made on artwork, and a reverse holo is the same
+        picture as the normal print. You're the one who can see which is in
+        your hand, so you make the last call — the same as choosing a printing
+        when you add a card by name.
+      </p>
+      <p>
+        If nothing comes back, the card's artwork isn't in the catalogue
+        (about one in twenty aren't) — search by name and number instead.
+        Self-hosting? The scanner needs one setup pass first; the README
+        covers it.
       </p>
 
       <h2>What's the difference between the entry and my copy?</h2>
