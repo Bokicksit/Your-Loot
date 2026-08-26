@@ -195,7 +195,7 @@ export function HelpPage() {
         Cards have no barcode, so the camera reads the <strong>picture</strong>{" "}
         instead: hold the card in the outline and the app keeps looking until
         it recognises it — no button to press, though <strong>Identify
-        now</strong> forces a look and there's a light for a dim room. The
+        now</strong> takes a burst and keeps the sharpest of it. The
         match is made against the artwork of every card in the catalogue, and
         nothing is sent to anybody — the comparison happens on your own
         server.

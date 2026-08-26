@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **The scanner waits for focus.** It used to photograph whatever was on
+  screen the instant you pressed the button, so the smallest movement sent
+  a smear. It now asks the camera for continuous autofocus where the device
+  offers it, and — the part that actually carries it — takes a short burst
+  and keeps the sharpest frame of it: seven over about a second for
+  "Identify now", two for each automatic look, so the watcher stops
+  spending requests on blur. Sharpness is compared only within a burst,
+  never against a fixed number, because the score moves with the light.
 - **The scanner stopped guessing out loud.** Reading each frame a dozen ways
   found the right card far more often, but it also let a badly framed shot
   produce a confident wrong answer — and the camera was acting on whatever
