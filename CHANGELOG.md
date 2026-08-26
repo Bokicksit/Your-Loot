@@ -137,6 +137,14 @@ Full detail is in the commit log, where every change has its own note.
   them. Tests now photograph the card badly on purpose.
 
 ### Added
+- **The Pokédex on a public page can be read as a want list.** The binder is
+  the collection as its owner arranged it; a second view shows the same
+  1,025 slots as a list, with chips for **Missing** and **Needs upgrade**
+  and a count on each. Every slot names its species whether or not anybody
+  owns it, so a link to it tells a friend — or somebody selling — exactly
+  what is still wanted, and keeps itself up to date. The Pokédex only: its
+  empty slots are cards that exist in the world, where a custom binder's
+  empty pocket is not a thing anybody could go and find.
 - **Card art has a curation room.** A new admin section lists every English
   set with how many of its cards still lack a picture, opens into a compact
   grid of the set — name, number, art or a dashed hole — and fixes a card
