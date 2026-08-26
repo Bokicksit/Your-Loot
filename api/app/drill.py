@@ -354,17 +354,31 @@ def pages(db, binder, user_id):
                     card.get("variant"),
                 ) if x
             )
+        # The sixth field is what a visitor came to find out. binder_view
+        # already works it out for the app's own binder — a slot is missing,
+        # or holds the card somebody settled on, or holds a stand-in they mean
+        # to replace — and it was being dropped on the way out here. It is the
+        # difference between a page that shows off a collection and one you
+        # can shop from.
         slots.append([
             e.get("label") or "",
             e.get("name") or (card or {}).get("title") or "",
             picture,
             1 if card else 0,
             meta,
+            e.get("state") or ("filled" if card else "missing"),
         ])
     b = data["binder"]
     return {
         "id": b["id"],
         "name": b["name"],
+        # Only the Pokedex gets the tile view: it is the one binder whose
+        # empty slots are a list of things that exist and could be bought,
+        # because every slot is a species whether or not anybody owns it. A
+        # set binder's gaps are the same idea; a custom binder's are just
+        # unfilled pockets, and a "missing" filter over them would mean
+        # nothing.
+        "kind": b.get("kind") or "",
         "cols": b["cols"],
         "rows": b["rows"],
         "double": bool(b["double_page"]),

@@ -785,3 +785,124 @@
 .spread[hidden],
 .binder-rail[hidden],
 .drill-head button[hidden] { display: none; }
+
+/* ---------------------------------------------- the dex as a list of slots
+
+   The binder shows a collection the way its owner arranged it. This shows
+   the same slots as something a visitor can act on — every species, and
+   which ones are still wanted. A link to it is a want list that keeps
+   itself up to date, which is the reason it exists.
+
+   Deliberately denser than the binder: the point is to see a lot at once
+   and spot the gaps, not to admire one page. */
+.slotgrid { display: flex; flex-direction: column; gap: 12px; padding: 2px 0 8px; }
+
+.slotbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.slotbar .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: #cfc9dd;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.slotbar .chip b {
+  font-family: var(--font-num, inherit);
+  font-size: 11.5px;
+  color: #8d86a0;
+}
+.slotbar .chip.active {
+  color: #1a1408;
+  background: #e0c02b;
+  border-color: #e0c02b;
+}
+.slotbar .chip.active b { color: rgba(26,20,8,.62); }
+
+.slotwall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 6px;
+}
+.slotcell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 6px;
+  background: rgba(255,255,255,.03);
+  color: #cfc9dd;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  animation: pop .32s var(--ease, ease) both;
+  animation-delay: calc(var(--j, 0) * 8ms);
+}
+.slotcell .art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  background-size: cover;
+  background-position: center;
+}
+/* An empty slot is the whole point of this view, so it is drawn rather than
+   left blank: a dashed frame the size of the card that is not there. */
+.slotcell.missing { border-style: dashed; border-color: rgba(255,255,255,.18); }
+.slotcell.missing::before {
+  content: "";
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  background: repeating-linear-gradient(135deg,
+    rgba(255,255,255,.035) 0 4px, transparent 4px 8px);
+}
+/* A stand-in somebody means to replace: filled, but marked. */
+.slotcell.upgrade { border-color: rgba(224,192,43,.55); }
+.slotcell.upgrade::after {
+  content: "";
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #e0c02b;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.45);
+}
+.slotcell .no {
+  font-family: var(--font-num, inherit);
+  font-size: 10.5px;
+  color: #8d86a0;
+  padding: 3px 5px 0;
+}
+.slotcell .nm {
+  font-size: 11px;
+  line-height: 1.25;
+  padding: 0 5px 5px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.slotnone { grid-column: 1 / -1; margin: 0; padding: 18px 0; color: #8d86a0; }
+
+/* the Binder / List switch, in the layer's own header */
+.viewpick { display: flex; gap: 4px; margin-left: 10px; }
+.viewpick .chip {
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: #cfc9dd;
+  font-size: 12px;
+  cursor: pointer;
+}
+.viewpick .chip.active { color: #1a1408; background: #e0c02b; border-color: #e0c02b; }
+
+@media (max-width: 700px) {
+  .slotwall { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+  .viewpick { margin-left: 6px; }
+}

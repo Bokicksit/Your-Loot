@@ -198,7 +198,7 @@
   }
 
   document.addEventListener("click", function (e) {
-    var t = e.target.closest(".tile-item, .loose-card, .pocket:not(.empty)");
+    var t = e.target.closest(".tile-item, .loose-card, .pocket:not(.empty), .slotcell");
     if (t) detail(t);
   });
 
@@ -502,13 +502,118 @@
 
   /* ------------------------------------------------- shelf and back */
 
+  /* ------------------------------------------- the dex as a wall of slots
+
+     The binder is the collection as its owner arranged it. This is the same
+     thousand slots as a list somebody else can act on: every species, what
+     is in the slot, and — the point of the whole thing — what is missing or
+     standing in until something better turns up. A link to this is a want
+     list that maintains itself, which is why it exists.
+
+     Only the Pokedex gets it. Every one of its slots is a species that
+     exists whether or not anybody owns it, so "missing" names a real card a
+     person could go and find. A custom binder's empty pocket is not a thing
+     in the world, and a filter over those would be counting nothing. */
+
+  var GRID_FILTERS = [
+    ["all", "All"],
+    ["missing", "Missing"],
+    ["upgrade", "Needs upgrade"],
+  ];
+
+  function gridFor(host, b) {
+    host.innerHTML = "";
+    var counts = { all: b.slots.length, missing: 0, upgrade: 0 };
+    b.slots.forEach(function (s) {
+      var st = s[5] || (s[3] ? "one" : "missing");
+      if (st === "missing") counts.missing++;
+      else if (st === "upgrade") counts.upgrade++;
+    });
+
+    var bar = document.createElement("div");
+    bar.className = "slotbar";
+    GRID_FILTERS.forEach(function (f) {
+      var b2 = document.createElement("button");
+      b2.type = "button";
+      b2.className = "chip" + (f[0] === (host.__filter || "all") ? " active" : "");
+      b2.setAttribute("data-filter", f[0]);
+      b2.textContent = f[1];
+      var n = document.createElement("b");
+      n.textContent = counts[f[0]];
+      b2.appendChild(n);
+      bar.appendChild(b2);
+    });
+    host.appendChild(bar);
+
+    var wall = document.createElement("div");
+    wall.className = "slotwall";
+    var want = host.__filter || "all";
+    var shown = 0;
+    b.slots.forEach(function (s, i) {
+      var st = s[5] || (s[3] ? "one" : "missing");
+      if (want !== "all" && st !== want) return;
+      shown++;
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "slotcell " + st;
+      cell.style.setProperty("--j", i % 40);
+      if (s[3] && s[2]) {
+        var art = document.createElement("span");
+        art.className = "art";
+        art.style.backgroundImage = "url('" + s[2].replace(/'/g, "%27") + "')";
+        cell.appendChild(art);
+        cell.setAttribute("data-art", s[2]);
+      }
+      var no = document.createElement("span");
+      no.className = "no";
+      no.textContent = s[0];
+      cell.appendChild(no);
+      var nm = document.createElement("span");
+      nm.className = "nm";
+      nm.textContent = s[1] || "";
+      cell.appendChild(nm);
+      /* The detail card reads these, so a slot opens onto the same panel a
+         tile anywhere else on the page does. A missing one still has a name
+         and a number, which is exactly what somebody buying needs. */
+      cell.setAttribute("data-title", s[1] || s[0]);
+      cell.setAttribute("data-meta", s[3] ? (s[4] || s[0]) : s[0] + " · not in the binder yet");
+      cell.setAttribute("data-shape", "tall");
+      cell.setAttribute("data-fill", "cover");
+      wall.appendChild(cell);
+    });
+    if (!shown) {
+      var none = document.createElement("p");
+      none.className = "slotnone";
+      none.textContent = want === "missing"
+        ? "Nothing missing — the binder is complete."
+        : "Nothing waiting on an upgrade.";
+      wall.appendChild(none);
+    }
+    host.appendChild(wall);
+  }
+
+  /* the chips, which only ever redraw the wall they belong to */
+  document.addEventListener("click", function (e) {
+    var chip = e.target.closest(".slotbar .chip");
+    if (!chip) return;
+    var host = chip.closest(".slotgrid");
+    if (!host || !host.__binder) return;
+    host.__filter = chip.getAttribute("data-filter");
+    gridFor(host, host.__binder);
+  });
+
   function show(drill, what) {
     var rail = drill.querySelector(".shelf") || drill.querySelector(".binder-rail");
     var loose = drill.querySelector(".loose");
     var sp = drill.querySelector(".spread");
+    var grid = drill.querySelector(".slotgrid");
+    var views = drill.querySelector(".viewpick");
     if (rail) rail.hidden = what !== "rail";
     if (loose) loose.hidden = what !== "loose";
     if (sp) sp.hidden = what !== "binder";
+    if (grid) grid.hidden = what !== "grid";
+    // the Binder/List switch belongs to the two views it switches between
+    if (views) views.hidden = !(what === "binder" || what === "grid");
     var back = drill.querySelector(".drill-head .back");
     if (back) back.hidden = what === "rail";
   }
@@ -530,6 +635,17 @@
     var box = e.target.closest(".tcgbox");
     if (box) {
       show(drill, "loose");
+      return;
+    }
+
+    /* the Binder / List switch, for a binder already open */
+    var view = e.target.closest(".viewpick .chip");
+    if (view) {
+      var want = view.getAttribute("data-view");
+      drill.querySelectorAll(".viewpick .chip").forEach(function (c) {
+        c.classList.toggle("active", c === view);
+      });
+      show(drill, want);
       return;
     }
 
@@ -556,6 +672,45 @@
           + " pockets · " + b.filled + " of " + b.total;
       }
       spread(host, b, 0);
+
+      /* The Pokedex gets a second way of being read: the same slots as a
+         list, filtered down to what is missing or standing in. Built here
+         rather than on demand because the payload is already in hand and a
+         thousand cells cost less than the fetch that brought them. */
+      var grid = drill.querySelector(".slotgrid");
+      var pick = drill.querySelector(".viewpick");
+      if (b.kind === "dex") {
+        if (!grid) {
+          grid = document.createElement("div");
+          grid.className = "slotgrid";
+          drill.querySelector(".drill-body").appendChild(grid);
+        }
+        if (!pick) {
+          pick = document.createElement("div");
+          pick.className = "viewpick";
+          [["binder", "Binder"], ["grid", "List"]].forEach(function (v, i) {
+            var c = document.createElement("button");
+            c.type = "button";
+            c.className = "chip" + (i === 0 ? " active" : "");
+            c.setAttribute("data-view", v[0]);
+            c.textContent = v[1];
+            pick.appendChild(c);
+          });
+          drill.querySelector(".drill-head").insertBefore(
+            pick, drill.querySelector(".drill-head .spacer")
+          );
+        }
+        grid.__binder = b;
+        grid.__filter = grid.__filter || "all";
+        gridFor(grid, b);
+        pick.hidden = false;
+        pick.querySelectorAll(".chip").forEach(function (c) {
+          c.classList.toggle("active", c.getAttribute("data-view") === "binder");
+        });
+      } else {
+        if (grid) grid.hidden = true;
+        if (pick) pick.hidden = true;
+      }
     });
   });
 
