@@ -838,8 +838,10 @@
   display: block;
   width: 100%;
   aspect-ratio: 5 / 7;
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
+  /* the frame holds its shape before the picture lands, so a wall of a
+     thousand slots does not reflow as they arrive */
+  background: rgba(255,255,255,.03);
 }
 /* An empty slot is the whole point of this view, so it is drawn rather than
    left blank: a dashed frame the size of the card that is not there. */

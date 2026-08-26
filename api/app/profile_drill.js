@@ -558,9 +558,25 @@
       cell.className = "slotcell " + st;
       cell.style.setProperty("--j", i % 40);
       if (s[3] && s[2]) {
-        var art = document.createElement("span");
+        /* A real <img> with loading="lazy", not a background.
+           A thousand slots is up to a thousand pictures, and a background
+           image is fetched the moment the element exists — so the whole dex
+           went to the network at once and the browser served it six at a
+           time, which is why the wall filled in slowly from nowhere in
+           particular. The browser only fetches these as they come into view,
+           and it knows what is on screen better than any code here does.
+           The frame keeps its shape whether or not the picture has arrived,
+           so nothing moves as they land. */
+        var art = document.createElement("img");
         art.className = "art";
-        art.style.backgroundImage = "url('" + s[2].replace(/'/g, "%27") + "')";
+        art.loading = "lazy";
+        art.decoding = "async";
+        /* A thousand pictures must not compete with the page they are on.
+           Low priority tells the browser these are the last thing worth a
+           connection, which matters on a phone where there are six. */
+        art.fetchPriority = "low";
+        art.alt = "";
+        art.src = s[2];
         cell.appendChild(art);
         cell.setAttribute("data-art", s[2]);
       }

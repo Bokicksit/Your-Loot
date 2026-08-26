@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **The Pokédex list stops asking for a thousand pictures at once.** Every
+  slot's art was a CSS background, which the browser fetches as soon as the
+  element is laid out — so opening the list put the whole dex on the wire
+  and the phone served it six connections at a time, filling the wall in
+  slowly and out of order. They are real images now, lazy-loaded and marked
+  low priority, so the browser fetches what you are looking at and leaves
+  the rest until you scroll to it. Each frame keeps its shape while empty,
+  so nothing jumps as they land.
 - **The Pokédex binder and list drew on top of each other.** Two mistakes
   with one cause: the drill is switched with the `hidden` attribute, which
   a declared `display` silently beats, and the file already had one block
