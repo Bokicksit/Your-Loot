@@ -56,6 +56,15 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **Your own photos wait for focus too.** The same fix as the card scanner,
+  now where it matters for pictures you keep: the guided camera — the "line
+  it up against a frame" one — took whatever frame the shutter landed on.
+  It asks for continuous autofocus now and keeps the sharpest of a short
+  burst, saying "holding still for a sharp one" while it does. The focus
+  code moved into one shared module rather than being written twice, since
+  both cameras had the identical bug. The ordinary Take photo path on a
+  phone is untouched and always was fine — it hands off to the phone's own
+  camera app, which focuses better than we ever will.
 - **The scanner waits for focus.** It used to photograph whatever was on
   screen the instant you pressed the button, so the smallest movement sent
   a smear. It now asks the camera for continuous autofocus where the device

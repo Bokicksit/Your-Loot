@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api.js";
+import { keepFocusing, scratchCanvas, sharpestOf } from "../focus.js";
 import { Icon } from "./Icons.jsx";
 
 /** Point the camera at a card and let the catalogue say which it is.
@@ -49,6 +50,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
   const sightingRef = useRef(null);
   // a small reusable canvas for scoring focus, made once
   const scoreRef = useRef(null);
+  const scratch = () => (scoreRef.current ||= scratchCanvas(CARD_RATIO));
 
   const secure = typeof window !== "undefined" && window.isSecureContext;
 
@@ -86,14 +88,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       // distance it opened at — which is why a still-looking frame could
       // still be soft. Best-effort: plenty of devices do not expose focus at
       // all, and the sharpest-of-several below is what actually carries this.
-      try {
-        const focus = track.getCapabilities?.().focusMode || [];
-        if (focus.includes("continuous")) {
-          await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
-        }
-      } catch {
-        /* a camera that refuses focus constraints still takes pictures */
-      }
+      await keepFocusing(track);
       video.srcObject = stream;
       try {
         await video.play();
@@ -133,70 +128,6 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
     return canvas;
   };
 
-  /** How much detail a frame has, as gradient energy.
-   *
-   *  A blurred photograph is the same picture with the edges smeared, so
-   *  neighbouring pixels agree more. Squaring the differences rewards a few
-   *  crisp edges over lots of gentle ones, which is what tells a sharp card
-   *  from a soft one. Measured on a small copy — a hundred and twenty pixels
-   *  across is plenty to tell focus from blur, and cheap enough to run on
-   *  every frame.
-   *
-   *  Only ever compared against other frames of the same scene, never
-   *  against a fixed number: the score moves with lighting and with how much
-   *  is in shot, so "sharper than the last one" is meaningful where "sharper
-   *  than 40" would be nonsense in a dim room.
-   */
-  const sharpness = (source) => {
-    let cv = scoreRef.current;
-    if (!cv) {
-      cv = document.createElement("canvas");
-      cv.width = 120;
-      cv.height = Math.round(120 / CARD_RATIO);
-      scoreRef.current = cv;
-    }
-    const ctx = cv.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(source, 0, 0, cv.width, cv.height);
-    const { data, width, height } = ctx.getImageData(0, 0, cv.width, cv.height);
-    const grey = (i) => data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-    let sum = 0;
-    for (let y = 1; y < height; y++) {
-      for (let x = 1; x < width; x++) {
-        const i = (y * width + x) * 4;
-        const dx = grey(i) - grey(i - 4);
-        const dy = grey(i) - grey(i - width * 4);
-        sum += dx * dx + dy * dy;
-      }
-    }
-    return sum / (width * height);
-  };
-
-  /** The sharpest of a few frames taken a moment apart.
-   *
-   *  The fix for "it photographs whatever was on screen the instant I
-   *  pressed it". A hand is never still and autofocus is always a beat
-   *  behind, so one frame is a coin toss; several spread over most of a
-   *  second almost always contain one the camera had settled on.
-   */
-  const bestFrame = async (count, gap) => {
-    let best = null;
-    let bestScore = -1;
-    for (let i = 0; i < count; i++) {
-      const frame = capture();
-      if (frame) {
-        const score = sharpness(frame);
-        if (score > bestScore) {
-          bestScore = score;
-          best = frame;
-        }
-      }
-      if (i < count - 1) {
-        await new Promise((r) => setTimeout(r, gap));
-      }
-    }
-    return best;
-  };
-
   /** Watching for the card, so nobody has to press anything.
    *
    *  A frame goes to the server about once a second — a plain timer chained
@@ -218,7 +149,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
       if (dead) return;
       // two frames rather than one: the cheapest possible version of the
       // same idea, so the watcher does not spend a request on a smear
-      const canvas = await bestFrame(2, 120);
+      const canvas = await sharpestOf(capture, scratch(), 2, 120);
       if (dead) return;
       if (canvas) {
         try {
@@ -261,7 +192,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
     // button now means "take a good picture of this", not "freeze exactly
     // this instant" — which is what it used to mean, and why a small
     // movement produced a blurred shot and a poor match.
-    const canvas = await bestFrame(7, 100);
+    const canvas = await sharpestOf(capture, scratch(), 7, 100);
     if (!canvas) {
       setBusy(false);
       return;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons.jsx";
+import { keepFocusing, scratchCanvas, sharpestOf } from "../focus.js";
 
 /* Line the thing up before you shoot it.
  *
@@ -35,6 +36,9 @@ export default function GuidedCamera({
   // view captured rather than the frame's worth of it. The drawing and the
   // crop are the same decision, so one switch governs both.
   const [guides, setGuides] = useState(true);
+  // the shutter takes a burst and keeps the sharpest of it, so this says so
+  const [shooting, setShooting] = useState(false);
+  const scratchRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +61,10 @@ export default function GuidedCamera({
           return;
         }
         streamRef.current = stream;
+        // A photograph somebody keeps deserves the lens still hunting: this
+        // view is held at arm's length over a table and the distance changes
+        // the whole time. Best-effort — see focus.js.
+        await keepFocusing(stream.getVideoTracks()[0]);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
@@ -93,9 +101,10 @@ export default function GuidedCamera({
     return { x: (w - fw) / 2, y: (h - fh) / 2, w: fw, h: fh };
   };
 
-  const capture = () => {
+  /** One frame, cropped to the guide. */
+  const grab = () => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
+    if (!video || !video.videoWidth) return null;
     const { x, y, w, h } = guides
       ? frameIn(video.videoWidth, video.videoHeight)
       : { x: 0, y: 0, w: video.videoWidth, h: video.videoHeight };
@@ -103,15 +112,34 @@ export default function GuidedCamera({
     canvas.width = Math.round(w);
     canvas.height = Math.round(h);
     canvas.getContext("2d").drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        onCapture(new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" }));
-        onClose();
-      },
-      "image/jpeg",
-      0.92
-    );
+    return canvas;
+  };
+
+  /** The shutter.
+   *
+   *  Five frames over about half a second, and the sharpest is the one kept.
+   *  Pressing the button means "take a good picture of this", not "freeze
+   *  exactly this instant" — the second is what it used to mean, and why a
+   *  small movement produced a photo that looked fine until you opened it.
+   *  Fewer frames than the card scanner takes: these are full-resolution and
+   *  the person is watching a shutter, so the wait has to stay short.
+   */
+  const capture = async () => {
+    if (shooting) return;
+    setShooting(true);
+    try {
+      if (!scratchRef.current) {
+        scratchRef.current = scratchCanvas(square ? 1 : 0.72);
+      }
+      const canvas = await sharpestOf(grab, scratchRef.current, 5, 90);
+      if (!canvas) return;
+      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.92));
+      if (!blob) return;
+      onCapture(new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" }));
+      onClose();
+    } finally {
+      setShooting(false);
+    }
   };
 
   if (!open) return null;
@@ -163,16 +191,18 @@ export default function GuidedCamera({
         <span className="cam-hint">
           {error
             ? ""
-            : guides
-              ? "Line the edges up with the frame"
-              : "Guides off — the whole view is kept"}
+            : shooting
+              ? "Holding still for a sharp one…"
+              : guides
+                ? "Line the edges up with the frame"
+                : "Guides off — the whole view is kept"}
         </span>
         <button
           type="button"
           className="primary icon cam-shutter"
           onClick={capture}
-          disabled={!ready || !!error}
-          title="Take the picture"
+          disabled={!ready || !!error || shooting}
+          title={shooting ? "Waiting for a sharp frame…" : "Take the picture"}
         >
           <Icon id="camera" />
         </button>
