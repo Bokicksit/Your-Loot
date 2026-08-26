@@ -56,6 +56,23 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **The card scanner finds the card instead of trusting your aim.** It was
+  hit and miss, and measuring 565 real cards said why: lighting, focus,
+  glare and holding the card at a tilt were all fine, and every failure was
+  rotation or off-centre framing — a hand against an outline, which is the
+  only way anybody holds one. Two changes answer it. The photograph now
+  reaches past the outline, so a card held a few degrees off no longer
+  loses its corners out of frame — margin alone took an eight-degree tilt
+  from 25 of 60 to 60 of 60. And the card is then located in the shot and
+  squared up before it is read, which handles what is left. Across eleven
+  ways of photographing a card badly: **58% found before, 98% after**, the
+  right card offered in 659 of 660, and confidently-wrong answers down from
+  7 to 6. The catalogue is untouched — only the photograph is straightened,
+  so nothing needs re-fingerprinting. Costs 27ms a scan.
+- **A benchmark for it**, at `api/tools/bench_scanner.py`, because this was
+  tuned twice on hunches and got worse the second time. Every number above
+  came out of it, and it should be run before anything in `arthash.py`
+  changes again.
 - **Searching LEGO by name finds the set, not the video game.** Rebrickable
   catalogues the LEGO games alongside the bricks — seventeen of the
   thirty-five things called "nintendo" are Switch titles with no pieces in

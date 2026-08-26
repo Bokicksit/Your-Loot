@@ -99,6 +99,100 @@ _SCALES = (1.0, 0.88)            # centre crops — "a little too far away"
 _SHIFT = 0.07                    # off-centre crops, as a fraction of the frame
 
 
+# Finding the card in the photograph, so it can be straightened before it is
+# read. This is the piece that was missing, and the measurements say so: with
+# the card square-on the matcher was already perfect, and every failure was a
+# card that had been rotated or pushed off-centre — a hand against an outline,
+# in other words, which is the only way anybody actually holds one.
+DETECT_W = 180              # detection runs on a small copy; this is plenty
+CANON = (250, 350)          # every card is warped back to this 5:7 rectangle
+DETAIL = 26                 # local change that reads as print rather than table
+FROM_BACKGROUND = 42        # difference from the border that reads as "not table"
+
+
+def _card_quad(grey):
+    """The card's four corners in a photograph, or None if it cannot be found.
+
+    Two signals decide what is card and what is not, and they are unioned
+    because each fails somewhere the other does not. **Detail**: a card is
+    printed and a table is not, so local change is high across it — but a
+    busy tablecloth has detail too. **Difference from the border**: whatever
+    fills the outer ring of the shot is background by definition — but a dark
+    card on a dark mat barely differs from it.
+
+    The corners then come out of the points almost for free. For a rectangle
+    at any rotation the corners are the extremes of x+y and x-y: the top-left
+    minimises the sum, the top-right maximises the difference. No contour
+    tracing and no line fitting, which is the usual reason this needs OpenCV.
+    """
+    g = grey.copy()
+    g.thumbnail((DETECT_W, DETECT_W))
+    w, h = g.size
+    px = g.load()
+
+    ring = []
+    for x in range(w):
+        ring += [px[x, 0], px[x, h - 1]]
+    for y in range(h):
+        ring += [px[0, y], px[w - 1, y]]
+    ring.sort()
+    background = ring[len(ring) // 2]
+
+    pts = []
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            v = px[x, y]
+            detail = abs(v - px[x - 1, y]) + abs(v - px[x, y - 1])
+            if detail > DETAIL or abs(v - background) > FROM_BACKGROUND:
+                pts.append((x, y))
+    if len(pts) < 200:
+        return None
+
+    nw = min(pts, key=lambda p: p[0] + p[1])
+    se = max(pts, key=lambda p: p[0] + p[1])
+    sw = min(pts, key=lambda p: p[0] - p[1])
+    ne = max(pts, key=lambda p: p[0] - p[1])
+
+    sx, sy = grey.size[0] / w, grey.size[1] / h
+    quad = [(int(p[0] * sx), int(p[1] * sy)) for p in (nw, sw, se, ne)]
+
+    # Two sanity checks, because a wrong quad is worse than none: it stretches
+    # whatever it found to fill a card-shaped rectangle and asks the catalogue
+    # about that. Anything too small to be the subject, or too far from the
+    # shape of a card, is left to the un-straightened readings.
+    xs = [p[0] for p in quad]
+    ys = [p[1] for p in quad]
+    box_w, box_h = max(xs) - min(xs), max(ys) - min(ys)
+    if box_w < grey.size[0] * 0.35 or box_h < grey.size[1] * 0.35:
+        return None
+    if not (0.45 < (box_w / box_h if box_h else 0) < 1.05):
+        return None
+    return quad
+
+
+def deskewed(data: bytes):
+    """The card alone, squared up — or None when it cannot be found.
+
+    Only the photograph goes through this. The catalogue is scans, which are
+    already square, so nothing needs re-fingerprinting for this to work.
+    """
+    try:
+        from PIL import Image
+
+        with Image.open(io.BytesIO(data)) as raw:
+            grey = raw.convert("L")
+            grey.thumbnail((640, 640))
+            grey = grey.copy()
+        quad = _card_quad(grey)
+        if quad is None:
+            return None
+        return grey.transform(
+            CANON, Image.QUAD, [c for p in quad for c in p], resample=Image.BICUBIC
+        )
+    except Exception:
+        return None
+
+
 def variants(data: bytes) -> list[int]:
     """Every plausible reading of one photograph, as fingerprints.
 
@@ -149,6 +243,20 @@ def variants(data: bytes) -> list[int]:
                 x0 = max(0, min(fw - cw, (fw - cw) // 2 + ox))
                 y0 = max(0, min(fh - ch, (fh - ch) // 2 + oy))
                 out.add(_hash_image(frame.crop((x0, y0, x0 + cw, y0 + ch))))
+
+    # And the card straightened, when it could be found — added to the others
+    # rather than replacing them. A reading that does not apply simply never
+    # wins, since a card is scored by its closest agreement with any of them,
+    # and that is what lets this be tried on every photograph without having
+    # to be right about every photograph.
+    flat = deskewed(data)
+    if flat is not None:
+        out.add(_hash_image(flat))
+        fw, fh = flat.size
+        cw, ch = int(fw * 0.96), int(fh * 0.96)
+        out.add(_hash_image(flat.crop(
+            ((fw - cw) // 2, (fh - ch) // 2, (fw - cw) // 2 + cw, (fh - ch) // 2 + ch)
+        )))
     return list(out)
 
 

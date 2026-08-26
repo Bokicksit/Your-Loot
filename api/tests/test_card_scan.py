@@ -20,44 +20,53 @@ BASE = os.environ.get("LOOT_URL", "http://localhost:8000")
 
 pytest.importorskip("PIL", reason="Pillow is what does the fingerprinting")
 
-# Fixed, and measured rather than picked. The art below is synthetic and a
-# harsher subject than a real card — real artwork has big smooth regions that
-# survive a nudge, where a generated block pattern is close to the limit of
-# what a 9x8 hash can hold on to. Only a few seeds keep every warp in this
-# file comfortably inside the match threshold, so the two used here were
-# swept for and are asserted against known distances:
+# Fixed, and measured rather than picked. Swept across the art above and
+# asserted against known distances, so a failure means the matcher changed
+# rather than the dice:
 #
-#   ART_SEED   straight 0, shifted 7, tilted 8   (threshold is 12)
-#   OTHER_SEED 23 bits from ART_SEED             (must stay above 12)
+#   ART_SEED   clean photo 1 bit, photographed on a table at an angle 0 bits
+#   OTHER_SEED 43 bits from ART_SEED  (the match threshold is 12)
 #
 # This used to be `int(uuid[:4], 16)` — a different card every run — which
 # passed locally, failed in CI, and passed again on a re-run. A test that
 # picks its own difficulty at random is a coin flip wearing an assertion.
-ART_SEED = 10
-OTHER_SEED = 34
+ART_SEED = 3
+OTHER_SEED = 6
 
 
 def _art(seed: int, size=(240, 336)) -> bytes:
     """A picture that is this card and no other.
 
-    Deterministic from `seed`, and built from large blocks rather than
-    pixel-level gradients — deliberately. A fingerprint reads the picture at
-    nine by eight, and a pattern finer than that grid aliases into noise
-    where the smallest nudge decorrelates everything; real card art has big
-    smooth regions and survives a nudge, so the stand-in has to as well.
-    Different seeds give entirely different block layouts, which keeps two
-    cards further apart than any nudge brings them together.
+    Built from a few broad gradients, which is the important part. Real card
+    art is low-frequency — big smooth regions, a couple of strong shapes —
+    and that is what survives being photographed at an angle and resampled
+    back to nine pixels by eight. An earlier version of this used a grid of
+    hard-edged blocks and was a far harsher subject than any real card: the
+    edges aliased under rotation, and the test failed where actual cards
+    matched at a distance of three. A stand-in has to be as forgiving as the
+    thing it stands in for, or it tests the wrong feature.
     """
+    import math
+
     from PIL import Image
 
     im = Image.new("RGB", size)
     px = im.load()
-    cw, ch = size[0] // 6, size[1] // 8
-    for x in range(size[0]):
-        for y in range(size[1]):
-            c, r = x // cw, y // ch
-            v = ((seed * 2654435761) ^ (r * 97 + c * 57 + 11)) % 256
-            px[x, y] = (v, (v * 3 + seed) % 256, (v * 7 + r * 20) % 256)
+    w, h = size
+    s = seed * 2654435761
+    a1, a2, a3 = (s % 7) + 1, (s // 7 % 5) + 1, (s // 35 % 6) + 1
+    p1, p2 = (s // 211 % 628) / 100, (s // 977 % 628) / 100
+    for x in range(w):
+        fx = x / w
+        for y in range(h):
+            fy = y / h
+            v1 = math.sin(fx * a1 * 1.7 + p1) * math.cos(fy * a2 * 1.3 + p2)
+            v2 = math.sin((fx + fy) * a3 * 1.1 + p1)
+            px[x, y] = (
+                int(128 + 110 * v1),
+                int(128 + 100 * v2),
+                int(128 + 95 * (v1 * 0.6 + v2 * 0.4)),
+            )
     buf = io.BytesIO()
     im.save(buf, "PNG")
     return buf.getvalue()
@@ -209,3 +218,53 @@ def test_a_clean_photograph_is_sure_and_a_poor_one_is_not(owner, scannable):
     # nothing it has ever seen: not sure, and nothing offered
     r = _scan(owner, _photo(_art(OTHER_SEED)))
     assert r.json()["sure"] is False, "an unknown card came back confident"
+
+
+def _on_a_table(data: bytes, rot: float = 8.0, dx: float = 0.06) -> bytes:
+    """The shot somebody actually takes: the card a few degrees off straight,
+    pushed off-centre, with table around it.
+
+    This is the case the scanner used to lose. Measured over 565 real cards,
+    a card tilted eight degrees and filling the frame scored 25 out of 60;
+    with room around it and the corners found and squared up, 60 out of 60.
+    """
+    from PIL import Image
+
+    im = Image.open(io.BytesIO(data)).convert("RGB")
+    w, h = im.size
+    table = Image.new("RGB", (int(w * 1.6), int(h * 1.6)), (92, 74, 58))
+    table.paste(im, (int(w * (0.3 + dx)), int(h * 0.3)))
+    table = table.rotate(rot, resample=Image.BICUBIC, fillcolor=(92, 74, 58))
+    buf = io.BytesIO()
+    table.save(buf, "JPEG", quality=72)
+    return buf.getvalue()
+
+
+def test_the_card_is_found_when_it_is_not_held_straight(owner, scannable):
+    """The complaint this whole thing exists to answer.
+
+    The matcher was always good at a card squared up and filling the frame,
+    and that is not how anybody holds one. The photograph now has the card
+    located and straightened before it is read, so being a few degrees off
+    and a little off-centre stops mattering.
+    """
+    item, art = scannable
+    r = _scan(owner, _on_a_table(art))
+    assert r.status_code == 200, r.text
+    found = [c["id"] for c in r.json()["items"]]
+    assert item["id"] in found, "a card photographed on a table was lost"
+    assert found[0] == item["id"], "the right card was not the closest match"
+
+
+def test_a_photograph_with_no_card_in_it_is_not_straightened_into_one(owner):
+    """The failure mode a detector invents: finding a card in a picture of a
+    carpet, stretching it to card shape and asking the catalogue about it.
+    Nothing should come back, and nothing should be confident."""
+    from PIL import Image
+
+    im = Image.new("RGB", (400, 500), (120, 118, 115))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=70)
+    r = _scan(owner, buf.getvalue())
+    assert r.status_code == 200, r.text
+    assert r.json()["sure"] is False, "a blank picture came back confident"
