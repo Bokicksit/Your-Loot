@@ -56,6 +56,16 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **Searching LEGO by name finds the set, not the video game.** Rebrickable
+  catalogues the LEGO games alongside the bricks — seventeen of the
+  thirty-five things called "nintendo" are Switch titles with no pieces in
+  them — and answers in set-number order, so the twenty results the app
+  showed were a near-random slice that left out the 2,646-piece Nintendo
+  Entertainment System entirely. It now asks for the whole match list and
+  ranks it: something you can build first, then how squarely the name
+  answers what you typed, then size and recency. "nintendo" leads with the
+  NES, "game boy" with the Game Boy. The games are still there, last —
+  unfindable is its own bug.
 - **Your own photos wait for focus too.** The same fix as the card scanner,
   now where it matters for pictures you keep: the guided camera — the "line
   it up against a frame" one — took whatever frame the shutter landed on.
