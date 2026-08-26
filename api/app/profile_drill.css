@@ -834,6 +834,23 @@
   animation: pop .32s var(--ease, ease) both;
   animation-delay: calc(var(--j, 0) * 8ms);
 }
+/* Owned, but with no picture to show — the catalogue has none, or one did
+   not arrive. Distinct from a missing slot, which is dashed: this one is
+   held, it just cannot be illustrated. */
+.slotcell .art.none {
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,.05) 0 5px, transparent 5px 10px),
+    rgba(255,255,255,.02);
+}
+.slotcell .art.none::after {
+  content: "no picture";
+  font-size: 9.5px;
+  letter-spacing: .04em;
+  color: #6f6982;
+}
 .slotcell .art {
   display: block;
   width: 100%;

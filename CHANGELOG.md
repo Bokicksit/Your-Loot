@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **A slot with no picture says so.** Owning a card the catalogue has no art
+  for — about one in twenty, and worse in older sets — drew a black
+  rectangle indistinguishable from something broken. It now draws a frame
+  that says "no picture", still carrying the number and species, and a
+  picture that fails to arrive falls back to the same frame rather than
+  leaving a hole. That second half matters more since the list went lazy: a
+  photograph the owner took is served with a token good for an hour, and a
+  page left open longer would ask for it too late.
 - **The Pokédex list stops asking for a thousand pictures at once.** Every
   slot's art was a CSS background, which the browser fetches as soon as the
   element is laid out — so opening the list put the whole dex on the wire

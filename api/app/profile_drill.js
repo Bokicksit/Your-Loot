@@ -557,6 +557,16 @@
       cell.type = "button";
       cell.className = "slotcell " + st;
       cell.style.setProperty("--j", i % 40);
+      if (s[3] && !s[2]) {
+        /* Owned, but the catalogue has no picture of it. About one card in
+           twenty has none, and older sets are worse — so this is a normal
+           thing to be, not a failure, and it gets drawn rather than left as
+           a black rectangle that reads like something broke. The slot still
+           says which species it is, which is what the list is for. */
+        var none = document.createElement("span");
+        none.className = "art none";
+        cell.appendChild(none);
+      }
       if (s[3] && s[2]) {
         /* A real <img> with loading="lazy", not a background.
            A thousand slots is up to a thousand pictures, and a background
@@ -577,6 +587,17 @@
         art.fetchPriority = "low";
         art.alt = "";
         art.src = s[2];
+        /* A picture that does not arrive leaves the same hole as one that
+           never existed, so it ends up looking the same. Worth having for
+           its own sake, and doubly so now these are fetched when they scroll
+           into view: a photograph the owner took is served with a token that
+           lasts an hour, and a page left open longer than that would ask for
+           it too late. Better a frame that says so than a black gap. */
+        art.addEventListener("error", function () {
+          var gone = document.createElement("span");
+          gone.className = "art none";
+          if (art.parentNode) art.parentNode.replaceChild(gone, art);
+        });
         cell.appendChild(art);
         cell.setAttribute("data-art", s[2]);
       }
