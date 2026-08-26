@@ -775,16 +775,7 @@
   .detail-card .big { width: min(100%, 240px); justify-self: center; }
 }
 
-/* Every box in this layer declares a display, and a declared display beats
-   the browser's own rule for [hidden] — so the attribute this whole layer
-   is switched with does nothing unless it is said again here — last in the
-   file, where nothing of equal weight can follow it. */
-.drill[hidden],
-.shelf[hidden],
-.loose[hidden],
-.spread[hidden],
-.binder-rail[hidden],
-.drill-head button[hidden] { display: none; }
+
 
 /* ---------------------------------------------- the dex as a list of slots
 
@@ -906,3 +897,23 @@
   .slotwall { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
   .viewpick { margin-left: 6px; }
 }
+
+/* Every box in this layer declares a display, and a declared display beats
+   the browser's own rule for [hidden] — so the attribute this whole layer
+   is switched with does nothing unless it is said again here — last in the
+   file, where nothing of equal weight can follow it.
+
+   This is not a style rule, it is the switch the whole drill runs on, and
+   forgetting to add a box to it does not fail loudly: the box simply never
+   hides. The Pokedex list arrived after this block and was appended below
+   it, so both the binder and the list drew at once, one on top of the
+   other. Anything new with a display goes in this list, and nothing goes
+   after it. */
+.drill[hidden],
+.shelf[hidden],
+.loose[hidden],
+.spread[hidden],
+.binder-rail[hidden],
+.slotgrid[hidden],
+.viewpick[hidden],
+.drill-head button[hidden] { display: none; }

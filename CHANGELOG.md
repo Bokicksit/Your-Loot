@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **The Pokédex binder and list drew on top of each other.** Two mistakes
+  with one cause: the drill is switched with the `hidden` attribute, which
+  a declared `display` silently beats, and the file already had one block
+  saying so — which the new list was appended *after*, so it never hid.
+  The list is also built when its data arrives, which is later than the
+  switch that should have hidden it, so it appeared visible. Both fixed,
+  and the block that does the switching now says what it is and that
+  nothing may follow it.
 - **The card scanner finds the card instead of trusting your aim.** It was
   hit and miss, and measuring 565 real cards said why: lighting, focus,
   glare and holding the card at a tilt were all fine, and every failure was

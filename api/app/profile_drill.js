@@ -703,10 +703,15 @@
         grid.__binder = b;
         grid.__filter = grid.__filter || "all";
         gridFor(grid, b);
-        pick.hidden = false;
         pick.querySelectorAll(".chip").forEach(function (c) {
           c.classList.toggle("active", c.getAttribute("data-view") === "binder");
         });
+        /* Said again now that both boxes exist. show() ran before the list
+           was built — it is built from the payload, which arrives later —
+           so the switch had nothing to hide, and a freshly appended element
+           is visible by default. That is how the binder and the list ended
+           up drawn on top of one another. */
+        show(drill, "binder");
       } else {
         if (grid) grid.hidden = true;
         if (pick) pick.hidden = true;
