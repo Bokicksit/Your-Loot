@@ -581,19 +581,33 @@
         art.className = "art";
         art.loading = "lazy";
         art.decoding = "async";
-        /* A thousand pictures must not compete with the page they are on.
-           Low priority tells the browser these are the last thing worth a
-           connection, which matters on a phone where there are six. */
-        art.fetchPriority = "low";
+        /* Deliberately no fetchpriority. It was set to "low" here on the
+           reasoning that a thousand thumbnails should not compete with the
+           page — which was wrong twice over: on this view the pictures ARE
+           the page, and a wall of low-priority requests on a slow phone can
+           sit behind everything else long enough to look like it never
+           loaded. The binder next door draws the same URLs at normal
+           priority and fills in fine. */
         art.alt = "";
         art.src = s[2];
-        /* A picture that does not arrive leaves the same hole as one that
-           never existed, so it ends up looking the same. Worth having for
-           its own sake, and doubly so now these are fetched when they scroll
-           into view: a photograph the owner took is served with a token that
-           lasts an hour, and a page left open longer than that would ask for
-           it too late. Better a frame that says so than a black gap. */
+        /* A picture that does not arrive gets asked for again before it is
+           given up on. A wall of them is a lot of requests at once and some
+           will lose — a phone changing cell, a connection reset, a server
+           having a moment — and one dropped request should not leave a
+           permanent hole in a list somebody is shopping from. Two more
+           tries, spaced out; only then the same frame a card with no art
+           gets, which at least says what happened rather than showing
+           black. */
+        var tries = 0;
         art.addEventListener("error", function () {
+          if (tries < 2) {
+            tries++;
+            var again = art.src.split("#")[0];
+            setTimeout(function () {
+              art.src = again + "#retry" + tries;
+            }, 500 * tries);
+            return;
+          }
           var gone = document.createElement("span");
           gone.className = "art none";
           if (art.parentNode) art.parentNode.replaceChild(gone, art);

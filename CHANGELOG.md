@@ -56,6 +56,14 @@ Full detail is in the commit log, where every change has its own note.
   it is below the fold at all of them now.
 
 ### Fixed
+- **Pictures in the Pokédex list stop giving up.** Marking a thousand
+  thumbnails "low priority" was a guess, and a wrong one twice over: on this
+  view the pictures are the content, and a wall of low-priority requests on
+  a phone can sit behind everything else long enough to look like it never
+  loaded — which is what it did, in patches, while the binder beside it drew
+  the same URLs fine. The priority hint is gone, and a picture that fails is
+  asked for twice more before it is given up on, so one dropped request no
+  longer leaves a permanent hole.
 - **A slot with no picture says so.** Owning a card the catalogue has no art
   for — about one in twenty, and worse in older sets — drew a black
   rectangle indistinguishable from something broken. It now draws a frame
