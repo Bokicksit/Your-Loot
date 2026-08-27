@@ -22,7 +22,7 @@ sys.path.insert(0, "/app")
 
 from app import ratelimit  # noqa: E402
 from app.config import settings  # noqa: E402
-from app.routers import images  # noqa: E402
+from app.routers import admin, images  # noqa: E402
 
 
 class FakeRequest:
@@ -97,6 +97,70 @@ def test_an_address_alone_still_names_a_bucket(hops):
     hops(1)
     req = FakeRequest("10.0.0.2", "203.0.113.9")
     assert ratelimit.client_key(req, "Someone@Example.com ") == "203.0.113.9|someone@example.com"
+
+
+# ------------------------------------------------------- checking that number
+
+def cf_request(peer, chain, seen_by_cloudflare=None):
+    """A request as it arrives behind a Cloudflare tunnel."""
+    req = FakeRequest(peer, chain)
+    if seen_by_cloudflare:
+        req.headers["cf-connecting-ip"] = seen_by_cloudflare
+    return req
+
+
+def check(request):
+    return admin.forwarding(request, _=None)
+
+
+def test_the_diagnostic_confirms_a_correct_setting(hops):
+    """Behind a tunnel: the edge appends the caller, nginx appends
+    cloudflared, so two entries are real and the caller is second from the
+    right."""
+    hops(2)
+    req = cf_request("10.0.0.2", "198.51.100.7, 172.20.0.4", "198.51.100.7")
+    out = check(req)
+    assert out["should_be"] == 2
+    assert out["address_in_use"] == "198.51.100.7"
+    assert out["verdict"].startswith("Correct")
+
+
+def test_the_diagnostic_names_the_number_to_change_it_to(hops):
+    """The failure this exists to catch: left at 1 behind a tunnel, every
+    caller collapses onto cloudflared's address and shares one bucket."""
+    hops(1)
+    req = cf_request("10.0.0.2", "198.51.100.7, 172.20.0.4", "198.51.100.7")
+    out = check(req)
+    assert out["should_be"] == 2
+    assert out["address_in_use"] == "172.20.0.4"  # everybody, together
+    assert "set TRUSTED_PROXIES=2" in out["verdict"]
+
+
+def test_the_diagnostic_is_not_fooled_by_a_seeded_header(hops):
+    """A caller who writes their own address in before Cloudflare appends it
+    must not make the chain look one hop longer than it is."""
+    hops(2)
+    req = cf_request("10.0.0.2", "198.51.100.7, 198.51.100.7, 172.20.0.4",
+                     "198.51.100.7")
+    assert check(req)["should_be"] == 2
+
+
+def test_the_diagnostic_admits_when_it_cannot_tell(hops):
+    hops(1)
+    out = check(FakeRequest("10.0.0.2", "198.51.100.7"))
+    assert out["should_be"] is None
+    assert "nothing here can be verified" in out["verdict"]
+
+
+def test_the_diagnostic_notices_a_rewritten_header(hops):
+    """Cloudflare saw an address that is nowhere in the chain — something in
+    the path replaced the header instead of appending to it, and no number
+    would make the limiter right."""
+    hops(2)
+    req = cf_request("10.0.0.2", "172.20.0.4", "198.51.100.7")
+    out = check(req)
+    assert out["should_be"] is None
+    assert "rewriting the header" in out["verdict"]
 
 
 # ------------------------------------------------------- what searching costs

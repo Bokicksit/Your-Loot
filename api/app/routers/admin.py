@@ -16,7 +16,7 @@ import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -32,6 +32,7 @@ from app.models import (
 )
 from app.modules import available
 from app.plans import FREE, SUPPORTER, paid_modules, subscribed
+from app.ratelimit import client_address
 from app.sorting import leading_number
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -81,6 +82,60 @@ class PlanChange(BaseModel):
     # None on a supporter means it does not expire — a plan granted by hand,
     # or a thank-you that should not quietly stop working.
     until: datetime | None = None
+
+
+@router.get("/forwarding")
+def forwarding(request: Request, _: User = Depends(require_admin)):
+    """Whether TRUSTED_PROXIES is set to the right number.
+
+    It cannot be worked out from the code, only observed: it depends on how
+    many things between the internet and this API append to X-Forwarded-For,
+    and every deployment answers differently. Set it too high and the limiter
+    starts believing entries the caller wrote — which is the bug the setting
+    exists to fix — and the symptom either way is silence. So rather than
+    reason about it, open this and read the answer.
+
+    Cloudflare supplies the ground truth. CF-Connecting-IP is the address it
+    saw the request come from, so wherever that lands in the chain says
+    exactly how many hops are real. It is used to *check* the setting and
+    never to set the address: the header only means anything on a request
+    that genuinely came through Cloudflare, and an install where anybody on
+    the LAN can reach the API directly could simply have it typed in.
+    """
+    chain = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",")]
+    chain = [p for p in chain if p]
+    truth = request.headers.get("cf-connecting-ip") or ""
+    using = client_address(request)
+
+    correct = None
+    if truth and truth in chain:
+        # the rightmost occurrence: if a caller pre-seeded the header with
+        # their own address, the one the edge appended is the later one
+        correct = len(chain) - max(i for i, p in enumerate(chain) if p == truth)
+
+    if not truth:
+        verdict = ("No CF-Connecting-IP, so nothing here can be verified — "
+                   "either this request did not come through Cloudflare, or "
+                   "there is no Cloudflare in front of it.")
+    elif correct is None:
+        verdict = (f"Cloudflare saw {truth}, which is nowhere in the "
+                   f"forwarded chain. Something in the path is rewriting the "
+                   f"header rather than appending to it.")
+    elif correct == settings.trusted_proxies:
+        verdict = f"Correct. The limiter is using {using}, which is the caller."
+    else:
+        verdict = (f"Wrong: set TRUSTED_PROXIES={correct}. The limiter is "
+                   f"using {using}, but the caller was {truth}.")
+
+    return {
+        "peer": request.client.host if request.client else None,
+        "forwarded_chain": chain,
+        "cf_connecting_ip": truth or None,
+        "trusted_proxies": settings.trusted_proxies,
+        "address_in_use": using,
+        "should_be": correct,
+        "verdict": verdict,
+    }
 
 
 @router.get("/stats")

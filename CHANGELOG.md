@@ -21,7 +21,14 @@ Full detail is in the commit log, where every change has its own note.
   holds something that is not an address, both meaning it was not written by
   the proxies it claims. Nothing to change unless something sits in front of
   nginx — Cloudflare, a tunnel, another load balancer — in which case set it
-  to 2, because guessing high is the direction that hurts.
+  to 2, because guessing high is the direction that hurts. The right number
+  is not something the code can work out, so an admin can open
+  `/api/admin/forwarding` and be told it: Cloudflare's `CF-Connecting-IP`
+  says which address really made the request, where that lands in the chain
+  says how many hops are genuine, and the page either confirms the setting or
+  names the number to change it to. It only ever checks the setting — the
+  limiter itself still counts hops, since that header means nothing on an
+  install somebody can reach without going through Cloudflare.
 - **A fetched image is fetched from the address that was checked.** Pasting
   an image URL had the API resolve the hostname, satisfy itself the answer
   was not somewhere private, and then hand the *name* to the HTTP client,
