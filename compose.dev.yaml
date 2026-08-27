@@ -40,6 +40,9 @@ services:
       OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
       PUBLIC_PROFILES: ${PUBLIC_PROFILES:-false}
       SIGNUP_LIMIT: ${SIGNUP_LIMIT:-20}
+      LOOKUP_LIMIT: ${LOOKUP_LIMIT:-60}
+      # nginx in front, api port never published — see .env.example
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-1}
       PUBLIC_URL: ${PUBLIC_URL:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-}

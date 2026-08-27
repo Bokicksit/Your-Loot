@@ -11,9 +11,13 @@ attacker a few seconds and nothing else, and a self-hosted app should not
 need Redis to have a login form.
 """
 
+import ipaddress
 import time
 from collections import defaultdict, deque
 
+from fastapi import Depends, HTTPException
+
+from app.auth import current_user as _current_user
 from app.config import settings
 
 
@@ -58,6 +62,16 @@ class Attempts:
     def succeeded(self, key: str) -> None:
         self._hits.pop(key, None)
 
+    def used(self, key: str) -> None:
+        """Record a use.
+
+        The same bookkeeping as `failed`, under the name that describes what
+        the lookup brake below is counting: not wrong answers, but calls that
+        each cost something. Kept as its own name so a call site reads as the
+        thing it means.
+        """
+        self.failed(key)
+
 
 # Five wrong answers, then a five-minute wait. Slow enough that a four-digit
 # PIN takes weeks rather than seconds, loose enough that nobody mistyping
@@ -81,19 +95,78 @@ mails = Attempts(limit=3, window=3600)
 signups = Attempts(limit=settings.signup_limit, window=3600)
 
 
+# Searches that leave the building: Rebrickable, IGDB, TMDB, Discogs,
+# ComicVine, OpenLibrary, upcitemdb, TCGdex. These are not guessing attacks
+# and the brake is not about security — it is about a shared, finite resource.
+# The API keys belong to the server, not to the person searching, so one
+# account in a loop spends everybody's quota, and several of these free tiers
+# are counted per day. Keyed on the account rather than the address on
+# purpose: the quota is spent by whoever is signed in, and moving to another
+# network should not hand them a second helping. Every one of these endpoints
+# requires a login, so there is always an account to charge.
+#
+# A minute's worth is far past what a person types and far under what a script
+# manages, which is the whole trick — nobody searching for a Lego set will
+# ever see it.
+lookups = Attempts(limit=settings.lookup_limit, window=60)
+
+
+def client_address(request) -> str:
+    """The address at the far end, as far as it can honestly be known.
+
+    X-Forwarded-For is a list anybody can start. A caller sets it to whatever
+    they like and each proxy appends the address it actually saw, so the
+    entries arrive oldest-first and only the tail — the part the proxies wrote
+    — means anything. Reading the head, which is what this used to do, is
+    reading the attacker's own text: a different value per request is a fresh
+    bucket per request, and the login, signup and mail brakes stop existing.
+
+    So count in from the right by however many proxies are really there
+    (`trusted_proxies`), and fall back to the socket's own address whenever
+    the header is shorter than it should be or holds something that is not an
+    address — both meaning it was not written by the proxies it claims.
+    """
+    peer = request.client.host if request.client else "unknown"
+    hops = settings.trusted_proxies
+    if hops <= 0:
+        return peer  # nothing in front, so nothing may rewrite the address
+
+    chain = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",")]
+    chain = [p for p in chain if p]
+    if len(chain) < hops:
+        return peer
+    candidate = chain[-hops]
+    try:
+        ipaddress.ip_address(candidate)
+    except ValueError:
+        return peer  # not an address; a proxy would not have written it
+    return candidate
+
+
 def client_key(request, identifier: str | None = None) -> str:
     """Who is doing the guessing.
 
     Keyed on address *and* account, so one person failing to sign in cannot
     lock anybody else out, and somebody working through a list of accounts
     from one address is still stopped.
-
-    nginx sits in front and is the only thing that reaches the API — the
-    compose files never publish its port — so the forwarded address is as
-    trustworthy as anything here gets.
     """
-    forwarded = request.headers.get("x-forwarded-for", "")
-    addr = forwarded.split(",")[0].strip() or (
-        request.client.host if request.client else "unknown"
-    )
-    return f"{addr}|{(identifier or '').strip().lower()}"
+    return f"{client_address(request)}|{(identifier or '').strip().lower()}"
+
+
+def outbound(user=Depends(_current_user)) -> None:
+    """Charge this request against the account's third-party search budget.
+
+    A dependency rather than a line in each handler so that adding a route
+    that calls somebody else's API is a one-word decision, and so that the
+    count happens before the handler — a call refused here never reaches the
+    provider, which is the entire point.
+    """
+    key = f"user:{user.id}"
+    wait = lookups.retry_after(key)
+    if wait:
+        raise HTTPException(
+            429,
+            f"Too many searches. Try again in {wait} seconds.",
+            headers={"Retry-After": str(wait)},
+        )
+    lookups.used(key)

@@ -8,6 +8,40 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Security
+- **The rate limits stop believing a header anyone can write.**
+  `X-Forwarded-For` is a list a caller starts and each proxy adds to, so the
+  left of it is whatever the caller typed and only the right was written by
+  your own proxies. The limiter read the left, which meant a different value
+  per request bought a fresh bucket per request — and the brakes on signing
+  in, signing up and sending reset mail quietly did nothing to anybody who
+  changed one header. It now counts in from the right by however many proxies
+  are actually there (`TRUSTED_PROXIES`, 1 for every setup here), and falls
+  back to the connection's own address whenever the header is too short or
+  holds something that is not an address, both meaning it was not written by
+  the proxies it claims. Nothing to change unless something sits in front of
+  nginx — Cloudflare, a tunnel, another load balancer — in which case set it
+  to 2, because guessing high is the direction that hurts.
+- **A fetched image is fetched from the address that was checked.** Pasting
+  an image URL had the API resolve the hostname, satisfy itself the answer
+  was not somewhere private, and then hand the *name* to the HTTP client,
+  which looked it up all over again. The gap between those two lookups
+  belongs to whoever owns the DNS record: answer publicly for the check,
+  answer `169.254.169.254` for the fetch, and the guard is decoration. The
+  connection now goes to the address that passed. The name still travels, in
+  the Host header and as the TLS server name, so certificates are still
+  checked against it and shared-hosting CDNs still work — there is simply no
+  second question to give a different answer to.
+- **Catalogue searches cost something.** Every search for a Lego set, a game,
+  a film, a record, a comic, a book or a card is this server calling somebody
+  else's API on this server's key, several of them metered per day. Fourteen
+  such routes had no limit at all, so one signed-in client in a loop could
+  spend the quota for everyone on the install. Sixty a minute per account
+  now — far past what anybody reaches by typing, far under what a script
+  manages — refused before the request leaves the building rather than after.
+  Counted per account rather than per address, since the account is what
+  spends it and moving to another network should not hand out seconds.
+
 ### Fixed
 - **The address follows the room.** Arriving at `/u/bo/pokedex` and then
   backing out left the bar still saying "pokedex" while you looked at games

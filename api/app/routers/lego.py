@@ -7,6 +7,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.rebrickable import rebrickable_client
 from app.models import CollectionItem, LegoAttrs, Module, Owned, Wanted, User
+from app.ratelimit import outbound
 from app.search import contains
 from app.sorting import leading_number
 from app.tagging import tagged, tags_for, tags_of
@@ -55,7 +56,7 @@ def _base_query():
     )
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(outbound)])
 def search_rebrickable(
     q: str | None = None,
     set_number: str | None = None,

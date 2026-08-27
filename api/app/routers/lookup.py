@@ -15,11 +15,12 @@ from app.barcodes import lookup as cached_lookup
 from app.db import get_db
 from app.auth import current_user
 from app.integrations.upcitemdb import BarcodeError, search as upc_search
+from app.ratelimit import outbound
 
 router = APIRouter(prefix="/api/lookup", tags=["lookup"])
 
 
-@router.get("/barcode")
+@router.get("/barcode", dependencies=[Depends(outbound)])
 def barcode(
     code: str = Query(pattern=r"^\d{8,14}$"),
     db=Depends(get_db),
@@ -32,7 +33,7 @@ def barcode(
     return {"found": bool(items), "titles": items}
 
 
-@router.get("/products")
+@router.get("/products", dependencies=[Depends(outbound)])
 def products(
     q: str = Query(min_length=3, max_length=120),
     require_images: bool = True,

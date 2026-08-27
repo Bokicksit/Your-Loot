@@ -9,6 +9,7 @@ from app.integrations.openlibrary import openlibrary_client
 from app.barcodes import lookup as cached_lookup
 from app.integrations.upcitemdb import BarcodeError
 from app.models import BookAttrs, CollectionItem, Module, Owned, Wanted, User
+from app.ratelimit import outbound
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
@@ -74,7 +75,7 @@ def _jacket(db, isbn: str) -> str | None:
     return None
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(outbound)])
 def search_openlibrary(
     q: str | None = None,
     isbn: str | None = None,
@@ -114,7 +115,7 @@ def search_openlibrary(
         raise HTTPException(502, f"Open Library unreachable: {e}")
 
 
-@router.get("/description")
+@router.get("/description", dependencies=[Depends(outbound)])
 def book_description(
     olid: str = Query(min_length=3, max_length=30),
     user: User = Depends(current_user),

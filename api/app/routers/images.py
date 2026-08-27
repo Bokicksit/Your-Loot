@@ -84,12 +84,24 @@ class FetchBody(BaseModel):
 MAX_HOPS = 5
 
 
-def _reject_private(host: str):
-    """Don't let a pasted URL make the API poke around the LAN (SSRF)."""
+def _safe_address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
+    """Resolve a hostname, refuse it if it points anywhere private, and hand
+    back the address that passed.
+
+    Returning the address is the point, and the reason this no longer just
+    says yes or no. Approving a *name* and then letting the HTTP client look
+    it up again leaves a gap between the check and the connection, and DNS is
+    something the other side controls: a record with a one-second lifetime can
+    answer with a public address for the check and 169.254.169.254 for the
+    fetch. Nothing about that is exotic — it is the ordinary way this guard is
+    got around. Whoever calls this connects to the address that was cleared,
+    so there is no second lookup to poison.
+    """
     try:
         infos = socket.getaddrinfo(host, None)
     except socket.gaierror:
         raise HTTPException(400, "couldn't resolve that host")
+    cleared = []
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
         if (
@@ -101,6 +113,11 @@ def _reject_private(host: str):
             or ip.is_unspecified
         ):
             raise HTTPException(400, "that address isn't allowed")
+        cleared.append(ip)
+    if not cleared:
+        raise HTTPException(400, "couldn't resolve that host")
+    # every one of them passed, so the first is as good as any
+    return cleared[0]
 
 
 def _checked_get(url: str) -> httpx.Response:
@@ -111,25 +128,44 @@ def _checked_get(url: str) -> httpx.Response:
     subtlety: a host anybody controls can answer 302 to 169.254.169.254 or a
     private address, and the check never sees where the request actually
     went. Following the chain here means each hop is a URL that had to pass.
-    """
-    for _ in range(MAX_HOPS):
-        parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https") or not parsed.hostname:
-            raise HTTPException(400, "paste a full http(s) image URL")
-        _reject_private(parsed.hostname)
 
-        resp = httpx.get(
-            url,
-            timeout=20,
-            follow_redirects=False,  # each hop is checked above before it runs
-            headers={"User-Agent": "your-loot/1.0"},
-        )
-        if not resp.is_redirect:
-            return resp
-        location = resp.headers.get("location")
-        if not location:
-            return resp
-        url = urljoin(url, location)
+    Each hop then connects to the address that passed, rather than to the name
+    that passed — see _safe_address. The name still travels, in the Host
+    header and as the TLS server name, so virtual hosts and certificates work
+    exactly as they would have; the only thing that changes is that nobody
+    gets a second chance to answer the question "where does this point?".
+    """
+    # a Client rather than httpx.get, because the module-level shortcut takes
+    # no `extensions` — and without that there is no way to say "dial here but
+    # present this name", which is the whole mechanism below
+    with httpx.Client(timeout=20, follow_redirects=False) as client:
+        for _ in range(MAX_HOPS):
+            parsed = urlparse(url)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                raise HTTPException(400, "paste a full http(s) image URL")
+            ip = _safe_address(parsed.hostname)
+
+            literal = f"[{ip}]" if ip.version == 6 else str(ip)
+            authority = parsed.netloc.rsplit("@", 1)[-1]  # drop any user:pass
+            pinned = parsed._replace(
+                netloc=f"{literal}:{parsed.port}" if parsed.port else literal
+            ).geturl()
+            resp = client.get(
+                pinned,
+                headers={"User-Agent": "your-loot/1.0", "Host": authority},
+                # dial the address, but be the name: TLS is negotiated for the
+                # hostname, so the certificate is still checked against it and
+                # a wrong one is still refused
+                extensions={"sni_hostname": parsed.hostname},
+            )
+            if not resp.is_redirect:
+                return resp
+            location = resp.headers.get("location")
+            if not location:
+                return resp
+            # resolved against the name, not the pin, so a relative Location
+            # means what the server meant by it
+            url = urljoin(url, location)
 
     raise HTTPException(400, "that URL redirects too many times")
 

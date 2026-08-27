@@ -8,6 +8,7 @@ from app.db import get_db
 from app.integrations import libretro
 from app.integrations.igdb import igdb_client
 from app.models import CollectionItem, GameAttrs, Module, Owned, Platform, Wanted, User
+from app.ratelimit import outbound
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.games import GameAttrsOut, GameCreate, GameListOut, GameOut, GameUpdate
@@ -62,7 +63,7 @@ def _base_query():
     )
 
 
-@router.get("/boxart")
+@router.get("/boxart", dependencies=[Depends(outbound)])
 def game_boxart(
     title: str,
     platform_id: int | None = None,
@@ -162,7 +163,7 @@ def hardware_catalogue(
     }
 
 
-@router.get("/igdb/search")
+@router.get("/igdb/search", dependencies=[Depends(outbound)])
 def igdb_search(q: str = Query(min_length=2), user: User = Depends(current_user)):
     if not igdb_client.configured:
         raise HTTPException(

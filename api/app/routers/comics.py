@@ -7,6 +7,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.comicvine import comicvine_client
 from app.models import CollectionItem, ComicAttrs, Module, Owned, Wanted, User
+from app.ratelimit import outbound
 from app.search import contains
 from app.sorting import leading_number
 from app.tagging import tagged, tags_for, tags_of
@@ -55,7 +56,7 @@ def _base_query():
     )
 
 
-@router.get("/runs")
+@router.get("/runs", dependencies=[Depends(outbound)])
 def series_runs(series: str, user: User = Depends(current_user)):
     """The runs called `series`, newest first, with the year each began.
 
@@ -84,7 +85,7 @@ def series_runs(series: str, user: User = Depends(current_user)):
     return out
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(outbound)])
 def search_comicvine(q: str | None = None,
     series: str | None = None,
     issue: str | None = None,

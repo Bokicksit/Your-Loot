@@ -7,6 +7,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.integrations.tmdb import tmdb_client
 from app.models import CollectionItem, Module, MovieAttrs, Owned, Wanted, User
+from app.ratelimit import outbound
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.movies import (
@@ -57,7 +58,7 @@ def _base_query():
     )
 
 
-@router.get("/tmdb/search")
+@router.get("/tmdb/search", dependencies=[Depends(outbound)])
 def tmdb_search(q: str = Query(min_length=2), user: User = Depends(current_user)):
     if not tmdb_client.configured:
         raise HTTPException(503, "TMDB not configured — set TMDB_API_KEY")

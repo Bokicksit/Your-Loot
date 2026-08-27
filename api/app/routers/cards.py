@@ -18,6 +18,7 @@ from app import binders
 from app.models import (
     BinderSlot, CardAttrs, CollectionItem, Module, Owned, User, Wanted,
 )
+from app.ratelimit import outbound
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.cards import (
@@ -413,7 +414,7 @@ def list_cards(
     )
 
 
-@router.get("/tcgdex/search")
+@router.get("/tcgdex/search", dependencies=[Depends(outbound)])
 def tcgdex_search(name: str | None = None,
     set: str | None = None,
     number: str | None = None, user: User = Depends(current_user)):
@@ -433,7 +434,8 @@ def tcgdex_search(name: str | None = None,
     return results
 
 
-@router.post("/tcgdex/{card_id}", response_model=CardOut, status_code=201)
+@router.post("/tcgdex/{card_id}", response_model=CardOut, status_code=201,
+             dependencies=[Depends(outbound)])
 def add_from_tcgdex(card_id: str, db: Session = Depends(get_db),
     user: User = Depends(current_user)):
     """Import a TCGdex card into the local catalog. Keyed on

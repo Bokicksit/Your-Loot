@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     public_profiles: bool = False
     # New accounts allowed per hour from one address. See ratelimit.py.
     signup_limit: int = 20
+    # Searches sent to a third party per minute, per account. See ratelimit.py.
+    lookup_limit: int = 60
+    # How many proxies stand between the internet and this API, so the rate
+    # limiter knows which part of X-Forwarded-For it may believe. That header
+    # is a list anyone can start: a caller writes whatever they like, and each
+    # proxy appends the address it actually saw. Only the entries the proxies
+    # added are worth anything, so the count has to be told rather than
+    # guessed. One matches every compose file here — nginx in front of an API
+    # whose port is never published. Put Cloudflare, a tunnel or another
+    # load balancer in front of that and it becomes two. Zero means the API
+    # is exposed directly and the header is ignored entirely.
+    trusted_proxies: int = 1
     # Where this install is reachable, for the links inside emails. A verify
     # link has to be absolute and the API cannot infer the public address
     # behind a proxy without being told.

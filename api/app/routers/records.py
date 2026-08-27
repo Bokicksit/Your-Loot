@@ -12,6 +12,7 @@ from app.integrations.musicbrainz import musicbrainz_client
 from app.barcodes import lookup as cached_lookup
 from app.integrations.upcitemdb import BarcodeError
 from app.models import CollectionItem, Module, Owned, RecordAttrs, Wanted, User
+from app.ratelimit import outbound
 from app.search import contains
 from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
@@ -105,7 +106,7 @@ def _from_product(item: dict, barcode: str) -> dict:
     }
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(outbound)])
 def search_musicbrainz(
     q: str | None = None,
     artist: str | None = None,
@@ -171,7 +172,7 @@ def search_musicbrainz(
         raise HTTPException(502, f"MusicBrainz unreachable: {e}")
 
 
-@router.get("/tracklist")
+@router.get("/tracklist", dependencies=[Depends(outbound)])
 def record_tracklist(release_id: str, user: User = Depends(current_user)):
     """The running order for one Discogs pressing.
 
