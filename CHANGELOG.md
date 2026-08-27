@@ -63,6 +63,18 @@ Full detail is in the commit log, where every change has its own note.
   spends it and moving to another network should not hand out seconds.
 
 ### Fixed
+- **Collections open again on a desktop.** The room took hold of the mouse
+  the instant it was pressed, so it could keep panning if the cursor ran off
+  the edge. While an element holds the pointer the browser aims the click
+  that follows at *it* rather than at whatever is under the cursor, so every
+  click in the room arrived addressed to the floor and nothing asking "which
+  collection was that?" ever got an answer. The room looked alive — it still
+  scrolled, things still lit up under the cursor — and simply would not open,
+  while a phone was fine throughout, because touch panning is the browser's
+  own and never took the pointer in the first place. Now a press is left
+  alone until it has actually travelled a few pixels, and only then becomes a
+  drag. The other half of that: letting go at the end of a drag no longer
+  opens whatever you happened to stop over.
 - **The address follows the room.** Arriving at `/u/bo/pokedex` and then
   backing out left the bar still saying "pokedex" while you looked at games
   or at the room — so copying it handed somebody a link to a different page

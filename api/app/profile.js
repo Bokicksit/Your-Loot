@@ -94,21 +94,62 @@
     }, 200);
   });
 
-  var down = false, x0 = 0, l0 = 0;
+  /* Pressing is not yet dragging.
+
+     This used to take the pointer on pointerdown, which quietly cost the
+     mouse every click in the room: while an element holds the pointer, the
+     browser aims the click that follows at *it* rather than at whatever is
+     under the cursor, so every handler asking `e.target.closest(".zone")`
+     got the scene and gave up. Touch never saw it — touch returns above,
+     the browser pans it — which is why the room worked on a phone and only
+     scrolled on a desktop.
+
+     So the capture waits for movement. A press that goes nowhere is a click
+     and is left entirely alone; once the cursor has travelled far enough to
+     mean it, the drag takes over and the capture happens then, which is also
+     the point at which it starts being useful — it is what keeps the pan
+     alive when the cursor runs off the edge. */
+  var SLOP = 4;   /* px of travel before a press is a drag rather than a click */
+
+  var down = false, dragging = false, swallow = false, x0 = 0, l0 = 0, id = 0;
   scene.addEventListener("scroll", function () {
     room.classList.add("panned");
     keep();
   });
   scene.addEventListener("pointerdown", function (e) {
     if (e.pointerType === "touch") return;   // the browser does this one
-    down = true; x0 = e.clientX; l0 = scene.scrollLeft;
-    scene.setPointerCapture(e.pointerId);
-    scene.style.cursor = "grabbing";
+    if (e.button !== 0) return;              // a right-click is not a grab
+    down = true; dragging = false; id = e.pointerId;
+    x0 = e.clientX; l0 = scene.scrollLeft;
   });
   scene.addEventListener("pointermove", function (e) {
-    if (down) scene.scrollLeft = l0 - (e.clientX - x0);
+    if (!down) return;
+    var dx = e.clientX - x0;
+    if (!dragging) {
+      if (Math.abs(dx) < SLOP) return;       /* still just a press */
+      dragging = true;
+      /* throws if the pointer is no longer live, which is not worth failing
+         a pan over */
+      try { scene.setPointerCapture(id); } catch (err) {}
+      scene.style.cursor = "grabbing";
+    }
+    scene.scrollLeft = l0 - dx;
   });
-  function up() { down = false; scene.style.cursor = ""; }
+  function up() {
+    /* A drag ends in a click the browser owes us, and it is not one anybody
+       made — without this, letting go over a zone opens it. */
+    if (dragging) {
+      swallow = true;
+      setTimeout(function () { swallow = false; }, 0);
+    }
+    down = false; dragging = false; scene.style.cursor = "";
+  }
   scene.addEventListener("pointerup", up);
   scene.addEventListener("pointercancel", up);
+  document.addEventListener("click", function (e) {
+    if (!swallow) return;
+    swallow = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
 })();
