@@ -125,8 +125,32 @@ def client_address(request) -> str:
     (`trusted_proxies`), and fall back to the socket's own address whenever
     the header is shorter than it should be or holds something that is not an
     address — both meaning it was not written by the proxies it claims.
+
+    Counting only works if the chain still *contains* the caller, and not
+    every path leaves it there. Something between Cloudflare and this API can
+    discard the header and start a new one with Cloudflare's own edge as the
+    "client", and then the caller is not in the list at any depth — no number
+    reaches them, and every visitor collapses onto one address. Where that is
+    happening, `trust_cf_connecting_ip` switches to the header Cloudflare
+    sets, which carries the real caller regardless of what anything did to
+    the chain.
+
+    That header is only worth trusting when nothing can reach this API except
+    through Cloudflare, because anybody who can knock directly can type it
+    themselves — which is the same hole this function exists to close, coming
+    in a different door. Hence a setting that is off by default and has to be
+    turned on by somebody who knows their own path is closed.
     """
     peer = request.client.host if request.client else "unknown"
+
+    if settings.trust_cf_connecting_ip:
+        stated = request.headers.get("cf-connecting-ip", "").strip()
+        try:
+            ipaddress.ip_address(stated)
+            return stated
+        except ValueError:
+            pass  # absent or nonsense: fall through and count hops instead
+
     hops = settings.trusted_proxies
     if hops <= 0:
         return peer  # nothing in front, so nothing may rewrite the address

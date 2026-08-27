@@ -26,9 +26,22 @@ Full detail is in the commit log, where every change has its own note.
   `/api/admin/forwarding` and be told it: Cloudflare's `CF-Connecting-IP`
   says which address really made the request, where that lands in the chain
   says how many hops are genuine, and the page either confirms the setting or
-  names the number to change it to. It only ever checks the setting — the
-  limiter itself still counts hops, since that header means nothing on an
-  install somebody can reach without going through Cloudflare.
+  names the number to change it to.
+- **Where counting hops cannot work, `TRUST_CF_CONNECTING_IP` does.** Asked
+  the above on a real deployment, it answered that no number would do: the
+  forwarded chain there *begins* with a Cloudflare edge address, meaning
+  something past Cloudflare discards the header and starts a fresh one, so
+  the caller appears in it at no depth whatsoever. The visible cost is that
+  every visitor lands on the same address — which for the signup brake means
+  one bucket for the entire site, and the twenty-first stranger in an hour
+  being turned away for no reason they could discover. Turning this on takes
+  the address from the header Cloudflare sets, which survives whatever the
+  chain does. Off by default and it must stay off unless the origin is
+  unreachable except through Cloudflare: anybody who can knock directly can
+  type that header themselves, which is the same hole coming in by a
+  different door. `/api/admin/forwarding` now reports `shared_by_everyone`,
+  which is the symptom stated plainly, and recommends this when it is the
+  only thing that would help.
 - **A fetched image is fetched from the address that was checked.** Pasting
   an image URL had the API resolve the hostname, satisfy itself the answer
   was not somewhere private, and then hand the *name* to the HTTP client,

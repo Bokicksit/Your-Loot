@@ -113,14 +113,35 @@ def forwarding(request: Request, _: User = Depends(require_admin)):
         # their own address, the one the edge appended is the later one
         correct = len(chain) - max(i for i, p in enumerate(chain) if p == truth)
 
-    if not truth:
+    if settings.trust_cf_connecting_ip:
+        if using == truth:
+            verdict = (f"Correct. The limiter is using {using} from "
+                       f"CF-Connecting-IP, which is the caller.")
+        elif truth:
+            verdict = (f"TRUST_CF_CONNECTING_IP is on but the limiter is "
+                       f"using {using} rather than {truth} — the header did "
+                       f"not survive the path here.")
+        else:
+            verdict = ("TRUST_CF_CONNECTING_IP is on but this request carried "
+                       "no CF-Connecting-IP, so the limiter fell back to "
+                       f"counting hops and is using {using}. If requests can "
+                       "arrive without going through Cloudflare, turn this "
+                       "setting off — anybody reaching the origin directly "
+                       "can write that header themselves.")
+    elif not truth:
         verdict = ("No CF-Connecting-IP, so nothing here can be verified — "
                    "either this request did not come through Cloudflare, or "
                    "there is no Cloudflare in front of it.")
     elif correct is None:
-        verdict = (f"Cloudflare saw {truth}, which is nowhere in the "
-                   f"forwarded chain. Something in the path is rewriting the "
-                   f"header rather than appending to it.")
+        verdict = (
+            f"No value of TRUSTED_PROXIES can work here. Cloudflare saw "
+            f"{truth}, and that address is nowhere in the forwarded chain — "
+            f"something between Cloudflare and this API discards the header "
+            f"and starts a new one, so the caller is not in the list at any "
+            f"depth. The limiter is using {using}, which is the same address "
+            f"for every visitor. Set TRUST_CF_CONNECTING_IP=true, but only "
+            f"if nothing can reach this API except through Cloudflare."
+        )
     elif correct == settings.trusted_proxies:
         verdict = f"Correct. The limiter is using {using}, which is the caller."
     else:
@@ -132,8 +153,12 @@ def forwarding(request: Request, _: User = Depends(require_admin)):
         "forwarded_chain": chain,
         "cf_connecting_ip": truth or None,
         "trusted_proxies": settings.trusted_proxies,
+        "trust_cf_connecting_ip": settings.trust_cf_connecting_ip,
         "address_in_use": using,
         "should_be": correct,
+        # whether every visitor is landing on one address, which is the
+        # failure that looks like nothing until signups start being refused
+        "shared_by_everyone": bool(truth) and using != truth,
         "verdict": verdict,
     }
 

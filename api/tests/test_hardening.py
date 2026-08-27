@@ -35,6 +35,10 @@ class FakeRequest:
 
 @pytest.fixture
 def hops(monkeypatch):
+    # off unless a test turns it on: it overrides hop counting entirely, and
+    # leaving it set would quietly hollow out every test below
+    monkeypatch.setattr(settings, "trust_cf_connecting_ip", False)
+
     def set_to(n):
         monkeypatch.setattr(settings, "trusted_proxies", n)
     return set_to
@@ -160,7 +164,76 @@ def test_the_diagnostic_notices_a_rewritten_header(hops):
     req = cf_request("10.0.0.2", "172.20.0.4", "198.51.100.7")
     out = check(req)
     assert out["should_be"] is None
-    assert "rewriting the header" in out["verdict"]
+    assert "No value of TRUSTED_PROXIES can work here" in out["verdict"]
+    assert out["shared_by_everyone"] is True
+
+
+# The chain off the real deployment, 2026-08-26, kept verbatim. It is the
+# case no amount of reasoning predicted: the list starts with a Cloudflare
+# *edge* address, meaning something past Cloudflare threw the header away and
+# began a new one, and the caller — who Cloudflare names plainly — is not in
+# it at any depth. Counting hops cannot reach them, and the recommendation to
+# "set it to 2" was wrong on this path.
+REAL_CHAIN = "172.69.70.138, 89.222.103.193, 100.64.0.10"
+REAL_PEER = "fd12:d3a8:3b35:1:b000:17d:8f92:b5e4"
+REAL_CALLER = "45.31.11.147"
+
+
+@pytest.mark.parametrize("n", [0, 1, 2, 3, 4])
+def test_no_hop_count_recovers_the_caller_on_the_real_chain(hops, n):
+    hops(n)
+    got = ratelimit.client_address(cf_request(REAL_PEER, REAL_CHAIN, REAL_CALLER))
+    assert got != REAL_CALLER
+
+
+def test_the_real_chain_is_diagnosed_rather_than_guessed_at(hops, monkeypatch):
+    hops(2)  # what I had told him to set
+    monkeypatch.setattr(settings, "trust_cf_connecting_ip", False)
+    out = check(cf_request(REAL_PEER, REAL_CHAIN, REAL_CALLER))
+    assert out["should_be"] is None
+    assert out["shared_by_everyone"] is True
+    assert "TRUST_CF_CONNECTING_IP=true" in out["verdict"]
+
+
+def test_the_cloudflare_header_recovers_the_caller_where_counting_cannot(
+    hops, monkeypatch
+):
+    hops(1)
+    monkeypatch.setattr(settings, "trust_cf_connecting_ip", True)
+    req = cf_request(REAL_PEER, REAL_CHAIN, REAL_CALLER)
+    assert ratelimit.client_address(req) == REAL_CALLER
+    out = check(req)
+    assert out["shared_by_everyone"] is False
+    assert out["verdict"].startswith("Correct")
+
+
+def test_two_callers_behind_that_path_get_their_own_buckets(hops, monkeypatch):
+    """The point of the whole thing: one person hammering the login must not
+    lock out everybody else arriving through the same tunnel."""
+    hops(1)
+    monkeypatch.setattr(settings, "trust_cf_connecting_ip", True)
+    a = cf_request(REAL_PEER, REAL_CHAIN, "45.31.11.147")
+    b = cf_request(REAL_PEER, REAL_CHAIN, "203.0.113.44")
+    assert ratelimit.client_key(a, "signup") != ratelimit.client_key(b, "signup")
+
+
+def test_a_missing_cloudflare_header_falls_back_rather_than_blanking(
+    hops, monkeypatch
+):
+    """A request that arrives without it — a health check, or somebody who
+    got past Cloudflare — must not all share one empty key."""
+    hops(1)
+    monkeypatch.setattr(settings, "trust_cf_connecting_ip", True)
+    req = FakeRequest("10.0.0.2", "198.51.100.7, 172.20.0.4")
+    assert ratelimit.client_address(req) == "172.20.0.4"
+
+
+def test_a_forged_cloudflare_header_is_ignored_while_the_setting_is_off(hops):
+    """Off by default, because the header is only worth anything on a path
+    where nobody can knock directly."""
+    hops(1)
+    req = cf_request("10.0.0.2", "198.51.100.7", "1.2.3.4")
+    assert ratelimit.client_address(req) == "198.51.100.7"
 
 
 # ------------------------------------------------------- what searching costs

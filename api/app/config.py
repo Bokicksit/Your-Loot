@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     # load balancer in front of that and it becomes two. Zero means the API
     # is exposed directly and the header is ignored entirely.
     trusted_proxies: int = 1
+    # Take the caller's address from Cloudflare's CF-Connecting-IP instead of
+    # counting hops. For paths where counting cannot work: something between
+    # Cloudflare and here discards X-Forwarded-For and starts a new one, so
+    # the caller is not in the chain at any depth and every visitor collapses
+    # onto a single address. /api/admin/forwarding says whether that is you.
+    #
+    # Only safe where nothing can reach this API except through Cloudflare.
+    # Anybody able to knock on the origin directly can write this header
+    # themselves, which is the very hole `trusted_proxies` exists to close.
+    trust_cf_connecting_ip: bool = False
     # Where this install is reachable, for the links inside emails. A verify
     # link has to be absolute and the API cannot infer the public address
     # behind a proxy without being told.
