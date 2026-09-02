@@ -8,6 +8,23 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **Price check, on a binder page.** Next to Arrange there is now a coin.
+  Switch it on and every card on the page you are looking at gets today's
+  market price laid over it, with two totals above: what the cards you own
+  on that page are worth, and what the gaps would cost to fill. Switch it
+  off and it is gone — nothing about a price is saved, on purpose. A price
+  is a fact about this afternoon, and a table of them would be a table of
+  things that used to be true. The figures are TCGplayer's market price in
+  dollars (Cardmarket's trend in euros where a card is only listed there),
+  from TCGdex, which already supplies the card art; they are labelled with
+  their source and age, and a dash means the card is on neither
+  marketplace. When the price service is down the bar says so rather than
+  showing a page of dashes. Not eBay: eBay does not sell its sold-listings
+  data to anybody this size, and TCGplayer's market price is derived from
+  actual completed sales on the largest singles marketplace there is, which
+  is the same question answered from a cleaner source.
+
 ### Security
 - **The rate limits stop believing a header anyone can write.**
   `X-Forwarded-For` is a list a caller starts and each proxy adds to, so the

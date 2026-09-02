@@ -278,6 +278,7 @@ CHARGED = [
     ("app.routers.books", "/description"),
     ("app.routers.cards", "/tcgdex/search"),
     ("app.routers.cards", "/tcgdex/{card_id}"),
+    ("app.routers.cards", "/prices"),
     ("app.routers.comics", "/runs"),
     ("app.routers.comics", "/search"),
     ("app.routers.games", "/boxart"),

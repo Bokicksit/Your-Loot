@@ -97,3 +97,28 @@ class CardScanOut(CardListOut):
     """
 
     sure: bool = False
+
+
+class PriceCheckIn(BaseModel):
+    """The cards on the page being looked at, and for each the variant of the
+    copy in the slot where the slot has one."""
+
+    item_ids: list[int] = Field(min_length=1, max_length=40)
+    variants: dict[int, str | None] = {}
+
+
+class PriceOut(BaseModel):
+    amount: float
+    currency: str
+    low: float | None = None
+    high: float | None = None
+    variant: str | None = None
+    source: str
+    updated: str | None = None
+
+
+class PriceCheckOut(BaseModel):
+    prices: dict[int, PriceOut | None]
+    priced: int
+    asked: int
+    unavailable: bool = False

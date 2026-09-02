@@ -6,6 +6,20 @@ import { NavLink } from "react-router-dom";
  *  Routes rather than local state, because a binder is a thing you send
  *  somebody a link to, and because the Pokédex already had a URL.
  */
+/** A price the way a person writes one: "$12.40", "€9". Whole euros and
+ *  dollars drop the cents — a market price is not a till receipt — but
+ *  anything under ten keeps them, because on a fifty-cent common the cents
+ *  are the whole number. */
+export function money(amount, currency = "USD") {
+  if (amount == null || Number.isNaN(Number(amount))) return "—";
+  const n = Number(amount);
+  const sym = currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
+  const digits = n < 10 ? 2 : 0;
+  return sym + n.toLocaleString(undefined, {
+    minimumFractionDigits: digits, maximumFractionDigits: digits,
+  });
+}
+
 export function BinderSwitch({ active }) {
   const chip = (to, key, label, end = false) => (
     <NavLink
@@ -275,7 +289,7 @@ export function pageIndex(entries, binder, keyOf) {
   return at;
 }
 
-export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arranging }) {
+export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arranging, price }) {
   const state = entry.state; // missing | upgrade | have | one
   const cls = state === "missing" ? "unowned" : state === "upgrade" ? "partial" : "owned";
   const art = entry.card?.image_url || entry.art;
@@ -292,6 +306,26 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
       {/* only while searching: on the binder proper you are already looking
           at the page, and a badge on every card would say so ninety times */}
       {entry.page ? <span className="slot-page">p.{entry.page}</span> : null}
+      {/* The price check, while it is on. `undefined` is "not asked";
+          `null` is "asked, and this card is on no marketplace" — the dash
+          says so, because a slot that stays silent looks like it was
+          missed rather than answered. */}
+      {price !== undefined && (
+        <span
+          className={`slot-price ${price ? "" : "none"}`}
+          title={
+            price
+              ? `${price.source} market price` +
+                (price.variant ? ` · ${price.variant}` : "") +
+                (price.low != null && price.high != null
+                  ? ` · ${money(price.low, price.currency)}–${money(price.high, price.currency)}`
+                  : "")
+              : "Not listed on TCGplayer or Cardmarket"
+          }
+        >
+          {price ? money(price.amount, price.currency) : "—"}
+        </span>
+      )}
       {art ? (
         // A set binder shows the art of a card you do not own, dimmed by the
         // slot's own state — the gap should look like the card it wants.

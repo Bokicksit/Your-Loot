@@ -185,6 +185,13 @@ export const api = {
   // which the other kinds never have to do.
   binders: () => request("/api/binders"),
   binder: (id) => request(`/api/binders/${id}`),
+  // Live market prices for the cards on a page. Asked for, shown, forgotten
+  // — nothing about a price is saved.
+  cardPrices: (item_ids, variants = {}) =>
+    request("/api/cards/prices", {
+      method: "POST",
+      body: JSON.stringify({ item_ids, variants }),
+    }),
   binderSets: () => request("/api/binders/sets/available"),
   profile: () => request("/api/profile"),
   saveProfile: (body) =>

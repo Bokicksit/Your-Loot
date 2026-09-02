@@ -7,7 +7,10 @@ import {
   BinderSlotTile,
   BinderSwitch,
   PageBox,
+  money,
   pageIndex,
+  paginate,
+  shapeOf,
   usePageTracker,
 } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
@@ -37,6 +40,11 @@ export default function BinderPage() {
   const [lifted, setLifted] = useState(null); // the card in your hand
   const [sort, setSort] = useState("order");
   const [adding, setAdding] = useState(null);   // the slot being filled
+  // The price check. `pricing` is the switch; `prices` is what came back for
+  // the page on screen — item id to a price, or null for a card that is on
+  // no marketplace. Cleared, not kept, when the switch goes off.
+  const [pricing, setPricing] = useState(false);
+  const [prices, setPrices] = useState(null);
 
   useDismiss(
     open !== null,
@@ -128,6 +136,28 @@ export default function BinderPage() {
   const ordered = (sorters[sort] ? [...shown].sort(sorters[sort]) : shown).map(
     (e) => (searching ? { ...e, page: homePage.get(e.key) } : e)
   );
+
+  /* The cards the price check is about: the spread on screen, or the results
+     while a search is on. Never the whole binder — a custom binder can hold
+     hundreds, and the point of a page is that it is a page. */
+  const spreadOnScreen = () => {
+    if (searching) return ordered.slice(0, 40);
+    const spreads = paginate(ordered, shapeOf(binder));
+    const per = binder.double_page ? 2 : 1;
+    const i = Math.min(spreads.length - 1, Math.max(0, Math.floor((pageNo - 1) / per)));
+    return (spreads[i] || []).flat();
+  };
+  const onScreen = pricing ? spreadOnScreen() : [];
+  const idOf = (e) => e.card?.id ?? e.item_id ?? null;
+  const priceFor = (e) => {
+    if (!pricing || !prices) return undefined;
+    // the provider being down is said once, in the bar; a dash on every card
+    // would say "unlisted" nine times about cards that were never asked
+    if (prices.unavailable) return undefined;
+    const id = idOf(e);
+    if (id == null || !(id in prices.prices)) return undefined;
+    return prices.prices[id];
+  };
 
   const perPage = Math.max(1, (binder.rows || 3) * (binder.cols || 3));
   // Pages of the binder, not of the result list — the box is a way back into
@@ -295,6 +325,22 @@ export default function BinderPage() {
             {arranging ? "Done" : "Arrange"}
           </button>
         )}
+        {/* What the page is worth, laid over the cards while this is on.
+            Looked up when you switch it on and forgotten when you switch it
+            off — a price is a fact about today. */}
+        {entries.length > 0 && (
+          <button
+            className={`ghost ${pricing ? "on" : ""}`}
+            onClick={() => {
+              setPricing(!pricing);
+              if (pricing) setPrices(null);
+            }}
+            title="Lay today's market price over every card on this page"
+          >
+            <Icon id="coin" />
+            {pricing ? "Prices on" : "Price check"}
+          </button>
+        )}
         <button
           className={`ghost ${renaming ? "on" : ""}`}
           onClick={() => setRenaming(!renaming)}
@@ -399,6 +445,14 @@ export default function BinderPage() {
         </div>
       )}
 
+      {pricing && (
+        <PriceBar
+          entries={onScreen}
+          prices={prices}
+          onPrices={setPrices}
+        />
+      )}
+
       <BinderPages
         binder={binder}
         entries={ordered}
@@ -412,6 +466,7 @@ export default function BinderPage() {
               open={open === e.key}
               lifted={lifted === e.key}
               arranging={arranging}
+              price={priceFor(e)}
               onToggle={() => tapSlot(e)}
               onName={findCards}
             />
@@ -767,4 +822,108 @@ function AddCards({ binder, already, onAdded, onClose }) {
       </button>
     </div>
   );
+}
+
+/** The price check's own strip: fetches for the entries it is handed and
+ *  totals what came back. A component rather than an effect in the page so
+ *  it can use hooks below the page's early returns, and so the page keeps
+ *  only the result.
+ *
+ *  Two totals, because they answer two different questions: what the cards
+ *  you own on this page are worth, and what the empty slots would cost to
+ *  fill. A set binder has both; a custom binder only ever has the first.
+ */
+function PriceBar({ entries, prices, onPrices }) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(null);
+
+  const ids = entries.map((e) => e.card?.id ?? e.item_id).filter((x) => x != null);
+  const key = ids.join(",");
+
+  useEffect(() => {
+    if (!ids.length) {
+      onPrices({ prices: {}, priced: 0, asked: 0, unavailable: false });
+      return;
+    }
+    let live = true;
+    setBusy(true);
+    setFailed(null);
+    const variants = {};
+    for (const e of entries) {
+      if (e.card?.id != null) variants[e.card.id] = e.card.variant || null;
+    }
+    api
+      .cardPrices(ids, variants)
+      .then((r) => live && onPrices(r))
+      .catch((e) => live && setFailed(e.message))
+      .finally(() => live && setBusy(false));
+    return () => {
+      live = false;
+    };
+    // the ids are the identity of the page; the entries object is rebuilt
+    // on every render and would refetch forever
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const priced = (e) => {
+    const id = e.card?.id ?? e.item_id;
+    const p = prices?.prices?.[id];
+    return p && p.currency === "USD" ? p.amount : null;
+  };
+  let have = 0, gaps = 0, haveN = 0, gapN = 0, other = 0;
+  for (const e of entries) {
+    const v = priced(e);
+    const id = e.card?.id ?? e.item_id;
+    const p = prices?.prices?.[id];
+    if (p && p.currency !== "USD") other += 1;
+    if (v == null) continue;
+    if (e.card) { have += v; haveN += 1; } else { gaps += v; gapN += 1; }
+  }
+  const updated = Object.values(prices?.prices || {}).find((p) => p?.updated)?.updated;
+  const age = updated ? ago(updated) : null;
+
+  return (
+    <div className="price-bar" role="status">
+      {busy && <span className="note">Checking prices…</span>}
+      {!busy && failed && <span className="note warn">{failed}</span>}
+      {!busy && !failed && prices?.unavailable && (
+        <span className="note warn">
+          Prices are unavailable right now — the price service is not answering.
+        </span>
+      )}
+      {!busy && !failed && prices && !prices.unavailable && (
+        <>
+          <span className="sum">
+            {money(have)}
+            <small>{haveN === 1 ? "1 card you own" : `${haveN} cards you own`}</small>
+          </span>
+          {gapN > 0 && (
+            <span className="sum">
+              {money(gaps)}
+              <small>to fill {gapN === 1 ? "the gap" : `${gapN} gaps`}</small>
+            </span>
+          )}
+          <span className="note">
+            {prices.priced} of {prices.asked} priced · TCGplayer market
+            {other > 0 ? ` · ${other} in € (not totalled)` : ""}
+            {age ? ` · updated ${age}` : ""} · not saved
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** "2 hours ago", for a timestamp — a price without its age is a claim. */
+function ago(iso) {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 90) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 90) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 36) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  const d = Math.round(h / 24);
+  return `${d} day${d === 1 ? "" : "s"} ago`;
 }

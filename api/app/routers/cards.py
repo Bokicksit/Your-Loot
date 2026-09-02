@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 import httpx
 
-from app import arthash
+from app import arthash, prices as price_check
 from app.binder_view import species_names
 from app.cards_util import classify_layer
 from app.auth import current_user
@@ -23,6 +23,7 @@ from app.tagging import tagged, tags_for, tags_of
 from app.tenancy import guard_entry_write, my_copies, my_want, on_my_shelf, visible
 from app.schemas.cards import (
     CardCreate, CardListOut, CardOut, CardScanOut, CardUpdate,
+    PriceCheckIn, PriceCheckOut,
 )
 from app.search import contains, starts_with
 from app.sorting import leading_number, rarity_rank
@@ -476,6 +477,31 @@ def add_from_tcgdex(card_id: str, db: Session = Depends(get_db),
     db.commit()
     db.refresh(item)
     return card_to_out(item, user.id, tags_of(db, user.id, item.id))
+
+
+@router.post("/prices", response_model=PriceCheckOut,
+             dependencies=[Depends(outbound)])
+def price_check_page(body: PriceCheckIn, db: Session = Depends(get_db),
+    user: User = Depends(current_user)):
+    """What the cards on a binder page go for right now.
+
+    Live from TCGdex and kept nowhere — see prices.py for why. Forty cards at
+    most, which is a two-page spread with room to spare; the cap is what
+    stops this being a way to price the whole catalogue one request at a
+    time. Cards this person cannot see are simply left out of the answer.
+    """
+    rows = db.scalars(
+        select(CollectionItem)
+        .where(
+            CollectionItem.module == Module.cards.value,
+            CollectionItem.id.in_(set(body.item_ids)),
+            visible(user.id),
+        )
+        .options(joinedload(CollectionItem.card_attrs))
+    ).unique().all()
+    if not rows:
+        return PriceCheckOut(prices={}, priced=0, asked=0)
+    return PriceCheckOut(**price_check.check(rows, body.variants))
 
 
 @router.post("", response_model=CardOut, status_code=201)

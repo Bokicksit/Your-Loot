@@ -242,6 +242,15 @@ export function HelpPage() {
           on the wanted list too, where the question matters most.
         </li>
         <li>
+          <strong>Price check</strong>, on a binder, lays a live market price
+          over every card on the page you are looking at and totals them —
+          what the page is worth, and what the gaps would cost to fill. The
+          figures are TCGplayer's market price (Cardmarket's where a card is
+          only listed there), fetched the moment you switch it on and kept
+          nowhere: switch it off and they are gone. A dash means the card is
+          on neither marketplace.
+        </li>
+        <li>
           <strong>Tiles or list</strong> is per collection, and the slider
           sets how many tiles share a row — covers on a wall or details in a
           line, whichever suits that shelf.

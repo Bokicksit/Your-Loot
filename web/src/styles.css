@@ -5233,3 +5233,59 @@ img.game-cover.contain, img.expand-cover.contain { object-fit: contain; }
   border-radius: var(--r-pill);
   color: var(--text-mute);
 }
+
+/* ---- price check ------------------------------------------------------
+   A binder page with the price check on: one figure on each card, and the
+   page's total in a bar above. Nothing here is saved; it is a look, not a
+   ledger, and the styling stays light for the same reason. */
+.slot-price {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--bg-0);
+  border: 1px solid var(--gold-line);
+  color: var(--gold-bright);
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  font-weight: var(--w-med);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
+  pointer-events: auto;
+  z-index: 1;
+}
+.slot-price.none {
+  color: var(--text-mute);
+  border-color: var(--line);
+}
+.price-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  margin: 0 0 var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: linear-gradient(180deg, var(--gold-wash), transparent 70%), var(--bg-1);
+}
+.price-bar .sum {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--f-3);
+  font-weight: var(--w-med);
+  color: var(--gold-bright);
+}
+.price-bar .sum small {
+  font-size: var(--f-1);
+  font-weight: var(--w-reg);
+  color: var(--text-mute);
+  margin-left: 6px;
+}
+.price-bar .note {
+  font-size: var(--f-1);
+  color: var(--text-mute);
+}
+.price-bar .note.warn { color: var(--danger); }
