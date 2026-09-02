@@ -31,6 +31,7 @@ lives on, and a restore must never be the thing that turns it on.
 
 import io
 import json
+import uuid
 import zipfile
 from datetime import date, datetime
 from pathlib import Path
@@ -83,7 +84,15 @@ ATTRS = {
 # Settings that describe this server rather than this person. A profile is
 # published on the install it lives on; carrying the choice to another one
 # would publish a collection somewhere its owner never asked for.
-LOCAL_ONLY = {"public_collections", "public_loose"}
+#
+# The sync settings are local for the opposite reason: they describe where
+# *this* install sends its collection. Carried along, a mirror would inherit
+# the instruction to mirror itself somewhere, token included.
+SYNC_KEYS = {
+    "sync_url", "sync_token", "sync_nightly",
+    "sync_last_at", "sync_last_result", "sync_last_error",
+}
+LOCAL_ONLY = {"public_collections", "public_loose"} | SYNC_KEYS
 
 
 def _plain(value):
@@ -297,10 +306,11 @@ def _clear(db: Session, user_id: int) -> None:
     reach their rows through one that is, which is why they are written as
     subqueries rather than joins.
     """
-    binders = select(Binder.id).where(Binder.user_id == user_id)
+    # Binders are not cleared here. They are matched by uid and updated in
+    # place by load(), so that a binder keeps its id — and the public link
+    # somebody was given to it — across a restore or a nightly mirror. Their
+    # slots are replaced there too, per binder.
     tags = select(Tag.id).where(Tag.user_id == user_id)
-    db.execute(delete(BinderSlot).where(BinderSlot.binder_id.in_(binders)))
-    db.execute(delete(Binder).where(Binder.user_id == user_id))
     db.execute(delete(ItemTag).where(ItemTag.tag_id.in_(tags)))
     db.execute(delete(Tag).where(Tag.user_id == user_id))
     db.execute(delete(Owned).where(Owned.user_id == user_id))
@@ -423,6 +433,7 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
 
     payload, z = _open(raw)
     here = set(available())
+    check_plan(payload, user, here)
 
     _clear(db, user.id)
 
@@ -461,10 +472,28 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
             if item is not None:
                 db.add(ItemTag(tag_id=tag.id, item_id=item.id))
 
+    # Binders: found again rather than made again, so their ids hold. A file
+    # from before uids is matched on what it can be — kind and set, or kind
+    # and name — which is exact for set and dex binders and as good as a
+    # custom binder's name is.
+    existing = {
+        b.uid: b for b in db.scalars(select(Binder).where(Binder.user_id == user.id)).all()
+    }
+    kept: set[int] = set()
     for spec in payload.get("binders", []):
-        binder = Binder(**_fields(Binder, spec), user_id=user.id)
-        db.add(binder)
-        db.flush()
+        fields = _fields(Binder, spec)
+        uid = fields.pop("uid", None) or _legacy_uid(spec, existing.values())
+        binder = existing.get(uid) if uid else None
+        if binder is None:
+            binder = Binder(**fields, uid=uid or str(uuid.uuid4()), user_id=user.id)
+            db.add(binder)
+            db.flush()
+        else:
+            for k, v in fields.items():
+                setattr(binder, k, v)
+            db.execute(delete(BinderSlot).where(BinderSlot.binder_id == binder.id))
+            db.flush()
+        kept.add(binder.id)
         for slot in spec.get("slots", []):
             at = slot.get("owned_at")
             copy = copies[at] if isinstance(at, int) and 0 <= at < len(copies) else None
@@ -475,6 +504,13 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
                 owned_id=copy.id if copy is not None else None,
                 item_id=item.id if item is not None else None,
             ))
+
+    # a binder the file no longer has is one that was deleted at the source
+    for b in existing.values():
+        if b.id not in kept:
+            db.execute(delete(BinderSlot).where(BinderSlot.binder_id == b.id))
+            db.delete(b)
+    db.flush()
 
     for pref in payload.get("settings", []):
         key = pref.get("key")
@@ -503,6 +539,64 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
         "from_version": payload.get("app_version"),
         "created_at": payload.get("created_at"),
     }
+
+
+def _legacy_uid(spec: dict, binders) -> str | None:
+    """A uid for a binder from a file that predates them.
+
+    Set and dex binders are identified by what they are of; a custom binder
+    only by its name, which is what a person would match them on too.
+    """
+    kind = spec.get("kind")
+    for b in binders:
+        if b.kind != kind:
+            continue
+        if kind == "dex":
+            return b.uid
+        if kind == "set":
+            if (b.set_code or "") == (spec.get("set_code") or "") and bool(b.master) == bool(spec.get("master")):
+                return b.uid
+        elif (b.name or "") == (spec.get("name") or ""):
+            return b.uid
+    return None
+
+
+def check_plan(payload: dict, user, here: set[str]) -> None:
+    """Refuse a collection this account's plan could not hold.
+
+    A restore was always somebody's own file back into their own account, so
+    nothing here ever counted. A collection arriving from another server is
+    a different thing: a free account on a hosted install can be sent two
+    thousand cards from a home one, and loading them would put the account
+    past a cap it could never have reached by hand. Better refused, and
+    said, than loaded and quietly over.
+
+    Counted the way the caps are: copies of cards, and binders besides the
+    Pokédex. Cards from a collection this install does not carry are not
+    counted, because they are not loaded either.
+    """
+    from app import limits
+
+    if not limits.limited(user):
+        return
+    module_of = {i.get("ref"): i.get("module") for i in payload.get("items", [])}
+    cards = sum(
+        1 for o in payload.get("owned", [])
+        if module_of.get(o.get("ref")) == "cards" and "cards" in here
+    )
+    cap = limits.card_limit()
+    if cap and cards > cap:
+        raise Refused(
+            f"This collection has {cards} cards and the plan on this account "
+            f"allows {cap}. Nothing was changed."
+        )
+    extra = sum(1 for b in payload.get("binders", []) if b.get("kind") != "dex")
+    bcap = limits.binder_limit()
+    if bcap and extra > bcap:
+        raise Refused(
+            f"This collection has {extra} binders besides the Pokédex and the "
+            f"plan on this account allows {bcap}. Nothing was changed."
+        )
 
 
 def _fields(model, spec: dict) -> dict:

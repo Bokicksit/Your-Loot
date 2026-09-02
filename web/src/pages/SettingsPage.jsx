@@ -26,6 +26,8 @@ const SECTION_LABEL = {
   plan: "Plan",
   account: "Account",
   mine: "Your collection",
+  sync: "Send it elsewhere",
+  tokens: "Receive from elsewhere",
   backup: "Whole server",
 };
 
@@ -269,6 +271,8 @@ export default function SettingsPage() {
       <PlanCard open={open} onToggle={setOpen} />
       <AccountCard open={open} onToggle={setOpen} />
       <MyBackupCard open={open} onToggle={setOpen} />
+      <SyncCard open={open} onToggle={setOpen} />
+      <TokensCard open={open} onToggle={setOpen} />
       <BackupCard open={open} onToggle={setOpen} />
       </div>
 
@@ -1381,6 +1385,220 @@ function BackupCard({ open, onToggle }) {
             Reload to see it
           </button>
         </div>
+      )}
+    </Section>
+  );
+}
+
+/** "2 hours ago", for a timestamp the server wrote. */
+function since(iso) {
+  if (!iso) return null;
+  const t = Date.parse(iso.endsWith("Z") ? iso : iso + "Z");
+  if (Number.isNaN(t)) return null;
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 2) return "just now";
+  if (m < 90) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 36) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  const d = Math.round(h / 24);
+  return `${d} day${d === 1 ? "" : "s"} ago`;
+}
+
+/** Send this collection to another Your Loot — the hosted one, usually — so
+ *  the public page there stays current while this server stays private.
+ *
+ *  The other account becomes a mirror: replaced wholesale on every send, so
+ *  anything edited there is overwritten by the next one. Said here rather
+ *  than discovered, because "my card vanished from the app" would otherwise
+ *  be the way people learn it. */
+function SyncCard({ open, onToggle }) {
+  const [st, setSt] = useState(null);
+  const [url, setUrl] = useState("https://yourloot.app");
+  const [token, setToken] = useState("");
+  const [nightly, setNightly] = useState(false);
+  const [busy, setBusy] = useState(null); // "save" | "now" | "forget"
+  const [error, setError] = useState(null);
+  const [flash, setFlash] = useState(null);
+
+  const load = () =>
+    api.sync().then((r) => {
+      setSt(r);
+      if (r.url) setUrl(r.url);
+      setNightly(!!r.nightly);
+    }).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const run = async (what, fn) => {
+    setBusy(what); setError(null); setFlash(null);
+    try {
+      const r = await fn();
+      if (r && r.configured !== undefined) setSt(r);
+      setToken("");
+      if (what === "now") setFlash("Sent.");
+      if (what === "save") setFlash("Saved.");
+      if (what === "forget") { setSt({ configured: false }); setUrl("https://yourloot.app"); setNightly(false); }
+    } catch (e) {
+      setError(e.message);
+      load();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const summary = !st ? "…"
+    : !st.configured ? "off"
+    : st.last_error ? "last send failed"
+    : st.last_at ? `sent ${since(st.last_at)}` : "ready";
+  const res = st?.last_result;
+
+  return (
+    <Section id="sync" icon="cloud" name="Send it elsewhere" summary={summary} open={open} onToggle={onToggle}>
+      <p>
+        Send this collection to an account on another Your Loot — the hosted
+        one at yourloot.app, usually — so the public page there is always
+        current, without this server being reachable from anywhere. Nothing
+        comes in; this server pushes out.
+      </p>
+      <p className="settings-note">
+        That account becomes a <strong>mirror</strong>: everything in it is
+        replaced by what is here, every time. Keep your collection <em>here</em>,
+        and treat what is there as a copy. Which shelves are public is still
+        decided over there, in that account's settings.
+      </p>
+      <p className="settings-note">
+        On the other account: <strong>Settings → Receive from elsewhere →
+        Create a sync token</strong>, and paste it below. That token can do one
+        thing — receive a collection — and nothing else.
+      </p>
+      <div className="set-fields">
+        <label className="set-field">
+          Address of the other Your Loot
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://yourloot.app" autoComplete="off" />
+        </label>
+        <label className="set-field">
+          Sync token {st?.configured && st.token_prefix ? <span className="settings-note">(saved · {st.token_prefix}…)</span> : null}
+          <input type="password" value={token} onChange={(e) => setToken(e.target.value)}
+                 placeholder={st?.configured ? "leave blank to keep the saved one" : "paste it here"} autoComplete="off" />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={nightly} onChange={(e) => setNightly(e.target.checked)} />
+          Send it every night
+        </label>
+      </div>
+      <div className="form-row wrap">
+        <button className="primary" disabled={busy !== null || !url.trim() || (!token.trim() && !st?.configured)}
+                onClick={() => run("save", () => api.saveSync({ url: url.trim(), token: token.trim() || null, nightly }))}>
+          {busy === "save" ? "…" : "Save"}
+        </button>
+        <button className="ghost" disabled={busy !== null || !st?.configured}
+                onClick={() => run("now", () => api.syncNow())}>
+          <Icon id="upload" />
+          {busy === "now" ? "Sending…" : "Send now"}
+        </button>
+        {st?.configured && (
+          <button className="ghost" disabled={busy !== null}
+                  onClick={() => run("forget", () => api.forgetSync())}
+                  title="Stop sending, and forget the token. The mirror keeps what it was last sent.">
+            <Icon id="x" />
+            Stop
+          </button>
+        )}
+      </div>
+      {flash && <p className="settings-note">{flash}</p>}
+      {error && <p className="error"><Icon id="alert" />{error}</p>}
+      {st?.last_error && !error && (
+        <p className="error"><Icon id="alert" />Last send failed: {st.last_error}</p>
+      )}
+      {st?.last_at && res && (
+        <p className="settings-note">
+          Last sent {since(st.last_at)} — {res.copies} {res.copies === 1 ? "copy" : "copies"},{" "}
+          {res.wanted} wanted, {res.binders} {res.binders === 1 ? "binder" : "binders"}
+          {res.images ? `, ${res.images} new photo${res.images === 1 ? "" : "s"}` : ""}
+          {res.skipped ? ` · ${res.skipped} item${res.skipped === 1 ? "" : "s"} skipped (collections that server doesn't carry)` : ""}
+        </p>
+      )}
+    </Section>
+  );
+}
+
+/** The other half: let another Your Loot send its collection into *this*
+ *  account. The token it needs is minted here, shown once, and can only do
+ *  that one thing. */
+function TokensCard({ open, onToggle }) {
+  const [rows, setRows] = useState(null);
+  const [name, setName] = useState("my home server");
+  const [fresh, setFresh] = useState(null); // the one-time value
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = () => api.tokens().then((r) => setRows(r.tokens || [])).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+
+  const make = async () => {
+    setBusy(true); setError(null);
+    try {
+      const r = await api.createToken(name.trim() || "sync", "sync");
+      setFresh(r);
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const revoke = async (id) => {
+    setError(null);
+    try { await api.revokeToken(id); load(); } catch (e) { setError(e.message); }
+  };
+
+  const live = (rows || []).filter((t) => !t.revoked_at && t.scope === "sync");
+  const summary = rows === null ? "…" : live.length ? `${live.length} token${live.length === 1 ? "" : "s"}` : "none";
+
+  return (
+    <Section id="tokens" icon="lock" name="Receive from elsewhere" summary={summary} open={open} onToggle={onToggle}>
+      <p>
+        Let a Your Loot you run at home send its collection into this account,
+        so this account mirrors it. Make a token here, paste it into{" "}
+        <strong>Settings → Send it elsewhere</strong> on that server, and this
+        account is replaced with that collection on every send.
+      </p>
+      <p className="settings-note">
+        A sync token can do exactly one thing: receive a collection. It cannot
+        read anything, change the account, or make more tokens. Revoke it here
+        and the next send is refused.
+      </p>
+      <div className="form-row wrap">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="what it's for" maxLength={60} />
+        <button className="primary" disabled={busy} onClick={make}>
+          <Icon id="plus" />
+          {busy ? "…" : "Create a sync token"}
+        </button>
+      </div>
+      {fresh && (
+        <div className="token-once">
+          <p className="settings-note">
+            Copy this now — it is shown once and cannot be shown again.
+          </p>
+          <code>{fresh.token}</code>
+          <button className="ghost" onClick={() => setFresh(null)}>Done</button>
+        </div>
+      )}
+      {error && <p className="error"><Icon id="alert" />{error}</p>}
+      {live.length > 0 && (
+        <ul className="token-list">
+          {live.map((t) => (
+            <li key={t.id}>
+              <span className="tok-name">{t.name}</span>
+              <span className="tok-prefix">{t.prefix}…</span>
+              <span className="settings-note">
+                {t.last_used_at ? `used ${since(t.last_used_at)}` : "never used"}
+              </span>
+              <button className="ghost" onClick={() => revoke(t.id)} title="Revoke — the next send with it is refused">
+                <Icon id="trash" />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </Section>
   );

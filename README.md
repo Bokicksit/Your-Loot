@@ -399,6 +399,52 @@ the Settings page is the web container's. If the two disagree, one image
 updated and the other didn't, which looks like the app being broken rather
 than half-upgraded.
 
+## Keeping a public page current without exposing your server
+
+The common shape: your collection lives on a home server, and you want a
+public page people can actually reach — on yourloot.app, or on any other Your
+Loot — **without** putting the home server on the internet.
+
+**Settings → Send it elsewhere** does that by pushing *out*. Your server sends
+its whole collection to an account on the other install, now or every night,
+and that account's public page reads from the copy. Nothing reaches in: no
+tunnel to your house, no open port, no exposed page.
+
+1. On the **receiving** account (yourloot.app, say): *Settings → Receive from
+   elsewhere → Create a sync token*. Copy it — it's shown once.
+2. On your **home** server: *Settings → Send it elsewhere*. Paste the address
+   and the token, tick *every night* if you like, **Save**, then **Send now**.
+3. On the receiving account, tick which shelves are public. That decision
+   stays there; sending never changes it.
+
+Three things to know:
+
+- **The receiving account is a mirror.** It is replaced wholesale on every
+  send. Anything you add or edit *there* is gone at the next send — keep your
+  collection at home, and treat the copy as a copy.
+- **The token can do one thing.** A `sync` token can push a collection into
+  its account and is refused everywhere else — it cannot read a card, change
+  the password, or make more tokens. It has to live on your home server, and
+  that is not a vault, so what it can do had to be small. Revoke it on the
+  receiving side and the next send fails.
+- **The plan on the receiving account applies.** A free account on a hosted
+  install has caps; a collection that would exceed them is refused, with the
+  numbers, before anything changes. On a hosted service this is what a
+  Supporter plan is for.
+
+Binder links survive it: a binder keeps its id across every send, so the
+`/u/name/binder/17` link you gave out keeps working.
+
+The file that travels is your **Your collection** backup, and the receiving
+end is the restore that already existed — so anything the backup carries,
+the mirror gets: copies with condition and grading, the wanted list, tags,
+binders, your photos. What never travels: your password, plan, screen name,
+which shelves are public, and the sync settings themselves.
+
+`SYNC_ALLOW_PRIVATE=true` lets the address be a private one, for a second
+Your Loot on your own network; by default a LAN address is refused, the same
+way a pasted image URL is.
+
 ## Behind a proxy or tunnel
 
 Even with a password set, **don't expose port 8080 to the internet directly.**

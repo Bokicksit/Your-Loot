@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     # Anybody able to knock on the origin directly can write this header
     # themselves, which is the very hole `trusted_proxies` exists to close.
     trust_cf_connecting_ip: bool = False
+    # Let "send my collection to another Your Loot" point at a private
+    # address. Off, because a URL somebody types is otherwise a way to make
+    # this server post to things on its own network; on, for a home where the
+    # other install is a second machine on the LAN.
+    sync_allow_private: bool = False
     # Where this install is reachable, for the links inside emails. A verify
     # link has to be absolute and the API cannot infer the public address
     # behind a proxy without being told.

@@ -28,6 +28,8 @@ and on this install 881 of 943 copies were already claimed by the Pokédex, so
 anything exclusive would have emptied it.
 """
 
+import uuid
+
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,6 +40,13 @@ class Binder(TimestampMixin, Base):
     __tablename__ = "binder"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # A name that survives leaving this database. The id above is this
+    # server's; a collection carried to another install — or mirrored there
+    # every night — needs the binder found again rather than made again, so
+    # that a public link to it keeps working. See mine.load().
+    uid: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True, default=lambda: str(uuid.uuid4())
+    )
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )

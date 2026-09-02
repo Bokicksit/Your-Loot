@@ -5289,3 +5289,53 @@ img.game-cover.contain, img.expand-cover.contain { object-fit: contain; }
   color: var(--text-mute);
 }
 .price-bar .note.warn { color: var(--danger); }
+
+/* ---- sync: the one-time token, and the list of them ------------------- */
+.token-once {
+  margin: var(--s-3) 0;
+  padding: var(--s-3);
+  border: 1px dashed var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.token-once code {
+  display: block;
+  margin: var(--s-2) 0;
+  font-family: var(--font-num);
+  font-size: var(--f-2);
+  word-break: break-all;
+  user-select: all;
+}
+.token-list {
+  list-style: none;
+  margin: var(--s-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-2);
+}
+.token-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  background: var(--bg-1);
+}
+.token-list .tok-name { font-weight: var(--w-med); }
+.token-list .tok-prefix { font-family: var(--font-num); color: var(--text-mute); }
+.token-list li button { margin-left: auto; }
+.set-fields {
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-3) 0;
+}
+label.check {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--f-2);
+  color: var(--text-dim);
+}
+label.check input { width: auto; }

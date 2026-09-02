@@ -534,6 +534,9 @@ def remove_user(
 
 class TokenCreate(BaseModel):
     name: str = Field(min_length=1, max_length=60)
+    # "full" is the account. "sync" may only push a collection in — the scope
+    # for a token that has to live on another machine.
+    scope: str = Field(default="full", pattern="^(full|sync)$")
 
 
 @router.get("/tokens")
@@ -549,6 +552,7 @@ def list_tokens(db: Session = Depends(get_db), user: User = Depends(current_user
                 "id": t.id,
                 "name": t.name,
                 "prefix": t.prefix,
+                "scope": t.scope or "full",
                 "created_at": t.created_at,
                 "last_used_at": t.last_used_at,
                 "revoked_at": t.revoked_at,
@@ -568,12 +572,14 @@ def create_token(
     exist — it is hashed on the way in, so nothing here can show it again."""
     raw, digest, prefix = new_token()
     row = ApiToken(
-        user_id=user.id, name=body.name.strip(), token_hash=digest, prefix=prefix
+        user_id=user.id, name=body.name.strip(), token_hash=digest, prefix=prefix,
+        scope=body.scope,
     )
     db.add(row)
     db.commit()
     db.refresh(row)
-    return {"id": row.id, "name": row.name, "prefix": row.prefix, "token": raw}
+    return {"id": row.id, "name": row.name, "prefix": row.prefix,
+            "scope": row.scope, "token": raw}
 
 
 @router.delete("/tokens/{token_id}", status_code=204)

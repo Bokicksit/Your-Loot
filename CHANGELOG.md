@@ -9,6 +9,35 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **Send your collection to another Your Loot.** The case: a collection kept
+  on a home server and a public page on the hosted one, without ever putting
+  the home server on the internet. *Settings → Send it elsewhere* takes the
+  address of the other install and a token from the account there; the home
+  server then pushes its whole collection out — now, or every night — and
+  the account it lands in mirrors it. Nothing reaches in. The account over
+  there is a copy and is replaced on every send, which the screen says
+  plainly. Which shelves are public is still decided on the account that
+  publishes them; that never travels. Almost none of it is new machinery:
+  the file is the "Your collection" backup, the receiving end is the restore
+  that already existed, and the token is a bearer token — with one new
+  property, below.
+- **A token that can do one thing.** *Settings → Receive from elsewhere*
+  mints a `sync` token: it may push a collection into that account and is
+  refused everywhere else — it cannot read a card, change a password, or
+  make another token. The token has to live on another machine, and a
+  database on somebody's NAS is not a vault; what it can do had to be small.
+- **Binders keep their ids across a restore.** A restore deleted every
+  binder and made new ones, so `/u/bo/binder/17` broke the moment a
+  collection was loaded again — once a night, once it is mirrored. Binders
+  now carry a name that survives the trip and are found again rather than
+  made again; a file from before that matches set and dex binders on what
+  they are of and custom ones on their name. A binder gone from the file is
+  gone from the account, as it should be.
+- **A restore checks the plan first.** It never used to, because it was
+  always your own file back into your own account. A collection arriving from
+  another server can be two thousand cards into a free account that allows
+  three hundred, and it is refused — with the numbers — before anything is
+  touched, rather than loaded and quietly over.
 - **Price check, on a binder page.** Next to Arrange there is now a coin.
   Switch it on and every card on the page you are looking at gets today's
   market price laid over it, with two totals above: what the cards you own

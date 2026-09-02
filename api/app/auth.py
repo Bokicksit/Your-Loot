@@ -202,6 +202,9 @@ def user_from_token(request: Request, db: Session) -> User | None:
     )
     if row is None:
         return None
+    # remembered on the request so current_user can hold a narrow token to
+    # the one thing it is for
+    request.state.token_scope = row.scope or "full"
     # Written at most hourly. Knowing a token is still in use is worth having;
     # a database write on every single request to record it is not.
     now = datetime.now(UTC).replace(tzinfo=None)
@@ -209,6 +212,19 @@ def user_from_token(request: Request, db: Session) -> User | None:
         row.last_used_at = now
         db.commit()
     return db.get(User, row.user_id)
+
+
+# What a "sync" token is allowed to reach: the one endpoint that replaces the
+# holder's own collection, and nothing that reads it, changes the account, or
+# mints further tokens. Method and path both, so a GET on the same path — the
+# download — is still refused.
+SYNC_MAY = {("POST", "/api/backup/mine")}
+
+
+def _enforce_scope(request: Request) -> None:
+    scope = getattr(request.state, "token_scope", "full")
+    if scope == "sync" and (request.method, request.url.path) not in SYNC_MAY:
+        raise HTTPException(403, "this token can only push a collection into the account")
 
 
 def current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -221,6 +237,7 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     """
     holder = user_from_token(request, db)
     if holder is not None:
+        _enforce_scope(request)
         return holder
 
     if not multi_user():

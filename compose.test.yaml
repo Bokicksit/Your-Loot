@@ -42,6 +42,9 @@ services:
       SECRET_KEY: test-only-not-a-secret
       # 20,000 cards is a slow start and no test needs the catalogue
       SEED_ON_START: "false"
+      # test_sync.py pushes a collection to api-open across this network,
+      # which is a private address and would otherwise be refused
+      SYNC_ALLOW_PRIVATE: "true"
     depends_on:
       postgres:
         condition: service_healthy

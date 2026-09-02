@@ -409,6 +409,18 @@ export const api = {
       filename: name ? name[1] : `yourloot-${scope}.html`,
     };
   },
+  // Bearer tokens — here only for the one that lets another Your Loot push
+  // a collection into this account. The value is shown once, at creation.
+  tokens: () => request("/api/auth/tokens"),
+  createToken: (name, scope = "sync") =>
+    request("/api/auth/tokens", { method: "POST", body: JSON.stringify({ name, scope }) }),
+  revokeToken: (id) => request(`/api/auth/tokens/${id}`, { method: "DELETE" }),
+  // Sending this collection to another Your Loot, so its public page there
+  // stays current without this server being reachable from anywhere.
+  sync: () => request("/api/sync"),
+  saveSync: (body) => request("/api/sync", { method: "PUT", body: JSON.stringify(body) }),
+  forgetSync: () => request("/api/sync", { method: "DELETE" }),
+  syncNow: () => request("/api/sync/now", { method: "POST" }),
   // Your own collection, which everybody has and nothing gates.
   myBackupUrl: "/api/backup/mine",
   /** Same shape as restoreBackup below, and for the same reason: a file goes

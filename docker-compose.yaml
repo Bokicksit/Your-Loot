@@ -49,6 +49,7 @@ services:
       # nginx in front, api port never published — see .env.example
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-1}
       TRUST_CF_CONNECTING_IP: ${TRUST_CF_CONNECTING_IP:-false}
+      SYNC_ALLOW_PRIVATE: ${SYNC_ALLOW_PRIVATE:-false}
       PUBLIC_URL: ${PUBLIC_URL:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-}

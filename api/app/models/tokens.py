@@ -35,6 +35,10 @@ class ApiToken(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(60))
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     prefix: Mapped[str] = mapped_column(String(12))
+    # What it may do. "full" is the account; "sync" may do one thing — push a
+    # collection into this account — and is refused everywhere else. It is the
+    # scope for a token that has to live on another machine.
+    scope: Mapped[str] = mapped_column(String(12), default="full", server_default="full")
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
 

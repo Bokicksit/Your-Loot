@@ -32,6 +32,7 @@ from app.routers import (
     profile,
     records,
     share,
+    sync,
     tags,
 )
 from app.routers import settings as settings_router
@@ -115,11 +116,18 @@ app.include_router(lookup.router)
 app.include_router(tags.router)
 app.include_router(binders.router)
 app.include_router(share.router)
+app.include_router(sync.router)
 # /api/profile needs a session; /u/<name> is the one page that must not,
 # so the guard is on the handlers rather than the router.
 app.include_router(profile.router)
 
 Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
+
+# One thread, one query an hour, and nothing at all unless somebody has asked
+# for their collection to be mirrored — see routers/sync.py. Started here, as
+# the app module loads, because that is the one moment that is exactly once
+# per process; the tests import the routers directly and never come through.
+sync.start_scheduler()
 
 
 @app.get("/images/{name}")
