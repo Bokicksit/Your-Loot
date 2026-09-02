@@ -5242,24 +5242,37 @@ img.game-cover.contain, img.expand-cover.contain { object-fit: contain; }
   position: absolute;
   right: 6px;
   bottom: 6px;
+  max-width: calc(100% - 12px);
   padding: 2px 7px;
   border-radius: var(--r-pill);
   background: var(--bg-0);
-  border: 1px solid var(--gold-line);
-  color: var(--gold-bright);
   font-family: var(--font-num);
   font-size: var(--f-1);
   font-weight: var(--w-med);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
   pointer-events: auto;
   z-index: 1;
 }
-.slot-price.none {
-  color: var(--text-mute);
-  border-color: var(--line);
+/* green for a figure, red for the honest absence of one — the two states a
+   card can be in while the check is on, told apart at a glance */
+.slot-price.priced {
+  color: var(--success);
+  border: 1px solid var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--bg-0));
 }
+.slot-price.none {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--bg-0));
+  font-family: inherit;
+  font-weight: var(--w-med);
+}
+.price-bar .note.why { flex-basis: 100%; color: var(--text-dim); }
 .price-bar {
   display: flex;
   flex-wrap: wrap;

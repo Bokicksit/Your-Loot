@@ -311,7 +311,7 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
           missed rather than answered. */}
       {price !== undefined && (
         <span
-          className={`slot-price ${price ? "" : "none"}`}
+          className={`slot-price ${price ? "priced" : "none"}`}
           title={
             price
               ? `${price.source} market price` +
@@ -319,10 +319,10 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
                 (price.low != null && price.high != null
                   ? ` · ${money(price.low)}–${money(price.high)}`
                   : "")
-              : "Not listed on TCGplayer"
+              : "No price data found — this card is not listed on TCGplayer"
           }
         >
-          {price ? money(price.amount) : "—"}
+          {price ? money(price.amount) : "No price data"}
         </span>
       )}
       {art ? (

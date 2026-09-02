@@ -103,9 +103,11 @@ one takes a cover and a colour, is drawn at the page size you set (3×3, 4×3,
 single or facing pages), and one card can be in several binders at once.
 
 **Price check** — on any binder, a coin next to Arrange. Switch it on and
-every card on the page you're looking at gets today's **TCGplayer market
-price** laid over it, with two totals above: what the cards you own on that
-page are worth, and what the gaps would cost to fill. It prices the copy's
+every card in the binder gets today's **TCGplayer market price** laid over it
+in green — or a red *No price data* where TCGplayer has no listing — with two
+totals above: what the cards you own are worth, and what the gaps would cost
+to fill. The bar names the sets with no listing, so seven red chips read as
+"the promo set isn't on TCGplayer" rather than seven mysteries. It prices the copy's
 actual printing — a reverse holo gets the reverse price. Switch it off and it's
 gone: **nothing about a price is ever saved**, on purpose, because a price is a
 fact about this afternoon. Dollars only; a dash means the card isn't listed on

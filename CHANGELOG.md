@@ -8,6 +8,18 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **The price check does the whole binder, and says what it could not do.**
+  It priced the page on screen and turning the page asked again; a binder is
+  one thing and its worth is one number, so it now prices all of it, in
+  slices of forty that land as they arrive — a master set of four hundred
+  fills in over a few seconds with a count in the bar. Prices are green on
+  the card; a card with no listing wears a red *No price data* instead of a
+  quiet dash. And the bar names the sets those cards belong to — "7 not on
+  TCGplayer — MEP Black Star Promos, SVP Black Star Promos" — because that is
+  the actual answer: TCGdex carries no TCGplayer mapping for the promo sets,
+  and seven red chips without the sentence look like seven bugs.
+
 ### Added
 - **A mirror knows it is one.** A collection that arrives on a sync token
   stamps the account it lands in, and the app there draws a bar under the

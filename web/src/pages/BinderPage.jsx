@@ -9,8 +9,6 @@ import {
   PageBox,
   money,
   pageIndex,
-  paginate,
-  shapeOf,
   usePageTracker,
 } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
@@ -137,17 +135,12 @@ export default function BinderPage() {
     (e) => (searching ? { ...e, page: homePage.get(e.key) } : e)
   );
 
-  /* The cards the price check is about: the spread on screen, or the results
-     while a search is on. Never the whole binder — a custom binder can hold
-     hundreds, and the point of a page is that it is a page. */
-  const spreadOnScreen = () => {
-    if (searching) return ordered.slice(0, 40);
-    const spreads = paginate(ordered, shapeOf(binder));
-    const per = binder.double_page ? 2 : 1;
-    const i = Math.min(spreads.length - 1, Math.max(0, Math.floor((pageNo - 1) / per)));
-    return (spreads[i] || []).flat();
-  };
-  const onScreen = pricing ? spreadOnScreen() : [];
+  /* The cards the price check is about: the whole binder, or the results
+     while a search is on. It was the spread on screen, and turning the page
+     meant asking again; a binder is one thing and its worth is one number,
+     so the bar asks for all of it — in batches, so a master set of four
+     hundred fills in as it goes rather than all at once at the end. */
+  const onScreen = pricing ? ordered : [];
   const idOf = (e) => e.card?.id ?? e.item_id ?? null;
   const priceFor = (e) => {
     if (!pricing || !prices) return undefined;
@@ -833,8 +826,14 @@ function AddCards({ binder, already, onAdded, onClose }) {
  *  you own on this page are worth, and what the empty slots would cost to
  *  fill. A set binder has both; a custom binder only ever has the first.
  */
+// The server prices at most this many in one request — see prices.py — so a
+// binder is asked for in slices, and each slice lands on the cards as it
+// arrives. The totals settle when the last one does.
+const PRICE_CHUNK = 40;
+
 function PriceBar({ entries, prices, onPrices }) {
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
   const [failed, setFailed] = useState(null);
 
   const ids = entries.map((e) => e.card?.id ?? e.item_id).filter((x) => x != null);
@@ -847,23 +846,69 @@ function PriceBar({ entries, prices, onPrices }) {
     }
     let live = true;
     setBusy(true);
+    setDone(0);
     setFailed(null);
     const variants = {};
     for (const e of entries) {
       if (e.card?.id != null) variants[e.card.id] = e.card.variant || null;
     }
-    api
-      .cardPrices(ids, variants)
-      .then((r) => live && onPrices(r))
-      .catch((e) => live && setFailed(e.message))
-      .finally(() => live && setBusy(false));
+    const merged = { prices: {}, priced: 0, asked: 0, unavailable: false };
+    let slices = 0, down = 0;
+    (async () => {
+      for (let i = 0; i < ids.length; i += PRICE_CHUNK) {
+        const slice = ids.slice(i, i + PRICE_CHUNK);
+        const vars = {};
+        for (const id of slice) if (id in variants) vars[id] = variants[id];
+        let r;
+        try {
+          r = await api.cardPrices(slice, vars);
+        } catch (e) {
+          if (live) setFailed(e.message);
+          break;
+        }
+        if (!live) return;
+        slices += 1;
+        if (r.unavailable) {
+          // nothing was answered for these: leave them unasked rather than
+          // paint every one red, and say so once in the bar if it was all
+          down += 1;
+        } else {
+          Object.assign(merged.prices, r.prices);
+          merged.priced += r.priced;
+          merged.asked += r.asked;
+        }
+        merged.unavailable = down > 0 && down === slices;
+        onPrices({ ...merged, prices: { ...merged.prices } });
+        setDone(Math.min(ids.length, i + PRICE_CHUNK));
+      }
+      if (live) setBusy(false);
+    })();
     return () => {
       live = false;
     };
-    // the ids are the identity of the page; the entries object is rebuilt
+    // the ids are the identity of the binder; the entries object is rebuilt
     // on every render and would refetch forever
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+
+  /* Why a card has no price, said once for the lot rather than left as a red
+     chip on each. Grouped by set because that is what the answer is: a whole
+     promo set with no TCGplayer listing, not seven separate mysteries. */
+  const unpriced = entries.filter((e) => {
+    const id = e.card?.id ?? e.item_id;
+    return id != null && prices?.prices && id in prices.prices && !prices.prices[id];
+  });
+  const bySet = new Map();
+  for (const e of unpriced) {
+    const k = e.card?.set_name || (e.card ? "unknown set" : "empty slots");
+    bySet.set(k, (bySet.get(k) || 0) + 1);
+  }
+  const setNames = [...bySet.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  const why = unpriced.length
+    ? `${unpriced.length} not on TCGplayer — ` +
+      setNames.slice(0, 2).join(", ") +
+      (setNames.length > 2 ? ` and ${setNames.length - 2} more` : "")
+    : null;
 
   const priced = (e) => {
     const id = e.card?.id ?? e.item_id;
@@ -881,7 +926,11 @@ function PriceBar({ entries, prices, onPrices }) {
 
   return (
     <div className="price-bar" role="status">
-      {busy && <span className="note">Checking prices…</span>}
+      {busy && (
+        <span className="note">
+          Checking prices…{ids.length > PRICE_CHUNK ? ` ${done} of ${ids.length}` : ""}
+        </span>
+      )}
       {!busy && failed && <span className="note warn">{failed}</span>}
       {!busy && !failed && prices?.unavailable && (
         <span className="note warn">
@@ -904,6 +953,7 @@ function PriceBar({ entries, prices, onPrices }) {
             {prices.priced} of {prices.asked} priced · TCGplayer market
             {age ? ` · updated ${age}` : ""} · not saved
           </span>
+          {why && <span className="note why">{why}</span>}
         </>
       )}
     </div>
