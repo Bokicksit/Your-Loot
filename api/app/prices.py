@@ -9,7 +9,7 @@ does not change its mind; a price does, daily, and stored it would be shown
 as current long after it stopped being so.
 
 The numbers come from TCGdex, which already supplies this app's card art and
-carries live TCGplayer (USD) and Cardmarket (EUR) figures on every card. Not
+carries live TCGplayer figures on every card. Dollars only — see pick(). Not
 eBay: eBay does not sell its sold-listings data to anybody this size. What
 TCGplayer publishes as its market price is derived from actual completed
 sales on the largest singles marketplace there is, which is the same
@@ -119,12 +119,17 @@ def _mark_down():
 def pick(pricing: dict | None, variant: str | None) -> dict | None:
     """One price for the card, from everything TCGdex reports for it.
 
-    TCGplayer first, in dollars, for the printing that matches the copy —
-    a reverse holo and a plain print of the same card are different prices
-    and the copy knows which it is. Failing a match, any TCGplayer variant
-    with a market price; failing that, Cardmarket's trend in euros. Nothing
-    at all means the card is not on either marketplace, which is an answer
-    too, and the caller shows a dash rather than a zero.
+    TCGplayer, in dollars, for the printing that matches the copy — a
+    reverse holo and a plain print of the same card are different prices and
+    the copy knows which it is. Failing a match, any TCGplayer variant with a
+    market price. Nothing at all means the card is not on TCGplayer, which is
+    an answer too, and the caller shows a dash rather than a zero.
+
+    Dollars only, and not as a fallback order but as a rule: TCGdex also
+    carries Cardmarket in euros, and it is deliberately ignored. A page total
+    is one number, and a number summed across two currencies is not a total
+    of anything. Where a card is on Cardmarket and not on TCGplayer it gets a
+    dash, the same as a card on neither.
     """
     if not pricing:
         return None
@@ -154,26 +159,14 @@ def pick(pricing: dict | None, variant: str | None) -> dict | None:
         v = variants[chosen]
         return {
             "amount": float(v["marketPrice"]),
-            "currency": tp.get("unit") or "USD",
+            "currency": "USD",
             "low": v.get("lowPrice"),
             "high": v.get("highPrice"),
             "variant": chosen,
             "source": "TCGplayer",
             "updated": tp.get("updated"),
         }
-    cm = pricing.get("cardmarket") or {}
-    amount = cm.get("trend") or cm.get("avg") or cm.get("avg7")
-    if amount is None:
-        return None
-    return {
-        "amount": float(amount),
-        "currency": cm.get("unit") or "EUR",
-        "low": cm.get("low"),
-        "high": None,
-        "variant": None,
-        "source": "Cardmarket",
-        "updated": cm.get("updated"),
-    }
+    return None
 
 
 def _sets():

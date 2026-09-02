@@ -245,10 +245,9 @@ export function HelpPage() {
           <strong>Price check</strong>, on a binder, lays a live market price
           over every card on the page you are looking at and totals them —
           what the page is worth, and what the gaps would cost to fill. The
-          figures are TCGplayer's market price (Cardmarket's where a card is
-          only listed there), fetched the moment you switch it on and kept
-          nowhere: switch it off and they are gone. A dash means the card is
-          on neither marketplace.
+          figures are TCGplayer's market price in dollars, fetched the moment
+          you switch it on and kept nowhere: switch it off and they are gone.
+          A dash means the card is not listed on TCGplayer.
         </li>
         <li>
           <strong>Tiles or list</strong> is per collection, and the slider

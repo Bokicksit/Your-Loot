@@ -3,8 +3,8 @@
 What TCGdex sends back is a nest of marketplaces and printings, and the one
 figure a card shows has to be chosen from it the same way every time: the
 copy's own printing when there is one, the plain print when the copy says
-nothing, dollars before euros, and a dash — never a zero — when the card is
-on no marketplace at all. Those choices are the feature; the HTTP is not.
+nothing, dollars only, and a dash — never a zero — when the card is not on
+TCGplayer at all. Those choices are the feature; the HTTP is not.
 
     docker compose -f compose.test.yaml run --rm tests
 """
@@ -84,13 +84,12 @@ def test_a_card_with_only_holo_printings_still_prices():
     assert p["amount"] == 285.5
 
 
-def test_dollars_come_before_euros_but_euros_beat_nothing():
+def test_dollars_only_and_a_euro_only_card_is_a_dash():
+    """Cardmarket is in the payload and deliberately not used: a total summed
+    across two currencies is not a total of anything."""
     assert prices.pick(CHARIZARD, "Holo")["currency"] == "USD"
     only_eu = {"cardmarket": CHARIZARD["cardmarket"]}
-    p = prices.pick(only_eu, None)
-    assert p["currency"] == "EUR"
-    assert p["amount"] == 626.31  # the trend, not the raw average
-    assert p["source"] == "Cardmarket"
+    assert prices.pick(only_eu, None) is None
 
 
 def test_no_marketplace_means_no_price_not_zero():

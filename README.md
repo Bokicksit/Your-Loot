@@ -38,22 +38,53 @@ hunting live on the same list.
 >
 > Either way, **still don't put it on the open internet.** A lock on the app
 > is not the same as hardening a server. Use a VPN or an authenticating
-> reverse proxy — see [SECURITY.md](SECURITY.md).
+> reverse proxy — see [SECURITY.md](SECURITY.md) and
+> [Behind a proxy or tunnel](#behind-a-proxy-or-tunnel).
 
 <p align="center">
   <img src="docs/screenshots/collections.jpg" alt="The collections you keep, with counts" width="52%">
 </p>
 
 📖 **[User Guide](docs/USER-GUIDE.md)** — how everything works, in depth:
-adding items, barcode scanning, the binder, grading, backups, troubleshooting.
+adding items, scanning, the binders, grading, what things are worth, backups,
+troubleshooting. Inside the app, every add and edit form has a **?** that
+explains its buttons in place, and **How it works** on the front page answers
+the questions people actually ask.
+
+## Contents
+
+- [What it does](#what-it-does) — the collections, then what cuts across them
+- [Quick start](#quick-start)
+- [Configuration](#configuration) — every setting, in one place
+- [Keeping it running](#keeping-it-running)
+- [Behind a proxy or tunnel](#behind-a-proxy-or-tunnel)
+- [Running on TrueNAS SCALE](#running-on-truenas-scale)
+- [Running on a platform host](#running-on-a-platform-host)
+- [The admin panel](#the-admin-panel)
+- [Security](#security)
+- [Development](#development)
 
 ## What it does
 
+### The collections
+
 **Cards** — search 20,000+ Pokémon cards by name, number, or set code (`151`,
-`MEW`, `JTG`). Track each copy with condition and grading (PSA/BGS/CGC…). Cards
-missing from the offline database can be pulled from an online catalog or
-entered by hand with your own photo. A further 13,000 Japanese cards are
-available as an optional second catalogue — see
+`MEW`, `JTG`). Track each copy with condition, variant (holo / reverse) and
+grading (PSA/BGS/CGC…, with the cert number). Cards missing from the offline
+database can be pulled from TCGdex or entered by hand with your own photo. A
+further 13,000 Japanese cards are available as an optional second catalogue.
+
+**Scanning a card with the camera.** Cards have no barcode, so the camera
+reads the *picture*: hold the card roughly in the outline and the app keeps
+looking until it recognises it, then moves on by itself. It finds the card in
+the frame and straightens it before matching, so a tilted card held a bit off
+centre in ordinary room light is fine; **Identify now** takes a burst and keeps
+the sharpest frame. The match is made against the artwork of every card in
+your catalogue, on your own server — nothing is sent anywhere. It offers a
+short list rather than one answer, because a reverse holo is the same picture
+as the normal print and you're the one holding the card. Measured on 565 real
+cards under eleven kinds of bad photography: 98% found, and it never picks
+confidently and wrong. Needs a one-time fingerprint pass — see
 [Keeping it running](#keeping-it-running).
 
 **Pokédex binder** — a slot per national dex number, mirroring a physical
@@ -64,11 +95,24 @@ Filter by what's missing, what wants upgrading, and by rarity.
 whole set with a slot per card, drawn from the offline catalogue: no importing,
 and no filing either, because owning the card fills its slot. It shows the art
 of the ones you don't own too, so a gap looks like the card it wants. A
-**binder of your own** holds whatever you choose, in the order you choose —
-nothing but Charizards, or the ones you'll trade — arranged by picking a card
-up and tapping where it goes. Each one takes a cover, and one card can be in
-several binders at once: your best Charizard belongs in the Pokédex, in the
-Celebrations binder and in the Charizard binder, all at the same time.
+**master set** binder has a slot per *printing* instead — normal, reverse,
+Poké Ball parallel — the way the checklist in the box does. A **binder of your
+own** holds whatever you choose, in the order you choose, arranged by picking a
+card up and tapping where it goes, with empty pages where you want them. Each
+one takes a cover and a colour, is drawn at the page size you set (3×3, 4×3,
+single or facing pages), and one card can be in several binders at once.
+
+**Price check** — on any binder, a coin next to Arrange. Switch it on and
+every card on the page you're looking at gets today's **TCGplayer market
+price** laid over it, with two totals above: what the cards you own on that
+page are worth, and what the gaps would cost to fill. It prices the copy's
+actual printing — a reverse holo gets the reverse price. Switch it off and it's
+gone: **nothing about a price is ever saved**, on purpose, because a price is a
+fact about this afternoon. Dollars only; a dash means the card isn't listed on
+TCGplayer, and it's left out of the total rather than counted as zero. The
+figures come from TCGdex, need no key, and are labelled with their source and
+age. When the price service is down the bar says so instead of showing a page
+of dashes.
 
 <p align="center">
   <img src="docs/screenshots/cards.jpg" alt="A card collection four across" width="46%">
@@ -78,87 +122,111 @@ Celebrations binder and in the Charizard binder, all at the same time.
 **Games** — IGDB-backed search, platform/region, and per-copy completeness
 (loose/CIB/sealed) and condition. Barcode scanning for boxed games. For
 consoles up to the Xbox 360 era it also offers a **scan of the actual box**
-from libretro-thumbnails — no key needed — instead of IGDB's key art, which
-looks the same whether you own the original or a download.
+from libretro-thumbnails — no key needed — instead of IGDB's key art.
 
 **Hardware** — consoles, controllers and accessories, each knowing which of
-the three it is, with model number, serial, and working status. A built-in **North American console catalogue** —
-our own openly licensed dataset of 170+ consoles, famous colourways,
-controllers and accessories, seeded automatically — fills the form as you
-type: pick “Super Nintendo” and the model number, platform and a public-domain
-photo arrive with it. Your serial number and whether it still works stay
-yours to fill in, because they belong to the unit on your shelf.
+the three it is, with model number, serial, and working status. A built-in
+**North American console catalogue** — our own openly licensed dataset of 170+
+consoles, famous colourways, controllers and accessories, seeded automatically
+— fills the form as you type: pick "Super Nintendo" and the model number,
+platform and a public-domain photo arrive with it.
 
 **Movies** — TMDB-backed, with the physical details that matter: format
 (4K/Blu-ray/DVD/VHS), edition, region code. Scanning the barcode also pulls
-photographs of the actual case, so a steelbook looks like your steelbook
-instead of the theatrical poster.
+photographs of the actual case, so a steelbook looks like your steelbook.
 
-**Books** — Open Library search, or scan the ISBN barcode on the back. Format,
-edition, series, and per-copy jacket/provenance. Graphic novels, collected
-editions and manga live here rather than in Comics — they carry an ISBN, and
-filtering to *Graphic Novel* sorted by series gives you that shelf in reading
-order.
+**Books** — Open Library search, scan the ISBN, or **type the ISBN straight
+into the title box** — same lookup, no camera. Format, edition, series, and
+per-copy jacket/provenance. Graphic novels, collected editions and manga live
+here rather than in Comics: they carry an ISBN.
 
-**amiibo** — the whole line seeded as a catalogue, the way cards are: all
-932 figures, cards, yarns and bands from the open amiibo database, each under
-the head-and-tail id Nintendo burned into the figure itself. Adding one is
-searching and picking it — no key, no external API, nothing to run out of —
-and your copy records what matters at a glance: new in box, boxed, or loose.
-
-```bash
-docker compose exec api python /seed/seed_amiibo.py
-```
+**amiibo** — the whole line seeded as a catalogue: all 932 figures, cards,
+yarns and bands from the open amiibo database, each under the id Nintendo
+burned into the figure. Adding one is searching and picking it — no key — and
+your copy records new in box, boxed, or loose.
 
 **Records** — MusicBrainz search, or scan the barcode on the sleeve, which
-identifies the *pressing*: label, catalogue number, country, and year, so a
-1980 original and a 2011 repress stay separate entries. Graded the way vinyl
-actually is — media and sleeve independently, on the Goldmine scale (`VG+/VG`).
+identifies the *pressing*: label, catalogue number, country, year. Discogs, if
+you add a token, knows far more pressings by barcode. Graded the way vinyl
+actually is — media and sleeve independently, on the Goldmine scale. Tracklists
+come along for the ride.
 
-**LEGO** — Rebrickable-backed set search by number or name, with theme, year,
-piece and minifig counts. Each copy answers two questions rather than one:
-whether you kept the box, and what state the set is in — sealed, opened and
-complete, loose bricks, built, or missing pieces. Sealed implies the box, and
-the form won't let you say otherwise.
+**LEGO** — Rebrickable-backed set search by number or name, ranked so that
+"nintendo" finds the NES and Game Boy *sets* rather than the Switch games.
+Theme, year, piece and minifig counts. Each copy answers two questions: whether
+you kept the box, and what state the set is in — sealed, complete, loose,
+built, or missing pieces.
 
 **Comics** — Comic Vine search by series and issue. Tracks the run
-(`volume_year`) and the variant cover, because Amazing Spider-Man #1 exists in
-half a dozen volumes. A raw copy carries a grade; a slabbed one carries its
-CGC/CBCS number instead. Single issues — collected editions are books.
+(`volume_year`) and the variant cover. A raw copy carries a grade; a slabbed
+one carries its CGC/CBCS number instead. Scanning a comic's barcode names the
+run — the issue number is on the cover in your hand.
+
+### Across all of them
+
+**Barcode scanning** wherever the thing in your hand carries one — records,
+books, films, games, LEGO boxes, comics. Lookups are cached, so a barcode is
+only ever asked about once per install. The camera needs HTTPS.
 
 **Sold prices** — every item, owned or wanted, has a coin in its details panel
 that opens an eBay search filtered to *sold and completed* listings. The query
-is built from whatever separates two listings in that collection: the set and
-number for a card, the model number for a console, the pressing format for a
-record.
+is built from whatever separates two listings in that collection: set and
+number for a card, model number for a console, pressing for a record.
 
-**Wanted list** — everything you're hunting, across every module, with
-filters and the same sold-price shortcut. Mark something acquired and
-it moves into your collection with the condition you set. Find only the case or
-the manual and it records the spare while the game stays on the hunt.
+**Wanted list** — everything you're hunting, across every module, as tiles or
+a list, with filters, sorting and the same sold-price shortcut. Mark something
+acquired and it moves into your collection with the condition you set. Find
+only the case or the manual and it records the spare while the game stays on
+the hunt.
+
+**Tags** — your own words on anything, across every collection: *trade*,
+*graded*, *childhood*, whatever. Filter any shelf by them.
+
+**The dice** picks one thing from a shelf at random, honouring the filters —
+"what should it be tonight?".
+
+**Tiles or a list, per collection**, with the tile size remembered per shelf.
+Sort and filters are remembered too. **Tap a cover** and the row opens with
+the entry's details and blurb.
+
+**The add form does small things for you** — warns about duplicates without
+stopping you, offers retail photographs of the actual package, and remembers
+your defaults (the region you buy, the book format you read).
 
 **Accounts, if you want them** — nothing by default: the app opens straight
 into your collection. Set a password or a short PIN in Settings and it asks
 first, the way Radarr and Sonarr do. Or run with `AUTH_MODE=multi` for proper
-accounts, where everyone gets their own copies, wanted list, binder and
-Pokédex off one shared catalog. Passwords are argon2id, sessions are signed
-http-only cookies, and repeated wrong guesses are throttled.
+accounts, where everyone gets their own copies, wanted list, binders and
+Pokédex off one shared catalogue — and nobody can edit or delete anybody
+else's. Passwords are argon2id, sessions are signed http-only cookies, and
+repeated wrong guesses are throttled. Optional open signup with email
+verification and password reset, for running it as a service.
 
-**Share a collection** — any shelf, the wanted list, or the binder, as a single
-HTML file with the cover art packed inside it. Send it like a photo: it opens in
-any browser, needs nothing installed, and works with no signal. It's an export
-rather than a link, so nothing on your network has to be reachable from outside,
-and it carries a plain list — cover, title, condition. Your notes, tags, serial
-numbers and grading certificates stay here.
+**Public profiles** — turn a collection into a page you can send somebody:
+`/u/yourname`, showing only the shelves you tick, drawn as a **collector's
+room** you walk through — a bookcase for the books, a wall of cases for the
+games, binders for the cards. Open any shelf, open any binder. A **direct link
+to one shelf** — `/u/yourname/pokedex`, `/u/yourname/binders`, `/u/yourname/games`
+— opens with that layer already up, for showing one collection rather than
+all of them. The Pokédex on that page can be read as a **want list**: a
+binder view and a tile view, with *missing* and *needs upgrade* filters, so
+the person you send it to sees what you still need. Notes, tags and serial
+numbers never appear. Off by default.
 
-**Backup & restore** — two of them, because they answer different questions.
-**Your collection** is yours: every item, every copy with its condition, the
-wanted list, your binders and your photos, in a file that restores into your
-account on any Your Loot install. **Whole server** is the operator's copy of
-the machine, and it loads only into an install with nothing in it yet — a
-rebuilt box, a fresh database. Nothing that is already on a server can be
-replaced by a restore, by anybody. Both are plain JSON inside, so they stay
-readable and portable across Postgres versions.
+**Share a collection** — any shelf, the wanted list, or a binder, as a single
+HTML file with the cover art packed inside. Send it like a photo: it opens in
+any browser and works with no signal. Where public profiles are on, the link
+replaces the file.
+
+**Backup & restore** — two of them. **Your collection** is yours: every item,
+every copy with its condition, the wanted list, your binders and your photos,
+in a file that restores into your account on any Your Loot install. **Whole
+server** is the operator's copy of the machine, and it loads only into an
+install with nothing in it yet. Nothing already on a server can be replaced by
+a restore, by anybody. Both are plain JSON inside.
+
+**Installable** — it's a PWA. Add it to your phone's home screen and it opens
+like an app, camera and all.
 
 ## Quick start
 
@@ -191,14 +259,80 @@ key at all.
 | `REBRICKABLE_API_KEY` | LEGO set search | [rebrickable.com](https://rebrickable.com/users/_/settings/#api) → Account → Settings → API |
 | `COMICVINE_API_KEY` | comic search | [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) |
 | `DISCOGS_TOKEN` | record barcodes | [discogs.com/settings/developers](https://www.discogs.com/settings/developers) → Generate token |
+| `DISCOGS_KEY` / `DISCOGS_SECRET` | the same, as a registered application | for a service rather than a person; the pair wins if both are set |
 
-There's one more that isn't a key:
+Add them to `.env` and `docker compose up -d` again.
+
+## Configuration
+
+Everything is an environment variable, read by the `api` container unless
+marked otherwise. [`.env.example`](.env.example) carries the same list with
+longer explanations; this is the reference. Defaults are what a home install
+wants — **a complete install needs nothing set but the database password.**
+
+### Accounts and access
 
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `AUTH_MODE` | `single` | `single` = one collection, and a login only if you set a password in Settings. `multi` = accounts, each with their own collection. |
+| `OPEN_SIGNUP` | `false` | Let anybody create an account. For running it as a service; keep it off on a home server. Needs `AUTH_MODE=multi`, and claim the owner account first. |
+| `PUBLIC_PROFILES` | `false` | Public pages at `/u/<name>` (or `/loot` on a single-user install), and the direct shelf links. Replaces the downloadable share in Settings when on. |
+| `SECRET_KEY` | *(generated)* | Signs sessions and image links. Generated and kept on first start; set it yourself only if you run more than one `api` container — they have to agree. |
+| `SESSION_HTTPS_ONLY` | `false` | Send the session cookie over HTTPS only. Set true once you're behind TLS. |
+| `ALLOWED_ORIGINS` | *(empty)* | Extra browser origins allowed to call the API, comma-separated — a phone app, or a browser on another machine. Empty is right when nginx serves both. |
 
-Add them to `.env` and `docker compose up -d` again.
+### Brakes
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `SIGNUP_LIMIT` | `20` | New accounts per hour from one address. |
+| `LOOKUP_LIMIT` | `60` | Catalogue searches per minute, per account, across every third-party lookup — Rebrickable, IGDB, TMDB, Discogs, Comic Vine, Open Library, UPCitemdb, TCGdex (search and price check). Those keys are the server's; this stops one client spending everyone's quota. |
+| `TRUSTED_PROXIES` | `1` | How many of your own proxies sit in front of the API, so the brakes know which part of `X-Forwarded-For` to believe. See [Behind a proxy or tunnel](#behind-a-proxy-or-tunnel). |
+| `TRUST_CF_CONNECTING_IP` | `false` | Take the caller's address from Cloudflare's header instead of counting hops. Only where nothing can reach the API except through Cloudflare. Same section. |
+
+Login attempts are throttled too (five wrong, then a five-minute wait, per
+address and account) and so is mail (three an hour per address). Neither is
+configurable; neither has ever needed to be.
+
+### Running it as a service
+
+Every one of these is empty on a self-hosted install, and that is the point:
+the software is complete, and these exist only where somebody else pays for
+the server.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `AVAILABLE_MODULES` | *(all)* | Which collections the install carries at all, e.g. `cards,records,books,lego`. Removes the rest from the API as well as the screen. |
+| `PAID_MODULES` | *(none)* | Which of those need a plan, e.g. `records,books,lego`. A collection behind this is closed, never emptied. |
+| `FREE_CARD_LIMIT` / `FREE_DEX_LIMIT` / `FREE_BINDER_LIMIT` | `0` | What a free account gets: copies of cards owned, how far up the Pokédex the binder goes, binders besides the Pokédex. Zero means no limit. |
+| `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` | *(empty)* | Without both, billing does not exist — every route 404s. |
+| `STRIPE_WEBHOOK_SECRET` | *(empty)* | Not optional once the other two are set; an unsigned webhook is refused. |
+| `RESEND_API_KEY` / `MAIL_FROM` | *(empty)* | Verification and reset mail, and nothing else. Empty, the link is written to the log instead. |
+| `PUBLIC_URL` | `http://localhost:5173` | The address people actually type; goes inside mail links and public-page metadata. |
+
+Where the service sells something, the collector's room and the direct shelf
+links are what a Supporter gets; where nothing is sold, everybody has them.
+
+### Cards and seeding
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `SEED_ON_START` | `true` | Download the full card database on first start, in the background. |
+| `SEED_JAPANESE` | `false` | Also seed the Japanese catalogue — 13,000 more cards — once, on the next start. |
+| `CARD_ART` | *(unset)* | `tcgdex` moves card pictures off `images.pokemontcg.io` onto TCGdex's MIT-licensed asset host, once. For installs serving many people. |
+| `HASH_CARD_ART` | `false` | Fingerprint new card art on every start so the camera scanner stays current. The first run is ~20,000 fetches; flip it on for an evening. |
+
+### Containers
+
+| Setting | Container | Default | What it does |
+| --- | --- | --- | --- |
+| `POSTGRES_PASSWORD` | postgres, api | — | **Required.** Compose refuses to start while it's empty. |
+| `POSTGRES_USER` / `POSTGRES_DB` | postgres, api | `getloot` | Don't change on an existing install. |
+| `WEB_PORT` | web | `8080` | The port the app answers on. |
+| `TAG` | both | `latest` | Pin a release: `TAG=2.32`, from the [releases page](https://github.com/Bokicksit/Your-Loot/releases) **without the leading `v`**. |
+| `API_UPSTREAM` | web | `api:8000` | Where nginx finds the API. Only platform hosts need it. |
+| `PORT` | web | `80` | Honoured for platform hosts that assign one. |
+| `DATABASE_URL` / `IMAGE_DIR` / `API_PORT` | api | *(compose sets them)* | Only when running the API outside Docker or against a managed Postgres. |
 
 ## Keeping it running
 
@@ -206,134 +340,101 @@ Add them to `.env` and `docker compose up -d` again.
 ```bash
 docker compose pull && docker compose up -d
 ```
-Database migrations run automatically. To update deliberately instead, pin a
-version with `TAG=` in `.env` — `TAG=2.32`, taken from the
-[releases page](https://github.com/Bokicksit/Your-Loot/releases) **without the
-leading `v`**, since the release is named `v2.32` but the image it built is
-tagged `2.32`.
+Database migrations run automatically. Pin with `TAG=` to update on your own
+schedule instead.
 
 **Refresh the card database** (new sets, corrections) — weekly cron is plenty:
 ```bash
 docker compose exec api python /seed/seed_cards.py --download
 ```
-This only ever adds and updates catalog entries. Your owned copies, wanted
-list, binder picks, grades, and any photos you added are never touched.
+Only ever adds and updates catalogue entries. Your copies, wanted list, binder
+picks, grades and photos are never touched.
 
-**Japanese cards** are a second catalogue — 13,061 cards across 124 sets,
-including the sets that never had an English printing. Off by default, because
-it doubles the size of the card database and most collections never need it.
-Turn it on with `SEED_JAPANESE=true` in `.env` and restart, or do it once by
+**Japanese cards** — 13,061 cards across 124 sets, including the sets that
+never had an English printing. `SEED_JAPANESE=true` and restart, or once by
 hand:
 ```bash
 docker compose exec api python /seed/seed_cards_ja.py --download
 ```
-Either way it takes about 40 seconds, adds roughly 7 MB, and is only ever done
-once — the automatic version checks first and skips if they are already there.
-Until you run it, nothing about Japanese appears anywhere in the app.
-
-Once seeded: a **JP** button beside the card search brings up Japanese
-printings instead of English, and each one shows the English species name
-underneath so you can find リザードン by typing Charizard. Japanese cards go in
-your collection, your Pokédex and binders of your own — not set binders, since
-those sets have no English equivalent to be a set *of*. A binder takes them
-only when its settings say so, so the Pokédex you built in English stays that
-way until you decide otherwise.
-
-About 6 in 10 have artwork. Modern sets are complete; the 1990s and 2000s sets
-and the very newest releases have none yet, and those cards show an empty frame
-with the English name in it. That is TCGdex's coverage rather than a setting —
-it improves on its own as scans are contributed there. Your own photos work on
-Japanese cards exactly as they do on English ones.
-
-To undo it entirely:
+Once seeded, a **JP** button beside the card search brings up Japanese
+printings, each showing its English species name so you can find リザードン by
+typing Charizard. About 6 in 10 have artwork, which is TCGdex's coverage and
+improves on its own. To undo it:
 ```bash
 docker compose exec postgres psql -U getloot -d getloot \
   -c "delete from collection_item where source = 'tcgdex-ja';"
 ```
-That takes the Japanese catalogue with it and leaves everything you own alone.
 
-**Public profiles** turn a collection into a page you can send somebody —
-`/u/yourname`, showing only the shelves you tick, with thumbnails. Off by
-default, and that is the honest setting for the install this ships as: a home
-server nobody outside the house can reach has nothing to publish to. Turn it
-on with `PUBLIC_PROFILES=true` in `.env`.
+**The card scanner** needs each card's artwork fingerprinted once — eight bytes
+a card, the pictures aren't kept:
+```bash
+docker compose exec api python /seed/hash_cards.py
+```
+Twenty thousand requests to TCGdex, so start it on a quiet evening; it can be
+stopped and restarted, and a later run does only what's new. Or set
+`HASH_CARD_ART=true` and every start fingerprints whatever was added since,
+which is how a freshly seeded set becomes scannable without anybody remembering
+a command. Administrators can also run it from the card-art page in the app.
 
-It is one switch with two consequences. Where profiles are on they replace the
-downloadable share in Settings, because a link is better than a file when
-there is a server to answer it; where they are off the file is the only thing
-that could ever have worked. Names are claimed once and never changed — the
-URL is an address, and an address that moves breaks every link you gave out —
-so an administrator can take one away but nobody can swap theirs.
-
-Nothing is public until you tick it, notes and tags and serial numbers are
-never included, and a profile with nothing ticked returns "not found" rather
-than an empty page.
-
-**Running this for a lot of people?** Card pictures are seeded pointing at
-`images.pokemontcg.io`, which belongs to the project publishing the card
-database — fine for a household, less fine as somebody else's bandwidth bill.
-Move them onto TCGdex's asset host, which is published under MIT for this:
+**Card art for many people** — pictures are seeded pointing at
+`images.pokemontcg.io`, fine for a household and less fine as somebody else's
+bandwidth bill. `CARD_ART=tcgdex`, or once by hand:
 ```bash
 docker compose exec api python /seed/backfill_art.py --dry-run
 docker compose exec api python /seed/backfill_art.py
 ```
-Roughly one card in twenty has no art there — mostly Shiny Vault, the Trainer
-Galleries and the Galarian Gallery — and those keep the picture they have.
-Photos you took yourself are never touched, the refresh above won't undo it,
-and `CARD_ART=tcgdex` in `.env` does it automatically on first start.
 
-**Scanning a card with the camera** needs one more pass, which fingerprints
-each card's artwork so a photograph can be matched against it:
+**amiibo** are seeded on first start too; to re-run after a new wave:
 ```bash
-docker compose exec api python /seed/hash_cards.py
+docker compose exec api python /seed/seed_amiibo.py
 ```
-It fetches every card picture once and keeps eight bytes per card — not the
-pictures. Twenty thousand requests to TCGdex, so start it on a quiet evening;
-it can be stopped and started again, and a later run does only the cards added
-since. Until it has run, the camera button on the add form finds nothing and
-says so. Cards with no artwork can't be scanned, and a scan names the card
-rather than the printing — a reverse holo is the same picture as the normal
-one, so you still pick which you're holding.
-
-Or set `HASH_CARD_ART=true` in `.env` and forget about it: every start then
-fingerprints whatever is new, in the background, which is how a freshly seeded
-set becomes scannable without anybody remembering a command. A catalogue with
-nothing new costs one database question and moves on.
-
-**Running it on a platform host** (Railway, Fly, Render) rather than compose?
-The web container assumes the API answers to `api` on port 8000, which is true
-under compose and nowhere else. Two variables on the **web** service fix it,
-and neither is needed for a normal install:
-```bash
-API_UPSTREAM=<your api service host>:8000
-```
-`PORT` is also honoured, since most platforms assign one rather than letting
-you listen on 80. Point the API service at a managed Postgres with
-`DATABASE_URL`, set `PUBLIC_URL` to the address people actually type, and
-**pin both images to a version** — `latest` moves whenever this repo does,
-which is not what you want under a live site.
 
 **Back up** from **Settings → Whole server** — one zip with every account's
 items, copies, wanted entries and photos. Keep it somewhere that isn't this
-server. (Each person can also take their own from **Your collection**.) At the
-filesystem level the `data/` directory holds the Postgres database and your
-uploaded images; nothing else holds state.
+server. At the filesystem level the `data/` directory holds the Postgres
+database and your uploaded images; nothing else holds state.
 
-**Show off your room** — set `PUBLIC_PROFILES=true` and your collections get
-a public page at `/loot`, drawn as a collector's room. The user guide covers
-putting just that page on the internet through Cloudflare Tunnel or Tailscale
-Funnel, without exposing anything else on your server.
+**Check what's running** at `/api/health` — the API's version. The bottom of
+the Settings page is the web container's. If the two disagree, one image
+updated and the other didn't, which looks like the app being broken rather
+than half-upgraded.
 
-## Remote access
+## Behind a proxy or tunnel
 
 Even with a password set, **don't expose port 8080 to the internet directly.**
-The lock keeps a housemate out of your collection; it is not a hardened
-front door, and there's no HTTPS unless you put some in front. Either:
+The lock keeps a housemate out of your collection; it is not a hardened front
+door, and there's no HTTPS unless you put some in front. Either:
 
 - **Tailscale** — reach it privately from your phone, nothing public.
-- **Cloudflare Tunnel + Access** — a real HTTPS hostname gated by your email.
-  HTTPS also unlocks the barcode scanner, since browsers only allow camera
-  access on secure origins.
+- **Cloudflare Tunnel** (+ Access, if you want a login in front of the login)
+  — a real HTTPS hostname. HTTPS also unlocks the cameras, since browsers only
+  allow them on secure origins.
+
+Anything in front of nginx changes one thing the app has to be told about:
+**who the caller is.** The login, signup and mail brakes are counted per
+address, and the address arrives in `X-Forwarded-For` — a list the caller
+starts and each proxy appends to. Only the entries *your* proxies wrote mean
+anything, and the app cannot count them for you.
+
+- `TRUSTED_PROXIES=1` — the default. nginx in front, API port never
+  published. Right for the compose stack as it ships.
+- `TRUSTED_PROXIES=2` — a tunnel or load balancer in front of nginx **that
+  appends to the header.** Cloudflare Tunnel into a NAS does this.
+- `TRUST_CF_CONNECTING_IP=true` — for paths where something between
+  Cloudflare and the API **throws the header away and starts over**, so the
+  caller is not in it at any depth and no number works. Railway behind
+  Cloudflare does this. Only safe where nothing can reach the API except
+  through Cloudflare; anybody who can knock directly can write that header
+  themselves.
+
+**Don't guess.** Sign in as an admin and open `/api/admin/forwarding`. It
+reads the chain off your own request and tells you which setting is right —
+or says `shared_by_everyone: true`, which is the failure to look for: every
+visitor landing on one address and sharing one signup bucket. Guessing high is
+the dangerous direction; it starts believing entries a caller wrote.
+
+The same tunnel provider gave two different correct answers on two installs
+of this app. That's why the check exists rather than a rule of thumb.
 
 ## Running on TrueNAS SCALE
 
@@ -341,18 +442,70 @@ See [`deploy/compose.truenas.yaml`](deploy/compose.truenas.yaml) — paste it in
 **Apps → Discover Apps → ⋮ → Install via YAML**, after editing the password and
 dataset paths. It publishes port 30080, since 8080 is usually taken.
 
-**To update it:** *Apps → Installed → Your Loot → Edit*, then **Save**. TrueNAS
-pulls the images and recreates the containers — that's the whole update. The
-`docker compose pull` in [Keeping it running](#keeping-it-running) is for
-plain-Docker installs; a TrueNAS app is managed by TrueNAS, and running compose
-against it by hand from a shell means fighting it for control of the stack.
+**Settings go in the YAML as literal values** under the `api` service's
+`environment:` — `TRUSTED_PROXIES: "2"`, not `${TRUSTED_PROXIES:-1}`. The
+`${…}` form in the repo's compose files reads a `.env` file that a TrueNAS app
+doesn't have, and silently falls through to the default.
 
-**To check what's actually running**, open `http://<your-nas>:30080/api/health`
-in a browser. That's the API's version; the bottom of the Settings page is the
-web container's. **If the two disagree, one image updated and the other
-didn't** — which looks like the app being broken rather than being half
-upgraded, so it's worth checking first whenever something is behaving oddly
-after an update.
+**To update it:** *Apps → Installed → Your Loot → Edit*, then **Save**. TrueNAS
+pulls the images and recreates the containers — that's the whole update. Don't
+run `docker compose` against a TrueNAS app from a shell; you'll fight it for
+control of the stack.
+
+## Running on a platform host
+
+Railway, Fly, Render — anywhere that isn't compose. The web container assumes
+the API answers to `api` on port 8000, which is true under compose and nowhere
+else. On the **web** service:
+```bash
+API_UPSTREAM=<your api service host>:8000
+```
+`PORT` is honoured too. Point the API at a managed Postgres with
+`DATABASE_URL`, set `PUBLIC_URL` to the address people type, **pin both images
+to a version**, and read [Behind a proxy or tunnel](#behind-a-proxy-or-tunnel)
+— a platform's edge plus Cloudflare is exactly the path where hop counting
+fails and `TRUST_CF_CONNECTING_IP` is the answer. Make sure the platform's own
+auto-generated domain isn't publicly serving the API, or that answer stops
+being safe.
+
+## The admin panel
+
+The first account is the administrator. Admins are never billed, and get a
+panel in Settings with:
+
+- **Users** — every account, its plan, and a switch to comp somebody a plan by
+  hand (no end date means it doesn't end).
+- **Reserved names** — hold a public-profile name before anyone claims it,
+  optionally for a particular email, so your kid's name is waiting when they
+  sign up. Taking a name away from an account is here too.
+- **Card art** — every set in the catalogue, collapsible, each card with its
+  picture: replace one from a link or an upload, and it becomes the picture
+  for everyone. A button runs the scanner fingerprint pass for whatever's new.
+- **Repair covers** — re-fetch missing cover art across the catalogue.
+- **Stats**, and `/api/admin/forwarding` (JSON) for the proxy check above.
+
+## Security
+
+What the app does on its own account, beyond argon2id passwords and signed
+http-only sessions:
+
+- **Every write checks whose it is.** Editing or deleting an entry, across all
+  nine collections, requires a stake in it; another account's private row is
+  404, not 403, so it doesn't confirm existence. Reads were always scoped.
+- **Brakes on guessing** — login, signup, mail and third-party lookups, per
+  address and per account, with `X-Forwarded-For` read from the trusted end
+  only (above).
+- **Pasted image URLs can't be used to reach your LAN.** The hostname is
+  resolved once, refused if it points anywhere private (including cloud
+  metadata addresses), and the connection goes to the address that passed —
+  so a DNS record can't answer differently for the check and the fetch. Every
+  redirect hop is checked the same way.
+- **Uploads are streamed and capped**, and image links are signed and expire.
+- **A test suite gates every image** — nothing is published to the registry
+  unless the tests pass, including a cross-account tenancy sweep and the
+  proxy-header cases above.
+
+Report anything you find privately; see [SECURITY.md](SECURITY.md).
 
 ## Development
 
@@ -362,33 +515,59 @@ docker compose -f compose.dev.yaml up --build
 Builds from source instead of pulling images, exposes the API on :8000
 (interactive docs at `/docs`), and skips the first-run seed. Frontend-only
 work: `cd web && npm install && npm run dev` — that one needs Node 20.19+ or
-22+ on your machine, which Vite requires. The Docker build carries its own.
+22+, which Vite requires. The Docker build carries its own.
 
-**Stack:** FastAPI + SQLAlchemy + Alembic + Postgres, React + Vite, nginx.
-One `collection_item` table shared by every module, with per-module attribute
+**Tests** run against a throwaway stack of five API variants (single-user,
+multi-user, open signup, fresh, home) and a tmpfs Postgres:
+```bash
+docker compose -f compose.test.yaml run --rm tests
+```
+It refuses to run against anything not declared disposable — two of the tests
+restore backups, which is destructive by definition. CI runs the same command
+before it publishes an image.
+
+**The scanner has a benchmark**, because it was tuned on guesses twice and got
+worse the second time. It downloads a few hundred real cards, photographs each
+one badly on purpose in eleven ways, and prints how often the matcher finds it:
+```bash
+docker compose exec api python /app/tools/bench_scanner.py
+```
+Any change to `api/app/arthash.py` should be run through it first.
+
+**Stack:** FastAPI + SQLAlchemy + Alembic + Postgres, React + Vite, nginx. One
+`collection_item` table shared by every module, with per-module attribute
 tables and separate `owned`/`wanted` records — which is why the wanted list can
 span every category with a single query. Adding another module is a new
 attributes table plus a router; nothing existing changes.
 
 ```
-api/     FastAPI app, models, migrations, integrations (IGDB/TMDB/TCGdex/…)
-web/     React SPA + nginx
-seed/    offline card-database seeder
-deploy/  TrueNAS compose
+api/app/               FastAPI app, models, migrations, tenancy, rate limits
+api/app/integrations/  IGDB, TMDB, TCGdex, Rebrickable, Discogs, MusicBrainz, …
+api/app/arthash.py     the card scanner's fingerprint and deskew
+api/app/prices.py      the binder price check
+api/app/room.py, drill.py, profile_*.js/.css   the public collector's room
+api/tools/             the scanner benchmark
+api/tests/             the suite
+web/                   React SPA + nginx
+seed/                  card, amiibo and console seeders; art backfill; fingerprints
+deploy/                TrueNAS compose
 ```
+
+Commit messages carry the version (`VERSION` moves +0.01 per commit) and the
+[CHANGELOG](CHANGELOG.md) carries the reasoning.
 
 ## Data sources & credits
 
 - Card data: [pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data)
-  and [TCGdex](https://tcgdex.dev) · Japanese cards and all card artwork:
-  [TCGdex](https://tcgdex.dev) (MIT)
+  and [TCGdex](https://tcgdex.dev) · Japanese cards, all card artwork and
+  the TCGplayer market prices behind the price check: [TCGdex](https://tcgdex.dev) (MIT)
 - Games: [IGDB](https://www.igdb.com), box scans from
   [libretro-thumbnails](https://github.com/libretro-thumbnails) ·
   Movies: [TMDB](https://www.themoviedb.org)
   (this product uses the TMDB API but is not endorsed or certified by TMDB)
 - Books: [Open Library](https://openlibrary.org)
-- Records: [MusicBrainz](https://musicbrainz.org) and the
-  [Cover Art Archive](https://coverartarchive.org)
+- Records: [MusicBrainz](https://musicbrainz.org), the
+  [Cover Art Archive](https://coverartarchive.org) and [Discogs](https://www.discogs.com)
 - amiibo: the [AmiiboAPI open database](https://github.com/N3evin/AmiiboAPI)
 - Console catalogue: our own [CC0 dataset](seed/data/consoles-na.json), photos
   from [Wikimedia Commons](https://commons.wikimedia.org) (public domain /

@@ -870,12 +870,9 @@ function PriceBar({ entries, prices, onPrices }) {
     const p = prices?.prices?.[id];
     return p && p.currency === "USD" ? p.amount : null;
   };
-  let have = 0, gaps = 0, haveN = 0, gapN = 0, other = 0;
+  let have = 0, gaps = 0, haveN = 0, gapN = 0;
   for (const e of entries) {
     const v = priced(e);
-    const id = e.card?.id ?? e.item_id;
-    const p = prices?.prices?.[id];
-    if (p && p.currency !== "USD") other += 1;
     if (v == null) continue;
     if (e.card) { have += v; haveN += 1; } else { gaps += v; gapN += 1; }
   }
@@ -905,7 +902,6 @@ function PriceBar({ entries, prices, onPrices }) {
           )}
           <span className="note">
             {prices.priced} of {prices.asked} priced · TCGplayer market
-            {other > 0 ? ` · ${other} in € (not totalled)` : ""}
             {age ? ` · updated ${age}` : ""} · not saved
           </span>
         </>

@@ -6,16 +6,15 @@ import { NavLink } from "react-router-dom";
  *  Routes rather than local state, because a binder is a thing you send
  *  somebody a link to, and because the Pokédex already had a URL.
  */
-/** A price the way a person writes one: "$12.40", "€9". Whole euros and
- *  dollars drop the cents — a market price is not a till receipt — but
- *  anything under ten keeps them, because on a fifty-cent common the cents
- *  are the whole number. */
-export function money(amount, currency = "USD") {
+/** A price the way a person writes one: "$12.40", "$286". Whole dollars drop
+ *  the cents — a market price is not a till receipt — but anything under ten
+ *  keeps them, because on a fifty-cent common the cents are the whole number.
+ *  Dollars only: the price check deals in nothing else. */
+export function money(amount) {
   if (amount == null || Number.isNaN(Number(amount))) return "—";
   const n = Number(amount);
-  const sym = currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
   const digits = n < 10 ? 2 : 0;
-  return sym + n.toLocaleString(undefined, {
+  return "$" + n.toLocaleString(undefined, {
     minimumFractionDigits: digits, maximumFractionDigits: digits,
   });
 }
@@ -318,12 +317,12 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
               ? `${price.source} market price` +
                 (price.variant ? ` · ${price.variant}` : "") +
                 (price.low != null && price.high != null
-                  ? ` · ${money(price.low, price.currency)}–${money(price.high, price.currency)}`
+                  ? ` · ${money(price.low)}–${money(price.high)}`
                   : "")
-              : "Not listed on TCGplayer or Cardmarket"
+              : "Not listed on TCGplayer"
           }
         >
-          {price ? money(price.amount, price.currency) : "—"}
+          {price ? money(price.amount) : "—"}
         </span>
       )}
       {art ? (

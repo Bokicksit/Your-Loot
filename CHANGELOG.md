@@ -16,10 +16,12 @@ Full detail is in the commit log, where every change has its own note.
   off and it is gone — nothing about a price is saved, on purpose. A price
   is a fact about this afternoon, and a table of them would be a table of
   things that used to be true. The figures are TCGplayer's market price in
-  dollars (Cardmarket's trend in euros where a card is only listed there),
-  from TCGdex, which already supplies the card art; they are labelled with
-  their source and age, and a dash means the card is on neither
-  marketplace. When the price service is down the bar says so rather than
+  dollars, from TCGdex, which already supplies the card art; they are
+  labelled with their source and age, and a dash means the card is not on
+  TCGplayer. Dollars only, deliberately — TCGdex also carries Cardmarket in
+  euros and it is ignored, because a page total summed across two
+  currencies is not a total of anything. When the price service is down the
+  bar says so rather than
   showing a page of dashes. Not eBay: eBay does not sell its sold-listings
   data to anybody this size, and TCGplayer's market price is derived from
   actual completed sales on the largest singles marketplace there is, which
