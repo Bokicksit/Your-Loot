@@ -218,7 +218,7 @@ def user_from_token(request: Request, db: Session) -> User | None:
 # holder's own collection, and nothing that reads it, changes the account, or
 # mints further tokens. Method and path both, so a GET on the same path — the
 # download — is still refused.
-SYNC_MAY = {("POST", "/api/backup/mine")}
+SYNC_MAY = {("POST", "/api/backup/mine"), ("POST", "/api/backup/mine/have")}
 
 
 def _enforce_scope(request: Request) -> None:

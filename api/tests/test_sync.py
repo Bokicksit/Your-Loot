@@ -101,6 +101,12 @@ def test_a_sync_token_can_push_a_collection_and_nothing_else(receiver):
     assert b.post("/api/auth/tokens", json={"name": "x"}).status_code == 403
     assert b.get("/api/sync").status_code == 403
     assert b.post("/api/sync/now").status_code == 403
+    assert b.delete("/api/sync/mirror").status_code == 403
+
+    # and the one question a sender asks before it builds the zip
+    r = b.post("/api/backup/mine/have", json={"names": ["nope.png", "../etc/passwd"]})
+    assert r.status_code == 200
+    assert r.json()["missing"] == ["nope.png"]   # the climb-out is not a file, so not "missing"
 
     # the one thing it is for
     blob = c.get("/api/backup/mine").content
@@ -292,3 +298,135 @@ def test_the_settings_that_point_elsewhere_never_travel():
 
     assert mine.SYNC_KEYS <= mine.LOCAL_ONLY
     assert "sync_token" in mine.LOCAL_ONLY
+
+
+# ------------------------------------------------------------ the mirror
+
+@needs_open
+def test_a_collection_that_arrives_on_a_sync_token_marks_the_account_a_mirror(owner, receiver):
+    there, tok = receiver
+    assert there.get("/api/settings").json()["mirror"] is None
+    owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
+    owner.post("/api/sync/now").raise_for_status()
+
+    m = there.get("/api/settings").json()["mirror"]
+    assert m and m["at"] and m["source"]      # the test API has no public URL, so "your home server"
+
+    # stopping clears the mark and revokes the tokens, so the old source is refused
+    r = there.delete("/api/sync/mirror")
+    assert r.status_code == 200 and r.json()["revoked_tokens"] == 1
+    assert there.get("/api/settings").json()["mirror"] is None
+    assert owner.post("/api/sync/now").status_code == 502
+    owner.delete("/api/sync")
+
+
+@needs_open
+def test_a_restore_of_your_own_file_does_not_make_you_a_mirror(receiver):
+    """Same endpoint, cookie rather than sync token: that is a person loading
+    their own backup, and nothing about their account changes."""
+    c, _ = receiver
+    blob = c.get("/api/backup/mine").content
+    c.post("/api/backup/mine", files={"file": ("c.zip", blob, "application/zip")},
+           data={"confirm": "RESTORE"}).raise_for_status()
+    assert c.get("/api/settings").json()["mirror"] is None
+
+
+def test_the_mirror_mark_never_travels():
+    from app import mine
+
+    assert mine.MIRROR_KEYS <= mine.LOCAL_ONLY
+
+
+# ----------------------------------------------------- only new photos go
+
+def test_only_the_photos_the_other_side_lacks_are_packed(tmp_path, monkeypatch):
+    from app import mine
+
+    monkeypatch.setattr(mine.cfg, "image_dir", str(tmp_path))
+    (tmp_path / "a.jpg").write_bytes(b"A")
+    (tmp_path / "b.jpg").write_bytes(b"B")
+    payload = {"items": [{"image_url": "/images/a.jpg"}, {"image_url": "/images/b.jpg"}],
+               "binders": [], "owned": [], "wanted": [], "tags": [], "settings": []}
+
+    everything = zipfile.ZipFile(io.BytesIO(mine.to_zip(None, None, payload=payload)))
+    assert {n for n in everything.namelist() if n.startswith("images/")} == {"images/a.jpg", "images/b.jpg"}
+
+    some = zipfile.ZipFile(io.BytesIO(mine.to_zip(None, None, payload=payload, only_images={"b.jpg"})))
+    assert {n for n in some.namelist() if n.startswith("images/")} == {"images/b.jpg"}
+
+    none = zipfile.ZipFile(io.BytesIO(mine.to_zip(None, None, payload=payload, only_images=set())))
+    assert not [n for n in none.namelist() if n.startswith("images/")]
+
+    assert mine.images_missing(["a.jpg", "zzz.jpg", "../x", ".hidden"]) == ["zzz.jpg"]
+
+
+@needs_open
+def test_the_second_send_carries_no_photos_it_already_sent(owner, receiver):
+    """Provable without photos: the receiver reports how many images it wrote,
+    and a second send of an unchanged collection must write none."""
+    there, tok = receiver
+    owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
+    first = owner.post("/api/sync/now").json()["result"]
+    second = owner.post("/api/sync/now").json()["result"]
+    assert second["images"] == 0
+    assert second["copies"] == first["copies"]
+    owner.delete("/api/sync")
+
+
+# ------------------------------------------------ send it after a change
+
+def test_a_change_waits_out_the_debounce_then_is_due(monkeypatch):
+    from app.routers import sync
+
+    now = [10_000.0]
+    monkeypatch.setattr(sync.time, "monotonic", lambda: now[0])
+    sync._pending.clear()
+    sync.notify_change(7)
+    assert sync._changes_due() == []
+    now[0] += sync.DEBOUNCE - 1
+    assert sync._changes_due() == []
+    sync.notify_change(7)                      # another change resets the wait
+    now[0] += sync.DEBOUNCE - 1
+    assert sync._changes_due() == []
+    now[0] += 2
+    assert sync._changes_due() == [7]
+    sync._pending.clear()
+
+
+def test_a_write_to_a_collection_marks_its_owner(owner):
+    """Filing something is what makes an account pending — seen from the
+    outside as the status the settings screen reads."""
+    owner.put("/api/sync", json={"url": OPEN_INSIDE or "http://api-open:8000",
+                                 "token": "not-a-real-token", "on_change": True}).raise_for_status()
+    assert owner.get("/api/sync").json()["pending"] is False   # saving settings is not a change
+    made = owner.post("/api/cards", json={"title": "Sync Probe"}).json()
+    owner.post(f"/api/items/{made['id']}/owned", json={"quantity": 1}).raise_for_status()
+    st = owner.get("/api/sync").json()
+    assert st["on_change"] is True and st["pending"] is True
+    owner.delete(f"/api/cards/{made['id']}")
+    owner.delete("/api/sync")
+    assert owner.get("/api/sync").json()["pending"] is False
+
+
+@needs_open
+def test_the_same_collection_can_land_in_two_accounts_on_one_server(owner, receiver):
+    """The failure that found the per-server unique index: a binder's uid
+    travels with it, so two mirrors of one collection carry the same uids,
+    and both have to be allowed to exist."""
+    there, tok = receiver
+    other = httpx.Client(base_url=OPEN, timeout=120)
+    other.post("/api/auth/signup", json={
+        "email": f"second-{uuid.uuid4().hex[:8]}@example.com", "password": PASSWORD,
+        "accept_terms": True, "screen_name": f"s{uuid.uuid4().hex[:8]}",
+    }).raise_for_status()
+    tok2 = other.post("/api/auth/tokens", json={"name": "home", "scope": "sync"}).json()
+
+    for t in (tok, tok2):
+        owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": t["token"]}).raise_for_status()
+        r = owner.post("/api/sync/now")
+        assert r.status_code == 200, r.text
+    mine_names = {b["name"] for b in owner.get("/api/binders").json()["binders"]}
+    assert {b["name"] for b in there.get("/api/binders").json()["binders"]} >= mine_names
+    assert {b["name"] for b in other.get("/api/binders").json()["binders"]} >= mine_names
+    owner.delete("/api/sync")
+    other.close()

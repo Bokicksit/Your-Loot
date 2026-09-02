@@ -9,6 +9,27 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **A mirror knows it is one.** A collection that arrives on a sync token
+  stamps the account it lands in, and the app there draws a bar under the
+  header on every page: mirror of *where*, last received *when*, changes
+  here are replaced on the next send. Because the alternative was somebody
+  adding a card on the hosted side and watching it vanish overnight with no
+  explanation. *Receive from elsewhere* gained **Stop mirroring**, which
+  clears the mark and revokes every sync token, so the old source is refused
+  from then on. A person restoring their own file is not a mirror and is
+  not marked.
+- **Only new photographs travel.** Before it builds the zip, the sender asks
+  the other side which of the files this collection points at it already
+  holds, and packs the rest. Names are content hashes, so "have it" means
+  the same picture. A collection with a thousand photos sends a thousand
+  once and then none; an older receiver that cannot answer is sent
+  everything, which is what always worked.
+- **Send it a few minutes after I change something.** Every write to a
+  collection marks its owner pending — the rows say so, so no route can
+  forget to — and five minutes after the last change it goes. Filing twenty
+  cards is one send; the public page is right before you have finished
+  telling somebody about it. The nightly send is still there for people who
+  would rather it happened while they slept.
 - **Send your collection to another Your Loot.** The case: a collection kept
   on a home server and a public page on the hosted one, without ever putting
   the home server on the internet. *Settings → Send it elsewhere* takes the
@@ -32,7 +53,9 @@ Full detail is in the commit log, where every change has its own note.
   now carry a name that survives the trip and are found again rather than
   made again; a file from before that matches set and dex binders on what
   they are of and custom ones on their name. A binder gone from the file is
-  gone from the account, as it should be.
+  gone from the account, as it should be. That name is unique within the
+  account rather than the server — it travels with the binder, so the same
+  collection sent to two accounts here carries it twice, and both are right.
 - **A restore checks the plan first.** It never used to, because it was
   always your own file back into your own account. A collection arriving from
   another server can be two thousand cards into a free account that allows

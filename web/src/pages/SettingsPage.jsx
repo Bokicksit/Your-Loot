@@ -1416,6 +1416,7 @@ function SyncCard({ open, onToggle }) {
   const [url, setUrl] = useState("https://yourloot.app");
   const [token, setToken] = useState("");
   const [nightly, setNightly] = useState(false);
+  const [onChange, setOnChange] = useState(false);
   const [busy, setBusy] = useState(null); // "save" | "now" | "forget"
   const [error, setError] = useState(null);
   const [flash, setFlash] = useState(null);
@@ -1425,6 +1426,7 @@ function SyncCard({ open, onToggle }) {
       setSt(r);
       if (r.url) setUrl(r.url);
       setNightly(!!r.nightly);
+      setOnChange(!!r.on_change);
     }).catch(() => {});
   useEffect(() => { load(); }, []);
 
@@ -1436,7 +1438,7 @@ function SyncCard({ open, onToggle }) {
       setToken("");
       if (what === "now") setFlash("Sent.");
       if (what === "save") setFlash("Saved.");
-      if (what === "forget") { setSt({ configured: false }); setUrl("https://yourloot.app"); setNightly(false); }
+      if (what === "forget") { setSt({ configured: false }); setUrl("https://yourloot.app"); setNightly(false); setOnChange(false); }
     } catch (e) {
       setError(e.message);
       load();
@@ -1448,6 +1450,7 @@ function SyncCard({ open, onToggle }) {
   const summary = !st ? "…"
     : !st.configured ? "off"
     : st.last_error ? "last send failed"
+    : st.pending ? "changes waiting"
     : st.last_at ? `sent ${since(st.last_at)}` : "ready";
   const res = st?.last_result;
 
@@ -1484,10 +1487,14 @@ function SyncCard({ open, onToggle }) {
           <input type="checkbox" checked={nightly} onChange={(e) => setNightly(e.target.checked)} />
           Send it every night
         </label>
+        <label className="check">
+          <input type="checkbox" checked={onChange} onChange={(e) => setOnChange(e.target.checked)} />
+          Send it a few minutes after I change something
+        </label>
       </div>
       <div className="form-row wrap">
         <button className="primary" disabled={busy !== null || !url.trim() || (!token.trim() && !st?.configured)}
-                onClick={() => run("save", () => api.saveSync({ url: url.trim(), token: token.trim() || null, nightly }))}>
+                onClick={() => run("save", () => api.saveSync({ url: url.trim(), token: token.trim() || null, nightly, on_change: onChange }))}>
           {busy === "save" ? "…" : "Save"}
         </button>
         <button className="ghost" disabled={busy !== null || !st?.configured}
@@ -1509,6 +1516,9 @@ function SyncCard({ open, onToggle }) {
       {st?.last_error && !error && (
         <p className="error"><Icon id="alert" />Last send failed: {st.last_error}</p>
       )}
+      {st?.pending && !busy && (
+        <p className="settings-note">Changes waiting — they go a few minutes after the last one.</p>
+      )}
       {st?.last_at && res && (
         <p className="settings-note">
           Last sent {since(st.last_at)} — {res.copies} {res.copies === 1 ? "copy" : "copies"},{" "}
@@ -1525,6 +1535,21 @@ function SyncCard({ open, onToggle }) {
  *  account. The token it needs is minted here, shown once, and can only do
  *  that one thing. */
 function TokensCard({ open, onToggle }) {
+  const { settings } = useSettings();
+  const mirror = settings?.mirror;
+  const [stopping, setStopping] = useState(false);
+  const stop = async () => {
+    setStopping(true);
+    try {
+      await api.stopMirroring();
+      // the bar on every page reads the settings the app loaded; the simplest
+      // honest way to make it go is to load them again
+      window.location.reload();
+    } catch (e) {
+      setError(e.message);
+      setStopping(false);
+    }
+  };
   const [rows, setRows] = useState(null);
   const [name, setName] = useState("my home server");
   const [fresh, setFresh] = useState(null); // the one-time value
@@ -1552,7 +1577,8 @@ function TokensCard({ open, onToggle }) {
   };
 
   const live = (rows || []).filter((t) => !t.revoked_at && t.scope === "sync");
-  const summary = rows === null ? "…" : live.length ? `${live.length} token${live.length === 1 ? "" : "s"}` : "none";
+  const summary = mirror ? `mirror of ${mirror.source}`
+    : rows === null ? "…" : live.length ? `${live.length} token${live.length === 1 ? "" : "s"}` : "none";
 
   return (
     <Section id="tokens" icon="lock" name="Receive from elsewhere" summary={summary} open={open} onToggle={onToggle}>
@@ -1567,6 +1593,21 @@ function TokensCard({ open, onToggle }) {
         read anything, change the account, or make more tokens. Revoke it here
         and the next send is refused.
       </p>
+      {mirror && (
+        <div className="mirror-note">
+          <p>
+            <strong>This account is a mirror of {mirror.source}</strong>
+            {mirror.at ? ` — last received ${since(mirror.at)}.` : "."} Everything
+            here is replaced on every send; make changes there, not here. Which
+            shelves are public is the one thing that is yours to decide here.
+          </p>
+          <button className="ghost" disabled={stopping} onClick={stop}
+                  title="Stop being a mirror: the bar goes and every sync token here is revoked">
+            <Icon id="x" />
+            {stopping ? "…" : "Stop mirroring"}
+          </button>
+        </div>
+      )}
       <div className="form-row wrap">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="what it's for" maxLength={60} />
         <button className="primary" disabled={busy} onClick={make}>

@@ -18,7 +18,8 @@ import zipfile
 from datetime import date, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 from fastapi.responses import Response
 from sqlalchemy import Date, DateTime, func, select, text
 from sqlalchemy.orm import Session
@@ -223,8 +224,10 @@ def download_mine(
 
 @router.post("/mine")
 async def restore_mine(
+    request: Request,
     file: UploadFile,
     confirm: str = Form(""),
+    source: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
@@ -237,16 +240,43 @@ async def restore_mine(
     The confirmation is typed rather than clicked because it clears what is
     there first, and a dialog somebody has learned to dismiss is not a
     decision.
+
+    A file that arrives on a sync token came from another install, and the
+    account is then a mirror of it: stamped as such, with `source` naming
+    where from, so the app here can say so on every page rather than let
+    somebody discover it when their edits vanish.
     """
     raw = await file.read()
     try:
-        return mine.load(db, user, raw, confirm)
+        out = mine.load(db, user, raw, confirm)
     except mine.Refused as e:
         db.rollback()
         raise HTTPException(400, str(e)) from None
     except Exception:
         db.rollback()
         raise
+    if getattr(request.state, "token_scope", "full") == "sync":
+        from app.routers import sync as sync_view
+
+        sync_view.mark_mirror(db, user.id, source)
+        db.commit()
+    return out
+
+
+class HaveIn(BaseModel):
+    names: list[str]
+
+
+@router.post("/mine/have")
+def images_i_lack(body: HaveIn, user: User = Depends(current_user)):
+    """Which of these uploaded files this install does not already hold.
+
+    Asked by a sender before it builds the zip, so that only new photographs
+    travel; a collection with a thousand of them is sent a thousand once and
+    then none. Names are content hashes, so "have it" means the same picture.
+    Reachable on a sync token, which is the only caller.
+    """
+    return {"missing": mine.images_missing(body.names[:5000])}
 
 
 def _already_lived_in(db: Session) -> bool:

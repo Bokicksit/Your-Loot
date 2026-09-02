@@ -181,6 +181,51 @@ function BuildTag() {
 }
 
 
+/** "2 hours ago", for a timestamp the server wrote. */
+function since(iso) {
+  if (!iso) return null;
+  const t = Date.parse(iso.endsWith("Z") ? iso : iso + "Z");
+  if (Number.isNaN(t)) return null;
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 2) return "just now";
+  if (m < 90) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 36) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  const d = Math.round(h / 24);
+  return `${d} day${d === 1 ? "" : "s"} ago`;
+}
+
+/** This account is a copy of a collection kept somewhere else, and is
+ *  replaced every time that somewhere sends. Said on every page, because the
+ *  alternative is adding a card here and watching it vanish overnight with
+ *  no explanation. Dismissable for the session — once read, it is furniture. */
+function MirrorBar({ mirror }) {
+  const KEY = "loot.mirrorBarSeen";
+  const [hidden, setHidden] = useState(() => {
+    try { return sessionStorage.getItem(KEY) === mirror.at; } catch { return false; }
+  });
+  if (hidden) return null;
+  const hide = () => {
+    try { sessionStorage.setItem(KEY, mirror.at); } catch {}
+    setHidden(true);
+  };
+  return (
+    <div className="mirror-bar" role="status">
+      <Icon id="cloud" />
+      <span>
+        This account mirrors <strong>{mirror.source}</strong>
+        {mirror.at ? ` · last received ${since(mirror.at)}` : ""}. Changes
+        made here are replaced on the next send — keep your collection there.
+      </span>
+      <Link to="/settings#tokens" className="mirror-bar-link">Details</Link>
+      <button className="ghost icon" onClick={hide} title="Hide for now" aria-label="Hide">
+        <Icon id="x" />
+      </button>
+    </div>
+  );
+}
+
+
 function Shell() {
   const { settings } = useSettings();
   const name = settings?.owner_name;
@@ -210,6 +255,8 @@ function Shell() {
         )}
         <BuildTag />
       </header>
+
+      {settings?.mirror && <MirrorBar mirror={settings.mirror} />}
 
       <main className="content">
         <PageTitle />

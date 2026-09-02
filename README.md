@@ -435,6 +435,16 @@ Three things to know:
 Binder links survive it: a binder keeps its id across every send, so the
 `/u/name/binder/17` link you gave out keeps working.
 
+**Send it a few minutes after I change something** does what it says: file a
+card at home and the public page is right within minutes, without a send per
+keystroke. Only the photos the other side doesn't have yet travel — a
+collection with a thousand of them sends a thousand once, then none.
+
+The receiving account knows it's a mirror. A bar under the header on every
+page there says so, with where from and when, and *Settings → Receive from
+elsewhere* has **Stop mirroring**, which clears it and revokes every sync
+token so the old source is refused.
+
 The file that travels is your **Your collection** backup, and the receiving
 end is the restore that already existed — so anything the backup carries,
 the mirror gets: copies with condition and grading, the wanted list, tags,

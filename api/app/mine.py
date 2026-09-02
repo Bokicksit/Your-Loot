@@ -92,7 +92,10 @@ SYNC_KEYS = {
     "sync_url", "sync_token", "sync_nightly",
     "sync_last_at", "sync_last_result", "sync_last_error",
 }
-LOCAL_ONLY = {"public_collections", "public_loose"} | SYNC_KEYS
+# And what the receiving end knows about itself: that it is a mirror, of
+# what, since when. A fact about this account on this server.
+MIRROR_KEYS = {"mirrored_at", "mirror_source"}
+LOCAL_ONLY = {"public_collections", "public_loose"} | SYNC_KEYS | MIRROR_KEYS
 
 
 def _plain(value):
@@ -246,17 +249,44 @@ def _images_for(payload: dict) -> set[str]:
     return names
 
 
-def to_zip(db: Session, user) -> bytes:
-    payload = gather(db, user)
+def to_zip(db: Session, user, payload: dict | None = None,
+           only_images: set[str] | None = None) -> bytes:
+    """The collection as a file.
+
+    `only_images` narrows which photographs ride along — for a push to a
+    server that has already said which ones it holds. None means all of them,
+    which is what a backup wants: a file that stands on its own.
+    """
+    payload = payload if payload is not None else gather(db, user)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("collection.json", json.dumps(payload, indent=1))
         root = Path(cfg.image_dir)
-        for name in _images_for(payload):
+        wanted = _images_for(payload)
+        if only_images is not None:
+            wanted &= set(only_images)
+        for name in wanted:
             path = root / name
             if path.is_file():
                 z.write(path, f"images/{name}")
     return buf.getvalue()
+
+
+def images_missing(names) -> list[str]:
+    """Of these uploaded-file names, the ones this install does not hold.
+
+    Bare names only — a name that could climb out of the directory is not a
+    file this server has, whatever the disk says.
+    """
+    root = Path(cfg.image_dir)
+    out = []
+    for raw in names:
+        name = str(raw or "")
+        if not name or "/" in name or "\\" in name or name.startswith("."):
+            continue
+        if not (root / name).is_file():
+            out.append(name)
+    return out
 
 
 # -------------------------------------------------------------------- in

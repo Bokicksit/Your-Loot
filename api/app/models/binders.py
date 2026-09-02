@@ -30,7 +30,7 @@ anything exclusive would have emptied it.
 
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, text
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -45,7 +45,7 @@ class Binder(TimestampMixin, Base):
     # every night — needs the binder found again rather than made again, so
     # that a public link to it keeps working. See mine.load().
     uid: Mapped[str] = mapped_column(
-        String(36), nullable=False, unique=True, default=lambda: str(uuid.uuid4())
+        String(36), nullable=False, default=lambda: str(uuid.uuid4())
     )
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
@@ -95,6 +95,10 @@ class Binder(TimestampMixin, Base):
     )
 
     __table_args__ = (
+        # Unique within the account, not the table: the uid travels with the
+        # binder, so the same collection sent to two accounts here carries the
+        # same one twice, and both are right.
+        UniqueConstraint("user_id", "uid", name="uq_binder_user_uid"),
         # One Pokédex each. It is the only kind whose universe is fixed and
         # universal, so a second one would be the same binder twice.
         Index(

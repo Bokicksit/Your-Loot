@@ -90,6 +90,11 @@ class SettingsOut(BaseModel):
     # runs into it. All zero on a self-hosted install, where nothing is
     # limited and none of this is drawn.
     limits: dict = {}
+    # Whether this account is a mirror of a collection kept elsewhere — sent
+    # here by another install, replaced on every send — and of what, since
+    # when. Null on every account that is simply somebody's own. Here because
+    # the shell draws a bar about it on every page, and it already asks this.
+    mirror: dict | None = None
     dex_cols: int = 4
     card_cols: int = 3
     tile_modules: list[str] = []
@@ -181,7 +186,11 @@ def _current(db: Session, user_id: int) -> SettingsOut:
 
 @router.get("", response_model=SettingsOut)
 def get_settings(db: Session = Depends(get_db), user: User = Depends(current_user)):
-    return _current(db, user.id)
+    from app.routers import sync as sync_view
+
+    out = _current(db, user.id)
+    out.mirror = sync_view.mirror_status(db, user.id)
+    return out
 
 
 @router.put("", response_model=SettingsOut)

@@ -421,6 +421,9 @@ export const api = {
   saveSync: (body) => request("/api/sync", { method: "PUT", body: JSON.stringify(body) }),
   forgetSync: () => request("/api/sync", { method: "DELETE" }),
   syncNow: () => request("/api/sync/now", { method: "POST" }),
+  // The receiving side stops being a mirror: the bar goes, its sync tokens
+  // are revoked, and the next send from the old source is refused.
+  stopMirroring: () => request("/api/sync/mirror", { method: "DELETE" }),
   // Your own collection, which everybody has and nothing gates.
   myBackupUrl: "/api/backup/mine",
   /** Same shape as restoreBackup below, and for the same reason: a file goes

@@ -5339,3 +5339,28 @@ label.check {
   color: var(--text-dim);
 }
 label.check input { width: auto; }
+
+/* ---- a mirrored account says so, under the header, on every page ------ */
+.mirror-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  font-size: var(--f-2);
+  color: var(--text-dim);
+  background: linear-gradient(180deg, var(--gold-wash), transparent 80%), var(--bg-1);
+  border-bottom: 1px solid var(--gold-line);
+}
+.mirror-bar > svg.i { width: 16px; height: 16px; color: var(--gold-bright); flex: none; }
+.mirror-bar span { min-width: 0; }
+.mirror-bar strong { color: var(--text); }
+.mirror-bar-link { margin-left: auto; white-space: nowrap; }
+.mirror-bar button { flex: none; }
+.mirror-note {
+  margin: var(--s-3) 0;
+  padding: var(--s-3);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-2);
+  background: var(--gold-wash);
+}
+.mirror-note p { margin: 0 0 var(--s-2); }

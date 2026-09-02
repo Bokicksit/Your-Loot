@@ -6,15 +6,34 @@ page is exactly what nobody should do — so instead the home server pushes its
 collection *out*, into an account on the service, and the service's public
 page reads from that. Nothing reaches in. The account it lands in is a
 mirror, replaced wholesale on every push; whatever is edited there is
-overwritten by the next one, and the settings screen says so.
+overwritten by the next one, and both ends say so — the sender in its
+settings, the receiver with a bar across the top of every page.
 
 Almost none of this is new. The file that travels is the "Your collection"
 backup (mine.to_zip), which already identifies every catalogue item by where
 it came from so that it can be matched on another server. The receiving end
 is the "restore my collection" endpoint that already exists, reached with a
 bearer token minted on the target account — a token with the `sync` scope,
-which can call that one endpoint and nothing else, because a token stored on
+which can call that endpoint and nothing else, because a token stored on
 somebody's NAS is not a secret anybody should have to defend.
+
+Three refinements on top of "post the zip":
+
+*Only the photos the other side lacks travel.* Before the push, the receiver
+is asked which of the files this collection points at it already has, and
+the zip carries the rest. Names are content hashes, so a file it has is the
+same picture; a collection with a thousand photographs syncs a thousand of
+them once and then none.
+
+*It can send itself after you change something.* A change marks the account
+as pending; a few minutes after the last change, it goes. So the public page
+is current within minutes rather than by tomorrow, without one push per
+keystroke.
+
+*The receiver knows it is a mirror.* A restore that arrived on a sync token
+stamps the account, and the app there draws a bar saying so, because the
+alternative is somebody adding a card on the hosted side and watching it
+vanish overnight with no explanation.
 
 What is stored here is where to send it and the token to send it with, per
 account, in the settings table under keys the export deliberately leaves out
@@ -32,14 +51,16 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
 from app import mine
 from app.auth import current_user
 from app.config import settings
 from app.db import SessionLocal, get_db
-from app.models import Setting, User
+from app.models import (
+    ApiToken, Binder, BinderSlot, CollectionItem, ItemTag, Owned, Setting, Tag, User, Wanted,
+)
 from app.ratelimit import outbound
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
@@ -47,12 +68,18 @@ router = APIRouter(prefix="/api/sync", tags=["sync"])
 # A push is one zip, sometimes a large one, to a server that then has to load
 # it in a transaction. Generous, and a slow link should not be a failure.
 TIMEOUT = 600
-# The nightly run: how often the loop looks, and how old a mirror has to be
-# before it is refreshed. Twenty hours rather than twenty-four so that a
-# machine which happens to check at 02:00 one night and 02:30 the next does
-# not skip a day for the sake of half an hour.
-EVERY = 60 * 60
+# The loop wakes every minute: often enough that "a few minutes after the
+# last change" means what it says, cheap enough — one dictionary look — that
+# nobody notices it exists.
+TICK = 60
+# The nightly run: how old a mirror has to be before it is refreshed. Twenty
+# hours rather than twenty-four so that a machine which happens to check at
+# 02:00 one night and 02:30 the next does not skip a day for half an hour.
 STALE = 20 * 60 * 60
+# After a change, how long to wait for the next one before sending. Long
+# enough that filing twenty cards is one push, short enough that the public
+# page is right before you have finished telling somebody about it.
+DEBOUNCE = 5 * 60
 
 
 class SyncError(Exception):
@@ -87,10 +114,45 @@ def status(db: Session, uid: int) -> dict:
         # enough to recognise it in the target's token list, never the value
         "token_prefix": token[:8] if token else None,
         "nightly": _get(db, uid, "sync_nightly") == "1",
+        "on_change": _get(db, uid, "sync_on_change") == "1",
+        # a change has been made since the last send and is waiting its turn
+        "pending": uid in _pending,
         "last_at": _get(db, uid, "sync_last_at"),
         "last_result": json.loads(result) if result else None,
         "last_error": _get(db, uid, "sync_last_error"),
     }
+
+
+# --- the receiving side: knowing you are a mirror -------------------------------
+
+def mark_mirror(db: Session, uid: int, source: str | None) -> None:
+    """Called by the restore endpoint when what arrived came on a sync token."""
+    now = datetime.now(UTC).replace(tzinfo=None).isoformat(timespec="seconds")
+    _set(db, uid, "mirrored_at", now)
+    _set(db, uid, "mirror_source", (source or "").strip()[:200] or "another Your Loot")
+
+
+def mirror_status(db: Session, uid: int) -> dict | None:
+    at = _get(db, uid, "mirrored_at")
+    if not at:
+        return None
+    return {"at": at, "source": _get(db, uid, "mirror_source") or "another Your Loot"}
+
+
+def stop_mirroring(db: Session, uid: int) -> int:
+    """Forget that this account is a mirror, and revoke every token that
+    could make it one again. Returns how many tokens were revoked."""
+    for key in mine.MIRROR_KEYS:
+        _set(db, uid, key, None)
+    now = datetime.now(UTC).replace(tzinfo=None)
+    rows = db.scalars(
+        select(ApiToken).where(
+            ApiToken.user_id == uid, ApiToken.scope == "sync", ApiToken.revoked_at.is_(None)
+        )
+    ).all()
+    for t in rows:
+        t.revoked_at = now
+    return len(rows)
 
 
 # --- where it may go -----------------------------------------------------------
@@ -121,7 +183,39 @@ def validate_url(raw: str) -> str:
     return f"{u.scheme}://{u.hostname}{port}"
 
 
+def _source_label() -> str:
+    """How this install introduces itself to the mirror. The public address
+    where one is configured; otherwise the honest generic."""
+    url = (settings.public_url or "").strip().rstrip("/")
+    if url and "localhost" not in url and "127.0.0.1" not in url:
+        return url
+    return "your home server"
+
+
 # --- the push ------------------------------------------------------------------
+
+def _missing_images(url: str, headers: dict, names: set[str]) -> set[str] | None:
+    """Ask the other side which of these files it does not have.
+
+    None means "could not ask" — an older install without the endpoint, or a
+    hiccup — and the caller sends everything, which is what always worked.
+    """
+    if not names:
+        return set()
+    try:
+        r = httpx.post(
+            f"{url}/api/backup/mine/have",
+            headers=headers, json={"names": sorted(names)}, timeout=60,
+        )
+    except httpx.HTTPError:
+        return None
+    if r.status_code != 200:
+        return None
+    try:
+        return set(r.json().get("missing") or [])
+    except ValueError:
+        return None
+
 
 def push(db: Session, user: User) -> dict:
     """Send this account's collection to the configured target, now.
@@ -134,14 +228,18 @@ def push(db: Session, user: User) -> dict:
     url, token = _get(db, user.id, "sync_url"), _get(db, user.id, "sync_token")
     if not url or not token:
         raise SyncError("nowhere to send it yet — set the address and token first")
+    headers = {"Authorization": f"bearer {token}", "User-Agent": "your-loot-sync/1.0"}
 
-    blob = mine.to_zip(db, user)
+    payload = mine.gather(db, user)
+    only = _missing_images(url, headers, mine._images_for(payload))
+    blob = mine.to_zip(db, user, payload=payload, only_images=only)
+    _pending.pop(user.id, None)   # whatever was waiting is in this one
     try:
         r = httpx.post(
             f"{url}/api/backup/mine",
-            headers={"Authorization": f"bearer {token}", "User-Agent": "your-loot-sync/1.0"},
+            headers=headers,
             files={"file": ("collection.zip", blob, "application/zip")},
-            data={"confirm": mine.CONFIRM},
+            data={"confirm": mine.CONFIRM, "source": _source_label()},
             timeout=TIMEOUT,
         )
     except httpx.HTTPError as e:
@@ -177,12 +275,64 @@ def _record(db: Session, uid: int, *, result: dict | None = None, error: str | N
     db.commit()
 
 
-# --- the nightly loop ----------------------------------------------------------
+# --- send it after a change ----------------------------------------------------
+
+# account id -> when it last changed, on the monotonic clock. In memory: a
+# restart loses at most one pending push, and the nightly run catches it.
+_pending: dict[int, float] = {}
+_pending_lock = threading.Lock()
+
+
+def notify_change(uid: int | None) -> None:
+    if uid is None:
+        return
+    with _pending_lock:
+        _pending[uid] = time.monotonic()
+
+
+def _changes_due(now: float | None = None) -> list[int]:
+    """Accounts whose last change is older than the debounce."""
+    now = time.monotonic() if now is None else now
+    with _pending_lock:
+        return [uid for uid, at in _pending.items() if now - at >= DEBOUNCE]
+
+
+def _owner_of(obj):
+    """Whose collection a changed row belongs to, or None if it is nobody's."""
+    if isinstance(obj, (Owned, Wanted, Binder, Tag)):
+        return obj.user_id
+    if isinstance(obj, BinderSlot):
+        b = obj.binder
+        return b.user_id if b is not None else None
+    if isinstance(obj, ItemTag):
+        t = obj.tag
+        return t.user_id if t is not None else None
+    if isinstance(obj, CollectionItem):
+        return obj.private_to   # your own photo on your own hand-typed item
+    return None
+
+
+@event.listens_for(Session, "after_flush")
+def _watch_changes(session, _ctx):
+    """Every write to somebody's collection marks them pending.
+
+    Listening on the session rather than editing every handler means a new
+    route that files a card cannot forget to say so — the row itself says so.
+    Marked on flush rather than commit, which can over-count on a rollback;
+    an extra push of an unchanged collection costs a request, not correctness.
+    """
+    for obj in list(session.new) + list(session.dirty) + list(session.deleted):
+        uid = _owner_of(obj)
+        if uid is not None:
+            notify_change(uid)
+
+
+# --- the loop ------------------------------------------------------------------
 
 _started = threading.Event()
 
 
-def _due(db: Session) -> list[int]:
+def _due_nightly(db: Session) -> list[int]:
     """Accounts that asked for a nightly push and have not had one lately."""
     rows = db.scalars(
         select(Setting).where(Setting.key == "sync_nightly", Setting.value == "1")
@@ -200,11 +350,25 @@ def _due(db: Session) -> list[int]:
     return due
 
 
-def run_due() -> int:
+def _due_changed(db: Session) -> list[int]:
+    """Pending accounts that asked to be sent after changes. The rest are
+    forgotten: they changed, but nobody asked for that to mean anything."""
+    out = []
+    for uid in _changes_due():
+        if _get(db, uid, "sync_on_change") == "1" and _get(db, uid, "sync_url"):
+            out.append(uid)
+        else:
+            _pending.pop(uid, None)
+    return out
+
+
+def run_due(nightly: bool = True) -> int:
     """One pass: push for everybody who is due. Returns how many were tried."""
     with SessionLocal() as db:
-        ids = _due(db)
-    for uid in ids:
+        ids = set(_due_changed(db))
+        if nightly:
+            ids |= set(_due_nightly(db))
+    for uid in sorted(ids):
         with SessionLocal() as db:
             user = db.get(User, uid)
             if user is None:
@@ -219,11 +383,12 @@ def run_due() -> int:
 
 
 def start_scheduler() -> None:
-    """A thread that looks once an hour for accounts due a push.
+    """A thread that wakes every minute for changes and once an hour for the
+    nightly list.
 
     Started with the app rather than as a separate process because this is a
     home server and one container is the whole point. Cheap when nobody has
-    asked for it: one query an hour and back to sleep.
+    asked for it: a dictionary look a minute, a query an hour.
     """
     if _started.is_set():
         return
@@ -231,14 +396,16 @@ def start_scheduler() -> None:
 
     def loop():
         time.sleep(90)  # let migrations and the seed settle first
+        tick = 0
         while True:
             try:
-                run_due()
-            except Exception:  # noqa: BLE001 — the loop must outlive any one bad hour
+                run_due(nightly=(tick % 60 == 0))
+            except Exception:  # noqa: BLE001 — the loop must outlive any one bad minute
                 pass
-            time.sleep(EVERY)
+            tick += 1
+            time.sleep(TICK)
 
-    threading.Thread(target=loop, name="sync-nightly", daemon=True).start()
+    threading.Thread(target=loop, name="sync", daemon=True).start()
 
 
 # --- the endpoints -------------------------------------------------------------
@@ -249,6 +416,7 @@ class SyncIn(BaseModel):
     # be changed without pasting the secret again
     token: str | None = Field(default=None, max_length=200)
     nightly: bool = False
+    on_change: bool = False
 
 
 @router.get("")
@@ -268,7 +436,10 @@ def put_sync(body: SyncIn, db: Session = Depends(get_db), user: User = Depends(c
     _set(db, user.id, "sync_url", url)
     _set(db, user.id, "sync_token", token)
     _set(db, user.id, "sync_nightly", "1" if body.nightly else "0")
+    _set(db, user.id, "sync_on_change", "1" if body.on_change else "0")
     db.commit()
+    # saving the settings is itself a flush; that is not a change to send
+    _pending.pop(user.id, None)
     return status(db, user.id)
 
 
@@ -278,6 +449,7 @@ def forget_sync(db: Session = Depends(get_db), user: User = Depends(current_user
     for key in mine.SYNC_KEYS:
         _set(db, user.id, key, None)
     db.commit()
+    _pending.pop(user.id, None)
 
 
 @router.post("/now", dependencies=[Depends(outbound)])
@@ -287,3 +459,12 @@ def sync_now(db: Session = Depends(get_db), user: User = Depends(current_user)):
     except SyncError as e:
         raise HTTPException(502, str(e))
     return {"result": result, **status(db, user.id)}
+
+
+@router.delete("/mirror")
+def stop_mirror(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """This account stops being a mirror: the bar goes, and every sync token
+    on it is revoked so the next send from the old source is refused."""
+    revoked = stop_mirroring(db, user.id)
+    db.commit()
+    return {"revoked_tokens": revoked}
