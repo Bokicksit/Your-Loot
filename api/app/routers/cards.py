@@ -617,7 +617,16 @@ def pokedex(db: Session = Depends(get_db),
     """The binder: one entry per national dex number, ONE occupant each (the
     copy filed in that slot). `final` = this is the desired card for that
     Pokémon; otherwise it's a placeholder awaiting an upgrade."""
-    shelf = binders.dex_binder(db, user.id)
+    # create=False, because this is a GET. It used to make the binder here,
+    # which meant looking at your Pokédex wrote a row — and a read commits
+    # nothing, so that row was rolled back every time and the next view got a
+    # new id. Harmless in itself and thoroughly misleading: the id changed on
+    # every page load, which reads exactly like a binder being replaced.
+    #
+    # The Pokédex is written when the first card is filed into it, which is
+    # the moment it starts to mean something. Until then there is nothing to
+    # draw but empty slots, and that is what this returns.
+    shelf = binders.dex_binder(db, user.id, create=False)
     owned_cards = (
         db.scalars(
             _base_query().where(
@@ -634,7 +643,7 @@ def pokedex(db: Session = Depends(get_db),
         )
         .unique()
         .all()
-    )
+    ) if shelf is not None else []
 
     # normally one binder card per dex (enforced on write); for legacy
     # multiples prefer the fancier card, then the newest
@@ -661,7 +670,7 @@ def pokedex(db: Session = Depends(get_db),
             )
         )
         if k and k.isdigit()
-    }
+    } if shelf is not None else set()
 
     def card_out(item):
         if item is None:
@@ -669,7 +678,8 @@ def pokedex(db: Session = Depends(get_db),
         a = item.card_attrs
         binder_copy = next(
             (o for o in item.owned
-             if any(sl.binder_id == shelf.id for sl in o.binder_slots)),
+             if shelf is not None
+             and any(sl.binder_id == shelf.id for sl in o.binder_slots)),
             None,
         )
         return {
@@ -715,13 +725,17 @@ def pokedex(db: Session = Depends(get_db),
     # disagree for as long as one request was in flight.
     return {
         "max_dex": ceiling,
+        # A null id says "no binder row yet" rather than inventing one. The
+        # page reads it and simply declines to save a shape it has nowhere to
+        # save to; the defaults below are the ones a binder is born with, so
+        # an empty Pokédex is drawn the way the first filed card will leave it.
         "binder": {
-            "id": shelf.id,
-            "rows": shelf.rows,
-            "cols": shelf.cols,
-            "double_page": shelf.double_page,
-            "allow_ja": shelf.allow_ja,
-            "color": shelf.color,
+            "id": shelf.id if shelf is not None else None,
+            "rows": shelf.rows if shelf is not None else 3,
+            "cols": shelf.cols if shelf is not None else 3,
+            "double_page": shelf.double_page if shelf is not None else False,
+            "allow_ja": shelf.allow_ja if shelf is not None else False,
+            "color": shelf.color if shelf is not None else None,
         },
         "entries": entries,
     }

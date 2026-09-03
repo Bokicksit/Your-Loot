@@ -9,6 +9,14 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Fixed
+- **Looking at your Pokédex no longer writes one.** Opening it created the
+  binder row, and because a read commits nothing that row was rolled back
+  again immediately — so the binder's id went up by one on every single page
+  view. Nothing was lost by it, and it looked precisely like a binder being
+  replaced, which is what it cost: three wrong diagnoses of an unrelated bug
+  before the real cause turned up. The Pokédex is written when the first card
+  is filed into it, which is the moment it starts to mean anything; until
+  then the page draws empty slots and says plainly that there is no row yet.
 - **A collection would not load into an account that had ever used a binder.**
   Every account grows a Pokédex the first time it files a card, under a name
   of its own. A collection arriving from another install carries the

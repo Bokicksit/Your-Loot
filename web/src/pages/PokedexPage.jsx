@@ -121,10 +121,18 @@ export default function PokedexPage() {
   }, [at, entries.length]);
 
   /** The dex binder is a binder like any other, so this is the same PATCH the
-   *  binder page sends — the Pokédex just has nowhere else to send it from. */
+   *  binder page sends — the Pokédex just has nowhere else to send it from.
+   *
+   *  Until a card is filed there is no row to send it to, and the honest
+   *  thing is to say so. This used to close the dialog as though it had
+   *  saved, which is the one behaviour worth ruling out. */
   const saveShape = async (ev) => {
     ev.preventDefault();
-    if (!shape.id) return setShapeOpen(false);
+    if (!shape.id) {
+      return setShapeError(
+        "Your Pokédex is made when you file the first card into it — the layout can be set from then on."
+      );
+    }
     setShapeBusy(true);
     setShapeError(null);
     try {

@@ -541,3 +541,31 @@ def test_a_binder_of_the_same_name_is_reused_rather_than_doubled(owner, receiver
     assert rows[0]["id"] == theirs["id"]   # the row held, so a link to it holds
     owner.delete(f"/api/binders/{mine_b['id']}")
     owner.delete("/api/sync")
+
+
+# --------------------------------------------- looking is not the same as filing
+
+@needs_open
+def test_opening_the_pokedex_does_not_write_one(receiver):
+    """A GET that makes a row is a GET that lies about what it did.
+
+    It used to: viewing the Pokédex created the binder, and because nothing
+    commits on a read it was rolled back every time — so the id climbed by one
+    on every page view. Nothing broke, and it looked exactly like a binder
+    being replaced, which is the sort of thing that costs an afternoon.
+    """
+    c, _ = receiver
+    seen = [c.get("/api/cards/pokedex").json()["binder"]["id"] for _ in range(3)]
+    assert seen == [None, None, None], f"looking at it wrote something: {seen}"
+
+    # the shape still comes back, so the page has something to draw
+    shape = c.get("/api/cards/pokedex").json()["binder"]
+    assert (shape["rows"], shape["cols"], shape["double_page"]) == (3, 3, False)
+    assert c.get("/api/cards/pokedex").json()["entries"], "an empty Pokédex is still a Pokédex"
+
+    # filing a card is what makes it — and then the id is real and holds still
+    made = c.post("/api/cards", json={"title": "Pikachu", "national_dex_no": 25}).json()
+    c.post(f"/api/items/{made['id']}/owned",
+           json={"quantity": 1, "in_binder": True}).raise_for_status()
+    now = [c.get("/api/cards/pokedex").json()["binder"]["id"] for _ in range(3)]
+    assert now[0] is not None and len(set(now)) == 1, f"unstable after filing: {now}"
