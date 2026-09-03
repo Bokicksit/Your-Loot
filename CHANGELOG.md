@@ -343,6 +343,16 @@ Full detail is in the commit log, where every change has its own note.
   been falling through to the browser's own boxes.
 
 ### Fixed
+- **The binder picker no longer offers two identical copies of a card.**
+  A card you owned twice showed as two rows reading the same — "NM", "NM" —
+  with nothing to say that one of them was already in the Pokédex. Tapping
+  the first filed *that* one into the binder too, so one physical card was on
+  two shelves and the spare you meant sat loose, still in the collection. Both
+  pickers now put the free copies first and say where each one already is:
+  "in Pokédex", "in Trade", or *free*. And a filled pocket has **Swap copy**
+  for the ones already filed wrong: the pocket takes the other copy of the
+  same card without being empty in between, and the first one goes back to
+  being only where it was.
 - **Looking at your Pokédex no longer writes one.** Opening it created the
   binder row, and because a read commits nothing that row was rolled back
   again immediately — so the binder's id went up by one on every single page

@@ -205,3 +205,38 @@ def test_a_stack_survives_the_trip_through_a_backup(me):
     assert len(ps) == 9
     assert ps[2]["card"]["id"] == item and ps[2]["count"] == 3 and len(ps[2]["stack"]) == 2
     me.delete(f"/api/binders/{b['id']}")
+
+
+# --------------------------------------------- the wrong copy, put right
+
+def test_a_pocket_can_swap_to_another_copy_of_the_same_card(me):
+    """The case that found this: two identical copies, the one already in the
+    Pokédex filed into a binder by mistake, the spare left loose. The pocket
+    takes the other copy without ever being empty, and the first one leaves
+    the binder — back to being only in the Pokédex."""
+    b = me.post("/api/binders", json={"name": "Swap", "kind": "custom", "pages": 1}).json()
+    key = pockets(me, b["id"])[0]["key"]
+    item, copies = three_of(me, "Twins")
+    wrong, right = copies[0], copies[1]
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": wrong}).raise_for_status()
+
+    r = me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": right, "replace": True})
+    assert r.status_code == 200, r.text
+    p = pockets(me, b["id"])[0]
+    assert p["card"]["owned_id"] == right and p["count"] == 1
+    ids = {o["id"]: o for o in owned_of(me, item)}
+    assert b["id"] not in ids[wrong]["binder_ids"]      # the first copy left this binder
+    assert b["id"] in ids[right]["binder_ids"]
+
+    # a swap is between copies of the same card
+    _, other = a_card(me, "Impostor")
+    r = me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": other, "replace": True})
+    assert r.status_code == 409 and "same card" in r.json()["detail"]
+
+    # with a stack behind, only the top changes and the count holds
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": copies[2]}).raise_for_status()
+    assert pockets(me, b["id"])[0]["count"] == 2
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": wrong, "replace": True}).raise_for_status()
+    p = pockets(me, b["id"])[0]
+    assert p["card"]["owned_id"] == wrong and p["count"] == 2
+    me.delete(f"/api/binders/{b['id']}")

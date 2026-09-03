@@ -78,6 +78,12 @@ class SlotFill(BaseModel):
     # which printing's slot, on a master binder — "" is the only slot the
     # other kinds have
     variant: str = ""
+    # On a filled custom pocket: put this copy in *instead of* the one on top,
+    # rather than stacking behind it. For the case where the wrong copy of a
+    # card was filed — the one already in the Pokédex, say, when the spare was
+    # meant — and the pocket should hold the other one without ever being
+    # empty in between. Same card only, like stacking.
+    replace: bool = False
 
 
 class HappyUpdate(BaseModel):
@@ -480,6 +486,16 @@ def fill_slot(
         if s.owned_id is None:
             s.owned = copy
             s.item_id = copy.item_id
+        elif body.replace:
+            # The same card, a different copy of it: this one takes the pocket
+            # and the one that was on top leaves the binder. Anything stacked
+            # behind stays where it is.
+            if s.item_id != copy.item_id:
+                raise HTTPException(
+                    409, "this pocket holds a different card — a swap is between "
+                         "copies of the same card"
+                )
+            s.owned = copy
         else:
             # The pocket is taken. A second copy of the *same* card goes behind
             # the first, up to three — a stack of spares, the way a sleeve

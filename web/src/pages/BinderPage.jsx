@@ -45,13 +45,23 @@ export default function BinderPage() {
    *  pick a copy, it goes exactly here.
    */
   const [filling, setFilling] = useState(null);      // the pocket's key
+  const [fillMode, setFillMode] = useState("fill");  // fill | stack | swap
   const [fillQuery, setFillQuery] = useState("");
   const [fillHits, setFillHits] = useState(null);     // null = loading
   const [fillBusy, setFillBusy] = useState(false);
+  const [binderNames, setBinderNames] = useState({});
+  useEffect(() => {
+    api.binders().then((d) => {
+      const m = {};
+      for (const b of d.binders || []) m[b.id] = b.name;
+      setBinderNames(m);
+    }).catch(() => {});
+  }, []);
 
-  const openFill = (e) => {
-    if (filling === e.key) return setFilling(null);
+  const openFill = (e, mode = "fill") => {
+    if (filling === e.key && fillMode === mode) return setFilling(null);
     setFilling(e.key);
+    setFillMode(mode);
     setFillQuery("");
     setFillHits(null);
   };
@@ -70,15 +80,18 @@ export default function BinderPage() {
         // copy, because two of the same card in different grades are two
         // different choices
         const pocket = ordered.find((x) => x.key === filling);
-        const sameOnly = pocket?.card?.id ?? null;   // stacking: this card, nothing else
+        // stacking or swapping: this card and nothing else
+        const sameOnly = pocket?.card?.id ?? null;
         setFillHits(
-          d.items
-            .filter((c) => sameOnly === null || c.id === sameOnly)
-            .flatMap((c) =>
-              c.owned
-                .filter((o) => !(o.binder_ids || []).includes(binder.id))
-                .map((o) => ({ card: c, owned: o }))
-            )
+          freeFirst(
+            d.items
+              .filter((c) => sameOnly === null || c.id === sameOnly)
+              .flatMap((c) =>
+                c.owned
+                  .filter((o) => !(o.binder_ids || []).includes(binder.id))
+                  .map((o) => ({ card: c, owned: o }))
+              )
+          )
         );
       } catch (err) {
         if (live) setFillHits([]);
@@ -92,7 +105,9 @@ export default function BinderPage() {
     if (fillBusy) return;
     setFillBusy(true);
     try {
-      await api.binderFillSlot(binder.id, e.key, { owned_id: opt.owned.id });
+      await api.binderFillSlot(binder.id, e.key, {
+        owned_id: opt.owned.id, replace: fillMode === "swap",
+      });
       setFilling(null);
       load();
     } catch (err) {
@@ -623,12 +638,22 @@ export default function BinderPage() {
                   )}
                   {isCustom && e.card && (e.count || 1) < 3 && (
                     <button
-                      className={`ghost ${filling === e.key ? "on" : ""}`}
-                      onClick={() => openFill(e)}
+                      className={`ghost ${filling === e.key && fillMode === "stack" ? "on" : ""}`}
+                      onClick={() => openFill(e, "stack")}
                       title="Stack another copy of this same card in this pocket (three at most)"
                     >
                       <Icon id="copy" />
-                      {filling === e.key ? "Never mind" : "Stack another"}
+                      {filling === e.key && fillMode === "stack" ? "Never mind" : "Stack another"}
+                    </button>
+                  )}
+                  {isCustom && e.card && (
+                    <button
+                      className={`ghost ${filling === e.key && fillMode === "swap" ? "on" : ""}`}
+                      onClick={() => openFill(e, "swap")}
+                      title="Put a different copy of this same card here instead — the one here leaves this binder"
+                    >
+                      <Icon id="back" className="flip" />
+                      {filling === e.key && fillMode === "swap" ? "Never mind" : "Swap copy"}
                     </button>
                   )}
                   {isCustom && (
@@ -669,7 +694,7 @@ export default function BinderPage() {
                       <input
                         type="search"
                         autoFocus
-                        placeholder={e.card ? "Another copy of this card…" : "Search your cards…"}
+                        placeholder={e.card ? (fillMode === "swap" ? "Which copy should be here instead…" : "Another copy of this card…") : "Search your cards…"}
                         value={fillQuery}
                         onChange={(ev) => setFillQuery(ev.target.value)}
                       />
@@ -679,7 +704,7 @@ export default function BinderPage() {
                     ) : fillHits.length === 0 ? (
                       <p className="settings-note">
                         {e.card
-                          ? "No other copy of this card to stack — every one you own is already in this binder."
+                          ? "No other copy of this card — every one you own is already in this binder."
                           : fillQuery ? "Nothing you own matches that." : "Nothing to put here yet — every card you own is already in this binder."}
                       </p>
                     ) : (
@@ -699,6 +724,9 @@ export default function BinderPage() {
                                   {opt.card.attrs?.card_number ? ` #${opt.card.attrs.card_number}` : ""}
                                   {opt.owned.grader ? ` · ${opt.owned.grader} ${opt.owned.grade || ""}` : opt.owned.condition ? ` · ${opt.owned.condition}` : ""}
                                   {opt.owned.variant ? ` · ${opt.owned.variant}` : ""}
+                                  {whereIs(opt.owned, binderNames)
+                                    ? <em className="where"> · {whereIs(opt.owned, binderNames)}</em>
+                                    : <em className="where free"> · free</em>}
                                 </small>
                               </span>
                             </button>
@@ -893,9 +921,18 @@ function AddCards({ binder, already, onAdded, onClose }) {
     };
   }, [q]);
 
-  const copies = (rows || []).flatMap((card) =>
-    (card.owned || []).map((o) => ({ card, owned: o })),
+  const copies = freeFirst(
+    (rows || []).flatMap((card) => (card.owned || []).map((o) => ({ card, owned: o })))
   );
+  // binder names, so the label can say which one rather than "a binder"
+  const [names, setNames] = useState({});
+  useEffect(() => {
+    api.binders().then((d) => {
+      const m = {};
+      for (const b of d.binders || []) m[b.id] = b.name;
+      setNames(m);
+    }).catch(() => {});
+  }, []);
 
   const add = async (ownedId) => {
     setBusy(ownedId);
@@ -946,7 +983,14 @@ function AddCards({ binder, already, onAdded, onClose }) {
                 <span className="set-meta">
                   {card.attrs?.set_name || ""}
                   {owned.condition && ` · ${owned.condition}`}
-                  {inIt && <strong> · in this binder</strong>}
+                  {owned.grader && ` · ${owned.grader} ${owned.grade || ""}`}
+                  {inIt ? (
+                    <strong> · in this binder</strong>
+                  ) : whereIs(owned, names) ? (
+                    <em className="where"> · {whereIs(owned, names)}</em>
+                  ) : (
+                    <em className="where free"> · free</em>
+                  )}
                 </span>
               </button>
             );
@@ -978,6 +1022,29 @@ function AddCards({ binder, already, onAdded, onClose }) {
 // binder is asked for in slices, and each slice lands on the cards as it
 // arrives. The totals settle when the last one does.
 const PRICE_CHUNK = 40;
+
+/** Where a copy already lives, in words — so two identical "NM" rows for
+ *  the same card are not the same choice. The one already in the Pokédex is
+ *  the one you did not mean when you were filing the spare.
+ *
+ *  `names` maps binder ids to names, so "in Trade" beats "in a binder". */
+function whereIs(owned, names = {}) {
+  const parts = [];
+  if (owned.in_binder) parts.push("Pokédex");
+  for (const id of owned.binder_ids || []) {
+    if (names[id]) parts.push(names[id]);
+  }
+  if (!parts.length && owned.in_custom) parts.push("a binder");
+  return parts.length ? `in ${parts.join(" · ")}` : "";
+}
+
+/** Free copies first — the ones on no shelf at all — then the rest. Filing
+ *  from a shelf into another shelf is sometimes what you mean, but it is not
+ *  the default, and the default is what the first row is. */
+function freeFirst(list) {
+  const filed = (o) => o.in_binder || (o.binder_ids || []).length > 0 || o.in_custom;
+  return [...list].sort((a, b) => Number(filed(a.owned)) - Number(filed(b.owned)));
+}
 
 function PriceBar({ entries, prices, onPrices }) {
   const [busy, setBusy] = useState(false);

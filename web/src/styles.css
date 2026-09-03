@@ -5445,3 +5445,7 @@ label.check input { width: auto; }
   border: 1px solid var(--line-soft);
   border-radius: var(--r-2);
 }
+
+/* where a copy already is, in a picker row — the free ones read as free */
+.where { color: var(--text-mute); font-style: normal; }
+.where.free { color: var(--success); }
