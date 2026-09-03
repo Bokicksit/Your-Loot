@@ -490,27 +490,33 @@ def test_a_receiver_that_already_has_a_pokedex_still_accepts_a_collection(owner,
     had never touched a binder.
     """
     there, tok = receiver
-    # national_dex_no is a field of the card, not of its attrs block — and it
-    # is what gives the card a Pokédex slot, which is what makes the binder
-    made = there.post("/api/cards", json={"title": "Pikachu", "national_dex_no": 25}).json()
-    there.post(f"/api/items/{made['id']}/owned", json={"quantity": 1}).raise_for_status()
-    before = there.get("/api/binders").json()["binders"]
-    dex_here = [b for b in before if b["kind"] == "dex"]
-    assert len(dex_here) == 1, "the receiver should have made its own Pokédex by now"
+    def a_filed_card(client, name):
+        """Filing a card is what actually writes a Pokédex — merely looking at
+        one does not, so this is how an account comes to have the row that
+        collides."""
+        made = client.post("/api/cards", json={"title": name, "national_dex_no": 25}).json()
+        client.post(f"/api/items/{made['id']}/owned",
+                    json={"quantity": 1, "in_binder": True}).raise_for_status()
+        return client.get("/api/cards/pokedex").json()["binder"]["id"]
+
+    # Both ends have a Pokédex of their own, under different names. That is
+    # the whole collision: one account, two names for the one binder there is
+    # only ever allowed to be one of.
+    dex_before = a_filed_card(there, "Their Pikachu")
+    a_filed_card(owner, "My Pikachu")
+    assert there.get("/api/cards/pokedex").json()["binder"]["id"] == dex_before, "should be a real row"
 
     owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
     r = owner.post("/api/sync/now")
-    assert r.status_code == 200, r.text
+    assert r.status_code == 200, r.text   # this was a bare 500 before the fix
 
-    after = there.get("/api/binders").json()["binders"]
-    dex_after = [b for b in after if b["kind"] == "dex"]
-    assert len(dex_after) == 1, "a second Pokédex was made instead of the first being reused"
-    # and it is the same row, so a link anybody had to it still works
-    assert dex_after[0]["id"] == dex_here[0]["id"]
+    # the same row, reused — so a link anybody had to it still works, and
+    # there is still exactly one, which the database would not have allowed
+    assert there.get("/api/cards/pokedex").json()["binder"]["id"] == dex_before
 
-    # a second send matches on the uid it adopted and is still one Pokédex
+    # and a second send matches on the uid it adopted the first time
     assert owner.post("/api/sync/now").status_code == 200
-    assert len([b for b in there.get("/api/binders").json()["binders"] if b["kind"] == "dex"]) == 1
+    assert there.get("/api/cards/pokedex").json()["binder"]["id"] == dex_before
     owner.delete("/api/sync")
 
 

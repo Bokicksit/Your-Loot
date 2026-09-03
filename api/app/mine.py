@@ -550,8 +550,10 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
                 item_id=item.id if item is not None else None,
             ))
 
-    # a binder the file no longer has is one that was deleted at the source
-    for b in existing.values():
+    # a binder the file no longer has is one that was deleted at the source.
+    # `existing` also holds the ones made just now, and their ids are in
+    # `kept`, so they are not swept away by the pass that follows them.
+    for b in existing:
         if b.id not in kept:
             db.execute(delete(BinderSlot).where(BinderSlot.binder_id == b.id))
             db.delete(b)
