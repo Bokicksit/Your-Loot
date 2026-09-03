@@ -5377,3 +5377,40 @@ label.check input { width: auto; }
   background: var(--gold-wash);
 }
 .mirror-note p { margin: 0 0 var(--s-2); }
+
+/* ---- filling a blank pocket from the collection ------------------------ */
+.fill-picker {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line-soft);
+}
+.fill-picker .searchbox { width: 100%; }
+.fill-hits {
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-1);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.fill-hit {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-2);
+  text-align: left;
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+  color: inherit;
+  cursor: pointer;
+}
+.fill-hit:hover { border-color: var(--gold-line); background: var(--bg-2); }
+.fill-hit img, .fill-hit .placeholder {
+  width: 34px; height: 48px; object-fit: cover; border-radius: 3px; flex: none;
+  background: var(--bg-0);
+}
+.fill-hit .fill-text { display: grid; min-width: 0; }
+.fill-hit small { color: var(--text-dim); }

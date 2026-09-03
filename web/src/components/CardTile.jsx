@@ -461,6 +461,7 @@ export default function CardTile({
                 title={n > 1 ? `Edit one of these ${n}` : "Edit this copy"}
               >
                 {o.in_binder && <Icon id="ball" />}
+                {o.in_custom && <Icon id="binder" />}
                 {chipLabel(o)}
                 {n > 1 && <em className="chip-mult">×{n}</em>}
                 <button
@@ -525,7 +526,7 @@ export default function CardTile({
         <ul>
           {card.owned.map((o) => (
             <li key={o.id}>
-              <span className="layer-tag">{o.in_binder ? "Pokédex" : "Box"}</span>
+              <span className="layer-tag">{whereFiled(o)}</span>
               <span className="game-text">
                 <strong>{chipLabel(o)}</strong>
                 {o.stamp && <small>{o.stamp} stamp</small>}
@@ -713,6 +714,16 @@ export default function CardTile({
  *  Set binders are not offered. Owning the card is what fills a slot there,
  *  so there is nothing to put in by hand.
  */
+/** Where a copy is kept, as the row says it. A copy can be in the Pokédex
+ *  and in a binder of your own at the same time — the same card, filed in two
+ *  places — and the old label picked one and hid the other. */
+function whereFiled(o) {
+  if (o.in_binder && o.in_custom) return "Pokédex · Binder";
+  if (o.in_binder) return "Pokédex";
+  if (o.in_custom) return "Binder";
+  return "Box";
+}
+
 function CopyBinders({ copy, onChange }) {
   const [open, setOpen] = useState(false);
   const [shelf, setShelf] = useState(null);

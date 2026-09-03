@@ -8,6 +8,20 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **Point at a pocket and fill it.** A blank pocket in a binder of your own
+  has a *Put a card here* button: search the cards you own, pick a copy, and
+  it goes into that pocket — not the first empty one, the one you were
+  looking at. The same picker the Pokédex has had, aimed at a place instead
+  of a species. One physical copy cannot be in two pockets of the same
+  binder, and the server says so rather than letting it happen.
+- **The card list says where a copy is, everywhere it is.** A copy showed a
+  Pokéball when it was in the Pokédex and nothing at all when it was in a
+  binder of your own — so a card filed in a binder looked exactly like one
+  loose in a box, and a card in both looked like it was only in the Pokédex.
+  There is a binder icon now, drawn next to the ball when both are true, and
+  the copy's row reads "Pokédex · Binder" rather than picking one.
+
 ### Fixed
 - **Looking at your Pokédex no longer writes one.** Opening it created the
   binder row, and because a read commits nothing that row was rolled back

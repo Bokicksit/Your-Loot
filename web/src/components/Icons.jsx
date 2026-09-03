@@ -6,6 +6,7 @@ export function IconDefs() {
     <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }} aria-hidden="true">
       <defs>
         <symbol id="i-card" viewBox="0 0 24 24"><rect x="3.6" y="6" width="9" height="13" rx="2" transform="rotate(-13 8.1 12.5)"></rect> <rect x="10" y="4" width="10.5" height="16" rx="2" fill="var(--bg-1)"></rect> <circle cx="15.25" cy="12" r="2.6"></circle> <path d="M10 12h2.65M17.85 12h2.65"></path></symbol>
+        <symbol id="i-binder" viewBox="0 0 24 24"><rect x="6" y="3.5" width="14" height="17" rx="2"></rect> <path d="M3.5 8h5M3.5 12h5M3.5 16h5"></path> <path d="M10.5 8.5h6.5M10.5 12h6.5"></path></symbol>
         <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h5M15.5 12h5" /><circle cx="12" cy="12" r="2.8" /></symbol>
         <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.72 5.62 6.18.86-4.47 4.31 1.08 6.11L12 17.6l-5.51 2.9 1.08-6.11L3.1 10.08l6.18-.86z" /></symbol>
         <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7.6 7.5h8.8a4.6 4.6 0 0 1 4.5 3.7l.75 4.3a2.5 2.5 0 0 1-4.65 1.7L15.6 14.8H8.4l-1.4 2.4a2.5 2.5 0 0 1-4.65-1.7l.75-4.3A4.6 4.6 0 0 1 7.6 7.5z"></path> <path d="M6.1 11.4h2.9M7.55 9.95v2.9"></path> <circle cx="15.4" cy="10.6" r=".95" fill="currentColor" stroke="none"></circle> <circle cx="17.7" cy="12.4" r=".95" fill="currentColor" stroke="none"></circle></symbol>

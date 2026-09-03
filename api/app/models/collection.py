@@ -70,6 +70,18 @@ class Owned(TimestampMixin, Base):
         return any(s.binder is not None and s.binder.kind == "dex" for s in self.binder_slots)
 
     @property
+    def in_custom(self) -> bool:
+        """Is this copy in a binder other than the Pokédex — one of your own,
+        or a set binder?
+
+        A separate question from in_binder, and it used to have no answer at
+        all: the card list drew a Pokéball for the Pokédex and nothing for
+        anything else, so a copy filed in a binder of your own looked exactly
+        like one loose in a box. Two icons, two facts.
+        """
+        return any(s.binder is not None and s.binder.kind != "dex" for s in self.binder_slots)
+
+    @property
     def binder_ids(self) -> list[int]:
         """Every binder this copy is filed in.
 

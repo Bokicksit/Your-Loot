@@ -442,8 +442,45 @@ def fill_slot(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
-    """Put a copy in a slot, or empty it."""
+    """Put a copy in a slot, or empty it.
+
+    On a dex or set binder `key` names the slot — the dex number, the card
+    number — and the row is made if it is not there. On a custom binder the
+    rows *are* the pockets and `key` is the row's id, which is what the page
+    hands back as each entry's key; so a blank pocket can be pointed at and
+    filled, the way you would slide a card into an empty sleeve.
+    """
     b = _mine(db, binder_id, user)
+
+    if b.kind == engine.CUSTOM:
+        s = db.get(BinderSlot, int(key)) if key.isdigit() else None
+        if s is None or s.binder_id != b.id:
+            raise HTTPException(404, "no such pocket in this binder")
+        if body.owned_id is None:
+            # empty it; the pocket stays, which is what taking a card out of a
+            # real binder leaves behind
+            s.owned = None
+            s.item_id = None
+            db.commit()
+            return render(db, b, user.id)
+        copy = _my_copy(db, body.owned_id, user)
+        if not engine.may_hold(b, copy.item):
+            raise HTTPException(409, _NOT_HERE)
+        # one physical card cannot be in two pockets of the same binder
+        elsewhere = db.scalar(
+            select(BinderSlot).where(
+                BinderSlot.binder_id == b.id,
+                BinderSlot.owned_id == copy.id,
+                BinderSlot.id != s.id,
+            )
+        )
+        if elsewhere is not None:
+            raise HTTPException(409, "that copy is already in this binder")
+        s.owned = copy
+        s.item_id = copy.item_id
+        db.commit()
+        return render(db, b, user.id)
+
     if body.owned_id is None:
         s = engine.slot(db, b, key, body.variant)
         if s is not None and s.owned_id is not None:

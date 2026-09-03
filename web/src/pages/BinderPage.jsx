@@ -35,6 +35,69 @@ export default function BinderPage() {
   const [renaming, setRenaming] = useState(false);
   const [picking, setPicking] = useState(false);
   const [arranging, setArranging] = useState(false);
+
+  /** Fill a blank pocket from the collection.
+   *
+   *  The Pokédex has had this for a while — tap an empty slot, see the cards
+   *  you own that fit, pick one. A custom binder had only "add cards", which
+   *  fills the first empty pocket rather than the one you are looking at. This
+   *  is the same picker aimed at a particular pocket: search your own cards,
+   *  pick a copy, it goes exactly here.
+   */
+  const [filling, setFilling] = useState(null);      // the pocket's key
+  const [fillQuery, setFillQuery] = useState("");
+  const [fillHits, setFillHits] = useState(null);     // null = loading
+  const [fillBusy, setFillBusy] = useState(false);
+
+  const openFill = (e) => {
+    if (filling === e.key) return setFilling(null);
+    setFilling(e.key);
+    setFillQuery("");
+    setFillHits(null);
+  };
+
+  useEffect(() => {
+    if (filling === null) return;
+    let live = true;
+    const t = setTimeout(async () => {
+      try {
+        const d = await api.cards({
+          search: fillQuery.trim(), collection: true, include_binder: true,
+          sort: "added", limit: 60,
+        });
+        if (!live) return;
+        // every copy you own that is not already in this binder — one row per
+        // copy, because two of the same card in different grades are two
+        // different choices
+        setFillHits(
+          d.items.flatMap((c) =>
+            c.owned
+              .filter((o) => !(o.binder_ids || []).includes(binder.id))
+              .map((o) => ({ card: c, owned: o }))
+          )
+        );
+      } catch (err) {
+        if (live) setFillHits([]);
+      }
+    }, fillQuery ? 250 : 0);
+    return () => { live = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filling, fillQuery]);
+
+  const fillWith = async (e, opt) => {
+    if (fillBusy) return;
+    setFillBusy(true);
+    try {
+      await api.binderFillSlot(binder.id, e.key, { owned_id: opt.owned.id });
+      setFilling(null);
+      load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setFillBusy(false);
+    }
+  };
+
   const [lifted, setLifted] = useState(null); // the card in your hand
   const [sort, setSort] = useState("order");
   const [adding, setAdding] = useState(null);   // the slot being filled
@@ -545,6 +608,15 @@ export default function BinderPage() {
                       Find this card
                     </button>
                   )}
+                  {isCustom && !e.card && (
+                    <button
+                      className={`primary ${filling === e.key ? "on" : ""}`}
+                      onClick={() => openFill(e)}
+                    >
+                      <Icon id="plus" />
+                      {filling === e.key ? "Never mind" : "Put a card here"}
+                    </button>
+                  )}
                   {isCustom && (
                     <>
                       <button className="ghost" onClick={() => move(e.key, -1)} title="Move earlier">
@@ -560,6 +632,50 @@ export default function BinderPage() {
                     </>
                   )}
                 </div>
+                {isCustom && !e.card && filling === e.key && (
+                  <div className="fill-picker">
+                    <label className="searchbox">
+                      <Icon id="search" />
+                      <input
+                        type="search"
+                        autoFocus
+                        placeholder="Search your cards…"
+                        value={fillQuery}
+                        onChange={(ev) => setFillQuery(ev.target.value)}
+                      />
+                    </label>
+                    {fillHits === null ? (
+                      <p className="settings-note">Looking…</p>
+                    ) : fillHits.length === 0 ? (
+                      <p className="settings-note">
+                        {fillQuery ? "Nothing you own matches that." : "Nothing to put here yet — every card you own is already in this binder."}
+                      </p>
+                    ) : (
+                      <ul className="fill-hits">
+                        {fillHits.slice(0, 40).map((opt) => (
+                          <li key={opt.owned.id}>
+                            <button className="fill-hit" disabled={fillBusy} onClick={() => fillWith(e, opt)}>
+                              {opt.card.image_url ? (
+                                <img src={opt.card.image_url} alt="" loading="lazy" />
+                              ) : (
+                                <span className="placeholder" />
+                              )}
+                              <span className="fill-text">
+                                <strong>{opt.card.title}</strong>
+                                <small>
+                                  {opt.card.attrs?.set_abbr || opt.card.attrs?.set_name || ""}
+                                  {opt.card.attrs?.card_number ? ` #${opt.card.attrs.card_number}` : ""}
+                                  {opt.owned.grader ? ` · ${opt.owned.grader} ${opt.owned.grade || ""}` : opt.owned.condition ? ` · ${opt.owned.condition}` : ""}
+                                  {opt.owned.variant ? ` · ${opt.owned.variant}` : ""}
+                                </small>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </Fragment>
