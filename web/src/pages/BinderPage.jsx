@@ -53,7 +53,7 @@ export default function BinderPage() {
   useEffect(() => {
     api.binders().then((d) => {
       const m = {};
-      for (const b of d.binders || []) m[b.id] = b.name;
+      for (const b of d.binders || []) if (b.kind !== "dex") m[b.id] = b.name;
       setBinderNames(m);
     }).catch(() => {});
   }, []);
@@ -929,7 +929,9 @@ function AddCards({ binder, already, onAdded, onClose }) {
   useEffect(() => {
     api.binders().then((d) => {
       const m = {};
-      for (const b of d.binders || []) m[b.id] = b.name;
+      // the Pokédex is already said by its own word; naming it twice reads
+      // "in Pokédex · National Pokédex"
+      for (const b of d.binders || []) if (b.kind !== "dex") m[b.id] = b.name;
       setNames(m);
     }).catch(() => {});
   }, []);
