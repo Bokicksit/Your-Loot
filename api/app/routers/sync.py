@@ -242,26 +242,64 @@ def push(db: Session, user: User) -> dict:
             data={"confirm": mine.CONFIRM, "source": _source_label()},
             timeout=TIMEOUT,
         )
+    except httpx.TimeoutException as e:
+        msg = (f"{url} took too long to answer. A first send carries every photo; "
+               f"try again and it will carry only what is left.")
+        _record(db, user.id, error=msg)
+        raise SyncError(msg) from e
     except httpx.HTTPError as e:
-        _record(db, user.id, error=f"could not reach {url}: {e.__class__.__name__}")
-        raise SyncError(f"could not reach {url}") from e
+        msg = f"could not reach {url} ({e.__class__.__name__})"
+        _record(db, user.id, error=msg)
+        raise SyncError(msg) from e
 
     if r.status_code >= 400:
-        try:
-            detail = r.json().get("detail") or r.text
-        except ValueError:
-            detail = r.text
-        msg = {
-            401: "the token was refused — it may have been revoked; make a new one there",
-            403: "the token was refused — it may have been revoked; make a new one there",
-            404: "that address is not a Your Loot, or is too old to receive a collection",
-        }.get(r.status_code, str(detail)[:300])
-        _record(db, user.id, error=msg)
-        raise SyncError(msg)
+        _record(db, user.id, error=explain(r, url, len(blob)))
+        raise SyncError(explain(r, url, len(blob)))
 
     result = r.json()
     _record(db, user.id, result=result)
     return result
+
+
+def explain(r: httpx.Response, url: str, sent: int) -> str:
+    """Why the other end said no, in words that name the next step.
+
+    Worth the care: this string is the whole diagnosis. Everything the sender
+    can go wrong at surfaces here as one 502, and "Internal Server Error"
+    passed through from the far side tells nobody anything — the status is
+    what says whether the fault is the token, the size, the plan, or that
+    server having a bad moment.
+    """
+    try:
+        detail = str(r.json().get("detail") or "").strip()
+    except ValueError:
+        detail = ""
+    mb = sent / (1024 * 1024)
+
+    if r.status_code in (401, 403):
+        return ("the token was refused — it may have been revoked, or it may "
+                "belong to a different account. Make a new one there and paste it in.")
+    if r.status_code == 404:
+        return f"{url} is not a Your Loot, or is too old to receive a collection"
+    if r.status_code == 413:
+        return (f"the collection is too large for that server to accept "
+                f"({mb:.0f} MB). A proxy in front of it is refusing the upload — "
+                f"Cloudflare's free plan stops at 100 MB.")
+    if r.status_code == 429:
+        return "that server is rate-limiting this account — wait a minute and try again"
+    if r.status_code == 400 and detail:
+        # the receiver's own words: the plan check, a bad file, a missing
+        # confirmation. These are already written for a person.
+        return detail[:300]
+    if r.status_code in (502, 503, 504, 522, 524):
+        return (f"{url} did not answer in time (HTTP {r.status_code}). The send "
+                f"was {mb:.0f} MB; a large first send can outlast a proxy's "
+                f"timeout, and trying again sends only what is left.")
+    if r.status_code >= 500:
+        return (f"that server hit an error loading the collection "
+                f"(HTTP {r.status_code}{f': {detail[:120]}' if detail else ''}). "
+                f"Its logs will say why; nothing here was changed.")
+    return f"HTTP {r.status_code}{f': {detail[:200]}' if detail else ''}"
 
 
 def _record(db: Session, uid: int, *, result: dict | None = None, error: str | None = None):

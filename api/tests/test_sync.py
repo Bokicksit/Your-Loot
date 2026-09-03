@@ -430,3 +430,49 @@ def test_the_same_collection_can_land_in_two_accounts_on_one_server(owner, recei
     assert {b["name"] for b in other.get("/api/binders").json()["binders"]} >= mine_names
     owner.delete("/api/sync")
     other.close()
+
+
+# ------------------------------------------------- why a send failed
+
+def test_the_failure_message_names_the_cause():
+    """Every way a send can fail arrives as one 502, so this string is the
+    whole diagnosis — and "Internal Server Error" passed through from the far
+    side is not one."""
+    from app.routers.sync import explain
+
+    class R:
+        def __init__(self, code, body=None):
+            self.status_code = code
+            self._body = body
+        def json(self):
+            if self._body is None:
+                raise ValueError("not json")
+            return self._body
+
+    MB = 1024 * 1024
+    url = "https://yourloot.app"
+
+    assert "token was refused" in explain(R(401), url, MB)
+    assert "token was refused" in explain(R(403), url, MB)
+    assert "not a Your Loot" in explain(R(404), url, MB)
+
+    too_big = explain(R(413), url, 140 * MB)
+    assert "too large" in too_big and "140 MB" in too_big and "100 MB" in too_big
+
+    assert "rate-limiting" in explain(R(429), url, MB)
+
+    # the receiver's own words for a refusal it wrote for a person
+    plan = explain(R(400, {"detail": "This collection has 900 cards and the plan on this account allows 300."}), url, MB)
+    assert "900 cards" in plan and "allows 300" in plan
+
+    for code in (502, 503, 504, 522, 524):
+        out = explain(R(code), url, 80 * MB)
+        assert "did not answer in time" in out and str(code) in out and "80 MB" in out
+
+    # the case that started this: a bare 500 from the far side must still say
+    # where the fault is and that nothing here changed
+    dull = explain(R(500, {"detail": "Internal Server Error"}), url, MB)
+    assert "that server hit an error" in dull and "500" in dull and "nothing here was changed" in dull
+
+    # a body that is not JSON at all — a proxy's HTML error page
+    assert "418" in explain(R(418), url, MB)

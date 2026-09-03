@@ -9,6 +9,15 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Changed
+- **A failed send says why.** Every way a sync can fail arrived as one 502
+  carrying whatever the far side happened to say, which for an error there
+  was "Internal Server Error" — a status with no information in it. The
+  message now names the cause and the next step: a refused token, a
+  collection too large for a proxy in front of the receiver (with the size,
+  and that Cloudflare's free plan stops at 100 MB), a timeout on a big first
+  send, the receiver's own words when it refuses on plan limits, and — for a
+  genuine error over there — that its logs hold the reason and nothing here
+  was changed.
 - **The price check does the whole binder, and says what it could not do.**
   It priced the page on screen and turning the page asked again; a binder is
   one thing and its worth is one number, so it now prices all of it, in
