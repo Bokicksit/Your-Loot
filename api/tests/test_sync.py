@@ -476,3 +476,60 @@ def test_the_failure_message_names_the_cause():
 
     # a body that is not JSON at all — a proxy's HTML error page
     assert "418" in explain(R(418), url, MB)
+
+
+@needs_open
+def test_a_receiver_that_already_has_a_pokedex_still_accepts_a_collection(owner, receiver):
+    """The bug this file did not catch until it happened for real.
+
+    Every account grows a Pokédex the first time it files a card, with a uid
+    of its own. The collection arriving carries the *sender's* uid for its
+    Pokédex, which matches nothing here — so a second one was created, and
+    "one Pokédex each" is a database constraint, so the whole load failed
+    with a 500. The tests passed only because a freshly signed-up receiver
+    had never touched a binder.
+    """
+    there, tok = receiver
+    made = there.post("/api/cards", json={"title": "Pikachu", "attrs": {"national_dex_no": 25}}).json()
+    there.post(f"/api/items/{made['id']}/owned", json={"quantity": 1}).raise_for_status()
+    before = there.get("/api/binders").json()["binders"]
+    dex_here = [b for b in before if b["kind"] == "dex"]
+    assert len(dex_here) == 1, "the receiver should have made its own Pokédex by now"
+
+    owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
+    r = owner.post("/api/sync/now")
+    assert r.status_code == 200, r.text
+
+    after = there.get("/api/binders").json()["binders"]
+    dex_after = [b for b in after if b["kind"] == "dex"]
+    assert len(dex_after) == 1, "a second Pokédex was made instead of the first being reused"
+    # and it is the same row, so a link anybody had to it still works
+    assert dex_after[0]["id"] == dex_here[0]["id"]
+
+    # a second send matches on the uid it adopted and is still one Pokédex
+    assert owner.post("/api/sync/now").status_code == 200
+    assert len([b for b in there.get("/api/binders").json()["binders"] if b["kind"] == "dex"]) == 1
+    owner.delete("/api/sync")
+
+
+@needs_open
+def test_a_set_binder_the_receiver_already_made_is_reused_too(owner, receiver):
+    """Same shape, different constraint: one binder per set per mode."""
+    there, tok = receiver
+    theirs = there.post("/api/binders", json={
+        "name": "Base Set (mine)", "kind": "set", "set_code": "base1", "master": False,
+    }).json()
+    mine_b = owner.post("/api/binders", json={
+        "name": "Base Set", "kind": "set", "set_code": "base1", "master": False,
+    }).json()
+
+    owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
+    assert owner.post("/api/sync/now").status_code == 200
+
+    rows = [b for b in there.get("/api/binders").json()["binders"]
+            if b["kind"] == "set" and b["set_code"] == "base1"]
+    assert len(rows) == 1, "a second binder for the same set was made"
+    assert rows[0]["id"] == theirs["id"]        # the row held, so links hold
+    assert rows[0]["name"] == "Base Set"        # renamed to the sender's
+    owner.delete(f"/api/binders/{mine_b['id']}")
+    owner.delete("/api/sync")

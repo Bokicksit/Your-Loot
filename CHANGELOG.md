@@ -8,6 +8,20 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **A collection would not load into an account that had ever used a binder.**
+  Every account grows a Pokédex the first time it files a card, under a name
+  of its own. A collection arriving from another install carries the
+  *sender's* name for its Pokédex, which matched nothing here — so a second
+  one was created, and "one Pokédex each" is a database constraint, so the
+  whole load failed and the send came back as a bare 500. The same held for a
+  binder of a set the receiving account had already made. A binder is now
+  matched on its name first and on what it *is* second — a Pokédex is a
+  Pokédex, a set binder is its set — so the one already here is reused and
+  keeps its id, and takes the sender's name for next time. The tests missed
+  it because a freshly signed-up receiver had never opened a binder; two now
+  make sure it has.
+
 ### Changed
 - **A failed send says why.** Every way a sync can fail arrived as one 502
   carrying whatever the far side happened to say, which for an error there

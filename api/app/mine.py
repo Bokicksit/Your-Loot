@@ -506,23 +506,38 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
     # from before uids is matched on what it can be — kind and set, or kind
     # and name — which is exact for set and dex binders and as good as a
     # custom binder's name is.
-    existing = {
-        b.uid: b for b in db.scalars(select(Binder).where(Binder.user_id == user.id)).all()
-    }
+    existing = list(db.scalars(select(Binder).where(Binder.user_id == user.id)).all())
+    by_uid = {b.uid: b for b in existing}
+    claimed: set[int] = set()   # one local binder answers for one in the file
     kept: set[int] = set()
     for spec in payload.get("binders", []):
         fields = _fields(Binder, spec)
-        uid = fields.pop("uid", None) or _legacy_uid(spec, existing.values())
-        binder = existing.get(uid) if uid else None
+        want = fields.pop("uid", None)
+        binder = by_uid.get(want) if want else None
+        if binder is not None and binder.id in claimed:
+            binder = None
         if binder is None:
-            binder = Binder(**fields, uid=uid or str(uuid.uuid4()), user_id=user.id)
+            # not by that name — but this account may hold the same binder
+            # under one of its own, which is the ordinary case for a Pokédex
+            binder = _same_binder(spec, [b for b in existing if b.id not in claimed])
+        if binder is None:
+            binder = Binder(**fields, uid=want or str(uuid.uuid4()), user_id=user.id)
             db.add(binder)
             db.flush()
+            existing.append(binder)
+            by_uid[binder.uid] = binder
         else:
             for k, v in fields.items():
                 setattr(binder, k, v)
+            # take the sender's name for it, so the next send matches on the
+            # uid directly — unless something else here already answers to it
+            if want and want != binder.uid and want not in by_uid:
+                by_uid.pop(binder.uid, None)
+                binder.uid = want
+                by_uid[want] = binder
             db.execute(delete(BinderSlot).where(BinderSlot.binder_id == binder.id))
             db.flush()
+        claimed.add(binder.id)
         kept.add(binder.id)
         for slot in spec.get("slots", []):
             at = slot.get("owned_at")
@@ -571,23 +586,31 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
     }
 
 
-def _legacy_uid(spec: dict, binders) -> str | None:
-    """A uid for a binder from a file that predates them.
+def _same_binder(spec: dict, candidates):
+    """The binder here that the one in the file *is*, ignoring its name.
 
-    Set and dex binders are identified by what they are of; a custom binder
-    only by its name, which is what a person would match them on too.
+    Two jobs, and the second is the one that matters. A file written before
+    uids existed carries none, so there is nothing to match on but identity.
+    And an account that has used binders already made its own — a Pokédex
+    appears the first time anybody files a card — so the incoming Pokédex
+    carries a uid this account has never seen, matches nothing, and would be
+    created a second time. There can only be one Pokédex per account and the
+    database says so, so that attempt failed the whole load.
+
+    Set and dex binders are identified by what they are *of*; a custom binder
+    by its name, which is what a person would match them on too.
     """
     kind = spec.get("kind")
-    for b in binders:
+    for b in candidates:
         if b.kind != kind:
             continue
         if kind == "dex":
-            return b.uid
+            return b   # there is only ever one
         if kind == "set":
             if (b.set_code or "") == (spec.get("set_code") or "") and bool(b.master) == bool(spec.get("master")):
-                return b.uid
+                return b
         elif (b.name or "") == (spec.get("name") or ""):
-            return b.uid
+            return b
     return None
 
 
