@@ -8,7 +8,22 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+
 ### Added
+- **A shelf survives its CDN.** Most pictures here are links — catalogue art
+  on TCGdex, a cover from IGDB, a jacket from Open Library — and a link is
+  somebody else's promise. When one breaks, a shelf that looked complete for
+  two years turns to grey frames through no fault of the person whose shelf
+  it is. So a copy is kept: for every item an entitled collection owns whose
+  picture is a link, the file is fetched once, slowly, in the background,
+  and kept beside the uploaded photographs. It is a fallback, not a
+  replacement — the page still asks the link first, so art corrected
+  upstream is still seen; only when the link fails does the browser turn to
+  the copy, in the app and on the public page alike. Everybody on a
+  self-hosted install; Supporters on the hosted one, the same rule as the
+  collector's room. `KEEP_IMAGE_COPIES=false` turns it off. The admin panel
+  shows how many are kept and can run a pass now. (Pictures an admin adds on
+  the card-art page were already copies; that route always fetched the file.)
 - **A pocket holds up to three of the same card.** In a binder of your own,
   a filled pocket offers *Stack another*: a second and third copy of the
   exact same printing go in behind the first, the way a sleeve takes a small
@@ -31,51 +46,6 @@ Full detail is in the commit log, where every change has its own note.
   loose in a box, and a card in both looked like it was only in the Pokédex.
   There is a binder icon now, drawn next to the ball when both are true, and
   the copy's row reads "Pokédex · Binder" rather than picking one.
-
-### Fixed
-- **Looking at your Pokédex no longer writes one.** Opening it created the
-  binder row, and because a read commits nothing that row was rolled back
-  again immediately — so the binder's id went up by one on every single page
-  view. Nothing was lost by it, and it looked precisely like a binder being
-  replaced, which is what it cost: three wrong diagnoses of an unrelated bug
-  before the real cause turned up. The Pokédex is written when the first card
-  is filed into it, which is the moment it starts to mean anything; until
-  then the page draws empty slots and says plainly that there is no row yet.
-- **A collection would not load into an account that had ever used a binder.**
-  Every account grows a Pokédex the first time it files a card, under a name
-  of its own. A collection arriving from another install carries the
-  *sender's* name for its Pokédex, which matched nothing here — so a second
-  one was created, and "one Pokédex each" is a database constraint, so the
-  whole load failed and the send came back as a bare 500. The same held for a
-  binder of a set the receiving account had already made. A binder is now
-  matched on its name first and on what it *is* second — a Pokédex is a
-  Pokédex, a set binder is its set — so the one already here is reused and
-  keeps its id, and takes the sender's name for next time. The tests missed
-  it because a freshly signed-up receiver had never opened a binder; two now
-  make sure it has.
-
-### Changed
-- **A failed send says why.** Every way a sync can fail arrived as one 502
-  carrying whatever the far side happened to say, which for an error there
-  was "Internal Server Error" — a status with no information in it. The
-  message now names the cause and the next step: a refused token, a
-  collection too large for a proxy in front of the receiver (with the size,
-  and that Cloudflare's free plan stops at 100 MB), a timeout on a big first
-  send, the receiver's own words when it refuses on plan limits, and — for a
-  genuine error over there — that its logs hold the reason and nothing here
-  was changed.
-- **The price check does the whole binder, and says what it could not do.**
-  It priced the page on screen and turning the page asked again; a binder is
-  one thing and its worth is one number, so it now prices all of it, in
-  slices of forty that land as they arrive — a master set of four hundred
-  fills in over a few seconds with a count in the bar. Prices are green on
-  the card; a card with no listing wears a red *No price data* instead of a
-  quiet dash. And the bar names the sets those cards belong to — "7 not on
-  TCGplayer — MEP Black Star Promos, SVP Black Star Promos" — because that is
-  the actual answer: TCGdex carries no TCGplayer mapping for the promo sets,
-  and seven red chips without the sentence look like seven bugs.
-
-### Added
 - **A mirror knows it is one.** A collection that arrives on a sync token
   stamps the account it lands in, and the app there draws a bar under the
   header on every page: mirror of *where*, last received *when*, changes
@@ -145,62 +115,254 @@ Full detail is in the commit log, where every change has its own note.
   data to anybody this size, and TCGplayer's market price is derived from
   actual completed sales on the largest singles marketplace there is, which
   is the same question answered from a cleaner source.
+- **The Pokédex on a public page can be read as a want list.** The binder is
+  the collection as its owner arranged it; a second view shows the same
+  1,025 slots as a list, with chips for **Missing** and **Needs upgrade**
+  and a count on each. Every slot names its species whether or not anybody
+  owns it, so a link to it tells a friend — or somebody selling — exactly
+  what is still wanted, and keeps itself up to date. The Pokédex only: its
+  empty slots are cards that exist in the world, where a custom binder's
+  empty pocket is not a thing anybody could go and find.
+- **Card art has a curation room.** A new admin section lists every English
+  set with how many of its cards still lack a picture, opens into a compact
+  grid of the set — name, number, art or a dashed hole — and fixes a card
+  in two clicks: paste a link (copied onto this server, so it cannot rot)
+  or upload a file. The picture lands on the shared catalogue row, so one
+  fix reaches every collection at once. A changed picture clears that
+  card's fingerprint, and a button runs the fingerprint pass in the
+  background — the same one the seed script and HASH_CARD_ART run, now
+  reading our own disk as happily as a CDN — counting down as it goes.
+- **The card scanner watches, and carries a light.** No capture button to
+  press: hold the card in the outline and a frame goes quietly to the server
+  about once a second, and when the same card comes back top twice running —
+  the barcode scanner's own rule, because one blurry frame can match a
+  neighbour and two in a row cannot — it locks, buzzes, and moves to the
+  pick. "Identify now" stays as the manual override and is the only path
+  that says "nothing matched" out loud. Phones with a torch get the same
+  light button the barcode scanner has, for the card angled under a lamp.
+- **The scanner keeps itself current.** `HASH_CARD_ART=true` and every start
+  fingerprints whatever card art is new, in the background — so a freshly
+  seeded set becomes scannable without anybody remembering a command, and a
+  catalogue with nothing new costs one database question. Off by default:
+  the first run is twenty thousand fetches, and that is a thing to choose.
+  (Also declared `CARD_ART` in the compose files, which documented it
+  without ever passing it to the container.)
+- **Point the camera at a card.** Cards carry no barcode, so the scanner
+  reads the picture instead: every card's artwork is reduced to sixty-four
+  bits describing what it looks like, and a frame from the camera is matched
+  against the catalogue by how many of those bits disagree. No key, no
+  quota, no request leaving the server — the only lookup here that costs
+  nothing to ask. It offers a few candidates rather than picking one,
+  because a fingerprint sees artwork and a reverse holo is the same picture
+  as the normal print; which printing you own is a question about your copy,
+  and you can see the answer. Migration 0051 adds the column;
+  `seed/hash_cards.py` fills it in once, and until it has run the scanner
+  finds nothing and says so.
+- **A link straight to one shelf.** `/u/bo/games`, `/u/bo/records`,
+  `/u/bo/pokedex` — the same public page, arriving with that collection
+  already open, so a link can be about the one thing somebody collects
+  rather than about everything they own. Cards get two extra addresses of
+  their own: `/pokedex` opens the dex itself, `/binders` the shelf of them.
+  Settings lists every address that answers, ready to copy, and the list is
+  built by the server from the same rules the routes enforce — so it can
+  never offer a link that 404s. Supporter-only, because the room is what
+  these open into; a free profile has no layer to open and says so with a
+  404 rather than quietly showing the whole page instead.
+- **Reserved names, for the operator.** The admin panel can set a screen
+  name aside before anybody claims it — and point it at an email address,
+  so the one account signed in with that address may claim it (which uses
+  the reservation up). Hold "ben" today; assign it to the kid when he
+  finally has an address. The gate holds at sign-up too — where names are
+  actually claimed — and in both directions: a stranger typing the held
+  name is refused in a sentence, and the person it waits for is stopped
+  from spending their once-ever claim on a different name while theirs
+  sits reserved. Releasing a reservation puts the name back in
+  circulation; reserving can never take a name somebody already holds.
+  Migration 0050 — table `reserved_name`.
+- **The front page says what the app is.** A collections section — one card
+  per shelf with its actual features — replaces the amiibo-heavy "everything
+  else" strip, the hero names every collection, and a new section previews
+  the collector's room in miniature: the same CSS furniture idea, postage-
+  stamp sized.
+- **The toolbar explains itself too.** A "?" at the end of every shelf's
+  rail covers the dice (random pick, filter-aware, whole-shelf), the eBay
+  coin, the layout toggle and the row buttons — and the help page gained
+  matching sections, including the add form's quiet helpers (duplicate
+  notice, retail photos, sticky defaults).
+- **A "?" in every add and edit form.** Each collection's add sheet and
+  entry editor now carries a small help note — what the search reaches, what
+  the buttons do, and the difference between the entry and your copy. The
+  help page grew matching answers: barcode scanning across all shelves,
+  entry vs copy, games and hardware.
+- **A typed ISBN finds the book.** The number on the back cover works in the
+  title box now, hyphens and all — the same exact-edition lookup the barcode
+  scanner does, for the machines that have no camera to scan with.
+- **Tiles on the wanted list**, same toggle as everywhere else.
+- **Book defaults in Settings** — hardcover or paperback, jacket or no jacket.
+  A shelf leans one way, so those two get answered once instead of on every
+  book.
+- **The Collections heading rotates.** 50 general lines plus 14 for each
+  collection you actually keep — so a record collector is never asked about
+  minifigs. One line per visit, not per render.
+- **The app has a face.** Icon, favicon, maskable and Apple touch icons, and a
+  web manifest — a shelf holding a book, a record, a disc and a card, drawn in
+  one weight and one colour so it survives being 16px in a browser tab.
+- **Installable.** Add to Home Screen now produces an app rather than a
+  bookmark: standalone display, the app's own background behind the status
+  bar, and an offline shell.
+- **`python -m app.backfill`** — fills in book blurbs and record tracklists on
+  items added before either existed. Never overwrites, safe to re-run, and
+  reports what it couldn't identify rather than guessing.
+- **Lock this app** (Settings) — a password, or a short PIN for a phone, on a
+  single-user install. One account, no user management, no login screen until
+  you ask for one. The way Radarr and Sonarr do it.
+- **Login throttling.** Five wrong answers per address and account, then a
+  five-minute wait. Getting it right clears the count, so mistyping your own
+  password twice costs nothing.
+- `python -m app.resetpw --clear` takes the lock off from the host.
+- **Optional user accounts.** `AUTH_MODE=multi` turns on a sign-in screen,
+  argon2 passwords and admin-created accounts, each person getting their own
+  copies, wanted list, binder and preferences. The default stays `single`:
+  no login screen, nothing to configure, and an existing install upgrades
+  without noticing. No reset emails — `python -m app.resetpw <email>` on the
+  host is the recovery path, because requiring an SMTP server to get back into
+  your own house would be worse than the problem.
+- **Groundwork for user accounts** (migrations 0018–0021). Nothing signs in
+  yet and nothing looks different. A `users` table exists with the current
+  owner as user 1; `owned` and `wanted` record who they belong to; `dex_slots`
+  and `settings` are keyed per person, so two people can't share one binder or
+  overwrite each other's preferences; and `item_override` holds the photo and
+  notes you attach to a shared catalogue entry.
+- Every `user_id` defaults to the owner in the database, so an existing
+  install upgrades with no change in behaviour.
 
-### Security
-- **The rate limits stop believing a header anyone can write.**
-  `X-Forwarded-For` is a list a caller starts and each proxy adds to, so the
-  left of it is whatever the caller typed and only the right was written by
-  your own proxies. The limiter read the left, which meant a different value
-  per request bought a fresh bucket per request — and the brakes on signing
-  in, signing up and sending reset mail quietly did nothing to anybody who
-  changed one header. It now counts in from the right by however many proxies
-  are actually there (`TRUSTED_PROXIES`, 1 for every setup here), and falls
-  back to the connection's own address whenever the header is too short or
-  holds something that is not an address, both meaning it was not written by
-  the proxies it claims. Nothing to change unless something sits in front of
-  nginx — Cloudflare, a tunnel, another load balancer — in which case set it
-  to 2, because guessing high is the direction that hurts. The right number
-  is not something the code can work out, so an admin can open
-  `/api/admin/forwarding` and be told it: Cloudflare's `CF-Connecting-IP`
-  says which address really made the request, where that lands in the chain
-  says how many hops are genuine, and the page either confirms the setting or
-  names the number to change it to.
-- **Where counting hops cannot work, `TRUST_CF_CONNECTING_IP` does.** Asked
-  the above on a real deployment, it answered that no number would do: the
-  forwarded chain there *begins* with a Cloudflare edge address, meaning
-  something past Cloudflare discards the header and starts a fresh one, so
-  the caller appears in it at no depth whatsoever. The visible cost is that
-  every visitor lands on the same address — which for the signup brake means
-  one bucket for the entire site, and the twenty-first stranger in an hour
-  being turned away for no reason they could discover. Turning this on takes
-  the address from the header Cloudflare sets, which survives whatever the
-  chain does. Off by default and it must stay off unless the origin is
-  unreachable except through Cloudflare: anybody who can knock directly can
-  type that header themselves, which is the same hole coming in by a
-  different door. `/api/admin/forwarding` now reports `shared_by_everyone`,
-  which is the symptom stated plainly, and recommends this when it is the
-  only thing that would help.
-- **A fetched image is fetched from the address that was checked.** Pasting
-  an image URL had the API resolve the hostname, satisfy itself the answer
-  was not somewhere private, and then hand the *name* to the HTTP client,
-  which looked it up all over again. The gap between those two lookups
-  belongs to whoever owns the DNS record: answer publicly for the check,
-  answer `169.254.169.254` for the fetch, and the guard is decoration. The
-  connection now goes to the address that passed. The name still travels, in
-  the Host header and as the TLS server name, so certificates are still
-  checked against it and shared-hosting CDNs still work — there is simply no
-  second question to give a different answer to.
-- **Catalogue searches cost something.** Every search for a Lego set, a game,
-  a film, a record, a comic, a book or a card is this server calling somebody
-  else's API on this server's key, several of them metered per day. Fourteen
-  such routes had no limit at all, so one signed-in client in a loop could
-  spend the quota for everyone on the install. Sixty a minute per account
-  now — far past what anybody reaches by typing, far under what a script
-  manages — refused before the request leaves the building rather than after.
-  Counted per account rather than per address, since the account is what
-  spends it and moving to another network should not hand out seconds.
+- **A test suite and a CI gate.** Migrations reverse and re-apply without
+  losing data; backup and restore round-trips; two accounts stay separate.
+  19 tests on an isolated stack, and `build-push` no longer publishes an image
+  unless they pass — before, every push to main tagged `latest` whether or not
+  the app started.
+- **A tenancy test suite** (`api/tests/test_tenancy.py`), written before the
+  sweep it checks. Two real accounts through the real API: no list, count,
+  binder or response body of one may contain anything of the other's.
+- **Tiles or a list, per collection.** Every collection now has a layout
+  toggle next to its sort dropdown. The seven that were rows can draw
+  picture-first tiles; Cards, which was always tiles, can draw a detail-first
+  list with the thumbnail on the left. Saved per collection, so Movies can be
+  tiles while Books stays a list. Defaults reproduce the old layouts exactly.
+  The Pokédex is unchanged — it's a picture of a binder. A tile's edit and
+  delete controls stay out of the way until you tap it, then appear under the
+  picture with the rest of the detail.
+
+- **Book blurbs.** `book_attrs.blurb` already existed, and the expanded book
+  panel already rendered it — nothing ever filled it in, so it had always been
+  empty. Picking a book now fetches its description from Open Library, the
+  same way a game shows its IGDB summary. Coverage is good for well-known
+  titles and thin below that; when there's nothing, nothing is shown.
+
+- **Record tracklists.** MusicBrainz gives a track count and nothing else.
+  Discogs knows the running order per pressing, which is the level this module
+  already tracks records at — a reissue drops a track, a Japanese press has
+  Japanese titles. Positions are kept as printed, so "B2" still says which
+  side it's on. Migration 0017.
+- **Sorting on the wanted list** — last added, first added, A–Z, or grouped by
+  collection. Remembered like the other collections'.
+- **Sort and filters are remembered per collection.** Choosing "last added",
+  or filtering Games to SNES, used to last until you left the page. Stored on
+  the server rather than in the browser, so a phone and a desk agree.
+
+### Changed
+- **A failed send says why.** Every way a sync can fail arrived as one 502
+  carrying whatever the far side happened to say, which for an error there
+  was "Internal Server Error" — a status with no information in it. The
+  message now names the cause and the next step: a refused token, a
+  collection too large for a proxy in front of the receiver (with the size,
+  and that Cloudflare's free plan stops at 100 MB), a timeout on a big first
+  send, the receiver's own words when it refuses on plan limits, and — for a
+  genuine error over there — that its logs hold the reason and nothing here
+  was changed.
+- **The price check does the whole binder, and says what it could not do.**
+  It priced the page on screen and turning the page asked again; a binder is
+  one thing and its worth is one number, so it now prices all of it, in
+  slices of forty that land as they arrive — a master set of four hundred
+  fills in over a few seconds with a count in the bar. Prices are green on
+  the card; a card with no listing wears a red *No price data* instead of a
+  quiet dash. And the bar names the sets those cards belong to — "7 not on
+  TCGplayer — MEP Black Star Promos, SVP Black Star Promos" — because that is
+  the actual answer: TCGdex carries no TCGplayer mapping for the promo sets,
+  and seven red chips without the sentence look like seven bugs.
+- **The tagline sits on the things it describes.** "Build the binder. Send
+  the link." has left the hero, where it promised both halves to somebody
+  who did not yet know what a binder was for. "Build the binder." now hangs
+  over the Pokédex and "Send the link." over the collector's room, so each
+  lands on the section that earns it.
+- **The front page leads with the shelves.** What it keeps comes first now,
+  the two ways in sit under it once that question is answered, and the
+  Pokédex has its own section below rather than sharing the hero. The dex
+  wall fills from its own travel through the screen at every width, since
+  it is below the fold at all of them now.
+- **The card scanner forgives your hands.** It wanted the card perfectly
+  framed, perfectly level; now each frame is read about a dozen ways —
+  straight on, nudged off-centre, cropped tighter, tilted a few degrees
+  either way — and a card is scored by its best agreement with any reading.
+  The catalogue side is untouched (scans are straight; the photograph is
+  the crooked half), so nothing gets re-fingerprinted, and the extra work
+  is a handful of 9x8 resizes that cost less than the JPEG decode before
+  them. Tests now photograph the card badly on purpose.
+- **LEGO records the box separately.** "Complete, box & instructions" folded
+  two independent facts into one word. Now a checkbox for the box and five
+  states: sealed, opened, loose bricks, built, missing pieces. Sealed forces
+  the box on, since it can't be true without one. Migration 0022 converts
+  existing sets.
+- **The mark is in the header**, and on the sign-in screen — the shelf, rather
+  than the generic coin that stood in for it.
+- **New collection icons**, all eight, drawn for this app rather than picked
+  from a set: two overlapping cards, a controller, a disc sleeve, a record, a
+  speech panel, a brick, three books on a shelf and a console.
+- Two colour tokens moved to match the brand exactly: the panel surface, and
+  the text, which was a warm cream and is now the cooler value the rest of the
+  palette was designed against.
+- **Scanning a comic now names the run.** The big barcode is identical on
+  every issue of a run, so it can only ever say which *run* you're holding —
+  and it was filling in whatever issue the shop's listing happened to mention,
+  which is the issue that shop stocked. It now looks the run up on Comic Vine
+  and offers the ones by that name with the year each began, which is what
+  tells five *Guardians of the Galaxy* apart. Pick one and the title and year
+  fill in; the issue number is on the cover in your hand.
+- The five-digit code beside the barcode still fills the issue when scanned,
+  but nothing waits for it — and the hint no longer says "or just type it",
+  which sent people looking for a field that doesn't exist. Type five digits
+  into Issue # and the app now says what they mean and offers the issue.
+- **Favourites are gone.** A collection was either on, or on-but-starred, and
+  the two switches decided the same thing — so a collection could be turned on
+  and still be nowhere. Now: on means it's on the Collections tab.
+- **Three tabs: Collections, Wanted, Settings.** Collections is the page the
+  wordmark already opened, showing the collections you keep rather than a
+  scrolling list of all of them. Settings came down off the header, and the
+  full-list sheet is gone.
+- Password and email fields are styled like the rest of the app — they had
+  been falling through to the browser's own boxes.
 
 ### Fixed
+- **Looking at your Pokédex no longer writes one.** Opening it created the
+  binder row, and because a read commits nothing that row was rolled back
+  again immediately — so the binder's id went up by one on every single page
+  view. Nothing was lost by it, and it looked precisely like a binder being
+  replaced, which is what it cost: three wrong diagnoses of an unrelated bug
+  before the real cause turned up. The Pokédex is written when the first card
+  is filed into it, which is the moment it starts to mean anything; until
+  then the page draws empty slots and says plainly that there is no row yet.
+- **A collection would not load into an account that had ever used a binder.**
+  Every account grows a Pokédex the first time it files a card, under a name
+  of its own. A collection arriving from another install carries the
+  *sender's* name for its Pokédex, which matched nothing here — so a second
+  one was created, and "one Pokédex each" is a database constraint, so the
+  whole load failed and the send came back as a bare 500. The same held for a
+  binder of a set the receiving account had already made. A binder is now
+  matched on its name first and on what it *is* second — a Pokédex is a
+  Pokédex, a set binder is its set — so the one already here is reused and
+  keeps its id, and takes the sender's name for next time. The tests missed
+  it because a freshly signed-up receiver had never opened a binder; two now
+  make sure it has.
 - **Collections open again on a desktop.** The room took hold of the mouse
   the instant it was pressed, so it could keep panning if the cursor ran off
   the edge. While an element holds the pointer the browser aims the click
@@ -246,20 +408,6 @@ Full detail is in the commit log, where every change has its own note.
   want), and a delete refuses while somebody else still holds the row. A
   single-user install is unaffected — the owner is the admin, and admins
   pass. Found in a security audit; covered by new tenancy tests.
-
-### Changed
-- **The tagline sits on the things it describes.** "Build the binder. Send
-  the link." has left the hero, where it promised both halves to somebody
-  who did not yet know what a binder was for. "Build the binder." now hangs
-  over the Pokédex and "Send the link." over the collector's room, so each
-  lands on the section that earns it.
-- **The front page leads with the shelves.** What it keeps comes first now,
-  the two ways in sit under it once that question is answered, and the
-  Pokédex has its own section below rather than sharing the hero. The dex
-  wall fills from its own travel through the screen at every width, since
-  it is below the fold at all of them now.
-
-### Fixed
 - **Pictures in the Pokédex list stop giving up.** Marking a thousand
   thumbnails "low priority" was a guess, and a wrong one twice over: on this
   view the pictures are the content, and a wall of low-priority requests on
@@ -361,219 +509,15 @@ Full detail is in the commit log, where every change has its own note.
   the two seeds it uses were swept for and are documented with their
   measured distances, so a failure means the matcher changed rather than
   the dice.
-
-### Changed
-- **The card scanner forgives your hands.** It wanted the card perfectly
-  framed, perfectly level; now each frame is read about a dozen ways —
-  straight on, nudged off-centre, cropped tighter, tilted a few degrees
-  either way — and a card is scored by its best agreement with any reading.
-  The catalogue side is untouched (scans are straight; the photograph is
-  the crooked half), so nothing gets re-fingerprinted, and the extra work
-  is a handful of 9x8 resizes that cost less than the JPEG decode before
-  them. Tests now photograph the card badly on purpose.
-
-### Added
-- **The Pokédex on a public page can be read as a want list.** The binder is
-  the collection as its owner arranged it; a second view shows the same
-  1,025 slots as a list, with chips for **Missing** and **Needs upgrade**
-  and a count on each. Every slot names its species whether or not anybody
-  owns it, so a link to it tells a friend — or somebody selling — exactly
-  what is still wanted, and keeps itself up to date. The Pokédex only: its
-  empty slots are cards that exist in the world, where a custom binder's
-  empty pocket is not a thing anybody could go and find.
-- **Card art has a curation room.** A new admin section lists every English
-  set with how many of its cards still lack a picture, opens into a compact
-  grid of the set — name, number, art or a dashed hole — and fixes a card
-  in two clicks: paste a link (copied onto this server, so it cannot rot)
-  or upload a file. The picture lands on the shared catalogue row, so one
-  fix reaches every collection at once. A changed picture clears that
-  card's fingerprint, and a button runs the fingerprint pass in the
-  background — the same one the seed script and HASH_CARD_ART run, now
-  reading our own disk as happily as a CDN — counting down as it goes.
-- **The card scanner watches, and carries a light.** No capture button to
-  press: hold the card in the outline and a frame goes quietly to the server
-  about once a second, and when the same card comes back top twice running —
-  the barcode scanner's own rule, because one blurry frame can match a
-  neighbour and two in a row cannot — it locks, buzzes, and moves to the
-  pick. "Identify now" stays as the manual override and is the only path
-  that says "nothing matched" out loud. Phones with a torch get the same
-  light button the barcode scanner has, for the card angled under a lamp.
-- **The scanner keeps itself current.** `HASH_CARD_ART=true` and every start
-  fingerprints whatever card art is new, in the background — so a freshly
-  seeded set becomes scannable without anybody remembering a command, and a
-  catalogue with nothing new costs one database question. Off by default:
-  the first run is twenty thousand fetches, and that is a thing to choose.
-  (Also declared `CARD_ART` in the compose files, which documented it
-  without ever passing it to the container.)
-- **Point the camera at a card.** Cards carry no barcode, so the scanner
-  reads the picture instead: every card's artwork is reduced to sixty-four
-  bits describing what it looks like, and a frame from the camera is matched
-  against the catalogue by how many of those bits disagree. No key, no
-  quota, no request leaving the server — the only lookup here that costs
-  nothing to ask. It offers a few candidates rather than picking one,
-  because a fingerprint sees artwork and a reverse holo is the same picture
-  as the normal print; which printing you own is a question about your copy,
-  and you can see the answer. Migration 0051 adds the column;
-  `seed/hash_cards.py` fills it in once, and until it has run the scanner
-  finds nothing and says so.
-- **A link straight to one shelf.** `/u/bo/games`, `/u/bo/records`,
-  `/u/bo/pokedex` — the same public page, arriving with that collection
-  already open, so a link can be about the one thing somebody collects
-  rather than about everything they own. Cards get two extra addresses of
-  their own: `/pokedex` opens the dex itself, `/binders` the shelf of them.
-  Settings lists every address that answers, ready to copy, and the list is
-  built by the server from the same rules the routes enforce — so it can
-  never offer a link that 404s. Supporter-only, because the room is what
-  these open into; a free profile has no layer to open and says so with a
-  404 rather than quietly showing the whole page instead.
-- **Reserved names, for the operator.** The admin panel can set a screen
-  name aside before anybody claims it — and point it at an email address,
-  so the one account signed in with that address may claim it (which uses
-  the reservation up). Hold "ben" today; assign it to the kid when he
-  finally has an address. The gate holds at sign-up too — where names are
-  actually claimed — and in both directions: a stranger typing the held
-  name is refused in a sentence, and the person it waits for is stopped
-  from spending their once-ever claim on a different name while theirs
-  sits reserved. Releasing a reservation puts the name back in
-  circulation; reserving can never take a name somebody already holds.
-  Migration 0050 — table `reserved_name`.
-- **The front page says what the app is.** A collections section — one card
-  per shelf with its actual features — replaces the amiibo-heavy "everything
-  else" strip, the hero names every collection, and a new section previews
-  the collector's room in miniature: the same CSS furniture idea, postage-
-  stamp sized.
-- **The toolbar explains itself too.** A "?" at the end of every shelf's
-  rail covers the dice (random pick, filter-aware, whole-shelf), the eBay
-  coin, the layout toggle and the row buttons — and the help page gained
-  matching sections, including the add form's quiet helpers (duplicate
-  notice, retail photos, sticky defaults).
-- **A "?" in every add and edit form.** Each collection's add sheet and
-  entry editor now carries a small help note — what the search reaches, what
-  the buttons do, and the difference between the entry and your copy. The
-  help page grew matching answers: barcode scanning across all shelves,
-  entry vs copy, games and hardware.
-- **A typed ISBN finds the book.** The number on the back cover works in the
-  title box now, hyphens and all — the same exact-edition lookup the barcode
-  scanner does, for the machines that have no camera to scan with.
-- **Tiles on the wanted list**, same toggle as everywhere else.
-- **Book defaults in Settings** — hardcover or paperback, jacket or no jacket.
-  A shelf leans one way, so those two get answered once instead of on every
-  book.
-
-### Changed
-- **LEGO records the box separately.** "Complete, box & instructions" folded
-  two independent facts into one word. Now a checkbox for the box and five
-  states: sealed, opened, loose bricks, built, missing pieces. Sealed forces
-  the box on, since it can't be true without one. Migration 0022 converts
-  existing sets.
-
-### Added
-- **The Collections heading rotates.** 50 general lines plus 14 for each
-  collection you actually keep — so a record collector is never asked about
-  minifigs. One line per visit, not per render.
-
-### Fixed
 - **Hardware showed the games count.** A console and a cartridge share a table
   server-side, so `/api/stats` had no hardware number and the home tile
   borrowed the games one — one console read as 29 items. Both are reported
   separately now, and the games count no longer includes hardware.
-
-### Changed
-- **The mark is in the header**, and on the sign-in screen — the shelf, rather
-  than the generic coin that stood in for it.
-- **New collection icons**, all eight, drawn for this app rather than picked
-  from a set: two overlapping cards, a controller, a disc sleeve, a record, a
-  speech panel, a brick, three books on a shelf and a console.
-
-### Fixed
 - **An unreachable API asked you to sign in.** When `/api/auth/me` didn't
   answer, the app assumed accounts were on and put up an email-and-password
   form — for a server that wasn't responding, so no credentials could have
   worked. It now says the server isn't answering and points at the usual
   cause: two containers on different versions.
-
-### Added
-- **The app has a face.** Icon, favicon, maskable and Apple touch icons, and a
-  web manifest — a shelf holding a book, a record, a disc and a card, drawn in
-  one weight and one colour so it survives being 16px in a browser tab.
-- **Installable.** Add to Home Screen now produces an app rather than a
-  bookmark: standalone display, the app's own background behind the status
-  bar, and an offline shell.
-
-### Changed
-- Two colour tokens moved to match the brand exactly: the panel surface, and
-  the text, which was a warm cream and is now the cooler value the rest of the
-  palette was designed against.
-
-### Changed
-- **Scanning a comic now names the run.** The big barcode is identical on
-  every issue of a run, so it can only ever say which *run* you're holding —
-  and it was filling in whatever issue the shop's listing happened to mention,
-  which is the issue that shop stocked. It now looks the run up on Comic Vine
-  and offers the ones by that name with the year each began, which is what
-  tells five *Guardians of the Galaxy* apart. Pick one and the title and year
-  fill in; the issue number is on the cover in your hand.
-- The five-digit code beside the barcode still fills the issue when scanned,
-  but nothing waits for it — and the hint no longer says "or just type it",
-  which sent people looking for a field that doesn't exist. Type five digits
-  into Issue # and the app now says what they mean and offers the issue.
-
-### Removed
-- The temporary backfill button in Settings. `python -m app.backfill` stays —
-  anyone upgrading has the same gap.
-
-### Added
-- **`python -m app.backfill`** — fills in book blurbs and record tracklists on
-  items added before either existed. Never overwrites, safe to re-run, and
-  reports what it couldn't identify rather than guessing.
-
-### Changed
-- **Favourites are gone.** A collection was either on, or on-but-starred, and
-  the two switches decided the same thing — so a collection could be turned on
-  and still be nowhere. Now: on means it's on the Collections tab.
-- **Three tabs: Collections, Wanted, Settings.** Collections is the page the
-  wordmark already opened, showing the collections you keep rather than a
-  scrolling list of all of them. Settings came down off the header, and the
-  full-list sheet is gone.
-- Password and email fields are styled like the rest of the app — they had
-  been falling through to the browser's own boxes.
-
-### Added
-- **Lock this app** (Settings) — a password, or a short PIN for a phone, on a
-  single-user install. One account, no user management, no login screen until
-  you ask for one. The way Radarr and Sonarr do it.
-- **Login throttling.** Five wrong answers per address and account, then a
-  five-minute wait. Getting it right clears the count, so mistyping your own
-  password twice costs nothing.
-- `python -m app.resetpw --clear` takes the lock off from the host.
-
-### Added
-- **Optional user accounts.** `AUTH_MODE=multi` turns on a sign-in screen,
-  argon2 passwords and admin-created accounts, each person getting their own
-  copies, wanted list, binder and preferences. The default stays `single`:
-  no login screen, nothing to configure, and an existing install upgrades
-  without noticing. No reset emails — `python -m app.resetpw <email>` on the
-  host is the recovery path, because requiring an SMTP server to get back into
-  your own house would be worse than the problem.
-- **Groundwork for user accounts** (migrations 0018–0021). Nothing signs in
-  yet and nothing looks different. A `users` table exists with the current
-  owner as user 1; `owned` and `wanted` record who they belong to; `dex_slots`
-  and `settings` are keyed per person, so two people can't share one binder or
-  overwrite each other's preferences; and `item_override` holds the photo and
-  notes you attach to a shared catalogue entry.
-- Every `user_id` defaults to the owner in the database, so an existing
-  install upgrades with no change in behaviour.
-
-- **A test suite and a CI gate.** Migrations reverse and re-apply without
-  losing data; backup and restore round-trips; two accounts stay separate.
-  19 tests on an isolated stack, and `build-push` no longer publishes an image
-  unless they pass — before, every push to main tagged `latest` whether or not
-  the app started.
-- **A tenancy test suite** (`api/tests/test_tenancy.py`), written before the
-  sweep it checks. Two real accounts through the real API: no list, count,
-  binder or response body of one may contain anything of the other's.
-
-### Fixed
 - **Every collection listed everybody's items.** The rule for "what's on my
   shelf" read *owned by anyone, or wanted by nobody* — sound with one user,
   and with two it was true of everything the other one owned. A shelf is what
@@ -590,35 +534,6 @@ Full detail is in the commit log, where every change has its own note.
   second user would have seen it. Personal art and notes now have their own
   table. Nothing leaked — there has only ever been one user — but it had to be
   fixed before there were two.
-
-### Added
-- **Tiles or a list, per collection.** Every collection now has a layout
-  toggle next to its sort dropdown. The seven that were rows can draw
-  picture-first tiles; Cards, which was always tiles, can draw a detail-first
-  list with the thumbnail on the left. Saved per collection, so Movies can be
-  tiles while Books stays a list. Defaults reproduce the old layouts exactly.
-  The Pokédex is unchanged — it's a picture of a binder. A tile's edit and
-  delete controls stay out of the way until you tap it, then appear under the
-  picture with the rest of the detail.
-
-- **Book blurbs.** `book_attrs.blurb` already existed, and the expanded book
-  panel already rendered it — nothing ever filled it in, so it had always been
-  empty. Picking a book now fetches its description from Open Library, the
-  same way a game shows its IGDB summary. Coverage is good for well-known
-  titles and thin below that; when there's nothing, nothing is shown.
-
-- **Record tracklists.** MusicBrainz gives a track count and nothing else.
-  Discogs knows the running order per pressing, which is the level this module
-  already tracks records at — a reissue drops a track, a Japanese press has
-  Japanese titles. Positions are kept as printed, so "B2" still says which
-  side it's on. Migration 0017.
-- **Sorting on the wanted list** — last added, first added, A–Z, or grouped by
-  collection. Remembered like the other collections'.
-- **Sort and filters are remembered per collection.** Choosing "last added",
-  or filtering Games to SNES, used to last until you left the page. Stored on
-  the server rather than in the browser, so a phone and a desk agree.
-
-### Fixed
 - **A typed movie search always looked for the Blu-ray case.** Case art is
   fetched when you pick a film, but the format dropdown comes on the *next*
   step — so the lookup ran against the default and never ran again. Naming the
@@ -637,7 +552,63 @@ Full detail is in the commit log, where every change has its own note.
   that got exported were different regions. Measured on a portrait photo: 160px
   of the box covered nothing at all.
 
+### Security
+- **The rate limits stop believing a header anyone can write.**
+  `X-Forwarded-For` is a list a caller starts and each proxy adds to, so the
+  left of it is whatever the caller typed and only the right was written by
+  your own proxies. The limiter read the left, which meant a different value
+  per request bought a fresh bucket per request — and the brakes on signing
+  in, signing up and sending reset mail quietly did nothing to anybody who
+  changed one header. It now counts in from the right by however many proxies
+  are actually there (`TRUSTED_PROXIES`, 1 for every setup here), and falls
+  back to the connection's own address whenever the header is too short or
+  holds something that is not an address, both meaning it was not written by
+  the proxies it claims. Nothing to change unless something sits in front of
+  nginx — Cloudflare, a tunnel, another load balancer — in which case set it
+  to 2, because guessing high is the direction that hurts. The right number
+  is not something the code can work out, so an admin can open
+  `/api/admin/forwarding` and be told it: Cloudflare's `CF-Connecting-IP`
+  says which address really made the request, where that lands in the chain
+  says how many hops are genuine, and the page either confirms the setting or
+  names the number to change it to.
+- **Where counting hops cannot work, `TRUST_CF_CONNECTING_IP` does.** Asked
+  the above on a real deployment, it answered that no number would do: the
+  forwarded chain there *begins* with a Cloudflare edge address, meaning
+  something past Cloudflare discards the header and starts a fresh one, so
+  the caller appears in it at no depth whatsoever. The visible cost is that
+  every visitor lands on the same address — which for the signup brake means
+  one bucket for the entire site, and the twenty-first stranger in an hour
+  being turned away for no reason they could discover. Turning this on takes
+  the address from the header Cloudflare sets, which survives whatever the
+  chain does. Off by default and it must stay off unless the origin is
+  unreachable except through Cloudflare: anybody who can knock directly can
+  type that header themselves, which is the same hole coming in by a
+  different door. `/api/admin/forwarding` now reports `shared_by_everyone`,
+  which is the symptom stated plainly, and recommends this when it is the
+  only thing that would help.
+- **A fetched image is fetched from the address that was checked.** Pasting
+  an image URL had the API resolve the hostname, satisfy itself the answer
+  was not somewhere private, and then hand the *name* to the HTTP client,
+  which looked it up all over again. The gap between those two lookups
+  belongs to whoever owns the DNS record: answer publicly for the check,
+  answer `169.254.169.254` for the fetch, and the guard is decoration. The
+  connection now goes to the address that passed. The name still travels, in
+  the Host header and as the TLS server name, so certificates are still
+  checked against it and shared-hosting CDNs still work — there is simply no
+  second question to give a different answer to.
+- **Catalogue searches cost something.** Every search for a Lego set, a game,
+  a film, a record, a comic, a book or a card is this server calling somebody
+  else's API on this server's key, several of them metered per day. Fourteen
+  such routes had no limit at all, so one signed-in client in a loop could
+  spend the quota for everyone on the install. Sixty a minute per account
+  now — far past what anybody reaches by typing, far under what a script
+  manages — refused before the request leaves the building rather than after.
+  Counted per account rather than per address, since the account is what
+  spends it and moving to another network should not hand out seconds.
+
 ### Removed
+- The temporary backfill button in Settings. `python -m app.backfill` stays —
+  anyone upgrading has the same gap.
 - **Snap to edges**, which guessed at the item's borders and rarely landed on
   them, and **Whole photo**, which is now simply where the crop box starts.
 

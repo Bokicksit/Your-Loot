@@ -208,7 +208,7 @@ function ArtTile({ card, selected, onSelect }) {
       title={card.image_url ? "Change this picture" : "No picture — add one"}
     >
       {card.image_url ? (
-        <img src={card.image_url} alt="" loading="lazy" />
+        <img src={card.image_url} data-item={card.id} alt="" loading="lazy" />
       ) : (
         <span className="art-hole">no art</span>
       )}
@@ -390,7 +390,7 @@ function CardArt() {
                 {picked && (
                   <div className="art-editor">
                     {picked.image_url ? (
-                      <img src={picked.image_url} alt="" />
+                      <img src={picked.image_url} data-item={picked.id} alt="" />
                     ) : (
                       <span className="art-hole">no art</span>
                     )}

@@ -336,6 +336,35 @@ function Shell() {
   );
 }
 
+/** When a linked picture fails, try the copy the server kept.
+ *
+ *  A CDN reorganises or a project loses its funding, and a shelf that looked
+ *  complete for two years turns to grey frames. Every <img data-item=…> in
+ *  the app gets one second chance: the copy kept for that item, if there is
+ *  one. Once, and only on failure — the link is still asked first, so art
+ *  corrected upstream is still what you see while the link lives.
+ *
+ *  Error events do not bubble, so this listens in the capture phase, once,
+ *  for the whole document — which is also why it is here and not in forty
+ *  image tags. */
+if (typeof document !== "undefined" && !window.__lootFallback) {
+  window.__lootFallback = true;
+  document.addEventListener(
+    "error",
+    (e) => {
+      const img = e.target;
+      if (!img || img.tagName !== "IMG") return;
+      const id = img.dataset.item;
+      if (!id || img.dataset.fellBack) return;
+      // a copy we are already showing has nowhere further to fall
+      if ((img.getAttribute("src") || "").includes("/api/images/fallback/")) return;
+      img.dataset.fellBack = "1";
+      img.src = `/api/images/fallback/${id}`;
+    },
+    true
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>

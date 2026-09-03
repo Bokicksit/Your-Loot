@@ -310,7 +310,7 @@ export default function WantedPage() {
             <li data-row={r.item_id}>
               <RowBadge row={r} />
               {r.image_url ? (
-                <img src={r.image_url} alt="" loading="lazy" />
+                <img src={r.image_url} data-item={r.id} alt="" loading="lazy" />
               ) : (
                 <span className="placeholder" data-label="art" />
               )}
@@ -350,7 +350,7 @@ export default function WantedPage() {
               <li className="acquire-edit wanted-info" data-row={r.item_id}>
                 <div className="expand-card">
                   {r.image_url && (
-                    <img className="expand-cover" src={r.image_url} alt="" loading="lazy" />
+                    <img className="expand-cover" src={r.image_url} data-item={r.id} alt="" loading="lazy" />
                   )}
                   <div className="expand-body">
                     <span className="expand-title">{r.title}</span>

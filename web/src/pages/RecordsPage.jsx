@@ -577,7 +577,7 @@ export default function RecordsPage() {
                         a coverless hit gets, and picking it stores nothing. */}
                     {r.image_url && !deadCovers.has(r.mbid || i) ? (
                       <img
-                        src={r.image_url}
+                        src={r.image_url} data-item={r.id}
                         alt={r.title}
                         loading="lazy"
                         onError={() =>
@@ -934,7 +934,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
       {record.image_url ? (
         <img
           className="game-cover"
-          src={record.image_url}
+          src={record.image_url} data-item={record.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -1130,7 +1130,7 @@ function RecordRow({ record, onChange, onReload, onTagsChanged }) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {record.image_url && (
-              <img className="expand-cover square" src={record.image_url} alt="" loading="lazy" />
+              <img className="expand-cover square" src={record.image_url} data-item={record.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{record.title}</span>

@@ -427,7 +427,7 @@ export default function CardTile({
       )}
       {card.image_url ? (
         <img
-          src={card.image_url}
+          src={card.image_url} data-item={card.id}
           alt={card.title}
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -500,7 +500,7 @@ export default function CardTile({
       <div ref={detailRef} className="dex-detail card-detail">
         <div className="expand-card">
           {card.image_url && (
-            <img className="expand-cover" src={card.image_url} alt="" loading="lazy" />
+            <img className="expand-cover" src={card.image_url} data-item={card.id} alt="" loading="lazy" />
           )}
           <div className="expand-body">
             <span className="expand-title">{card.title}</span>

@@ -688,7 +688,7 @@ export default function BinderPage() {
                           <li key={opt.owned.id}>
                             <button className="fill-hit" disabled={fillBusy} onClick={() => fillWith(e, opt)}>
                               {opt.card.image_url ? (
-                                <img src={opt.card.image_url} alt="" loading="lazy" />
+                                <img src={opt.card.image_url} data-item={opt.card.id} alt="" loading="lazy" />
                               ) : (
                                 <span className="placeholder" />
                               )}

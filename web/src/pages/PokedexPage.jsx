@@ -403,7 +403,7 @@ export default function PokedexPage() {
                   which page you are on */}
               {e.page ? <span className="slot-page">p.{e.page}</span> : null}
               {e.card?.image_url ? (
-                <img src={e.card.image_url} alt={e.name || ""} loading="lazy" />
+                <img src={e.card.image_url} data-item={e.card.id} alt={e.name || ""} loading="lazy" />
               ) : (
                 <span className="placeholder" data-label="" />
               )}
@@ -451,7 +451,7 @@ export default function PokedexPage() {
                       {e.card.image_url && (
                         <img
                           className="expand-cover"
-                          src={e.card.image_url}
+                          src={e.card.image_url} data-item={e.card.id}
                           alt=""
                           loading="lazy"
                         />
@@ -550,7 +550,7 @@ export default function PokedexPage() {
                                   onClick={() => swapIn(e, opt)}
                                 >
                                   {opt.card.image_url ? (
-                                    <img src={opt.card.image_url} alt="" loading="lazy" />
+                                    <img src={opt.card.image_url} data-item={opt.card.id} alt="" loading="lazy" />
                                   ) : (
                                     <div className="placeholder" data-label={opt.card.title} />
                                   )}

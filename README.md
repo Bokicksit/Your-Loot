@@ -98,9 +98,14 @@ of the ones you don't own too, so a gap looks like the card it wants. A
 **master set** binder has a slot per *printing* instead — normal, reverse,
 Poké Ball parallel — the way the checklist in the box does. A **binder of your
 own** holds whatever you choose, in the order you choose, arranged by picking a
-card up and tapping where it goes, with empty pages where you want them. Each
-one takes a cover and a colour, is drawn at the page size you set (3×3, 4×3,
-single or facing pages), and one card can be in several binders at once.
+card up and tapping where it goes, with empty pages where you want them. Tap a
+blank pocket and **Put a card here** picks from your own cards, into that
+pocket. A pocket holds **up to three of the exact same card** — a ×3 on the
+front, each copy still its own with its own grade, pull any one out. Each
+binder takes a cover and a colour, is drawn at the page size you set (3×3,
+4×3, single or facing pages), and one card can be in several binders at once
+— the card list shows a Pokéball for the Pokédex and a binder icon for a
+binder of your own, both when it's in both.
 
 **Price check** — on any binder, a coin next to Arrange. Switch it on and
 every card in the binder gets today's **TCGplayer market price** laid over it
@@ -180,6 +185,15 @@ a list, with filters, sorting and the same sold-price shortcut. Mark something
 acquired and it moves into your collection with the condition you set. Find
 only the case or the manual and it records the spare while the game stays on
 the hunt.
+
+**Pictures that outlive their CDN** — most art here is a link to somebody
+else's server, and links break. For every item an entitled collection owns
+whose picture is a link, a copy is fetched once, slowly, in the background,
+and kept beside your own photos. It's a fallback: the link is still shown
+first, so corrected art upstream is still what you see; only when the link
+dies does the page turn to the copy — in the app and on the public page.
+Everybody self-hosted; Supporters on the hosted site. Pictures an admin adds
+on the card-art page were always copies.
 
 **Tags** — your own words on anything, across every collection: *trade*,
 *graded*, *childhood*, whatever. Filter any shelf by them.
@@ -315,10 +329,11 @@ the server.
 Where the service sells something, the collector's room and the direct shelf
 links are what a Supporter gets; where nothing is sold, everybody has them.
 
-### Cards and seeding
+### Pictures and seeding
 
 | Setting | Default | What it does |
 | --- | --- | --- |
+| `KEEP_IMAGE_COPIES` | `true` | Keep a fallback copy of every linked picture an entitled collection points at (~100 KB a card). Off, and pictures stay links only. |
 | `SEED_ON_START` | `true` | Download the full card database on first start, in the background. |
 | `SEED_JAPANESE` | `false` | Also seed the Japanese catalogue — 13,000 more cards — once, on the next start. |
 | `CARD_ART` | *(unset)* | `tcgdex` moves card pictures off `images.pokemontcg.io` onto TCGdex's MIT-licensed asset host, once. For installs serving many people. |
@@ -540,6 +555,8 @@ panel in Settings with:
   picture: replace one from a link or an upload, and it becomes the picture
   for everyone. A button runs the scanner fingerprint pass for whatever's new.
 - **Repair covers** — re-fetch missing cover art across the catalogue.
+- **Kept copies** — how many linked pictures have a fallback copy, how much
+  disk they take, how many links failed, and a button to run a pass now.
 - **Stats**, and `/api/admin/forwarding` (JSON) for the proxy check above.
 
 ## Security

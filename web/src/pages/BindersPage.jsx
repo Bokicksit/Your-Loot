@@ -171,7 +171,7 @@ export default function BindersPage() {
               // near the top, so deferring them saves nothing — and the width
               // is computed from the image's own proportions, which the
               // browser cannot know until it has actually loaded one.
-              <img className="binder-cover" src={b.image_url} alt="" />
+              <img className="binder-cover" src={b.image_url} data-item={b.id} alt="" />
             ) : b.color ? (
               // A colour you chose beats one the app made up, and beats
               // photographing a plain folder to prove it is plain.

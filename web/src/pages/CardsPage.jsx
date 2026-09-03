@@ -921,7 +921,7 @@ export default function CardsPage({ initialView = "collection" }) {
                   }}
                 >
                   {c.image_url ? (
-                    <img src={c.image_url} alt={c.title} loading="lazy" />
+                    <img src={c.image_url} data-item={c.id} alt={c.title} loading="lazy" />
                   ) : (
                     // The empty frame is where your eye goes when there is no
                     // picture, so it says the name you can read. Four in ten
@@ -1066,7 +1066,7 @@ export default function CardsPage({ initialView = "collection" }) {
                     }}
                   >
                     {c.image_url ? (
-                      <img src={c.image_url} alt={c.title} loading="lazy" />
+                      <img src={c.image_url} data-item={c.id} alt={c.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no art yet" />
                     )}

@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 
+from app import copies
 from app.auth import current_user, session_secret
 from app.config import origin_list, settings
 from app.db import get_db
@@ -128,6 +129,9 @@ Path(settings.image_dir).mkdir(parents=True, exist_ok=True)
 # the app module loads, because that is the one moment that is exactly once
 # per process; the tests import the routers directly and never come through.
 sync.start_scheduler()
+# And once an hour, a copy of every linked picture an entitled collection
+# points at, so a shelf outlives its CDN — see app/copies.py.
+copies.start_scheduler()
 
 
 @app.get("/images/{name}")

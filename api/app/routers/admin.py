@@ -580,6 +580,34 @@ def release_reservation(
 # endpoints only answer the questions the curation screen asks.
 
 
+@router.get("/image-copies")
+def image_copies(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """How the kept copies stand: how many, how much disk, how many links
+    failed, and how many are still waiting their turn."""
+    from app import copies
+    from app.models import ImageCopy
+
+    kept = db.scalar(select(func.count()).select_from(ImageCopy).where(ImageCopy.name.is_not(None))) or 0
+    failed = db.scalar(select(func.count()).select_from(ImageCopy).where(ImageCopy.name.is_(None))) or 0
+    size = db.scalar(select(func.coalesce(func.sum(ImageCopy.bytes), 0))) or 0
+    return {
+        "on": settings.keep_image_copies,
+        "kept": kept,
+        "failed": failed,
+        "bytes": int(size),
+        "waiting": len(copies.candidates(db, limit=100_000)),
+    }
+
+
+@router.post("/image-copies/run")
+def run_image_copies(_: User = Depends(require_admin)):
+    """One pass, now. The hourly loop does the same on its own; this is for
+    an operator who wants to see it happen — after turning it on, say."""
+    from app import copies
+
+    return copies.run_pass(pause=0.05)
+
+
 @router.get("/card-sets")
 def card_sets(db: Session = Depends(get_db), _: User = Depends(require_admin)):
     """Every English set, with how much of it still needs a picture.

@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     # this server post to things on its own network; on, for a home where the
     # other install is a second machine on the LAN.
     sync_allow_private: bool = False
+    # Keep a copy of every linked picture an entitled collection points at,
+    # so a shelf survives its CDN. On by default: a home server's disk is its
+    # owner's, and a copy of catalogue art costs ~100 KB a card. Off, and the
+    # pictures stay links only. See app/copies.py.
+    keep_image_copies: bool = True
     # Where this install is reachable, for the links inside emails. A verify
     # link has to be absolute and the API cannot infer the public address
     # behind a proxy without being told.

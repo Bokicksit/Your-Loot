@@ -79,5 +79,15 @@ def themed(user: User) -> bool:
     return not sells_anything() or subscribed(user)
 
 
+def keeps_copies(user: User) -> bool:
+    """Does this account's collection earn a kept copy of its linked pictures?
+
+    The room's rule, for the room's reason: where nothing is sold the disk is
+    the owner's own and everybody gets it; where the service sells something,
+    the disk is what a Supporter is paying for. See app/copies.py.
+    """
+    return not sells_anything() or subscribed(user)
+
+
 def may_open(user: User, module: str) -> bool:
     return not costs_money(module) or subscribed(user)

@@ -6,10 +6,13 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.auth import current_user
 from app.config import settings
+from app.db import get_db
 from app.imgauth import DEFAULT_TTL as IMAGE_TTL, sign as sign_image
 from app.trim import trim_border
 
@@ -168,6 +171,32 @@ def _checked_get(url: str) -> httpx.Response:
             url = urljoin(url, location)
 
     raise HTTPException(400, "that URL redirects too many times")
+
+
+@router.get("/fallback/{item_id}")
+def fallback_image(item_id: int, db: Session = Depends(get_db)):
+    """The kept copy of an item's linked picture, for when the link is dead.
+
+    Public, deliberately: what is here is catalogue art that was public on a
+    CDN a moment ago, never anybody's own photograph — those are already local
+    and never come through this route. A 404 says only that no copy exists,
+    which is true of most items and reveals nothing. Cacheable for a day,
+    because the file is named by its content and cannot change under the name.
+    """
+    from app import copies
+
+    path = copies.path_for(db, item_id)
+    if path is None:
+        return PlainTextResponse("Not found", status_code=404,
+                                 headers={"Cache-Control": "no-store"})
+    # said explicitly: the file's type is known from how it was kept, and a
+    # guess from the suffix is wrong for .webp on some Pythons
+    by_ext = {v: k for k, v in EXT_BY_TYPE.items()}
+    return FileResponse(
+        path,
+        media_type=by_ext.get(path.suffix.lower(), "application/octet-stream"),
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.post("/fetch")

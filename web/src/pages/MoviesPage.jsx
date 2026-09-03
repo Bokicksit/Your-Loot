@@ -761,7 +761,7 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
       {movie.image_url ? (
         <img
           className="game-cover"
-          src={movie.image_url}
+          src={movie.image_url} data-item={movie.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -830,7 +830,7 @@ function MovieRow({ movie, onChange, onReload , onTagsChanged}) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {movie.image_url && (
-              <img className="expand-cover" src={movie.image_url} alt="" loading="lazy" />
+              <img className="expand-cover" src={movie.image_url} data-item={movie.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{movie.title}</span>

@@ -474,7 +474,7 @@ export default function LegoPage() {
                     title="Use this set"
                   >
                     {r.image_url ? (
-                      <img src={r.image_url} alt={r.title} loading="lazy" />
+                      <img src={r.image_url} data-item={r.id} alt={r.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no photo" />
                     )}
@@ -814,7 +814,7 @@ function LegoRow({ set, onChange, onReload , onTagsChanged}) {
       {set.image_url ? (
         <img
           className="game-cover"
-          src={set.image_url}
+          src={set.image_url} data-item={set.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -981,7 +981,7 @@ function LegoRow({ set, onChange, onReload , onTagsChanged}) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {set.image_url && (
-              <img className="expand-cover" src={set.image_url} alt="" loading="lazy" />
+              <img className="expand-cover" src={set.image_url} data-item={set.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{set.title}</span>

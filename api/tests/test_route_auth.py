@@ -58,6 +58,14 @@ PUBLIC = {
         "the same one-shelf address on a home server's fixed path — "
         "single-user installs only, same gates re-asked"
     ),
+    ("GET", "/api/images/fallback/{item_id}"): (
+        "the kept copy of a linked picture, for when the link dies. Public "
+        "because what it serves was public on a CDN a moment ago — catalogue "
+        "art, never a photograph anybody uploaded, which lives under /images "
+        "and stays gated. A 404 says only that no copy exists, which is true "
+        "of most items. And the public profile page has to be able to fall "
+        "back to it with no session at all."
+    ),
 }
 
 

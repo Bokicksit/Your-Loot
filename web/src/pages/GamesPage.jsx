@@ -918,7 +918,7 @@ function GameRow({ game, platforms, onChange, onReload , onTagsChanged}) {
       {game.image_url ? (
         <img
           className="game-cover"
-          src={game.image_url}
+          src={game.image_url} data-item={game.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -984,7 +984,7 @@ function GameRow({ game, platforms, onChange, onReload , onTagsChanged}) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {game.image_url && (
-              <img className="expand-cover" src={game.image_url} alt="" loading="lazy" />
+              <img className="expand-cover" src={game.image_url} data-item={game.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{game.title}</span>

@@ -649,7 +649,7 @@ export default function ComicsPage() {
                     title="Use this issue"
                   >
                     {r.image_url ? (
-                      <img src={r.image_url} alt={r.title} loading="lazy" />
+                      <img src={r.image_url} data-item={r.id} alt={r.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no cover" />
                     )}
@@ -981,7 +981,7 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
       {comic.image_url ? (
         <img
           className="game-cover"
-          src={comic.image_url}
+          src={comic.image_url} data-item={comic.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -1156,7 +1156,7 @@ function ComicRow({ comic, onChange, onReload , onTagsChanged}) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {comic.image_url && (
-              <img className="expand-cover" src={comic.image_url} alt="" loading="lazy" />
+              <img className="expand-cover" src={comic.image_url} data-item={comic.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{comic.title}</span>

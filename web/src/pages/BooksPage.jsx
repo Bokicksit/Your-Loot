@@ -531,7 +531,7 @@ export default function BooksPage() {
                     title="Use this edition"
                   >
                     {r.image_url ? (
-                      <img src={r.image_url} alt={r.title} loading="lazy" />
+                      <img src={r.image_url} data-item={r.id} alt={r.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no cover" />
                     )}
@@ -831,7 +831,7 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
       {book.image_url ? (
         <img
           className="game-cover"
-          src={book.image_url}
+          src={book.image_url} data-item={book.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -1009,7 +1009,7 @@ function BookRow({ book, onChange, onReload , onTagsChanged}) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {book.image_url && (
-              <img className="expand-cover" src={book.image_url} alt="" loading="lazy" />
+              <img className="expand-cover" src={book.image_url} data-item={book.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{book.title}</span>

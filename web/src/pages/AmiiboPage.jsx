@@ -376,7 +376,7 @@ export default function AmiiboPage() {
                   title="This one"
                 >
                   {r.image_url ? (
-                    <img src={r.image_url} alt={r.title} loading="lazy" />
+                    <img src={r.image_url} data-item={r.id} alt={r.title} loading="lazy" />
                   ) : (
                     <div className="placeholder" data-label="no photo" />
                   )}
@@ -422,7 +422,7 @@ export default function AmiiboPage() {
             <div className="form-row">
               {picked.image_url ? (
                 <img
-                  src={picked.image_url}
+                  src={picked.image_url} data-item={picked.id}
                   alt=""
                   style={{ width: 54, height: 54, objectFit: "contain" }}
                 />
@@ -701,7 +701,7 @@ function AmiiboRow({ item, onChange, onReload, onTagsChanged }) {
       {item.image_url ? (
         <img
           className="game-cover contain"
-          src={item.image_url}
+          src={item.image_url} data-item={item.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}
@@ -857,7 +857,7 @@ function AmiiboRow({ item, onChange, onReload, onTagsChanged }) {
         <span className="entry-edit game-info">
           <div className="expand-card">
             {item.image_url && (
-              <img className="expand-cover contain" src={item.image_url} alt="" loading="lazy" />
+              <img className="expand-cover contain" src={item.image_url} data-item={item.id} alt="" loading="lazy" />
             )}
             <div className="expand-body">
               <span className="expand-title">{item.title}</span>

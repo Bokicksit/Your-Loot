@@ -590,6 +590,9 @@
            priority and fills in fine. */
         art.alt = "";
         art.src = s[2];
+        /* a linked picture gets one more chance after the retries below: the
+           copy the server kept for this item, if the link is dead for good */
+        if (s[6]) art.setAttribute("data-item", s[6]);
         /* A picture that does not arrive gets asked for again before it is
            given up on. A wall of them is a lot of requests at once and some
            will lose — a phone changing cell, a connection reset, a server
@@ -606,6 +609,11 @@
             setTimeout(function () {
               art.src = again + "#retry" + tries;
             }, 500 * tries);
+            return;
+          }
+          if (art.dataset.item && !art.dataset.f) {
+            art.dataset.f = "1";
+            art.src = "/api/images/fallback/" + art.dataset.item;
             return;
           }
           var gone = document.createElement("span");

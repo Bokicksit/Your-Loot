@@ -732,9 +732,16 @@ def _thumb(item) -> str:
     if url.startswith("/images/"):
         name = url.rsplit("/", 1)[-1]
         url = f"/images/{name}?token={sign_image(name)}"
+    # a linked picture gets one second chance: the copy kept for this item,
+    # if the link has died — see app/copies.py. Inline, because this page
+    # carries no script of its own that could listen for it.
+    fallback = (
+        f' onerror="if(!this.dataset.f){{this.dataset.f=1;this.src=\'/api/images/fallback/{int(item.id)}\'}}"'
+        if url.startswith("http") else ""
+    )
     return (
         f'<img class="art" src="{html.escape(url)}" alt="" '
-        'loading="lazy" decoding="async">'
+        f'loading="lazy" decoding="async"{fallback}>'
     )
 
 

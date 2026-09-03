@@ -6,6 +6,7 @@ from app.models.binders import Binder, BinderSlot
 from app.models.cards import CardAttrs, CardPrinting
 from app.models.collection import Owned, Wanted
 from app.models.comics import ComicAttrs
+from app.models.copies import ImageCopy
 from app.models.lego import LegoAttrs
 from app.models.games import GameAttrs, Platform
 from app.models.item import CollectionItem, Module
@@ -30,6 +31,7 @@ __all__ = [
     "CollectionItem",
     "ComicAttrs",
     "GameAttrs",
+    "ImageCopy",
     "ItemOverride",
     "ItemTag",
     "LegoAttrs",

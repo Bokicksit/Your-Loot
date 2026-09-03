@@ -542,7 +542,7 @@ export default function HardwarePage() {
                     title="Use this catalogue entry"
                   >
                     {c.image_url ? (
-                      <img src={c.image_url} alt={c.title} loading="lazy" />
+                      <img src={c.image_url} data-item={c.id} alt={c.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no photo" />
                     )}
@@ -869,7 +869,7 @@ function HardwareRow({ hw, platforms, onChange, onReload , onTagsChanged}) {
       {hw.image_url ? (
         <img
           className="game-cover"
-          src={hw.image_url}
+          src={hw.image_url} data-item={hw.id}
           alt=""
           loading="lazy"
           style={{ cursor: "pointer" }}

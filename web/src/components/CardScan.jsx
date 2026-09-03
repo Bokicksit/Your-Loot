@@ -297,7 +297,7 @@ export default function CardScan({ onPick, title = "Scan a card" }) {
                     title="This one"
                   >
                     {c.image_url ? (
-                      <img src={c.image_url} alt={c.title} loading="lazy" />
+                      <img src={c.image_url} data-item={c.id} alt={c.title} loading="lazy" />
                     ) : (
                       <div className="placeholder" data-label="no picture" />
                     )}
