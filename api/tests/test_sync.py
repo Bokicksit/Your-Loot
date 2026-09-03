@@ -490,7 +490,9 @@ def test_a_receiver_that_already_has_a_pokedex_still_accepts_a_collection(owner,
     had never touched a binder.
     """
     there, tok = receiver
-    made = there.post("/api/cards", json={"title": "Pikachu", "attrs": {"national_dex_no": 25}}).json()
+    # national_dex_no is a field of the card, not of its attrs block — and it
+    # is what gives the card a Pokédex slot, which is what makes the binder
+    made = there.post("/api/cards", json={"title": "Pikachu", "national_dex_no": 25}).json()
     there.post(f"/api/items/{made['id']}/owned", json={"quantity": 1}).raise_for_status()
     before = there.get("/api/binders").json()["binders"]
     dex_here = [b for b in before if b["kind"] == "dex"]
@@ -513,23 +515,23 @@ def test_a_receiver_that_already_has_a_pokedex_still_accepts_a_collection(owner,
 
 
 @needs_open
-def test_a_set_binder_the_receiver_already_made_is_reused_too(owner, receiver):
-    """Same shape, different constraint: one binder per set per mode."""
+def test_a_binder_of_the_same_name_is_reused_rather_than_doubled(owner, receiver):
+    """The same rule below the Pokédex: a custom binder is the one here with
+    that name. Nothing in the database forbids two, so this one duplicated
+    silently rather than failing — which is worse, not better.
+
+    (A set binder matches on its set the same way. It cannot be tested on this
+    stack, which seeds no catalogue and so refuses to make one.)
+    """
     there, tok = receiver
-    theirs = there.post("/api/binders", json={
-        "name": "Base Set (mine)", "kind": "set", "set_code": "base1", "master": False,
-    }).json()
-    mine_b = owner.post("/api/binders", json={
-        "name": "Base Set", "kind": "set", "set_code": "base1", "master": False,
-    }).json()
+    theirs = there.post("/api/binders", json={"name": "Trade", "kind": "custom", "pages": 1}).json()
+    mine_b = owner.post("/api/binders", json={"name": "Trade", "kind": "custom", "pages": 1}).json()
 
     owner.put("/api/sync", json={"url": OPEN_INSIDE, "token": tok["token"]}).raise_for_status()
     assert owner.post("/api/sync/now").status_code == 200
 
-    rows = [b for b in there.get("/api/binders").json()["binders"]
-            if b["kind"] == "set" and b["set_code"] == "base1"]
-    assert len(rows) == 1, "a second binder for the same set was made"
-    assert rows[0]["id"] == theirs["id"]        # the row held, so links hold
-    assert rows[0]["name"] == "Base Set"        # renamed to the sender's
+    rows = [b for b in there.get("/api/binders").json()["binders"] if b["name"] == "Trade"]
+    assert len(rows) == 1, "a second binder of the same name was made"
+    assert rows[0]["id"] == theirs["id"]   # the row held, so a link to it holds
     owner.delete(f"/api/binders/{mine_b['id']}")
     owner.delete("/api/sync")
