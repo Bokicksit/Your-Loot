@@ -202,10 +202,14 @@ def gather(db: Session, user) -> dict:
             _row(b, drop=("id", "user_id"))
             | {
                 "slots": [
-                    _row(s, drop=("id", "binder_id"))
+                    _row(s, drop=("id", "binder_id", "parent_id"))
                     # a slot points at a copy, and copies are matched by where
-                    # they sit rather than by an id that will not survive
-                    | {"owned_at": _copy_index(owned, s.owned_id)}
+                    # they sit rather than by an id that will not survive —
+                    # and a stacked copy points at its pocket the same way
+                    | {
+                        "owned_at": _copy_index(owned, s.owned_id),
+                        "stack_of": _slot_index(slots, b.id, s.parent_id),
+                    }
                     for s in slots
                     if s.binder_id == b.id
                 ]
@@ -218,6 +222,19 @@ def gather(db: Session, user) -> dict:
             if p.key not in LOCAL_ONLY
         ],
     }
+
+
+def _slot_index(slots, binder_id, parent_id):
+    """Where a stacked copy's pocket sits in this binder's own slot list, or
+    None for a pocket. Positions rather than ids, like copies: the ids on the
+    other server are its own business."""
+    if parent_id is None:
+        return None
+    mine = [s for s in slots if s.binder_id == binder_id]
+    for n, s in enumerate(mine):
+        if s.id == parent_id:
+            return n
+    return None
 
 
 def _copy_index(owned, owned_id):
@@ -539,16 +556,29 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
             db.flush()
         claimed.add(binder.id)
         kept.add(binder.id)
-        for slot in spec.get("slots", []):
+        made: list = []
+        specs = spec.get("slots", [])
+        for slot in specs:
+            fields = _fields(BinderSlot, slot)
+            fields.pop("parent_id", None)
             at = slot.get("owned_at")
             copy = copies[at] if isinstance(at, int) and 0 <= at < len(copies) else None
             item = items.get(slot.get("item_id"))
-            db.add(BinderSlot(
-                **_fields(BinderSlot, slot),
+            row = BinderSlot(
+                **fields,
                 binder_id=binder.id,
                 owned_id=copy.id if copy is not None else None,
                 item_id=item.id if item is not None else None,
-            ))
+            )
+            db.add(row)
+            made.append(row)
+        db.flush()
+        # stacked copies point at their pocket by its place in the list
+        for row, slot in zip(made, specs):
+            of = slot.get("stack_of")
+            if isinstance(of, int) and 0 <= of < len(made) and made[of] is not row:
+                row.parent_id = made[of].id
+                row.position = None
 
     # a binder the file no longer has is one that was deleted at the source.
     # `existing` also holds the ones made just now, and their ids are in

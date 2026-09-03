@@ -123,7 +123,7 @@ def _resize(db: Session, b: Binder, pages: int) -> None:
     """
     slots = db.scalars(
         select(BinderSlot)
-        .where(BinderSlot.binder_id == b.id)
+        .where(BinderSlot.binder_id == b.id, BinderSlot.parent_id.is_(None))
         .order_by(BinderSlot.position, BinderSlot.id)
     ).all()
     want = pages * engine.per_page(b)
@@ -463,6 +463,8 @@ def fill_slot(
             s.item_id = None
             db.commit()
             return render(db, b, user.id)
+        if s.parent_id is not None:
+            raise HTTPException(404, "no such pocket in this binder")
         copy = _my_copy(db, body.owned_id, user)
         if not engine.may_hold(b, copy.item):
             raise HTTPException(409, _NOT_HERE)
@@ -471,13 +473,29 @@ def fill_slot(
             select(BinderSlot).where(
                 BinderSlot.binder_id == b.id,
                 BinderSlot.owned_id == copy.id,
-                BinderSlot.id != s.id,
             )
         )
         if elsewhere is not None:
             raise HTTPException(409, "that copy is already in this binder")
-        s.owned = copy
-        s.item_id = copy.item_id
+        if s.owned_id is None:
+            s.owned = copy
+            s.item_id = copy.item_id
+        else:
+            # The pocket is taken. A second copy of the *same* card goes behind
+            # the first, up to three — a stack of spares, the way a sleeve
+            # holds them. A different card does not: that is a different
+            # pocket, and quietly swapping would lose the one that was here.
+            if s.item_id != copy.item_id:
+                raise HTTPException(
+                    409, "this pocket holds a different card — take it out first, "
+                         "or put this one in an empty pocket"
+                )
+            held = 1 + db.scalar(
+                select(func.count()).select_from(BinderSlot).where(BinderSlot.parent_id == s.id)
+            )
+            if held >= engine.MAX_STACK:
+                raise HTTPException(409, f"a pocket holds {engine.MAX_STACK} of a card at most")
+            db.add(BinderSlot(binder_id=b.id, parent_id=s.id, item_id=copy.item_id, owned=copy))
         db.commit()
         return render(db, b, user.id)
 
@@ -543,6 +561,7 @@ def add_cards(
         select(BinderSlot)
         .where(
             BinderSlot.binder_id == b.id,
+            BinderSlot.parent_id.is_(None),
             BinderSlot.owned_id.is_(None),
             BinderSlot.item_id.is_(None),
         )
@@ -643,8 +662,27 @@ def remove_card(
                 BinderSlot.binder_id == b.id, BinderSlot.owned_id == owned_id
             )
         ).all():
-            s.owned = None
-            s.item_id = None
+            if s.parent_id is not None:
+                # one of the spares behind the top card: it simply leaves
+                s.owned = None
+                db.delete(s)
+                continue
+            behind = db.scalars(
+                select(BinderSlot)
+                .where(BinderSlot.parent_id == s.id)
+                .order_by(BinderSlot.id)
+            ).all()
+            if behind:
+                # the top card goes; the next one up takes the pocket, and the
+                # pocket keeps its row — and so its place, and its key
+                nxt = behind[0]
+                s.owned = nxt.owned
+                s.item_id = nxt.item_id
+                nxt.owned = None
+                db.delete(nxt)
+            else:
+                s.owned = None
+                s.item_id = None
     else:
         engine.unfile(db, owned_id, b.id)
     db.commit()
@@ -664,7 +702,11 @@ def reorder(
         raise HTTPException(409, "only a custom binder has an order of its own")
     mine = {
         s.id: s
-        for s in db.scalars(select(BinderSlot).where(BinderSlot.binder_id == b.id)).all()
+        for s in db.scalars(
+            select(BinderSlot).where(
+                BinderSlot.binder_id == b.id, BinderSlot.parent_id.is_(None)
+            )
+        ).all()
     }
     unknown = [i for i in body.slot_ids if i not in mine]
     if unknown:

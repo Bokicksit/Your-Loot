@@ -5414,3 +5414,34 @@ label.check input { width: auto; }
 }
 .fill-hit .fill-text { display: grid; min-width: 0; }
 .fill-hit small { color: var(--text-dim); }
+
+/* ---- a pocket holding a stack of the same card -------------------------- */
+.dex-slot .stack-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--bg-0);
+  border: 1px solid var(--gold-line);
+  color: var(--gold-bright);
+  font: var(--w-med) var(--f-1)/1.4 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+.stack-list {
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-1);
+}
+.stack-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-2);
+}

@@ -142,6 +142,15 @@ class BinderSlot(Base):
         String(20), nullable=False, server_default=""
     )
     position: Mapped[int | None] = mapped_column(Integer)  # custom binders only
+    # A copy stacked behind another in the same pocket, on a custom binder.
+    # The pocket is the row with no parent and a position; a stacked copy
+    # points at it and has no position of its own, because its place is the
+    # pocket's. Up to three to a pocket, and only the exact same card — see
+    # routers/binders.py. Everything that orders, resizes or counts looks at
+    # parentless rows only, so a stack is one pocket everywhere but inside.
+    parent_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("binder_slot.id", ondelete="CASCADE"), index=True
+    )
 
     # The catalogue card this slot is for. Set and custom binders both know it;
     # a dex slot does not, because any Charizard fills the Charizard slot and

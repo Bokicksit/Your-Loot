@@ -24,6 +24,9 @@ CUSTOM = "custom"
 # a real binder and also as many blank rows as anyone should be able to ask
 # for in one press.
 MAX_SIDE = 10
+# How many of the same card a pocket takes. Three is what a sleeve holds
+# without bulging, and what a person means by "a couple of spares".
+MAX_STACK = 3
 MAX_PAGES = 200
 MAX_BLANKS = 2000
 

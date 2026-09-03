@@ -305,6 +305,12 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
       {/* only while searching: on the binder proper you are already looking
           at the page, and a badge on every card would say so ninety times */}
       {entry.page ? <span className="slot-page">p.{entry.page}</span> : null}
+      {/* a pocket holding spares says how many, the way the card list does */}
+      {entry.count > 1 ? (
+        <span className="stack-badge" title={`${entry.count} of this card in this pocket`}>
+          ×{entry.count}
+        </span>
+      ) : null}
       {/* The price check, while it is on. `undefined` is "not asked";
           `null` is "asked, and this card is on no marketplace" — the dash
           says so, because a slot that stays silent looks like it was

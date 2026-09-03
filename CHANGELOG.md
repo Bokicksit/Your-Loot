@@ -9,6 +9,16 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Added
+- **A pocket holds up to three of the same card.** In a binder of your own,
+  a filled pocket offers *Stack another*: a second and third copy of the
+  exact same printing go in behind the first, the way a sleeve takes a small
+  stack of spares. Each is still its own copy with its own condition and
+  grade — the pocket shows the top one with a ×3, and the panel lists the
+  rest so any one of them can be taken out. Take the top card out and the
+  next one up takes the pocket, which keeps its place and its key. A different
+  card is refused rather than swapped in, a fourth copy is refused, and
+  arranging moves the stack as one pocket. The price check counts every copy
+  in the pocket. Stacks travel in a backup and through a sync.
 - **Point at a pocket and fill it.** A blank pocket in a binder of your own
   has a *Put a card here* button: search the cards you own, pick a copy, and
   it goes into that pocket — not the first empty one, the one you were

@@ -319,19 +319,39 @@ def _set_entries(db: Session, binder, user_id: int):
 
 
 def _custom_entries(db: Session, binder, user_id: int):
-    """Whatever you put in it, in the order you put it."""
+    """Whatever you put in it, in the order you put it.
+
+    One entry per pocket. A pocket holding a stack is still one entry — the
+    card on top, with the rest listed under `stack` — so pages, counts and
+    the arrangement all see the binder the way its owner does.
+    """
     rows = db.scalars(
         select(BinderSlot)
-        .where(BinderSlot.binder_id == binder.id)
+        .where(BinderSlot.binder_id == binder.id, BinderSlot.parent_id.is_(None))
         .options(joinedload(BinderSlot.item).joinedload(CollectionItem.card_attrs))
         .order_by(BinderSlot.position, BinderSlot.id)
     ).unique().all()
-    copies = _copy_map(db, {s.owned_id for s in rows if s.owned_id})
+    behind = db.scalars(
+        select(BinderSlot)
+        .where(BinderSlot.binder_id == binder.id, BinderSlot.parent_id.is_not(None))
+        .order_by(BinderSlot.id)
+    ).all()
+    stacked: dict[int, list] = {}
+    for s in behind:
+        stacked.setdefault(s.parent_id, []).append(s)
+    every = {s.owned_id for s in rows if s.owned_id} | {s.owned_id for s in behind if s.owned_id}
+    copies = _copy_map(db, every)
 
     for n, s in enumerate(rows, start=1):
         copy = copies.get(s.owned_id) if s.owned_id else None
         item = s.item or (copy.item if copy else None)
         card = _card_out(item, copy) if item else None
+        # the ones behind it, each its own copy with its own grade
+        rest = [
+            _card_out(item, copies.get(t.owned_id))
+            for t in stacked.get(s.id, [])
+            if t.owned_id and copies.get(t.owned_id) and item
+        ]
         yield {
             "key": str(s.id),
             "label": str(n),
@@ -346,6 +366,9 @@ def _custom_entries(db: Session, binder, user_id: int):
             # show it dimmed; this one is waiting for nothing, and should look
             # like the space it is.
             "blank": item is None,
+            # how many copies this pocket holds, and the ones under the top
+            "count": (1 if card else 0) + len(rest),
+            "stack": rest,
         }
 
 

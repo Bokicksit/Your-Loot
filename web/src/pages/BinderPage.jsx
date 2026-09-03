@@ -69,12 +69,16 @@ export default function BinderPage() {
         // every copy you own that is not already in this binder — one row per
         // copy, because two of the same card in different grades are two
         // different choices
+        const pocket = ordered.find((x) => x.key === filling);
+        const sameOnly = pocket?.card?.id ?? null;   // stacking: this card, nothing else
         setFillHits(
-          d.items.flatMap((c) =>
-            c.owned
-              .filter((o) => !(o.binder_ids || []).includes(binder.id))
-              .map((o) => ({ card: c, owned: o }))
-          )
+          d.items
+            .filter((c) => sameOnly === null || c.id === sameOnly)
+            .flatMap((c) =>
+              c.owned
+                .filter((o) => !(o.binder_ids || []).includes(binder.id))
+                .map((o) => ({ card: c, owned: o }))
+            )
         );
       } catch (err) {
         if (live) setFillHits([]);
@@ -617,6 +621,16 @@ export default function BinderPage() {
                       {filling === e.key ? "Never mind" : "Put a card here"}
                     </button>
                   )}
+                  {isCustom && e.card && (e.count || 1) < 3 && (
+                    <button
+                      className={`ghost ${filling === e.key ? "on" : ""}`}
+                      onClick={() => openFill(e)}
+                      title="Stack another copy of this same card in this pocket (three at most)"
+                    >
+                      <Icon id="copy" />
+                      {filling === e.key ? "Never mind" : "Stack another"}
+                    </button>
+                  )}
                   {isCustom && (
                     <>
                       <button className="ghost" onClick={() => move(e.key, -1)} title="Move earlier">
@@ -632,14 +646,30 @@ export default function BinderPage() {
                     </>
                   )}
                 </div>
-                {isCustom && !e.card && filling === e.key && (
+                {isCustom && e.card && (e.stack || []).length > 0 && (
+                  <ul className="stack-list">
+                    {e.stack.map((c) => (
+                      <li key={c.owned_id}>
+                        <span className="settings-note">
+                          Also here: {[c.grader, c.grade].filter(Boolean).join(" ") || c.condition || "copy"}
+                          {c.variant ? ` · ${c.variant}` : ""}
+                        </span>
+                        <button className="ghost icon" title="Take this one out"
+                                onClick={async () => { await api.binderRemoveCard(binder.id, c.owned_id); load(); }}>
+                          <Icon id="x" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {isCustom && filling === e.key && (
                   <div className="fill-picker">
                     <label className="searchbox">
                       <Icon id="search" />
                       <input
                         type="search"
                         autoFocus
-                        placeholder="Search your cards…"
+                        placeholder={e.card ? "Another copy of this card…" : "Search your cards…"}
                         value={fillQuery}
                         onChange={(ev) => setFillQuery(ev.target.value)}
                       />
@@ -648,7 +678,9 @@ export default function BinderPage() {
                       <p className="settings-note">Looking…</p>
                     ) : fillHits.length === 0 ? (
                       <p className="settings-note">
-                        {fillQuery ? "Nothing you own matches that." : "Nothing to put here yet — every card you own is already in this binder."}
+                        {e.card
+                          ? "No other copy of this card to stack — every one you own is already in this binder."
+                          : fillQuery ? "Nothing you own matches that." : "Nothing to put here yet — every card you own is already in this binder."}
                       </p>
                     ) : (
                       <ul className="fill-hits">
@@ -1035,7 +1067,9 @@ function PriceBar({ entries, prices, onPrices }) {
   for (const e of entries) {
     const v = priced(e);
     if (v == null) continue;
-    if (e.card) { have += v; haveN += 1; } else { gaps += v; gapN += 1; }
+    // a pocket holding three of a card is worth three of it
+    const n = e.card ? Math.max(1, e.count || 1) : 1;
+    if (e.card) { have += v * n; haveN += n; } else { gaps += v; gapN += 1; }
   }
   const updated = Object.values(prices?.prices || {}).find((p) => p?.updated)?.updated;
   const age = updated ? ago(updated) : null;
