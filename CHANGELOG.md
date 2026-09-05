@@ -10,6 +10,19 @@ Full detail is in the commit log, where every change has its own note.
 
 
 ### Added
+- **Sections in a binder of your own.** A pocket can carry a name — the
+  divider tab of a real binder — where a run begins: "Charizards", "Trades",
+  "Doubles". Leave the pocket empty and it is a divider card; put the first
+  card of the run in it and it wears the name as a tab. The tabs line up
+  above the pages as jumps, one per section, in order. The name is about the
+  place, so taking the card out leaves it, and Arrange moves it with the
+  pocket. Sections travel in a backup and through a sync.
+- **Filing several cards at once has a button.** Selecting cards on the
+  collection page started only from a long press, which a mouse never makes
+  and a phone never mentions; *Select* sits next to *Filters* now. And the
+  copy that goes is a *free* one first — on no shelf at all — before one
+  already in the Pokédex or another binder, which is what filing a spare
+  means. The list of binders to file into offers only the ones filled by hand.
 - **A binder can be given its cover as it is made.** Both kinds — a set
   binder and one of your own — take a picture on the create screen, where
   before it could only be added by editing afterwards.

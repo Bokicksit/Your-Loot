@@ -5449,3 +5449,47 @@ label.check input { width: auto; }
 /* where a copy already is, in a picker row — the free ones read as free */
 .where { color: var(--text-mute); font-style: normal; }
 .where.free { color: var(--success); }
+
+/* ---- sections: the divider tab on a pocket, and the row of jumps ------- */
+.dex-slot .section-tab {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 88%;
+  padding: 1px 8px 2px;
+  border-radius: 0 0 var(--r-2) var(--r-2);
+  background: var(--gold-bright);
+  color: var(--bg-0);
+  font-size: var(--f-1);
+  font-weight: var(--w-bold);
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+.dex-slot.divider {
+  border-style: solid;
+  border-color: var(--gold-line);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 8px, rgba(255,255,255,.03) 8px 16px),
+    var(--bg-1);
+}
+.dex-slot.divider .name {
+  font-weight: var(--w-bold);
+  color: var(--gold-bright);
+  font-size: var(--f-3);
+}
+.sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-3);
+}
+.section-form {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.section-form input { flex: 1; min-width: 0; }

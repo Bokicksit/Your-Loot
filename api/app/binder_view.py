@@ -369,6 +369,8 @@ def _custom_entries(db: Session, binder, user_id: int):
             # how many copies this pocket holds, and the ones under the top
             "count": (1 if card else 0) + len(rest),
             "stack": rest,
+            # the divider tab, where a section of the binder begins
+            "section": s.section,
         }
 
 

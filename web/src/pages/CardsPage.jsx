@@ -91,20 +91,32 @@ export default function CardsPage({ initialView = "collection" }) {
     if (!binderId || filing) return;
     setFiling(true);
     try {
+      // A card you own twice: the copy that goes is a *free* one — on no shelf
+      // at all — before one that is already in the Pokédex or another binder.
+      // Taking the first copy not in this binder used to send the Pokédex copy
+      // and leave the spare loose, which is the opposite of what filing a
+      // spare means.
+      const isFree = (o) => !o.in_binder && !(o.binder_ids || []).length;
       const ownedIds = [];
+      let fromShelf = 0;
       for (const c of cards) {
         if (!chosen.has(c.id)) continue;
-        const copy = (c.owned || []).find(
+        const eligible = (c.owned || []).filter(
           (o) => !(o.binder_ids || []).includes(binderId)
         );
-        if (copy) ownedIds.push(copy.id);
+        const copy = eligible.find(isFree) || eligible[0];
+        if (copy) {
+          ownedIds.push(copy.id);
+          if (!isFree(copy)) fromShelf += 1;
+        }
       }
       if (ownedIds.length) await api.binderAddCards(binderId, ownedIds);
       const name = myBinders.find((b) => b.id === binderId)?.name || "the binder";
       const already = chosen.size - ownedIds.length;
       setFiled(
         `${ownedIds.length} added to ${name}` +
-          (already ? ` · ${already} already there` : "")
+          (already ? ` · ${already} already there` : "") +
+          (fromShelf ? ` · ${fromShelf} had no free copy, so one already on a shelf went too` : "")
       );
       stopSelecting();
       await load();
@@ -587,14 +599,16 @@ export default function CardsPage({ initialView = "collection" }) {
           <span className="select-count">
             {chosen.size} card{chosen.size === 1 ? "" : "s"} selected
           </span>
-          {myBinders.length > 0 ? (
+          {myBinders.some((b) => b.kind === "custom") ? (
             <select
               value=""
               disabled={filing}
               onChange={(e) => fileSelected(Number(e.target.value))}
             >
               <option value="">{filing ? "Adding…" : "Add to a binder…"}</option>
-              {myBinders.map((b) => (
+              {/* only binders filled by hand: a set binder fills itself from
+                  what you own, and offering it here would only refuse */}
+              {myBinders.filter((b) => b.kind === "custom").map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -645,6 +659,17 @@ export default function CardsPage({ initialView = "collection" }) {
           <Icon id="sliders" />
           Filters
           {activeFilters > 0 && <span className="chip-n">{activeFilters}</span>}
+        </button>
+        {/* Selecting started only from a long press, which a mouse never
+            makes and a phone never explains. A button says it exists. */}
+        <button
+          type="button"
+          className={`chip ${selecting ? "active" : ""}`}
+          onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+          title="Select several cards, then file them all into a binder at once"
+        >
+          <Icon id="check" />
+          {selecting ? "Done" : "Select"}
         </button>
         <span className="rail-spacer" />
         <ViewToggle module="cards" />

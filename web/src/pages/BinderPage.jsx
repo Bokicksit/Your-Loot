@@ -50,6 +50,9 @@ export default function BinderPage() {
   const [fillHits, setFillHits] = useState(null);     // null = loading
   const [fillBusy, setFillBusy] = useState(false);
   const [binderNames, setBinderNames] = useState({});
+  // naming a section: which pocket's tab is being edited, and the draft
+  const [naming, setNaming] = useState(null);
+  const [sectionText, setSectionText] = useState("");
   useEffect(() => {
     api.binders().then((d) => {
       const m = {};
@@ -245,6 +248,13 @@ export default function BinderPage() {
    *  a card out of a binder does. */
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
+    load();
+  };
+
+  /** A divider tab on this pocket — where a section begins — or none. */
+  const saveSection = async (e) => {
+    await api.binderSlotSection(binder.id, e.key, sectionText.trim() || null);
+    setNaming(null);
     load();
   };
 
@@ -539,6 +549,20 @@ export default function BinderPage() {
         />
       )}
 
+      {/* The tabs along the edge of a real binder: one chip per section, in
+          the order they come, each a jump to its page. Only in the binder's
+          own order — a search is a list, and lists have no pages to jump to. */}
+      {isCustom && !searching && entries.some((e) => e.section) && (
+        <div className="sections" role="navigation" aria-label="Sections">
+          {entries.filter((e) => e.section).map((e) => (
+            <button key={e.key} type="button" className="chip" onClick={() => goToPage(homePage.get(e.key))}>
+              {e.section}
+              <span className="seg-n">p.{homePage.get(e.key)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <BinderPages
         binder={binder}
         entries={ordered}
@@ -675,6 +699,14 @@ export default function BinderPage() {
                       <button className="ghost flip" onClick={() => move(e.key, 1)} title="Move later">
                         <Icon id="back" />
                       </button>
+                      <button
+                        className={`ghost ${naming === e.key ? "on" : ""}`}
+                        onClick={() => { setNaming(naming === e.key ? null : e.key); setSectionText(e.section || ""); }}
+                        title="Name the section that begins at this pocket — a divider tab, like a real binder's"
+                      >
+                        <Icon id="pencil" />
+                        {e.section ? "Section" : "Name section"}
+                      </button>
                       {e.card ? (
                         <button className="ghost" onClick={() => takeOut(e)}
                                 title="Take the card out; the pocket stays empty where it is">
@@ -691,6 +723,24 @@ export default function BinderPage() {
                     </>
                   )}
                 </div>
+                {isCustom && naming === e.key && (
+                  <form className="section-form" onSubmit={(ev) => { ev.preventDefault(); saveSection(e); }}>
+                    <input
+                      autoFocus
+                      maxLength={60}
+                      placeholder="Charizards, Trades, Doubles…"
+                      value={sectionText}
+                      onChange={(ev) => setSectionText(ev.target.value)}
+                    />
+                    <button type="submit" className="primary">Save</button>
+                    {e.section && (
+                      <button type="button" className="ghost"
+                              onClick={() => { setSectionText(""); api.binderSlotSection(binder.id, e.key, null).then(() => { setNaming(null); load(); }); }}>
+                        Clear
+                      </button>
+                    )}
+                  </form>
+                )}
                 {isCustom && e.card && (e.stack || []).length > 0 && (
                   <ul className="stack-list">
                     {e.stack.map((c) => (

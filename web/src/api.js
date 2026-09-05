@@ -249,6 +249,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ slot_ids: slotIds }),
     }),
+  // a section name on a pocket — the divider tab where a run of cards begins
+  binderSlotSection: (id, key, section) =>
+    request(`/api/binders/${id}/slots/${key}/section`, {
+      method: "PUT", body: JSON.stringify({ section }),
+    }),
   binderFillSlot: (id, key, body) =>
     request(`/api/binders/${id}/slots/${encodeURIComponent(key)}`, {
       method: "PUT",

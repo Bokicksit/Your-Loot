@@ -105,7 +105,10 @@ front, each copy still its own with its own grade, pull any one out. Each
 binder takes a cover and a colour, is drawn at the page size you set (3×3,
 4×3, single or facing pages), and one card can be in several binders at once
 — the card list shows a Pokéball for the Pokédex and a binder icon for a
-binder of your own, both when it's in both.
+binder of your own, both when it's in both. Name a pocket to start a
+**section** — "Charizards", "Trades" — and the tabs line up above the pages
+as jumps. **Select** several cards on the collection page and file them into
+a binder in one go.
 
 **Price check** — on any binder, a coin next to Arrange. Switch it on and
 every card in the binder gets today's **TCGplayer market price** laid over it

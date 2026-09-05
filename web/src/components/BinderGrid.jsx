@@ -295,13 +295,15 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
 
   return (
     <button
-      className={`dex-slot ${cls} ${entry.blank ? "blank" : ""} ${lifted ? "lifted" : ""}`}
+      className={`dex-slot ${cls} ${entry.blank ? "blank" : ""} ${entry.blank && entry.section ? "divider" : ""} ${lifted ? "lifted" : ""}`}
       aria-expanded={arranging ? undefined : open}
       aria-pressed={arranging ? !!lifted : undefined}
       data-slot={entry.key}
       onClick={onToggle}
     >
       <span className="dex-no">{entry.label}</span>
+      {/* the divider tab: this pocket is where a section of the binder begins */}
+      {entry.section ? <span className="section-tab" title="Section">{entry.section}</span> : null}
       {/* only while searching: on the binder proper you are already looking
           at the page, and a badge on every card would say so ninety times */}
       {entry.page ? <span className="slot-page">p.{entry.page}</span> : null}
@@ -345,7 +347,7 @@ export function BinderSlotTile({ entry, open, onToggle, onName, lifted, arrangin
       >
         {/* the dash means "this wants a name and has not got one"; a blank
             page does not want one, and the outline already says so */}
-        {entry.blank ? "" : entry.name || "—"}
+        {entry.blank ? (entry.section || "") : entry.name || "—"}
       </span>
       <span className="layer-pips">
         {entry.card?.set_abbr && (

@@ -142,6 +142,11 @@ class BinderSlot(Base):
         String(20), nullable=False, server_default=""
     )
     position: Mapped[int | None] = mapped_column(Integer)  # custom binders only
+    # A section name, on the pocket where the section starts — the divider tab
+    # of a real binder. Custom binders only; a Pokédex has its numbers and a
+    # set binder its set. Empty or filled, the pocket wearing it is where
+    # "Charizards" begins.
+    section: Mapped[str | None] = mapped_column(String(60))
     # A copy stacked behind another in the same pocket, on a custom binder.
     # The pocket is the row with no parent and a position; a stacked copy
     # points at it and has no position of its own, because its place is the

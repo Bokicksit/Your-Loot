@@ -369,6 +369,8 @@ def pages(db, binder, user_id):
             e.get("state") or ("filled" if card else "missing"),
             # the item, so a dead link can fall back to the kept copy
             (card or {}).get("id") or e.get("item_id") or 0,
+            # the section this pocket begins, if it begins one
+            e.get("section") or "",
         ])
     b = data["binder"]
     return {

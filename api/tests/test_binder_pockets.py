@@ -282,3 +282,42 @@ def test_emptying_a_pocket_by_key_promotes_the_stack_behind_it(me):
     for o in owned_of(me, item):
         assert b["id"] not in o["binder_ids"]
     me.delete(f"/api/binders/{b['id']}")
+
+
+# ------------------------------------------------------------- sections
+
+def test_a_pocket_can_begin_a_section(me):
+    b = me.post("/api/binders", json={"name": "Tabs", "kind": "custom", "pages": 1}).json()
+    ps = pockets(me, b["id"])
+    key = ps[3]["key"]
+    r = me.put(f"/api/binders/{b['id']}/slots/{key}/section", json={"section": "  Charizards  "})
+    assert r.status_code == 200, r.text
+    ps = pockets(me, b["id"])
+    assert ps[3]["section"] == "Charizards" and ps[3]["blank"]        # a divider card
+    assert all(p["section"] is None for i, p in enumerate(ps) if i != 3)
+
+    # the name is about the place: a card can sit in the pocket, and leave it
+    item, copy = a_card(me, "First of the run")
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": copy}).raise_for_status()
+    p = pockets(me, b["id"])[3]
+    assert p["section"] == "Charizards" and p["card"]
+    me.delete(f"/api/binders/{b['id']}/cards/{copy}").raise_for_status()
+    p = pockets(me, b["id"])[3]
+    assert p["section"] == "Charizards" and p["blank"]
+
+    # cleared with nothing, and refused where sections make no sense
+    me.put(f"/api/binders/{b['id']}/slots/{key}/section", json={"section": ""}).raise_for_status()
+    assert pockets(me, b["id"])[3]["section"] is None
+    assert me.put(f"/api/binders/{b['id']}/slots/999999/section", json={"section": "x"}).status_code == 404
+    me.delete(f"/api/binders/{b['id']}")
+
+
+def test_sections_travel_in_a_backup(me):
+    b = me.post("/api/binders", json={"name": "Carried tabs", "kind": "custom", "pages": 1}).json()
+    key = pockets(me, b["id"])[0]["key"]
+    me.put(f"/api/binders/{b['id']}/slots/{key}/section", json={"section": "Trades"}).raise_for_status()
+    blob = me.get("/api/backup/mine").content
+    me.post("/api/backup/mine", files={"file": ("c.zip", blob, "application/zip")},
+            data={"confirm": "RESTORE"}).raise_for_status()
+    assert pockets(me, b["id"])[0]["section"] == "Trades"
+    me.delete(f"/api/binders/{b['id']}")

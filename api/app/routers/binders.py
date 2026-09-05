@@ -94,6 +94,11 @@ class HappyUpdate(BaseModel):
     happy: bool
 
 
+class SectionSet(BaseModel):
+    # empty clears it; the pocket stays, and so does whatever is in it
+    section: str | None = Field(default=None, max_length=60)
+
+
 class AddCards(BaseModel):
     """Cards for a custom binder, in the order given."""
     owned_ids: list[int] = Field(min_length=1, max_length=500)
@@ -576,6 +581,29 @@ def slot_happy(
     engine.set_happy(db, b, key, body.happy)
     db.commit()
     return {"key": key, "happy": body.happy}
+
+
+@router.put("/{binder_id}/slots/{slot_id}/section")
+def name_section(
+    binder_id: int,
+    slot_id: int,
+    body: SectionSet,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Put a divider tab on a pocket — the place a section of the binder
+    begins — or take it off. The pocket may be empty, as a divider card, or
+    hold the first card of the run; the name is about the place, not the card,
+    so taking the card out later leaves the name where it was."""
+    b = _mine(db, binder_id, user)
+    if b.kind != engine.CUSTOM:
+        raise HTTPException(409, "only a binder of your own has sections")
+    s = db.get(BinderSlot, slot_id)
+    if s is None or s.binder_id != b.id or s.parent_id is not None:
+        raise HTTPException(404, "no such pocket in this binder")
+    s.section = (body.section or "").strip()[:60] or None
+    db.commit()
+    return render(db, b, user.id)
 
 
 @router.post("/{binder_id}/cards")
