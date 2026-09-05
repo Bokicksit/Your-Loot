@@ -307,20 +307,48 @@ export default function BinderPage() {
    *  dragging means fighting the scroll and hitting a target the size of a
    *  fingernail; and a binder of thirty is thirty positions to drag across.
    *  Tapping twice costs the same whether the card moves one place or twenty.
+   *
+   *  What is in your hand decides what the second tap means, the same way it
+   *  does with the real thing:
+   *
+   *  A card trades places with the pocket you tap, and nothing else moves.
+   *  Sliding it in instead — lifting the pocket out of the order and pushing
+   *  it back further along — moved every pocket in between up a place, which
+   *  is how moving one card rearranged a whole binder: the deliberate gaps
+   *  closed and reopened somewhere else, and the section tabs walked with
+   *  them. Trading also agrees with the arrows in a pocket's panel, which
+   *  have always swapped. Land on an empty pocket and the card just moves
+   *  there, leaving an empty one where it came from; land on a filled one and
+   *  the two cards change places.
+   *
+   *  An empty pocket slides in at the tap and pushes the rest along, because
+   *  that is the only thing it could sensibly mean. Trading would fling the
+   *  card that was there to wherever the empty pocket came from — the end of
+   *  the binder, for one just made by *Empty slot* — which is a card lost
+   *  down the back of a hundred and eighty pages.
    */
   const place = async (targetKey) => {
     const ids = entries.map((e) => Number(e.key));
     const from = ids.indexOf(Number(lifted));
     const to = ids.indexOf(Number(targetKey));
+    const holding = entries[from];
     setLifted(null);
     if (from < 0 || to < 0 || from === to) return;
-    const [moved] = ids.splice(from, 1);
-    ids.splice(to, 0, moved);
+    if (holding?.blank) {
+      const [moved] = ids.splice(from, 1);
+      ids.splice(to, 0, moved);
+    } else {
+      [ids[from], ids[to]] = [ids[to], ids[from]];
+    }
     // redraw before the round trip: the tap should feel like it landed
     setData({ ...data, entries: ids.map((i) => entries.find((e) => Number(e.key) === i)) });
     await api.binderReorder(binder.id, ids);
     load();
   };
+
+  // what the second tap will do depends on this, and so does the hint
+  const heldBlank =
+    lifted !== null && !!entries.find((e) => e.key === lifted)?.blank;
 
   const tapSlot = (e) => {
     if (!arranging) {
@@ -528,7 +556,11 @@ export default function BinderPage() {
           <p className="settings-note arrange-hint">
             {lifted === null
               ? "Tap a card to pick it up."
-              : "Now tap where it should go — or tap it again to put it back."}
+              : heldBlank
+              ? "Now tap where it slots in — the pockets after it move along. " +
+                "Tap it again to put it back."
+              : "Now tap the pocket it goes in — the two cards trade places. " +
+                "Tap it again to put it back."}
           </p>
           <button
             className="ghost"

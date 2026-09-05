@@ -8,6 +8,18 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **Moving a card no longer rearranges the binder.** Arrange lifted the card
+  out of the order and pushed it back in further along, so every pocket in
+  between slid up a place — the empty pockets you left on purpose closed and
+  reopened somewhere else, and the section tabs walked with them. A card
+  trades places with the pocket you tap now, and nothing else moves: land on
+  an empty one and the card goes there, leaving an empty pocket where it came
+  from; land on a filled one and the two cards change places. Which is what
+  the arrows in a pocket's panel always did, so the two ways of moving a card
+  finally agree. An empty pocket in your hand still slides in and pushes the
+  rest along — that is the only thing *Empty slot* could mean.
+
 ### Changed
 - **A plain binder looks like a binder.** A cover with no photograph used to
   be a block of colour; it is drawn as the binder now — spine, rings, the
