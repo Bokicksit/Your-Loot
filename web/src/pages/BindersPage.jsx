@@ -178,7 +178,7 @@ export default function BindersPage() {
               // photographing a plain folder to prove it is plain.
               <span
                 className="binder-cover flat"
-                style={{ background: b.color }}
+                style={{ "--c": b.color }}
                 aria-hidden="true"
               />
             ) : (
@@ -293,7 +293,7 @@ function BinderSettings({ binder, onClose, onSaved }) {
   };
 
   return (
-    <form className="filter-sheet" onSubmit={save}>
+    <form className="filter-sheet binder-sheet" onSubmit={save}>
       <label className="set-field">
         <span className="set-label">Name</span>
         <input
@@ -315,13 +315,15 @@ function BinderSettings({ binder, onClose, onSaved }) {
         }
       />
       {error && <p className="error">{error}</p>}
-      <button type="submit" className="primary" disabled={busy}>
-        <Icon id="check" />
-        {busy ? "…" : "Save"}
-      </button>
-      <button type="button" className="ghost" onClick={onClose}>
-        Cancel
-      </button>
+      <div className="sheet-actions">
+        <button type="submit" className="primary" disabled={busy}>
+          <Icon id="check" />
+          {busy ? "…" : "Save"}
+        </button>
+        <button type="button" className="ghost" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }
@@ -389,7 +391,7 @@ function AddSetBinder({ onDone, onCancel }) {
   };
 
   return (
-    <div className="filter-sheet">
+    <div className="filter-sheet binder-sheet">
       <label>
         <span>Which set</span>
         <input
@@ -482,7 +484,7 @@ function AddCustomBinder({ onDone, onCancel }) {
   };
 
   return (
-    <form className="filter-sheet" onSubmit={make}>
+    <form className="filter-sheet binder-sheet" onSubmit={make}>
       <label>
         <span>Call it</span>
         <input
@@ -498,13 +500,15 @@ function AddCustomBinder({ onDone, onCancel }) {
       <BinderShape value={shape} onChange={setShape} showPages />
       {error && <p className="error">{error}</p>}
       <ImagePicker label="Cover (optional)" value={cover} onChange={setCover} />
-      <button type="submit" className="primary" disabled={busy || !name.trim()}>
-        <Icon id="check" />
-        {busy ? "…" : "Make it"}
-      </button>
-      <button type="button" className="ghost" onClick={onCancel}>
-        Cancel
-      </button>
+      <div className="sheet-actions">
+        <button type="submit" className="primary" disabled={busy || !name.trim()}>
+          <Icon id="check" />
+          {busy ? "…" : "Make it"}
+        </button>
+        <button type="button" className="ghost" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }

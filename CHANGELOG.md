@@ -8,6 +8,18 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **A plain binder looks like a binder.** A cover with no photograph used to
+  be a block of colour; it is drawn as the binder now — spine, rings, the
+  blank label plate — in the colour you picked, or the one the shelf picks
+  when you did not. Same drawing in rows and in tiles.
+- **A binder's settings fit a phone.** The sheet's rows ran off the right
+  edge on a 375px screen and the labels wrapped awkwardly beside their
+  controls. Each setting is a labelled row now — name above control on a
+  phone, in an aligned column with room — the page-size chips wrap instead
+  of scrolling out of sight, the palette fits one line, and Save and Cancel
+  sit together at the foot. Same shape for making a binder.
+
 
 ### Added
 - **Sections in a binder of your own.** A pocket can carry a name — the

@@ -1010,19 +1010,35 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .binder-shape {
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  gap: var(--s-3);
   width: 100%;
+  min-width: 0;
 }
+/* One setting per row: its name, then its control. On a phone the name sits
+   above the control, because a 5.5em label beside a row of chips left the
+   chips 200px to wrap in and the row came out ragged; with room, the names
+   line up in a column of their own and the controls start at one x, which is
+   what makes a stack of different controls read as one form. */
 .shape-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: var(--s-2) var(--s-3);
+  gap: 6px var(--s-3);
+  min-width: 0;
 }
+.shape-row > * { min-width: 0; }
 .shape-label {
-  font-size: var(--f-2);
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .06em;
+  text-transform: uppercase;
   color: var(--text-mute);
-  min-width: 5.5em;
+}
+.binder-shape > .settings-note { margin: calc(var(--s-1) * -1) 0 0; }
+@media (min-width: 480px) {
+  .shape-row { grid-template-columns: 7.5em minmax(0, 1fr); }
+  .shape-row + .settings-note,
+  .binder-shape > .settings-note { padding-left: calc(7.5em + var(--s-3)); }
 }
 .chip-row.tight { margin-bottom: 0; gap: var(--s-1); }
 .shape-dims { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
@@ -1040,8 +1056,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .shape-colors { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
 .swatch {
   appearance: none;
-  width: 26px;
-  height: 26px;
+  /* ten colours and the pencil on one line of a 375px phone's sheet */
+  width: 24px;
+  height: 24px;
   padding: 0;
   border-radius: var(--r-1);
   border: 1px solid var(--line);
@@ -1069,7 +1086,60 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .ghost.tiny { padding: 2px 8px; font-size: var(--f-1); }
 
-.binder-cover.flat { display: block; width: 100%; height: 100%; }
+/* A cover with no photograph is drawn as the binder itself: a spine down the
+   left with the rings showing, a lighter front, and the blank label plate
+   every plain binder has. The colour — chosen, or the shelf's own — is the
+   paint (--c); the rest is shading laid over it, so a pale yellow and a
+   near-black binder are shaped the same. Sizes are fractions of the cover so
+   the row's 56px binder and a tile's full-width one are the same drawing. */
+.binder-cover.flat,
+.binder-cover.filler {
+  --c: #3b5bdb;
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, .45);
+  border-radius: 2px 7px 7px 2px;
+  background:
+    /* the spine, its crease, then the front */
+    linear-gradient(90deg,
+      rgba(0, 0, 0, .42) 0, rgba(0, 0, 0, .42) 20%,
+      rgba(0, 0, 0, .14) 20%, rgba(0, 0, 0, .14) 23%,
+      rgba(255, 255, 255, .08) 23%, transparent 26%),
+    /* light from the top left */
+    linear-gradient(160deg, rgba(255, 255, 255, .16), transparent 45%, rgba(0, 0, 0, .22)),
+    var(--c);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .07),
+    1px 2px 3px rgba(0, 0, 0, .35);
+}
+/* the rings, three of them down the spine */
+.binder-cover.flat::before,
+.binder-cover.filler::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  width: 8%;
+  top: 14%;
+  bottom: 14%;
+  background:
+    radial-gradient(circle at 50% 50%,
+      #f1f1f1 0, #f1f1f1 26%, #8d8d8d 30%, #8d8d8d 44%, transparent 50%)
+    0 0 / 100% 33.34% repeat-y;
+}
+/* the label plate on the front */
+.binder-cover.flat::after,
+.binder-cover.filler::after {
+  content: "";
+  position: absolute;
+  left: 40%;
+  right: 16%;
+  top: 22%;
+  height: 15%;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+}
 
 /* A page left empty on purpose.
    Not the same thing as a card you have not got, and it should not look like
@@ -4412,11 +4482,9 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
    and overridden for tiles. Declaring a size and then countermanding it is how
    this ended up rendering a 56px filler beside a 143px photo. */
 .binder-cover.filler {
-  border: 1px solid var(--line);
-  background:
-    linear-gradient(152deg,
-      oklch(34% 0.055 var(--h)) 0%,
-      oklch(23% 0.045 calc(var(--h) + 22)) 100%);
+  --c: linear-gradient(152deg,
+      oklch(40% 0.07 var(--h)) 0%,
+      oklch(28% 0.055 calc(var(--h) + 22)) 100%);
 }
 .binder-card strong {
   font-size: var(--f-4);
@@ -4509,7 +4577,8 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 
 /* only the rows give the filler a width of its own; in tiles it takes the
    full width from the rule above, like every other cover */
-.binder-shelf:not(.as-tiles) .binder-cover.filler { width: 56px; }
+.binder-shelf:not(.as-tiles) .binder-cover.filler,
+.binder-shelf:not(.as-tiles) .binder-cover.flat { width: 56px; }
 
 /* the set picker: a long list, so each row has to be readable at a glance */
 .set-picker {
@@ -4602,6 +4671,11 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 }
 .chip-row::-webkit-scrollbar { display: none; }
 .chip-row > * { flex: none; }
+/* Not in the shape editor. Those chips are a setting, not a filter rail — a
+   row of page sizes that scrolls off the edge hides the one you have not
+   picked yet, and the sheet is a form, so a change of height moves nothing
+   under your thumb that matters. */
+.shape-row > .chip-row { flex-wrap: wrap; overflow: visible; padding: 0; }
 /* the layout toggle keeps to the end of the rail. The density slider is not
    in here at all any more — sticky-positioned inside a sideways-scrolling
    line, it slid straight over the filter next to it. */
@@ -4629,6 +4703,11 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 
 .filter-sheet {
   display: grid;
+  /* minmax(0, 1fr) rather than the implicit auto: an auto track is at least
+     as wide as the widest thing's minimum, and a text input's minimum is
+     twenty characters of its font — 356px on a 343px sheet, which is how
+     every row ran off the right edge on a phone */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-2);
   margin: calc(var(--s-2) * -1) 0 var(--s-3);
   padding: var(--s-3);
@@ -4649,13 +4728,30 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   text-transform: uppercase;
   color: var(--text-mute);
 }
+.filter-sheet > * { min-width: 0; }
 .filter-sheet select,
-.filter-sheet .chip-select { width: 100%; min-width: 0; }
+.filter-sheet .chip-select,
+.filter-sheet input:not([type="number"]):not([type="color"]) { width: 100%; min-width: 0; }
 .filter-sheet > button.ghost { justify-self: start; margin-top: var(--s-1); }
+
+/* Save and Cancel on one line at the foot: the thing you came to press takes
+   the width, the way out sits beside it. */
+.sheet-actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+}
+.sheet-actions > .primary { flex: 1 1 auto; }
+.sheet-actions > .ghost { flex: 0 0 auto; }
 
 @media (min-width: 620px) {
   .filter-sheet { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
   .filter-sheet > button.ghost { grid-column: 1 / -1; }
+  /* a binder's settings are one form read top to bottom, not a rack of
+     filters — they stay in one column however wide the page, and stop
+     growing where a line of chips still reads as a line */
+  .filter-sheet.binder-sheet { grid-template-columns: minmax(0, 1fr); align-items: stretch; max-width: 640px; }
+  .filter-sheet.binder-sheet .sheet-actions > .primary { flex: 0 1 auto; min-width: 12em; }
 }
 
 /* On a narrow rail the icon and the "3 UP" label cost about 60px between
