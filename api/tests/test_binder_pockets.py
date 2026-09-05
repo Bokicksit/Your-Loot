@@ -240,3 +240,45 @@ def test_a_pocket_can_swap_to_another_copy_of_the_same_card(me):
     p = pockets(me, b["id"])[0]
     assert p["card"]["owned_id"] == wrong and p["count"] == 2
     me.delete(f"/api/binders/{b['id']}")
+
+
+# ----------------------------------------------- a cover from the start
+
+def test_a_binder_can_be_made_with_its_cover(me):
+    b = me.post("/api/binders", json={
+        "name": "Covered", "kind": "custom", "pages": 1,
+        "image_url": "https://assets.tcgdex.net/en/base/base1/4/low.webp",
+    }).json()
+    assert b["image_url"] and b["image_url"].endswith("low.webp")
+    row = next(x for x in me.get("/api/binders").json()["binders"] if x["id"] == b["id"])
+    assert row["image_url"] == b["image_url"]
+    plain = me.post("/api/binders", json={"name": "Bare", "kind": "custom", "pages": 1}).json()
+    assert plain["image_url"] is None
+    for x in (b, plain):
+        me.delete(f"/api/binders/{x['id']}")
+
+
+# ------------------------------ emptying a pocket never shifts the others
+
+def test_emptying_a_pocket_by_key_promotes_the_stack_behind_it(me):
+    """PUT with owned_id null is the other way of taking the top card out, and
+    it has to mean the same thing as the take-out route: the next copy up
+    takes the pocket rather than being stranded behind an empty one."""
+    b = me.post("/api/binders", json={"name": "Vacate", "kind": "custom", "pages": 1}).json()
+    key = pockets(me, b["id"])[0]["key"]
+    item, copies = three_of(me, "Layers")
+    for cid in copies:
+        me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": cid}).raise_for_status()
+    assert pockets(me, b["id"])[0]["count"] == 3
+
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": None}).raise_for_status()
+    p = pockets(me, b["id"])[0]
+    assert p["count"] == 2 and p["card"]["owned_id"] == copies[1] and p["key"] == key
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": None}).raise_for_status()
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": None}).raise_for_status()
+    ps = pockets(me, b["id"])
+    assert len(ps) == 9 and ps[0]["blank"] and ps[0]["key"] == key
+    # no orphan rows: every copy is out of this binder
+    for o in owned_of(me, item):
+        assert b["id"] not in o["binder_ids"]
+    me.delete(f"/api/binders/{b['id']}")

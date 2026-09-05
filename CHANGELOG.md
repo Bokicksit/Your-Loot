@@ -10,6 +10,9 @@ Full detail is in the commit log, where every change has its own note.
 
 
 ### Added
+- **A binder can be given its cover as it is made.** Both kinds — a set
+  binder and one of your own — take a picture on the create screen, where
+  before it could only be added by editing afterwards.
 - **A shelf survives its CDN.** Most pictures here are links — catalogue art
   on TCGdex, a cover from IGDB, a jacket from Open Library — and a link is
   somebody else's promise. When one breaks, a shelf that looked complete for
@@ -343,6 +346,16 @@ Full detail is in the commit log, where every change has its own note.
   been falling through to the browser's own boxes.
 
 ### Fixed
+- **Taking a card out of a binder leaves the pocket where it was.** The
+  *Take out* button removed the pocket itself, so every card after it slid up
+  a place — which is not what pulling a card out of a binder does. It now
+  empties the pocket and leaves it, the way a sleeve stays when the card
+  comes out; a stack behind moves up one. Removing an *empty* pocket is its
+  own button, and only ever offered on one.
+- **An empty binder no longer claims to hold cards.** The shelf tile counted
+  pockets and called them cards, so a fresh two-page binder read "18 cards".
+  It says what is there: "18 empty pockets", "7 cards · 11 empty", or just
+  "7 cards" when it is full.
 - **The binder picker no longer offers two identical copies of a card.**
   A card you owned twice showed as two rows reading the same — "NM", "NM" —
   with nothing to say that one of them was already in the Pokédex. Tapping

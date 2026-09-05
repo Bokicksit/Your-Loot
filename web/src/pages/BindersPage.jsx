@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ImagePicker from "../components/ImagePicker.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
@@ -201,7 +202,7 @@ export default function BindersPage() {
                   answering a question nobody asked. The other two are a set
                   universe you are working through. */}
               {b.kind === "custom"
-                ? `${b.total} ${b.total === 1 ? "card" : "cards"}`
+                ? pocketWords(b)
                 : `${b.filled} / ${b.total}`}
               {b.kind !== "custom" && b.missing > 0 && <em> · {b.missing} missing</em>}
             </span>
@@ -328,11 +329,26 @@ function BinderSettings({ binder, onClose, onSaved }) {
 /** Pick a set. Ordered newest first, and each row says how many of it you
  *  already own — which is the number that decides whether a binder of it is
  *  worth keeping. */
+/** What a binder of your own holds, said the way a person would.
+ *
+ *  "9 cards" on a binder with nothing in it was the pocket count wearing the
+ *  wrong word. Empty pockets are empty pockets; cards are cards; a binder
+ *  with both says both. */
+function pocketWords(b) {
+  const empty = Math.max(0, (b.total || 0) - (b.filled || 0));
+  const cards = b.filled || 0;
+  if (!b.total) return "empty";
+  if (!cards) return `${empty} empty ${empty === 1 ? "pocket" : "pockets"}`;
+  if (!empty) return `${cards} ${cards === 1 ? "card" : "cards"}`;
+  return `${cards} ${cards === 1 ? "card" : "cards"} · ${empty} empty`;
+}
+
 function AddSetBinder({ onDone, onCancel }) {
   const [sets, setSets] = useState(null);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [master, setMaster] = useState(false);
+  const [cover, setCover] = useState(null);
   const [error, setError] = useState(null);
   // No page count here: a set binder's pages are however many it takes to
   // hold the set, which the set already decides.
@@ -362,6 +378,7 @@ function AddSetBinder({ onDone, onCancel }) {
         set_code: s.code,
         master,
         ...shape,
+        image_url: cover || undefined,
       });
       onDone();
     } catch (e) {
@@ -428,6 +445,9 @@ function AddSetBinder({ onDone, onCancel }) {
           {shown.length === 0 && <p className="empty">No set matches that.</p>}
         </div>
       )}
+      {/* Optional, and chosen first: the binder is made the moment you tap a
+          set, so anything you want on it has to be ready by then. */}
+      <ImagePicker label="Cover (optional)" value={cover} onChange={setCover} />
       <button type="button" className="ghost" onClick={onCancel}>
         Cancel
       </button>
@@ -437,6 +457,7 @@ function AddSetBinder({ onDone, onCancel }) {
 
 function AddCustomBinder({ onDone, onCancel }) {
   const [name, setName] = useState("");
+  const [cover, setCover] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [shape, setShape] = useState({
@@ -449,7 +470,9 @@ function AddCustomBinder({ onDone, onCancel }) {
     setBusy(true);
     setError(null);
     try {
-      await api.createBinder({ name: name.trim(), kind: "custom", ...shape });
+      await api.createBinder({
+        name: name.trim(), kind: "custom", ...shape, image_url: cover || undefined,
+      });
       onDone();
     } catch (err) {
       setError(err.message);
@@ -474,6 +497,7 @@ function AddCustomBinder({ onDone, onCancel }) {
       </label>
       <BinderShape value={shape} onChange={setShape} showPages />
       {error && <p className="error">{error}</p>}
+      <ImagePicker label="Cover (optional)" value={cover} onChange={setCover} />
       <button type="submit" className="primary" disabled={busy || !name.trim()}>
         <Icon id="check" />
         {busy ? "…" : "Make it"}

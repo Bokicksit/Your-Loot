@@ -37,6 +37,10 @@ class BinderCreate(Shape):
     name: str = Field(min_length=1, max_length=60)
     kind: str = Field(pattern="^(set|custom)$")  # the dex one already exists
     set_code: str | None = None
+    # the cover, if you have one in mind already — it could only be set by
+    # editing afterwards, which is a second trip for a thing you knew at the
+    # start
+    image_url: str | None = Field(default=None, max_length=500)
     # set binders only: a slot per printing rather than per card
     master: bool = False
     # custom binders only: start it as an empty binder of this many pages,
@@ -115,6 +119,28 @@ _NOT_HERE = (
     "This binder is English. Turn on Japanese cards in its settings to file "
     "one here."
 )
+
+
+def _vacate(db: Session, s: BinderSlot) -> None:
+    """Take the card out of a custom pocket and leave the pocket where it is.
+
+    A real binder does not close up when a card comes out — the sleeve stays,
+    empty, and so does everything after it. If a stack was behind the card,
+    the next one up takes the pocket, which keeps its row, its place and its
+    key. Used by both ways of taking a card out, so the two cannot disagree.
+    """
+    behind = db.scalars(
+        select(BinderSlot).where(BinderSlot.parent_id == s.id).order_by(BinderSlot.id)
+    ).all()
+    if behind:
+        nxt = behind[0]
+        s.owned = nxt.owned
+        s.item_id = nxt.item_id
+        nxt.owned = None
+        db.delete(nxt)
+    else:
+        s.owned = None
+        s.item_id = None
 
 
 def _resize(db: Session, b: Binder, pages: int) -> None:
@@ -299,6 +325,7 @@ def create_binder(
         rows=body.rows, cols=body.cols,
         double_page=body.double_page, color=body.color,
         allow_ja=body.allow_ja,
+        image_url=(body.image_url or "").strip() or None,
     )
     db.add(b)
     db.commit()
@@ -464,9 +491,8 @@ def fill_slot(
             raise HTTPException(404, "no such pocket in this binder")
         if body.owned_id is None:
             # empty it; the pocket stays, which is what taking a card out of a
-            # real binder leaves behind
-            s.owned = None
-            s.item_id = None
+            # real binder leaves behind — and a stack behind moves up one
+            _vacate(db, s)
             db.commit()
             return render(db, b, user.id)
         if s.parent_id is not None:
@@ -683,22 +709,7 @@ def remove_card(
                 s.owned = None
                 db.delete(s)
                 continue
-            behind = db.scalars(
-                select(BinderSlot)
-                .where(BinderSlot.parent_id == s.id)
-                .order_by(BinderSlot.id)
-            ).all()
-            if behind:
-                # the top card goes; the next one up takes the pocket, and the
-                # pocket keeps its row — and so its place, and its key
-                nxt = behind[0]
-                s.owned = nxt.owned
-                s.item_id = nxt.item_id
-                nxt.owned = None
-                db.delete(nxt)
-            else:
-                s.owned = None
-                s.item_id = None
+            _vacate(db, s)
     else:
         engine.unfile(db, owned_id, b.id)
     db.commit()

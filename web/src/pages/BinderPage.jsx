@@ -239,8 +239,19 @@ export default function BinderPage() {
   // the binder, so it counts the binder even while you are looking at matches.
   const pageTotal = Math.ceil(entries.length / perPage);
 
+  /** Delete a pocket — the page position itself, not the card in it. Only
+   *  ever offered on an empty pocket: on a filled one it was what "Take out"
+   *  did, and every card after it slid up a place, which is not what pulling
+   *  a card out of a binder does. */
   const remove = async (slotId) => {
     await api.binderRemoveSlot(binder.id, slotId);
+    load();
+  };
+
+  /** Take the card out and leave the pocket where it is — empty, the way a
+   *  real sleeve is when you pull the card. A stack behind moves up one. */
+  const takeOut = async (e) => {
+    await api.binderRemoveCard(binder.id, e.card.owned_id);
     load();
   };
 
@@ -664,10 +675,19 @@ export default function BinderPage() {
                       <button className="ghost flip" onClick={() => move(e.key, 1)} title="Move later">
                         <Icon id="back" />
                       </button>
-                      <button className="ghost" onClick={() => remove(e.key)}>
-                        <Icon id="trash" />
-                        Take out
-                      </button>
+                      {e.card ? (
+                        <button className="ghost" onClick={() => takeOut(e)}
+                                title="Take the card out; the pocket stays empty where it is">
+                          <Icon id="trash" />
+                          Take out
+                        </button>
+                      ) : (
+                        <button className="ghost" onClick={() => remove(e.key)}
+                                title="Remove this empty pocket; the pockets after it move up">
+                          <Icon id="minus" />
+                          Remove pocket
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
