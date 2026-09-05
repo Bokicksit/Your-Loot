@@ -489,7 +489,12 @@ export default function CardsPage({ initialView = "collection" }) {
                   <select
                     value={addVals.binderId}
                     onChange={(e) => setAddVals({ ...addVals, binderId: e.target.value })}
-                    title="File this copy straight into a binder as it is added"
+                    title={
+                      "File this copy straight into a binder as it is " +
+                      "added. Binders you fill by hand — a set binder " +
+                      "fills itself from what you own, and the Pokédex " +
+                      "has its own switch here."
+                    }
                   >
                     <option value="">No binder</option>
                     {myBinders.map((b) => (

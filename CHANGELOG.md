@@ -9,6 +9,14 @@ Full detail is in the commit log, where every change has its own note.
 ## [Unreleased]
 
 ### Fixed
+- **The binder you just made is offered straight away.** The list of binders
+  to file a card into was fetched once and kept for the life of the tab, and
+  nothing ever told it to look again — so a binder made a minute ago, renamed,
+  or arrived by a sync was not among the ones offered until the page was
+  reloaded. Making, renaming or deleting one now refreshes it at once, and a
+  list more than twenty seconds old is checked when it comes back on screen.
+  A failed check also keeps the binders it already knows about, rather than
+  showing none because one request lost its connection.
 - **Moving a card no longer rearranges the binder.** Arrange lifted the card
   out of the order and pushed it back in further along, so every pocket in
   between slid up a place — the empty pockets you left on purpose closed and

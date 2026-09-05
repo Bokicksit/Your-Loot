@@ -16,6 +16,7 @@ import EbayLink from "../components/EbayLink.jsx";
 import { useHasJapanese, usePublicProfiles } from "../settings.jsx";
 import useDismiss from "../useDismiss.js";
 import ImagePicker from "../components/ImagePicker.jsx";
+import { refreshBinders } from "../mybinders.js";
 
 /** One binder — a set, or one you built yourself.
  *
@@ -405,6 +406,7 @@ export default function BinderPage() {
     if (!window.confirm(`Delete the binder “${binder.name}”? The cards stay in your collection.`))
       return;
     await api.deleteBinder(binder.id);
+    refreshBinders();
     navigate("/binders");
   };
 
@@ -918,6 +920,7 @@ function Rename({ binder, onDone, onCover }) {
     setError(null);
     try {
       await api.editBinder(binder.id, patch);
+      refreshBinders();
       onDone();
     } catch (err) {
       setError(err.message);

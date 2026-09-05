@@ -7,6 +7,7 @@ import { BinderSwitch } from "../components/BinderGrid.jsx";
 import BinderShape from "../components/BinderShape.jsx";
 import ViewToggle, { useTileView } from "../components/ViewToggle.jsx";
 import { useHasJapanese, usePublicProfiles } from "../settings.jsx";
+import { refreshBinders } from "../mybinders.js";
 
 /** A binder with no cover still needs a front.
  *
@@ -284,6 +285,7 @@ function BinderSettings({ binder, onClose, onSaved }) {
         patch.pages = shape.pages;
       }
       if (Object.keys(patch).length) await api.editBinder(binder.id, patch);
+      refreshBinders();
       onSaved();
     } catch (e) {
       setError(e.message);
@@ -382,6 +384,7 @@ function AddSetBinder({ onDone, onCancel }) {
         ...shape,
         image_url: cover || undefined,
       });
+      refreshBinders();
       onDone();
     } catch (e) {
       setError(e.message);
@@ -475,6 +478,7 @@ function AddCustomBinder({ onDone, onCancel }) {
       await api.createBinder({
         name: name.trim(), kind: "custom", ...shape, image_url: cover || undefined,
       });
+      refreshBinders();
       onDone();
     } catch (err) {
       setError(err.message);
