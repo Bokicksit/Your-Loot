@@ -334,7 +334,7 @@ export default function CardsPage({ initialView = "collection" }) {
         const graded = addVals.grader !== "Raw";
         const toBinder = addVals.binder && !!picked.attrs.national_dex_no;
         const status = await api.addOwned(picked.id, {
-          condition: addVals.condition,
+          condition: graded ? null : addVals.condition,
           grader: graded ? addVals.grader : null,
           grade: graded && addVals.grade ? addVals.grade : null,
           in_binder: toBinder,
@@ -502,8 +502,10 @@ export default function CardsPage({ initialView = "collection" }) {
                     ))}
                   </select>
                 )}
+                {/* Only while it is raw: a grade covers the same ground */}
                 <select
                   disabled={!addVals.own}
+                  hidden={addVals.grader !== "Raw"}
                   value={addVals.condition}
                   onChange={(e) => setAddVals({ ...addVals, condition: e.target.value })}
                 >

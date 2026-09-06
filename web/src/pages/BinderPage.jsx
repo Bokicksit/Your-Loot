@@ -633,9 +633,9 @@ export default function BinderPage() {
                         <dd>{e.card.rarity}</dd>
                       </>
                     )}
-                    {e.card.condition && (
+                    {(e.card.grader || e.card.condition) && (
                       <>
-                        <dt>Condition</dt>
+                        <dt>{e.card.grader ? "Grade" : "Condition"}</dt>
                         <dd>
                           {[e.card.grader, e.card.grade].filter(Boolean).join(" ") ||
                             e.card.condition}
@@ -1089,8 +1089,11 @@ function AddCards({ binder, already, onAdded, onClose }) {
                 </span>
                 <span className="set-meta">
                   {card.attrs?.set_name || ""}
-                  {owned.condition && ` · ${owned.condition}`}
-                  {owned.grader && ` · ${owned.grader} ${owned.grade || ""}`}
+                  {owned.grader
+                    ? ` · ${owned.grader} ${owned.grade || ""}`
+                    : owned.condition
+                    ? ` · ${owned.condition}`
+                    : ""}
                   {inIt ? (
                     <strong> · in this binder</strong>
                   ) : whereIs(owned, names) ? (

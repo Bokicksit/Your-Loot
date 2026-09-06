@@ -86,7 +86,9 @@ export default function CardTile({
         card.id,
         last
           ? {
-              condition: last.condition || "NM",
+              condition: last.grader && last.grader !== "Raw"
+                ? null
+                : last.condition || "NM",
               variant: last.variant,
               stamp: last.stamp,
               grader: last.grader,
@@ -108,7 +110,11 @@ export default function CardTile({
   // chips. Anything that differs still gets its own chip — that's the whole
   // point of tracking copies separately.
   const copyGroups = card.owned.reduce((acc, o) => {
-    const key = [o.condition, o.variant, o.stamp, o.grader, o.grade, o.in_binder]
+    // A graded copy is described by its grade; the condition underneath is
+    // what the grade already says. Two PSA 10s of the same card are the same
+    // thing to this list whatever condition happens to be stored on them.
+    const cased = o.grader && o.grader !== "Raw";
+    const key = [cased ? "" : o.condition, o.variant, o.stamp, o.grader, o.grade, o.in_binder]
       .map((v) => v ?? "")
       .join("|");
     const found = acc.find((g) => g.key === key);
@@ -257,7 +263,8 @@ export default function CardTile({
     run(async () => {
       const graded = vals.grader !== "Raw";
       const status = await api.updateOwned(card.id, editing, {
-        condition: vals.condition,
+        // graded: the grade is the condition, so none is kept beside it
+        condition: graded ? null : vals.condition,
         grader: graded ? vals.grader : null,
         grade: graded && vals.grade ? vals.grade : null,
         // a copy that goes back to raw has no slab, so it has no cert either
@@ -320,14 +327,18 @@ export default function CardTile({
           </p>
         )}
         <div className="form-row" style={{ width: "100%" }}>
-          <select
-            value={vals.condition}
-            onChange={(e) => setVals({ ...vals, condition: e.target.value })}
-          >
-            {CONDITIONS.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
+          {/* Not for a graded copy. "PSA 10, Near Mint" is the grade said
+              twice, and the second one is a judgement the slab already made. */}
+          {vals.grader === "Raw" && (
+            <select
+              value={vals.condition}
+              onChange={(e) => setVals({ ...vals, condition: e.target.value })}
+            >
+              {CONDITIONS.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          )}
           <select
             value={vals.grader}
             onChange={(e) => setVals({ ...vals, grader: e.target.value })}

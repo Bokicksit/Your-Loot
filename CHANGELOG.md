@@ -8,6 +8,15 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **A graded copy has a grade, not a condition.** "PSA 10, Near Mint" says the
+  same thing twice, and the second one is a judgement the slab already made —
+  so the condition picker is only offered while a copy is raw, on the way in
+  and when editing it. A graded copy keeps none, and two slabs of the same
+  card at the same grade now read as one line whatever condition happens to be
+  stored on the older of them. A pocket's panel says *Grade* where it holds a
+  slab, and the picker names one or the other rather than both.
+
 ### Added
 - **A graded card looks graded.** A copy in a case wears the top of its slab
   in the collection — the grading company in its own colour and the grade
