@@ -133,12 +133,41 @@ def _join(*parts) -> str:
     return " · ".join(str(p) for p in parts if p not in (None, "", []))
 
 
+def graded_copy(it):
+    """The copy in a case, best grade first — or None where none is.
+
+    Which copy speaks for a card is the same question the collection answers,
+    and it answers it the same way: a slab is the thing worth saying, so it
+    goes before a raw copy however the copies happen to be ordered.
+    """
+    def score(o):
+        try:
+            return float(o.grade)
+        except (TypeError, ValueError):
+            return 0.0
+
+    slabs = [
+        o for o in (getattr(it, "owned", None) or [])
+        if getattr(o, "grader", None) and o.grader != "Raw"
+    ]
+    return max(slabs, key=score) if slabs else None
+
+
+def grade_label(it) -> str:
+    """`PSA 10` for a public tile. Never the cert — that is the one thing on a
+    slab label that identifies the copy rather than describing it."""
+    o = graded_copy(it)
+    if o is None:
+        return ""
+    return " ".join(x for x in (o.grader, o.grade) if x)
+
+
 def _copy(it) -> str:
-    """What the first copy is, in the words that collection uses."""
+    """What the copy worth naming is, in the words that collection uses."""
     owned = getattr(it, "owned", None)
     if not owned:
         return ""
-    o = owned[0]
+    o = graded_copy(it) or owned[0]
     graded = " ".join(x for x in (o.grader, o.grade) if x and x != "Raw")
     return graded or _join(o.completeness, o.condition) or (o.condition or "")
 

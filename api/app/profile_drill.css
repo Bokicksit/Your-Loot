@@ -461,6 +461,56 @@
    to it, so a landscape LEGO box and a portrait game box can stand in the
    same row without either losing its edges */
 .tile-item.box .art   { aspect-ratio: 4 / 5; }
+/* A graded card wears the top of its slab here too — the company and the
+   grade, never the cert. Same drawing as the collection's, in this page's
+   own stylesheet because the public page shares no CSS with the app. */
+.slab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 3px 5px;
+  margin-bottom: -3px;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, #f6f4ef, #d9d5cb);
+  border: 1px solid rgba(0, 0, 0, .5);
+  font-family: var(--font-num);
+  line-height: 1;
+}
+.slab-top .who {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: #23201a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slab-top .num {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #23201a;
+  color: #f6f4ef;
+  flex: none;
+}
+/* A loose card is a row — small art beside its name — laid out as a two
+   column grid. The label is a third child of that grid, so it has to be told
+   to span the row rather than take the art's column and push everything on
+   to the next line. */
+.loose-card .slab-top { grid-column: 1 / -1; margin-bottom: 1px; }
+/* the rows are centred as a group rather than spread down the cell, so the
+   label stays against the card it belongs to when the grid stretches */
+.loose-card { align-content: center; }
+
+.slab-top.g-psa .who { color: #b4231f; }
+.slab-top.g-bgs .who { color: #16407a; }
+.slab-top.g-cgc .who { color: #1d6b4f; }
+.slab-top.g-tag .who { color: #4a3ba8; }
+.slab-top.g-ace .who { color: #9a5b12; }
+
 .tile-item .t {
   display: flex;
   flex-direction: column;

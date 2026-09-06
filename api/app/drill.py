@@ -145,9 +145,26 @@ def tile(scope, item, j, kind="tile-item"):
     payload — the tile already carries everything it is allowed to say, so a
     second copy would only be a second thing to keep in step.
     """
+    from app.share import grade_label
+
     title, meta, badge = _row(scope, item)
     picture = art(item)
     colour = tint(title)
+    # A graded card is shown as one here too, for the same reason it is in the
+    # collection: the case is the first thing you would notice holding it. The
+    # label carries the company and the grade and stops there — the cert
+    # number names somebody's individual copy, and a public page is not the
+    # place to publish it.
+    slab = grade_label(item) if scope == "cards" else ""
+    label = ""
+    if slab:
+        who, _, num = slab.partition(" ")
+        label = (
+            '<span class="slab-top g-' + html.escape(who.lower(), quote=True) + '">'
+            '<span class="who">' + html.escape(who) + '</span>'
+            '<span class="num">' + html.escape(num or "?") + '</span>'
+            '</span>'
+        )
     # The hashed colour is what stands in for a picture, not a frame around
     # one. Fitting a cover inside its box leaves bands at the sides, and with
     # a colour behind it those bands read as a border somebody chose — eight
@@ -163,9 +180,11 @@ def tile(scope, item, j, kind="tile-item"):
         + '"></div>'
         '<div class="t"><strong>' + html.escape(title) + '</strong>'
         + ('<small>' + html.escape(meta) + '</small>' if meta else "")
-        + ('<em>' + html.escape(badge) + '</em>' if badge else "")
+        # the label already says it; saying it again underneath is noise
+        + ('<em>' + html.escape(badge) + '</em>' if badge and not slab else "")
         + '</div>'
     )
+    inner = label + inner
     return (
         '<button type="button" class="' + kind + ' ' + shape(scope) + '" '
         'style="--j:' + str(j) + '" '

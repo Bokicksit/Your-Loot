@@ -781,6 +781,74 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
   white-space: nowrap;
 }
 
+
+/* ===================== a graded card wears its slab =====================
+
+   A card in a case does not look like a card, and in a grid of a hundred
+   that difference is the one worth seeing from across the room. So a graded
+   copy gets the label off the top of its slab: the company, and the number.
+   Nothing else — a real label carries the card's name and year too, but the
+   tile already says those underneath, and the cert is a thing you look up
+   rather than scan, so it lives on the copy.
+
+   Light, because every slab label is: a white card behind a grade in a black
+   block. It is the one bright thing on a dark tile, which is the point. */
+.slab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 3px 5px;
+  margin-bottom: 4px;
+  border-radius: var(--r-1) var(--r-1) 2px 2px;
+  background: linear-gradient(180deg, #f6f4ef, #d9d5cb);
+  border: 1px solid rgba(0, 0, 0, .5);
+  font-family: var(--font-num);
+  line-height: 1;
+  /* it belongs to the card below it, not to the gap above */
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+}
+.slab-top .who {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #23201a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slab-top .num {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: #23201a;
+  color: #f6f4ef;
+  flex: none;
+}
+/* Each grader's own colour, on the wordmark only. Enough to tell a PSA from
+   a CGC at a glance without the app pretending to be their label. */
+.slab-top.g-psa .who { color: #b4231f; }
+.slab-top.g-bgs .who { color: #16407a; }
+.slab-top.g-cgc .who { color: #1d6b4f; }
+.slab-top.g-tag .who { color: #4a3ba8; }
+.slab-top.g-ace .who { color: #9a5b12; }
+
+/* The denser grids the phone uses: at four across the tile is about 88px and
+   the label has to give something up. The number is what it keeps. */
+.grid.cols-4 .slab-top { padding: 2px 3px; gap: 2px; }
+.grid.cols-4 .slab-top .who { font-size: 8px; letter-spacing: .02em; }
+.grid.cols-4 .slab-top .num { font-size: 10px; padding: 2px 3px; }
+.grid.cols-5 .slab-top .who { display: none; }
+.grid.cols-5 .slab-top { justify-content: center; }
+
+/* The "×2" corner and the grade block both want the top right. The grade is
+   part of the label and cannot move, so the count drops below it — still the
+   first corner you look at, now over the card rather than over the number. */
+.tile-slabbed .owned-badge { top: calc(var(--s-2) + 30px); }
+.grid.cols-4 .tile-slabbed .owned-badge { top: calc(var(--s-2) + 22px); }
+
 .tile-actions {
   display: flex;
   align-items: center;

@@ -8,6 +8,27 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **A graded card looks graded.** A copy in a case wears the top of its slab
+  in the collection — the grading company in its own colour and the grade
+  beside it, and nothing else, because a tile is 150px wide and the grade is
+  what you are scanning for. A card owned both ways wears the slab of its
+  best-graded copy; the raw one stays a chip underneath, where it always was.
+  The same label is on your public page, without the cert number: that names
+  an individual copy rather than describing it, and a public page is not the
+  place to publish it.
+- **The cert number, on the copy.** Stored all along and nowhere to type it;
+  it has a field on a graded copy now, next to the grade.
+
+### Changed
+- **A graded copy stacks only behind another graded one.** A slab is a
+  different object from the card inside it — worth a different amount, and
+  never going in the same sleeve — so a raw copy is no longer allowed behind
+  one in a pocket. It goes in a pocket of its own.
+- **"×1" is gone from a single copy.** It was the answer to a question nobody
+  asked: every other tile in the grid is one copy too. The count appears from
+  two upwards.
+
 ### Fixed
 - **The binder you just made is offered straight away.** The list of binders
   to file a card into was fetched once and kept for the life of the tab, and

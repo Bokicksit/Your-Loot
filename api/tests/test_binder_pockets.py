@@ -144,6 +144,42 @@ def test_the_same_card_stacks_in_one_pocket_up_to_three(me):
     me.delete(f"/api/binders/{b['id']}")
 
 
+def test_a_slab_does_not_stack_with_a_loose_copy(me):
+    """Graded behind graded, raw behind raw.
+
+    A card in a case is a different object from the card: it is worth a
+    different amount and it is not going in the same sleeve. A pocket reading
+    "PSA 10 ×2" with a raw copy behind it would be a lie about what is in the
+    binder, so the raw one is refused and goes in a pocket of its own.
+    """
+    b = me.post("/api/binders", json={"name": "Slabs", "kind": "custom", "pages": 1}).json()
+    ps = pockets(me, b["id"])
+    key = ps[0]["key"]
+    item, copies = three_of(me, "Graded")
+    graded, raw, other = copies
+    for cid in (graded, other):
+        me.patch(
+            f"/api/items/{item}/owned/{cid}",
+            json={"condition": "NM", "grader": "PSA", "grade": "10"},
+        ).raise_for_status()
+
+    me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": graded}).raise_for_status()
+
+    r = me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": raw})
+    assert r.status_code == 409, r.text
+    assert "graded" in r.json()["detail"]
+
+    # another slab of the same card is welcome behind it
+    r = me.put(f"/api/binders/{b['id']}/slots/{key}", json={"owned_id": other})
+    assert r.status_code == 200, r.text
+    assert pockets(me, b["id"])[0]["count"] == 2
+
+    # and the raw one takes a pocket of its own without complaint
+    me.put(f"/api/binders/{b['id']}/slots/{ps[1]['key']}", json={"owned_id": raw}).raise_for_status()
+    assert pockets(me, b["id"])[1]["count"] == 1
+    me.delete(f"/api/binders/{b['id']}")
+
+
 def test_taking_one_out_of_a_stack_keeps_the_pocket_and_its_place(me):
     b = me.post("/api/binders", json={"name": "Stack", "kind": "custom", "pages": 1}).json()
     ps = pockets(me, b["id"])

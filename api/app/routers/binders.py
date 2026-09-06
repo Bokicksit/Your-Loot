@@ -537,6 +537,16 @@ def fill_slot(
                     409, "this pocket holds a different card — take it out first, "
                          "or put this one in an empty pocket"
                 )
+            # Graded behind graded, raw behind raw. A slab is a different
+            # object from the card inside it — it does not sleeve with a loose
+            # copy, it is worth a different amount, and a pocket that reads
+            # "PSA 10 ×2" while one of the two is raw is a lie about what is
+            # in the binder.
+            if _is_graded(s.owned) != _is_graded(copy):
+                raise HTTPException(
+                    409, "a graded copy stacks behind a graded one — keep a raw "
+                         "copy in a pocket of its own"
+                )
             held = 1 + db.scalar(
                 select(func.count()).select_from(BinderSlot).where(BinderSlot.parent_id == s.id)
             )
@@ -794,6 +804,11 @@ def refresh_printings(
         select(CardAttrs.set_name).where(CardAttrs.set_code == b.set_code).limit(1)
     )
     return engine.learn_printings(db, b.set_code, name)
+
+
+def _is_graded(copy) -> bool:
+    """A copy in a case. "Raw" is what the picker calls no grader at all."""
+    return bool(copy is not None and copy.grader and copy.grader != "Raw")
 
 
 class ShelfOrder(BaseModel):

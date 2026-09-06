@@ -57,6 +57,7 @@ export default function CardTile({
     condition: "NM",
     grader: "Raw",
     grade: "",
+    cert_number: "",
     in_binder: false,
     variant: "Non-Holo",
     stamp: "",
@@ -246,6 +247,7 @@ export default function CardTile({
       condition: o.condition || "NM",
       grader: o.grader || "Raw",
       grade: o.grade || "",
+      cert_number: o.cert_number || "",
       in_binder: o.in_binder,
       variant: o.variant || "Non-Holo",
       stamp: o.stamp || "",
@@ -258,6 +260,8 @@ export default function CardTile({
         condition: vals.condition,
         grader: graded ? vals.grader : null,
         grade: graded && vals.grade ? vals.grade : null,
+        // a copy that goes back to raw has no slab, so it has no cert either
+        cert_number: graded && vals.cert_number.trim() ? vals.cert_number.trim() : null,
         in_binder: vals.in_binder && !!card.attrs.national_dex_no,
         variant: vals.variant === "Non-Holo" ? null : vals.variant,
         stamp: vals.stamp.trim() || null,
@@ -265,6 +269,22 @@ export default function CardTile({
       setEditing(null);
       return status;
     });
+
+  /** The copy whose slab the tile wears.
+   *
+   *  A card can be owned several times over, and grading is the difference
+   *  worth seeing from across a grid — so a graded copy speaks for the tile
+   *  and the best one speaks first. Raw copies are not in the running: a raw
+   *  card is not a slab, and putting one in a case it does not have is the
+   *  one thing this must not do. They stay where they always were, as chips
+   *  under the name.
+   */
+  const graded = card.owned.filter((o) => o.grader && o.grader !== "Raw");
+  const slab = graded.length
+    ? graded.reduce((best, o) =>
+        (parseFloat(o.grade) || 0) > (parseFloat(best.grade) || 0) ? o : best
+      )
+    : null;
 
   const chipLabel = (o) =>
     [
@@ -326,6 +346,21 @@ export default function CardTile({
             onChange={(e) => setVals({ ...vals, grade: e.target.value })}
           />
         </div>
+        {/* Only a graded copy has one, and it is the number you would read
+            off the label to look the slab up. */}
+        {vals.grader !== "Raw" && (
+          <div className="form-row" style={{ width: "100%" }}>
+            <input
+              type="text"
+              className="grow"
+              inputMode="numeric"
+              maxLength={20}
+              placeholder="Cert number"
+              value={vals.cert_number}
+              onChange={(e) => setVals({ ...vals, cert_number: e.target.value })}
+            />
+          </div>
+        )}
         <div className="form-row" style={{ width: "100%" }}>
           <select
             value={vals.variant}
@@ -411,8 +446,8 @@ export default function CardTile({
     <div
       ref={tileRef}
       className={`tile ${card.owned.length ? "tile-owned" : ""} ${
-        selecting ? "tile-selecting" : ""
-      } ${selected ? "tile-selected" : ""}`}
+        slab ? "tile-slabbed" : ""
+      } ${selecting ? "tile-selecting" : ""} ${selected ? "tile-selected" : ""}`}
       {...pressHandlers}
     >
       {selecting && (
@@ -420,9 +455,22 @@ export default function CardTile({
           <Icon id="check" />
         </span>
       )}
-      {card.owned.length > 0 && (
-        <span className={`owned-badge ${card.owned.length > 1 ? "many" : ""}`}>
-          ×{card.owned.length}
+      {/* Only when there is more than one. "×1" is the answer to a question
+          nobody asked — every other tile in the grid is one copy too, so the
+          badge said nothing and took a corner to say it. */}
+      {card.owned.length > 1 && (
+        <span className="owned-badge many">×{card.owned.length}</span>
+      )}
+      {/* The company and the number, and nothing else. A slab label carries
+          more, but a tile is 150px and the grade is what somebody is looking
+          for — the cert lives on the copy, where you go to check it. */}
+      {slab && (
+        <span
+          className={`slab-top g-${(slab.grader || "").toLowerCase()}`}
+          title={`Graded ${slab.grader} ${slab.grade || "?"}`}
+        >
+          <span className="who">{slab.grader}</span>
+          <span className="num">{slab.grade || "?"}</span>
         </span>
       )}
       {card.image_url ? (
