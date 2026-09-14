@@ -261,6 +261,8 @@ export const api = {
     }),
 
   pokedex: () => request("/api/cards/pokedex"),
+  // which Pokédex numbers a set has a card for — the "Check set" sheet
+  dexFills: (code) => request(`/api/cards/sets/${encodeURIComponent(code)}/dex`),
   dexHappy: (dexNo, happy) =>
     request(`/api/cards/pokedex/${dexNo}/happy`, {
       method: "PUT",

@@ -8,6 +8,16 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **Check set: which gaps in the Pokédex a set could close.** With *Missing*
+  selected, a *Check set* button opens a sheet with the catalogue's sets — a
+  type-to-find box narrows the list. Choose one and every empty slot that set
+  has a card for lights up, wearing the card number(s) to look for, with a
+  count at the top: "151 could fill 12 of your 300 missing". The rest of the
+  gaps stay in view, so you can also see what the set cannot help with. The
+  set is remembered between visits. Pokémon cards only, by their nature — a
+  Trainer has no slot to fill.
+
 ### Changed
 - **A graded copy has a grade, not a condition.** "PSA 10, Near Mint" says the
   same thing twice, and the second one is a judgement the slab already made —

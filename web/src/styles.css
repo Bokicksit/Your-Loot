@@ -944,6 +944,38 @@ select.chip-select:hover { color: var(--text); border-color: var(--gold-line); }
 .dex-slot.unowned .placeholder { filter: grayscale(1) brightness(.42) contrast(.85); }
 .dex-slot.unowned .name { color: var(--text-mute); }
 .dex-slot.unowned .count { color: var(--text-mute); background: transparent; border-color: transparent; padding-left: 0; }
+/* ---- Check set: the gaps in the Pokédex a chosen set could close ---- */
+/* A lit slot is still an empty one — dashed, dim — but it has an answer now,
+   so it gets the one colour the Pokédex does not otherwise use. Gold is
+   "have"; this is "could". */
+.dex-slot.fillable {
+  --fill: var(--jade, #3fbf8f);
+  border-style: solid;
+  border-color: var(--fill);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fill) 55%, transparent),
+              0 0 18px -6px var(--fill);
+}
+.dex-slot.fillable .dex-no { color: var(--fill); }
+.dex-slot.fillable img,
+.dex-slot.fillable .placeholder { filter: grayscale(.55) brightness(.62); }
+.fill-tag {
+  justify-self: start;
+  max-width: 100%;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--jade, #3fbf8f);
+  background: color-mix(in oklab, var(--jade, #3fbf8f) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--jade, #3fbf8f) 45%, transparent);
+}
+.check-sheet .check-count { margin: 0; }
+.check-sheet input[type="search"] { width: 100%; }
+
 /* ---- The binder as an object: pages, spreads, and the edge of the cover ---- */
 
 .binder-book {

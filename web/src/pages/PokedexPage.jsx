@@ -32,6 +32,16 @@ export default function PokedexPage() {
   const [filter, setFilter] = useState("all"); // all|missing|upgrade|final
   const [rarityFilter, setRarityFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // "Check set": which of the missing slots a given set could fill. The set
+  // is remembered, because the question is usually asked of the same box
+  // more than once — at the shop, then again at home with the packs open.
+  const [checkOpen, setCheckOpen] = useState(false);
+  const [sets, setSets] = useState(null); // the catalogue's sets, once asked for
+  const [setFind, setSetFind] = useState("");
+  const [checkSet, setCheckSet] = useState(() => {
+    try { return localStorage.getItem("dex-check-set") || ""; } catch { return ""; }
+  });
+  const [fills, setFills] = useState(null); // {dex_no: [card numbers]} for checkSet
   // the status chips show their own state in the rail, so the badge counts
   // only what the button is hiding
   const activeFilters = [rarityFilter].filter(Boolean).length;
@@ -40,6 +50,26 @@ export default function PokedexPage() {
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+
+  // the set list is a few hundred rows and only wanted once the sheet opens
+  useEffect(() => {
+    if (checkOpen && sets === null) {
+      api.binderSets().then((r) => setSets(r.sets || [])).catch(() => setSets([]));
+    }
+  }, [checkOpen, sets]);
+  useEffect(() => {
+    try {
+      if (checkSet) localStorage.setItem("dex-check-set", checkSet);
+      else localStorage.removeItem("dex-check-set");
+    } catch { /* a private window; the choice just does not stick */ }
+    if (!checkSet) { setFills(null); return; }
+    let live = true;
+    setFills(null);
+    api.dexFills(checkSet)
+      .then((r) => { if (live) setFills(r.fills || {}); })
+      .catch(() => { if (live) setFills({}); });
+    return () => { live = false; };
+  }, [checkSet]);
   // the slot and its detail panel are siblings, and which is open lives on
   // the page rather than in a row, so they carry their dex number instead
   useDismiss(
@@ -255,6 +285,23 @@ export default function PokedexPage() {
     ? shown.map((e) => ({ ...e, page: homePage.get(e.dex_no) }))
     : shown;
 
+  // A slot is lit when the Missing view is on, a set is chosen, the slot is
+  // empty, and the set has a card of that Pokémon. Keys come back as strings
+  // and dex_no is a number; indexing coerces, so no conversion here.
+  const lit = (e) =>
+    filter === "missing" && !!fills && status(e) === "missing" && !!fills[e.dex_no];
+  const fillable = fills ? entries.filter(lit).length : 0;
+  const chosenSet = (sets || []).find((s) => s.code === checkSet);
+  const checkName = chosenSet?.name || checkSet;
+  // the picker narrows as you type, but never hides the set already chosen —
+  // a select whose value is not among its options shows nothing at all
+  const setChoices = (sets || []).filter((s) => {
+    if (s.code === checkSet) return true;
+    const q = setFind.trim().toLowerCase();
+    if (!q) return true;
+    return [s.name, s.abbr, s.code].some((v) => (v || "").toLowerCase().includes(q));
+  });
+
   const counts = {
     missing: entries.filter((e) => status(e) === "missing").length,
     upgrade: entries.filter((e) => status(e) === "upgrade").length,
@@ -297,6 +344,21 @@ export default function PokedexPage() {
             {label}
           </button>
         ))}
+        {/* Only beside Missing: it is a question about the gaps, and asking
+            it of the cards you have would answer nothing. */}
+        {filter === "missing" && (
+          <button
+            type="button"
+            className={`chip ${checkOpen || checkSet ? "active" : ""}`}
+            onClick={() => setCheckOpen(!checkOpen)}
+            aria-expanded={checkOpen}
+            title="Which of these could a set fill?"
+          >
+            <Icon id="card" />
+            Check set
+            {checkSet && fills && <span className="chip-n">{fillable}</span>}
+          </button>
+        )}
       </div>
 
       {/* Its own row. The chips above are the question the page answers and
@@ -355,6 +417,57 @@ export default function PokedexPage() {
           </button>
         </form>
       )}
+      {filter === "missing" && checkOpen && (
+        <div className="filter-sheet binder-sheet check-sheet">
+          <label>
+            <span>Find a set</span>
+            <input
+              type="search"
+              placeholder="151, Prismatic, JTG…"
+              value={setFind}
+              onChange={(e) => setSetFind(e.target.value)}
+            />
+          </label>
+          <label>
+            <span>Set</span>
+            <select
+              className="chip-select"
+              value={checkSet}
+              onChange={(e) => setCheckSet(e.target.value)}
+            >
+              <option value="">
+                {sets === null ? "Loading sets…" : `Choose a set (${setChoices.length})`}
+              </option>
+              {setChoices.map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.name}
+                  {s.abbr ? ` (${s.abbr})` : ""}
+                  {s.year ? ` · ${s.year}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          {checkSet && (
+            <p className="settings-note check-count">
+              {fills === null
+                ? "Looking…"
+                : fillable === 0
+                ? `${checkName} has no card for any of your ${counts.missing} missing.`
+                : `${checkName} could fill ${fillable} of your ${counts.missing} missing — lit up below, with the card number to look for.`}
+            </p>
+          )}
+          <div className="sheet-actions">
+            {checkSet && (
+              <button type="button" className="ghost" onClick={() => setCheckSet("")}>
+                Clear
+              </button>
+            )}
+            <button type="button" className="ghost" onClick={() => setCheckOpen(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {filtersOpen && (
         <div className="filter-sheet">
           <label>
@@ -393,7 +506,7 @@ export default function PokedexPage() {
                   : status(e) === "upgrade"
                   ? "partial"
                   : "unowned"
-              }`}
+              } ${lit(e) ? "fillable" : ""}`}
               aria-expanded={open === e.dex_no}
               data-slot={e.dex_no}
               onClick={() => setOpen(open === e.dex_no ? null : e.dex_no)}
@@ -406,6 +519,12 @@ export default function PokedexPage() {
                 <img src={e.card.image_url} data-item={e.card.id} alt={e.name || ""} loading="lazy" />
               ) : (
                 <span className="placeholder" data-label="" />
+              )}
+              {/* the card number(s) in the chosen set — what to look for */}
+              {lit(e) && (
+                <span className="fill-tag" title={`${checkName} has this Pokémon`}>
+                  {fills[e.dex_no].map((n) => `#${n}`).join(" · ")}
+                </span>
               )}
               <span
                 className={`name ${e.name ? "linked" : ""}`}

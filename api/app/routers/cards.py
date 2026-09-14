@@ -611,6 +611,52 @@ def set_happy(
     return {"dex_no": dex_no, "happy": body.happy}
 
 
+@router.get("/sets/{set_code}/dex")
+def set_fills_dex(
+    set_code: str, db: Session = Depends(get_db), user: User = Depends(current_user)
+):
+    """Which Pokédex numbers a set has a card for, and which card numbers.
+
+    The question the Pokédex asks of a set: standing at a shop with a box of
+    151 in front of you, which of the gaps in the binder could this set close?
+    Pokémon cards only, by their nature — a Trainer has no dex number and no
+    slot to fill, so it never appears here. English sets, the same list the
+    set-binder picker offers.
+    """
+    rows = db.execute(
+        select(
+            CardAttrs.national_dex_no, CardAttrs.card_number,
+            CardAttrs.set_name, CardAttrs.set_abbr,
+        )
+        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
+        .where(
+            CollectionItem.module == Module.cards.value,
+            visible(user.id),
+            CardAttrs.set_code == set_code,
+        )
+    ).all()
+    if not rows:
+        raise HTTPException(404, "no set by that code in the catalogue")
+    fills: dict[int, set[str]] = {}
+    for dex, num, _name, _abbr in rows:
+        if dex is not None:
+            fills.setdefault(dex, set()).add(num or "")
+
+    # printed order: 25 before 173, and TG12 after both — the same rule the
+    # shelf sorts by, done here in Python because these are already rows
+    def printed(n: str):
+        m = re.match(r"\d+", n)
+        return (int(m.group()) if m else 10**9, n)
+
+    return {
+        "set": {"code": set_code, "name": rows[0][2], "abbr": rows[0][3]},
+        "fills": {
+            str(dex): sorted((n for n in nums if n), key=printed)
+            for dex, nums in fills.items()
+        },
+    }
+
+
 @router.get("/pokedex")
 def pokedex(db: Session = Depends(get_db),
     user: User = Depends(current_user)):
