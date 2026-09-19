@@ -41,6 +41,7 @@ export default function BinderShape({
   pageHint,
   showJapanese = false,
   showProfile = false,
+  showCounting = false,
 }) {
   const set = (patch) => onChange({ ...value, ...patch });
   const rows = value.rows ?? 3;
@@ -184,6 +185,31 @@ export default function BinderShape({
                 so this points at it rather than leaving somebody to find
                 out by looking at an empty page. */}
             <Link to="/settings#profile">Choose what your profile shows →</Link>
+          </p>
+        </>
+      )}
+
+      {showCounting && (
+        <>
+          <div className="shape-row">
+            <span className="shape-label">A slot is filled by</span>
+            <button
+              type="button"
+              className={`toggle ${value.whole_collection ? "on" : ""}`}
+              onClick={() => set({ whole_collection: !value.whole_collection })}
+            >
+              {value.whole_collection ? "Any copy I own" : "Only what I file here"}
+            </button>
+          </div>
+          <p className="settings-note">
+            {value.whole_collection
+              ? "A checklist of your collection: owning the card fills its " +
+                "slot, wherever the copy is — in the Pokédex, in another " +
+                "binder, or loose."
+              : "The binder in your hands: a slot is filled only by a copy " +
+                "you put in it, the way the Pokédex works. A copy in the " +
+                "Pokédex or loose in the box does not count until you file it " +
+                "here."}
           </p>
         </>
       )}

@@ -84,8 +84,9 @@ export default function BinderPage() {
         // copy, because two of the same card in different grades are two
         // different choices
         const pocket = ordered.find((x) => x.key === filling);
-        // stacking or swapping: this card and nothing else
-        const sameOnly = pocket?.card?.id ?? null;
+        // stacking or swapping: this card and nothing else — and on a set
+        // binder the slot names its card, so only copies of that card fit
+        const sameOnly = pocket?.card?.id ?? (binder.kind === "set" ? pocket?.item_id : null) ?? null;
         setFillHits(
           freeFirst(
             d.items
@@ -111,6 +112,8 @@ export default function BinderPage() {
     try {
       await api.binderFillSlot(binder.id, e.key, {
         owned_id: opt.owned.id, replace: fillMode === "swap",
+        // a set slot is one printing of one card; say which
+        ...(binder.kind === "set" ? { item_id: e.item_id, variant: e.variant || "" } : {}),
       });
       setFilling(null);
       load();
@@ -377,11 +380,14 @@ export default function BinderPage() {
     try {
       const res = await api.addOwned(e.item_id, {});
       const copy = res.owned?.[res.owned.length - 1];
-      // pin it to this printing's slot rather than letting it fall into the
-      // first free one — you pressed a particular box
-      if (copy && e.variant) {
+      // Always pinned to the slot you pressed. On a master binder that is
+      // which printing; on a strict binder it is the whole point — a copy
+      // that is merely owned is not in the binder, and "I have this" said
+      // it was. Pinning on a checklist binder is harmless: a pin only says
+      // which copy sits here, and there is one.
+      if (copy) {
         await api.binderFillSlot(binder.id, e.key, {
-          owned_id: copy.id, item_id: e.item_id, variant: e.variant,
+          owned_id: copy.id, item_id: e.item_id, variant: e.variant || "",
         });
       }
       load();
@@ -677,6 +683,19 @@ export default function BinderPage() {
                       {adding === e.key + e.variant ? "…" : "I have this"}
                     </button>
                   )}
+                  {/* Strict binder: a copy you own is not in here until you
+                      put it in. "I have this" makes a new copy; this files
+                      one you already have. */}
+                  {binder.kind === "set" && !binder.whole_collection && !e.card && e.item_id && (
+                    <button
+                      className={`ghost ${filling === e.key && fillMode === "fill" ? "on" : ""}`}
+                      onClick={() => openFill(e)}
+                      title="Put a copy you already own in this slot"
+                    >
+                      <Icon id="binder" />
+                      Put a copy here
+                    </button>
+                  )}
                   {binder.kind === "set" && e.card && (
                     <button
                       className="ghost"
@@ -791,7 +810,7 @@ export default function BinderPage() {
                     ))}
                   </ul>
                 )}
-                {isCustom && filling === e.key && (
+                {(isCustom || binder.kind === "set") && filling === e.key && (
                   <div className="fill-picker">
                     <label className="searchbox">
                       <Icon id="search" />
@@ -868,6 +887,7 @@ function Rename({ binder, onDone, onCover }) {
     double_page: !!binder.double_page,
     allow_ja: !!binder.allow_ja,
     on_profile: binder.on_profile !== false,
+    whole_collection: !!binder.whole_collection,
     color: binder.color || null,
     pages: binder.pages ?? 0,
   });
@@ -909,6 +929,9 @@ function Rename({ binder, onDone, onCover }) {
     if (shape.on_profile !== (binder.on_profile !== false)) {
       patch.on_profile = shape.on_profile;
     }
+    if (binder.kind === "set" && shape.whole_collection !== !!binder.whole_collection) {
+      patch.whole_collection = shape.whole_collection;
+    }
     if ((shape.color || null) !== (binder.color || null)) {
       patch.color = shape.color || "";
     }
@@ -929,7 +952,7 @@ function Rename({ binder, onDone, onCover }) {
     }
   };
   return (
-    <form className="filter-sheet" onSubmit={save}>
+    <form className="filter-sheet binder-sheet" onSubmit={save}>
       <label>
         <span>Call it</span>
         <input
@@ -947,6 +970,7 @@ function Rename({ binder, onDone, onCover }) {
         showPages={binder.kind === "custom"}
         showJapanese={binder.kind === "custom" && hasJapanese}
         showProfile={profiles}
+        showCounting={binder.kind === "set"}
         pageHint={
           "Grows the binder with empty pages, or takes empty ones off the " +
           "end. It will not drop a page that still has a card in it."

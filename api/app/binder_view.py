@@ -250,10 +250,13 @@ def _dex_entries(db: Session, binder, user_id: int):
 
 
 def _set_entries(db: Session, binder, user_id: int):
-    """One slot per card in the set — and owning the card fills it.
+    """One slot per card in the set. What fills it is the binder's own rule.
 
-    A slot row is only consulted for the keeper flag or to pin one particular
-    copy; without one, the slot is filled if you own the card at all.
+    `whole_collection`: owning the card fills its slot, wherever the copy is —
+    a slot row only pins one particular copy to one printing. Otherwise a slot
+    is filled only by a copy filed in this binder, the way the Pokédex works:
+    a Charizard sitting in the Pokédex is not in the set binder, and the set
+    binder says so until you put one there.
     """
     cards = db.scalars(
         select(CollectionItem)
@@ -276,10 +279,16 @@ def _set_entries(db: Session, binder, user_id: int):
     cards.sort(key=lambda i: natural_key(i.card_attrs.card_number if i.card_attrs else None))
 
     slots = _slots_of(db, binder.id)
+    # the copies pinned to this binder's slots — the only ones that count on
+    # a strict binder
+    filed = {s.owned_id for s in slots.values() if s.owned_id}
     for item in cards:
         a = item.card_attrs
         num = (a.card_number if a else None) or ""
-        mine = [o for o in item.owned if o.user_id == user_id]
+        mine = [
+            o for o in item.owned
+            if o.user_id == user_id and (binder.whole_collection or o.id in filed)
+        ]
 
         rows = printings_by_item.get(item.id)
         printings = _printings(rows, binder.master)
@@ -397,6 +406,7 @@ def render(db: Session, binder, user_id: int) -> dict:
             "double_page": binder.double_page,
             "allow_ja": binder.allow_ja,
             "on_profile": binder.on_profile,
+            "whole_collection": binder.whole_collection,
             "pages": page_count(binder, len(entries)),
             "total": len(entries),
             "filled": filled,

@@ -497,9 +497,15 @@ export default function CardsPage({ initialView = "collection" }) {
                     }
                   >
                     <option value="">No binder</option>
-                    {myBinders.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
+                    {/* a set binder only when it is this card's set: any
+                        other would refuse the copy after it was made */}
+                    {myBinders
+                      .filter((b) => b.kind !== "set" || b.set_code === picked.attrs.set_code)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.kind === "set" ? `${b.name} (set)` : b.name}
+                        </option>
+                      ))}
                   </select>
                 )}
                 {/* Only while it is raw: a grade covers the same ground */}
@@ -606,17 +612,19 @@ export default function CardsPage({ initialView = "collection" }) {
           <span className="select-count">
             {chosen.size} card{chosen.size === 1 ? "" : "s"} selected
           </span>
-          {myBinders.some((b) => b.kind === "custom") ? (
+          {myBinders.length > 0 ? (
             <select
               value=""
               disabled={filing}
               onChange={(e) => fileSelected(Number(e.target.value))}
             >
               <option value="">{filing ? "Adding…" : "Add to a binder…"}</option>
-              {/* only binders filled by hand: a set binder fills itself from
-                  what you own, and offering it here would only refuse */}
-              {myBinders.filter((b) => b.kind === "custom").map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+              {/* a set binder is named for what it holds, so the name says
+                  which cards it will take */}
+              {myBinders.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.kind === "set" ? `${b.name} (set)` : b.name}
+                </option>
               ))}
             </select>
           ) : (

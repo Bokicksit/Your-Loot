@@ -86,6 +86,15 @@ class Binder(TimestampMixin, Base):
     on_profile: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )
+    # Set binders only: what fills a slot. On, owning the card anywhere fills
+    # it — the shelf as a checklist of the collection. Off, only a copy filed
+    # in this binder does, like the Pokédex — the shelf as the binder in your
+    # hands. The server default keeps every binder that predates the choice
+    # on the old rule; a new one starts strict, because that is the binder
+    # somebody building a set actually has.
+    whole_collection: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="true"
+    )
     # where it sits on the shelf; null means never placed, and those sort
     # after the ones that have been
     position: Mapped[int | None] = mapped_column(Integer)

@@ -3,12 +3,12 @@ import { api } from "./api.js";
 
 /** The binders a card can actually be put into, fetched once.
  *
- *  Custom ones only, and that is not a simplification. A set binder's slots
- *  belong to specific cards — you fill it by owning the right one, not by
- *  choosing — and the Pokédex fills by picking a favourite among the copies
- *  you have, which is its own toggle. Only a custom binder is a shelf you
- *  arrange by hand, so only a custom binder can be offered in a list that
- *  says "put this here".
+ *  Not the Pokédex: it fills by picking a favourite among the copies you
+ *  have, which is its own toggle. A binder of your own takes whatever you
+ *  choose, and a set binder takes copies of its own set — each into the slot
+ *  of the card it is — so both can be offered in a list that says "put this
+ *  here". A set binder counting the whole collection already shows every
+ *  copy you own; filing into it pins a particular one.
  *
  *  Shared rather than per-component: a page of a hundred cards would
  *  otherwise ask for the same list a hundred times.
@@ -36,7 +36,7 @@ function load() {
     .binders()
     .then((rows) => {
       const all = Array.isArray(rows) ? rows : rows?.binders || [];
-      cache = all.filter((b) => b.kind === "custom");
+      cache = all.filter((b) => b.kind !== "dex");
       fetchedAt = Date.now();
       listeners.forEach((fn) => fn(cache));
       return cache;

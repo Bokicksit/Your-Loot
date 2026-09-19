@@ -8,6 +8,23 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **A set binder counts what is in it.** A slot used to be filled by owning
+  the card, wherever the copy was — in the Pokédex, in another binder, loose
+  in the box. That is a checklist, not a binder. A new set binder is strict
+  now, like the Pokédex: a slot is filled only by a copy you put in it, and a
+  Charizard in the Pokédex is not in the set binder until you file one there.
+  The old rule is a switch on every set binder — *A slot is filled by: any
+  copy I own* — on the way in and in its settings, and every binder made
+  before this keeps it, so nothing on your shelf empties out.
+- **Filing into a set binder.** An empty slot on a strict binder offers *Put
+  a copy here* — your copies of that exact card — beside *I have this*, which
+  makes a new copy and files it. From the card list, a set binder is in the
+  *Add to a binder* list and on a copy's binder toggles when it is that
+  card's set; each copy lands in the slot of the card it is. A batch with a
+  card from another set is refused whole and says which — never eight of ten
+  filed and two dropped.
+
 ### Added
 - **Check set: which gaps in the Pokédex a set could close.** With *Missing*
   selected, a *Check set* button opens a sheet with the catalogue's sets — a

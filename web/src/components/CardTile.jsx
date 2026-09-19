@@ -590,7 +590,7 @@ export default function CardTile({
                 <strong>{chipLabel(o)}</strong>
                 {o.stamp && <small>{o.stamp} stamp</small>}
               </span>
-              <CopyBinders copy={o} onChange={onReload} />
+              <CopyBinders copy={o} setCode={card.attrs?.set_code} onChange={onReload} />
               <button className="ghost icon" onClick={() => openEdit(o)} title="Edit copy">
                 <Icon id="pencil" />
               </button>
@@ -770,8 +770,9 @@ export default function CardTile({
  *  other — that is the point of the whole feature — so this is a set of
  *  toggles rather than a choice of one.
  *
- *  Set binders are not offered. Owning the card is what fills a slot there,
- *  so there is nothing to put in by hand.
+ *  A set binder is offered when it is this card's set: filing puts the copy
+ *  in the slot of the card it is. Any other set's binder would only refuse,
+ *  so it is not in the list.
  */
 /** Where a copy is kept, as the row says it. A copy can be in the Pokédex
  *  and in a binder of your own at the same time — the same card, filed in two
@@ -783,7 +784,7 @@ function whereFiled(o) {
   return "Box";
 }
 
-function CopyBinders({ copy, onChange }) {
+function CopyBinders({ copy, setCode, onChange }) {
   const [open, setOpen] = useState(false);
   const [shelf, setShelf] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -791,7 +792,9 @@ function CopyBinders({ copy, onChange }) {
 
   useEffect(() => {
     if (open && shelf === null) {
-      api.binders().then((d) => setShelf(d.binders.filter((b) => b.kind === "custom")));
+      api.binders().then((d) => setShelf(d.binders.filter(
+        (b) => b.kind === "custom" || (b.kind === "set" && !!setCode && b.set_code === setCode)
+      )));
     }
   }, [open, shelf]);
 

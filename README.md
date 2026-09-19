@@ -92,9 +92,11 @@ binder: one card per Pokémon, marked either *the one* or *will upgrade*.
 Filter by what's missing, what wants upgrading, and by rarity.
 
 **Binders** — as many as you keep, in two more kinds. A **set binder** is a
-whole set with a slot per card, drawn from the offline catalogue: no importing,
-and no filing either, because owning the card fills its slot. It shows the art
-of the ones you don't own too, so a gap looks like the card it wants. A
+whole set with a slot per card, drawn from the offline catalogue, so there is
+nothing to import. It shows the art of the ones you don't own too, so a gap
+looks like the card it wants. A slot is filled by a copy you put in it, like
+the Pokédex — or, if you'd rather have a checklist of the collection, by
+owning the card at all; that's a switch on each set binder. A
 **master set** binder has a slot per *printing* instead — normal, reverse,
 Poké Ball parallel — the way the checklist in the box does. A **binder of your
 own** holds whatever you choose, in the order you choose, arranged by picking a

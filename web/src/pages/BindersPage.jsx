@@ -253,6 +253,7 @@ function BinderSettings({ binder, onClose, onSaved }) {
     double_page: !!binder.double_page,
     allow_ja: !!binder.allow_ja,
     on_profile: binder.on_profile !== false,
+    whole_collection: !!binder.whole_collection,
     color: binder.color || null,
     pages: binder.pages ?? 0,
   });
@@ -277,6 +278,9 @@ function BinderSettings({ binder, onClose, onSaved }) {
       if (shape.allow_ja !== !!binder.allow_ja) patch.allow_ja = shape.allow_ja;
       if (shape.on_profile !== (binder.on_profile !== false)) {
         patch.on_profile = shape.on_profile;
+      }
+      if (binder.kind === "set" && shape.whole_collection !== !!binder.whole_collection) {
+        patch.whole_collection = shape.whole_collection;
       }
       if ((shape.color || null) !== (binder.color || null)) {
         patch.color = shape.color || "";
@@ -311,6 +315,7 @@ function BinderSettings({ binder, onClose, onSaved }) {
         showPages={binder.kind === "custom"}
         showJapanese={binder.kind !== "set" && hasJapanese}
         showProfile={profiles}
+        showCounting={binder.kind === "set"}
         pageHint={
           "Grows the binder with empty pages, or takes empty ones off the " +
           "end. It will not drop a page that still has a card in it."
@@ -355,9 +360,10 @@ function AddSetBinder({ onDone, onCancel }) {
   const [cover, setCover] = useState(null);
   const [error, setError] = useState(null);
   // No page count here: a set binder's pages are however many it takes to
-  // hold the set, which the set already decides.
+  // hold the set, which the set already decides. Strict by default: a new
+  // set binder is the one you are building, not a checklist.
   const [shape, setShape] = useState({
-    rows: 3, cols: 3, double_page: false, color: null,
+    rows: 3, cols: 3, double_page: false, color: null, whole_collection: false,
   });
 
   useEffect(() => {
@@ -421,7 +427,7 @@ function AddSetBinder({ onDone, onCancel }) {
           ? "A slot for each way a card was printed — plain, reverse holo, holo — so a set is only complete when you have them all. The printings are looked up when the binder is made, which takes a moment."
           : "One slot per card in the set, whichever way it was printed."}
       </p>
-      <BinderShape value={shape} onChange={setShape} />
+      <BinderShape value={shape} onChange={setShape} showCounting />
       {error && <p className="error">{error}</p>}
       {sets === null ? (
         <p className="empty">Loading sets…</p>

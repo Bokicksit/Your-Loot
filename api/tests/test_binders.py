@@ -236,8 +236,11 @@ def a_set(owner):
 
 @pytest.fixture
 def a_set_binder(owner, a_set):
+    # a checklist of the collection — the rule these tests were written
+    # against; a new binder is strict unless asked (see test_set_counting)
     r = owner.post(
-        "/api/binders", json={"name": f"Set {a_set}", "kind": "set", "set_code": a_set}
+        "/api/binders",
+        json={"name": f"Set {a_set}", "kind": "set", "set_code": a_set, "whole_collection": True},
     )
     r.raise_for_status()
     binder = r.json()["id"]
@@ -246,8 +249,9 @@ def a_set_binder(owner, a_set):
 
 
 def test_a_set_binder_is_filled_by_owning_not_by_filing(owner, a_set_binder):
-    """Nobody is going to hand-file two hundred cards to find out which ones
-    are missing. Owning the card fills its slot."""
+    """On a checklist binder (`whole_collection`), owning the card fills its
+    slot — nobody hand-files two hundred cards to find out which are missing.
+    A strict binder is the other way round; test_set_counting covers it."""
     binder, code, count = a_set_binder
     before = owner.get(f"/api/binders/{binder}").json()
     assert before["binder"]["filled"] == 0, "a fresh set binder should be empty"
@@ -798,7 +802,8 @@ def test_a_master_binder_never_hides_a_card_you_own(owner, a_set_with_printings)
 
     master = owner.post(
         "/api/binders",
-        json={"name": f"M2 {code}", "kind": "set", "set_code": code, "master": True},
+        json={"name": f"M2 {code}", "kind": "set", "set_code": code, "master": True,
+              "whole_collection": True},
     ).json()["id"]
     try:
         m = owner.get(f"/api/binders/{master}").json()

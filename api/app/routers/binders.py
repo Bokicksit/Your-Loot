@@ -10,7 +10,9 @@ from app.auth import current_user
 from app.binder_view import render
 from app.db import get_db
 from app.limits import binder_limit, limited
-from app.models import Binder, BinderSlot, CardAttrs, CollectionItem, Module, Owned, User
+from app.models import (
+    Binder, BinderSlot, CardAttrs, CardPrinting, CollectionItem, Module, Owned, User,
+)
 
 router = APIRouter(prefix="/api/binders", tags=["binders"])
 
@@ -43,6 +45,10 @@ class BinderCreate(Shape):
     image_url: str | None = Field(default=None, max_length=500)
     # set binders only: a slot per printing rather than per card
     master: bool = False
+    # set binders only: owning the card anywhere fills its slot (a checklist
+    # of the collection) rather than only a copy filed here (the binder in
+    # your hands, like the Pokédex). Off unless asked for.
+    whole_collection: bool = False
     # custom binders only: start it as an empty binder of this many pages,
     # ready to be filled in place. Zero keeps the old behaviour — a binder
     # with nothing in it that grows as you add cards.
@@ -58,6 +64,8 @@ class BinderEdit(BaseModel):
     image_url: str | None = Field(default=None, max_length=500)
     # set binders only: switch between a slot per card and a slot per printing
     master: bool | None = None
+    # set binders only: count anything in the collection, or only what is filed
+    whole_collection: bool | None = None
 
     # Shape, all of it safe to change whenever: no slot moves because the page
     # got wider, only where the breaks between pages fall.
@@ -228,7 +236,10 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
     # them is cheaper than keeping a second copy of the rule.
     set_totals, set_owned = {}, {}
     for b in (x for x in rows if x.kind == engine.SET):
-        if b.master:
+        # A strict binder counts its filed copies and nothing else — which is
+        # exactly the slot count already taken for every binder above. The
+        # master binder renders because its total is a count of printings.
+        if b.master or not b.whole_collection:
             counted = render(db, b, user.id)["binder"]
             set_totals[b.id], set_owned[b.id] = counted["total"], counted["filled"]
             continue
@@ -262,6 +273,7 @@ def list_binders(db: Session = Depends(get_db), user: User = Depends(current_use
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
             "allow_ja": b.allow_ja,
             "on_profile": b.on_profile,
+            "whole_collection": b.whole_collection,
             "pages": engine.page_count(b, total),
             "total": total, "filled": have, "missing": max(total - have, 0),
         })
@@ -327,6 +339,7 @@ def create_binder(
         user_id=user.id, name=body.name.strip(), kind=body.kind,
         set_code=body.set_code if body.kind == engine.SET else None,
         master=bool(body.master) and body.kind == engine.SET,
+        whole_collection=bool(body.whole_collection) and body.kind == engine.SET,
         rows=body.rows, cols=body.cols,
         double_page=body.double_page, color=body.color,
         allow_ja=body.allow_ja,
@@ -370,7 +383,7 @@ def create_binder(
     return {"id": b.id, "name": b.name, "kind": b.kind, "set_code": b.set_code,
             "image_url": b.image_url, "color": b.color, "master": b.master,
             "rows": b.rows, "cols": b.cols, "double_page": b.double_page,
-            "allow_ja": b.allow_ja,
+            "allow_ja": b.allow_ja, "whole_collection": b.whole_collection,
             "on_profile": b.on_profile,
             "printings": learned}
 
@@ -408,6 +421,10 @@ def edit_binder(
         b.allow_ja = bool(fields["allow_ja"])
     if fields.get("on_profile") is not None:
         b.on_profile = bool(fields["on_profile"])
+    if fields.get("whole_collection") is not None:
+        if b.kind != engine.SET:
+            raise HTTPException(409, "only a set binder has a counting rule")
+        b.whole_collection = bool(fields["whole_collection"])
 
     # Pages last, so it is measured against the shape you just set rather than
     # the one you are replacing — "three by three, four pages" in one press
@@ -634,8 +651,10 @@ def add_cards(
     pocket, then the end" is exactly the old behaviour of adding to the end.
     """
     b = _mine(db, binder_id, user)
+    if b.kind == engine.SET:
+        return _file_into_set(db, b, body.owned_ids, user)
     if b.kind != engine.CUSTOM:
-        raise HTTPException(409, "only a custom binder is filled by hand")
+        raise HTTPException(409, "the Pokédex is filled from the card, not from here")
 
     empty = db.scalars(
         select(BinderSlot)
@@ -664,6 +683,68 @@ def add_cards(
             s = BinderSlot(binder_id=b.id, position=last + grown, item_id=copy.item_id)
             db.add(s)
         s.owned = copy
+    db.commit()
+    return render(db, b, user.id)
+
+
+def _file_into_set(db: Session, b: Binder, owned_ids: list[int], user: User):
+    """Copies into a set binder: each lands in the slot of the card it is.
+
+    A set slot is named by the card, so there is nothing to choose — the only
+    question is whether the copy belongs to this set at all. One that does not
+    is refused by name rather than filed somewhere wrong or silently dropped:
+    somebody selecting a page of cards and pressing "add to 151" should learn
+    which two were not from 151, not find eight of ten filed and wonder.
+
+    On a master binder the copy takes the printing it says it is; one that
+    says nothing takes the first printing not already filled, which is the
+    same order the binder draws them in. A copy already in this binder is
+    left where it is.
+    """
+    from app.binder_view import COPY_VARIANT_CODE, _printings
+
+    strangers = []
+    for owned_id in owned_ids:
+        copy = _my_copy(db, owned_id, user)
+        attrs = copy.item.card_attrs
+        if not attrs or attrs.set_code != b.set_code:
+            strangers.append(copy.item.title)
+            continue
+        if not engine.may_hold(b, copy.item):
+            raise HTTPException(409, _NOT_HERE)
+        if any(s.binder_id == b.id for s in copy.binder_slots):
+            continue
+        num = attrs.card_number or ""
+        variant = ""
+        if b.master:
+            rows = db.scalars(
+                select(CardPrinting)
+                .where(CardPrinting.item_id == copy.item_id)
+                .order_by(CardPrinting.position)
+            ).all()
+            printings = _printings(rows, True)
+            said = COPY_VARIANT_CODE.get((copy.variant or "").strip().casefold())
+            taken = {
+                s.variant for s in db.scalars(
+                    select(BinderSlot).where(
+                        BinderSlot.binder_id == b.id, BinderSlot.slot_key == num,
+                        BinderSlot.owned_id.is_not(None),
+                    )
+                ).all()
+            }
+            if said in printings and said not in taken:
+                variant = said
+            else:
+                variant = next((v for v in printings if v not in taken), printings[0] if printings else "")
+        engine.file_copy(db, b, num, copy.id, item_id=copy.item_id, variant=variant)
+    if strangers:
+        db.rollback()
+        shown = ", ".join(strangers[:3]) + (" …" if len(strangers) > 3 else "")
+        raise HTTPException(
+            409,
+            f"{len(strangers)} of these {'is' if len(strangers) == 1 else 'are'} not from "
+            f"this set ({shown}) — a set binder holds its set and nothing else",
+        )
     db.commit()
     return render(db, b, user.id)
 
