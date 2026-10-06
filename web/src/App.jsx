@@ -29,6 +29,7 @@ import BooksPage from "./pages/BooksPage.jsx";
 import RecordsPage from "./pages/RecordsPage.jsx";
 import AmiiboPage from "./pages/AmiiboPage.jsx";
 import LegoPage from "./pages/LegoPage.jsx";
+import LegoPokedexPage from "./pages/LegoPokedexPage.jsx";
 import ComicsPage from "./pages/ComicsPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
@@ -302,6 +303,10 @@ function Shell() {
           <Route
             path="/lego"
             element={<RequireModule moduleKey="lego"><LegoPage /></RequireModule>}
+          />
+          <Route
+            path="/lego/pokedex"
+            element={<RequireModule moduleKey="lego"><LegoPokedexPage /></RequireModule>}
           />
           <Route
             path="/comics"

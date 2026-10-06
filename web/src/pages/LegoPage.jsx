@@ -25,6 +25,7 @@ import ViewToggle, {
   TileDensity,
 } from "../components/ViewToggle.jsx";
 import { useListPref, useSettings } from "../settings.jsx";
+import { LegoSwitch } from "./LegoPokedexPage.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -319,6 +320,7 @@ export default function LegoPage() {
 
   return (
     <div>
+      <LegoSwitch />
       <div className="toolbar">
         {/* the magnifier and the count live inside the field, so the row
             spends its width on the field rather than on furniture */}

@@ -7,6 +7,7 @@ from app.models.cards import CardAttrs, CardPrinting
 from app.models.collection import Owned, Wanted
 from app.models.comics import ComicAttrs
 from app.models.copies import ImageCopy
+from app.models.lego_dex import LegoTile
 from app.models.lego import LegoAttrs
 from app.models.games import GameAttrs, Platform
 from app.models.item import CollectionItem, Module
@@ -32,6 +33,7 @@ __all__ = [
     "ComicAttrs",
     "GameAttrs",
     "ImageCopy",
+    "LegoTile",
     "ItemOverride",
     "ItemTag",
     "LegoAttrs",

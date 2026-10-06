@@ -42,6 +42,7 @@ from sqlalchemy.orm import Session
 from app.config import settings as cfg
 from app.models import (
     AmiiboAttrs,
+    LegoTile,
     Binder,
     BinderSlot,
     BookAttrs,
@@ -173,6 +174,7 @@ def gather(db: Session, user) -> dict:
         else []
     )
     prefs = db.scalars(select(Setting).where(Setting.user_id == user.id)).all()
+    tiles = db.scalars(select(LegoTile).where(LegoTile.user_id == user.id)).all()
 
     # every catalogue row anything of theirs points at
     refs = {o.item_id for o in owned} | {w.item_id for w in wanted}
@@ -221,6 +223,9 @@ def gather(db: Session, user) -> dict:
             for p in prefs
             if p.key not in LOCAL_ONLY
         ],
+        # LEGO Smart Tags paired with a Pokémon: the serial is the tile's own,
+        # so it means the same thing on any server the collection goes to
+        "lego_tiles": [{"serial": t.serial, "dex_no": t.dex_no} for t in tiles],
     }
 
 
@@ -598,6 +603,18 @@ def load(db: Session, user, raw: bytes, confirm: str) -> dict:
             row = Setting(user_id=user.id, key=key)
             db.add(row)
         row.value = pref.get("value")
+
+    # Replaced only when the file carries them, so a file from before the
+    # LEGO Pokédex existed leaves the tiles somebody has paired since alone.
+    if "lego_tiles" in payload:
+        db.execute(delete(LegoTile).where(LegoTile.user_id == user.id))
+        seen = set()
+        for t in payload["lego_tiles"]:
+            serial, dex = (t.get("serial") or "").lower(), t.get("dex_no")
+            if not serial or not isinstance(dex, int) or serial in seen:
+                continue
+            seen.add(serial)
+            db.add(LegoTile(user_id=user.id, serial=serial[:32], dex_no=dex))
 
     images = _write_images(z)
     db.commit()

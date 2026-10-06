@@ -220,3 +220,10 @@ def delete_lego(item_id: int, db: Session = Depends(get_db),
     guard_entry_write(db, item, user, deleting=True)
     db.delete(item)
     db.commit()
+
+
+# The LEGO Pokédex lives under /api/lego, so it is on and off with LEGO and
+# behind the same plan gate.
+from app.routers.lego_dex import router as _dex_router  # noqa: E402
+
+router.include_router(_dex_router)

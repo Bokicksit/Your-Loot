@@ -5689,3 +5689,81 @@ label.check input { width: auto; }
   margin-top: var(--s-3);
 }
 .section-form input { flex: 1; min-width: 0; }
+
+/* ===================== the LEGO Pokédex ===================== */
+.lego-dex-count { font-family: var(--font-num); color: var(--text-mute); align-self: center; }
+.lego-dex-count strong { color: var(--gold); font-size: var(--f-4); }
+.lego-dex-grid {
+  display: grid;
+  /* three across on a phone, like the card Pokédex — two made every slot
+     half the screen and the whole list a long scroll */
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--s-2);
+  margin: var(--s-3) 0;
+  align-items: start;
+}
+@media (min-width: 700px) {
+  .lego-dex-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+}
+.lego-dex-cell { display: grid; gap: var(--s-2); min-width: 0; }
+.lego-dex-cell > .dex-slot { width: 100%; }
+/* a detail panel spans the row it opened from rather than squeezing in */
+.lego-dex-cell:has(.lego-dex-detail) { grid-column: 1 / -1; }
+@media (min-width: 520px) {
+  .lego-dex-cell:has(.lego-dex-detail) { grid-template-columns: minmax(0, 160px) minmax(0, 1fr); }
+}
+@media (max-width: 519px) {
+  /* on a phone the open slot keeps its own width and the panel goes under */
+  .lego-dex-cell:has(.lego-dex-detail) > .dex-slot { max-width: 140px; }
+}
+.lego-dex-how {
+  font-family: var(--font-num);
+  font-size: var(--f-1);
+  letter-spacing: .04em;
+  color: var(--text-mute);
+  min-height: 1em;
+}
+.dex-slot.owned .lego-dex-how { color: var(--gold); }
+.lego-dex-sets, .lego-dex-tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lego-dex-tiles li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.lego-dex-msg {
+  margin: var(--s-2) 0;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.lego-dex-msg.caught { border-color: var(--gold-line); color: var(--gold-bright); }
+/* the moment of a catch: the slot lights and settles */
+.dex-slot.just-caught { animation: lego-caught 1.6s var(--ease) both; }
+@keyframes lego-caught {
+  0%   { transform: scale(.92); box-shadow: 0 0 0 0 var(--gold); }
+  35%  { transform: scale(1.06); box-shadow: 0 0 28px 4px var(--gold); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .dex-slot.just-caught { animation: none; } }
+.lego-pair-q { margin: 0; }
+.lego-pair-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--s-2);
+}
+.lego-pair-pick {
+  appearance: none;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: var(--s-2);
+  border-radius: var(--r-2);
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: inherit;
+  cursor: pointer;
+}
+.lego-pair-pick:hover { border-color: var(--gold-line); }
+.lego-pair-pick img, .lego-pair-pick .placeholder { width: 100%; aspect-ratio: 63 / 88; object-fit: cover; border-radius: var(--r-1); }
+.lego-pair-pick small { font-family: var(--font-num); color: var(--text-mute); }
+.lego-pair-other label { display: grid; gap: 4px; }
+.lego-pair-other label > span { font-size: var(--f-1); color: var(--text-mute); }
+.lego-dex-switch { margin-top: var(--s-4); }
+

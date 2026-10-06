@@ -8,6 +8,20 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Added
+- **The LEGO Pokédex.** LEGO gets *Sets · Pokédex* tabs. The Pokédex lists
+  every Pokémon LEGO has made — the February display sets and the 13 Smart
+  Play sets of August — and which you've caught. A catch is a **Smart Tag
+  scanned with your phone**: tap *Scan a tile* and hold one to the back.
+  A browser can read a tag's serial number but not the Pokémon in its
+  memory, so a tile's first scan asks which Pokémon it is — offering the
+  ones you haven't caught — and every scan after that is a capture, with a
+  flash on its slot. Scanning works in Chrome on Android; iPhones don't let
+  a web page use NFC, so *Owning the set counts* is a switch that catches
+  the Pokémon in the LEGO sets you own instead. A tile from a set the list
+  doesn't know yet still works: give it the number printed on it. Paired
+  tiles travel in backups and in a sync; the tile serials are never shown.
+
 ### Changed
 - **A set binder counts what is in it.** A slot used to be filled by owning
   the card, wherever the copy was — in the Pokédex, in another binder, loose

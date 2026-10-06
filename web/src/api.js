@@ -374,6 +374,19 @@ export const api = {
     request(`/api/records/search?${new URLSearchParams(params)}`),
   lego: (params = {}) => request(`/api/lego?${new URLSearchParams(params)}`),
   legoFacets: () => request("/api/lego/facets"),
+  // the LEGO Pokédex: Smart Tags paired with Pokémon
+  legoDex: () => request("/api/lego/pokedex"),
+  legoDexScan: (serial) =>
+    request("/api/lego/pokedex/scan", { method: "POST", body: JSON.stringify({ serial }) }),
+  legoDexPair: (serial, dexNo) =>
+    request("/api/lego/pokedex/tiles", {
+      method: "POST", body: JSON.stringify({ serial, dex_no: dexNo }),
+    }),
+  legoDexForget: (id) => request(`/api/lego/pokedex/tiles/${id}`, { method: "DELETE" }),
+  legoDexSettings: (bySets) =>
+    request("/api/lego/pokedex/settings", {
+      method: "PUT", body: JSON.stringify({ by_sets: bySets }),
+    }),
   addLego: (body) =>
     request("/api/lego", { method: "POST", body: JSON.stringify(body) }),
   updateLego: (itemId, body) =>
