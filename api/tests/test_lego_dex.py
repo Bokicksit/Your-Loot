@@ -23,6 +23,9 @@ def fresh(owner):
             for t in e["tiles"]:
                 owner.delete(f"/api/lego/pokedex/tiles/{t['id']}")
         owner.put("/api/lego/pokedex/settings", json={"by_sets": False})
+        for e in page["entries"]:
+            if e.get("photo"):
+                owner.put(f"/api/lego/pokedex/{e['dex_no']}/photo", json={"image_url": None})
     clear()
     yield
     clear()
@@ -112,3 +115,22 @@ def test_a_serial_has_to_be_a_serial(owner, fresh):
     assert r.status_code == 422
     r = owner.post("/api/lego/pokedex/tiles", json={"serial": BIDOOF_SERIAL, "dex_no": 9999})
     assert r.status_code == 422
+
+
+def test_pictures_are_lego_not_cards(owner, fresh):
+    """A box picture from Rebrickable until you photograph your own build."""
+    page = owner.get("/api/lego/pokedex").json()
+    bidoof = _entry(page, 399)
+    assert bidoof["art"] == "https://cdn.rebrickable.com/media/sets/72155-1.jpg"
+    assert bidoof["photo"] is None
+    # a Pokémon in a tagged set and a display set shows the tagged one
+    assert _entry(page, 6)["art"].endswith("/72167-1.jpg")
+
+    page = owner.put("/api/lego/pokedex/399/photo", json={"image_url": "/images/my-bidoof.jpg"}).json()
+    assert _entry(page, 399)["art"] == "/images/my-bidoof.jpg"
+    assert _entry(page, 1)["art"].endswith("/72155-1.jpg"), "Bulbasaur keeps the box"
+
+    page = owner.put("/api/lego/pokedex/399/photo", json={"image_url": None}).json()
+    assert _entry(page, 399)["art"].endswith("/72155-1.jpg")
+    assert owner.put("/api/lego/pokedex/0/photo", json={"image_url": None}).status_code == 404
+

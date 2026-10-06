@@ -268,6 +268,12 @@ def _images_for(payload: dict) -> set[str]:
         url = binder.get("image_url") or ""
         if url.startswith("/images/"):
             names.add(url.rsplit("/", 1)[-1])
+    # a setting can hold a photo too — the LEGO Pokédex keeps your picture of
+    # each build that way
+    for pref in payload.get("settings", []):
+        url = pref.get("value") or ""
+        if url.startswith("/images/"):
+            names.add(url.rsplit("/", 1)[-1])
     return names
 
 

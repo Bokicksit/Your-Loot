@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { api } from "../api.js";
 import { Icon } from "../components/Icons.jsx";
+import ImagePicker from "../components/ImagePicker.jsx";
 
 /** Sets · Pokédex, the way Cards has Collection · Pokédex · Binders. */
 export function LegoSwitch() {
@@ -122,6 +123,15 @@ export default function LegoPokedexPage() {
     setPage(await api.legoDexForget(tileId));
   };
 
+  // your own photo of the build replaces the box picture; none goes back to it
+  const setPhoto = async (dex, url) => {
+    try {
+      setPage(await api.legoDexPhoto(dex, url || null));
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
   const flip = async () => {
     setPage(await api.legoDexSettings(!page.by_sets));
   };
@@ -183,7 +193,7 @@ export default function LegoPokedexPage() {
           <div className="lego-pair-list">
             {likely.map((e) => (
               <button key={e.dex_no} type="button" className="lego-pair-pick" onClick={() => pair(e.dex_no)}>
-                {e.art ? <img src={e.art} alt="" loading="lazy" /> : <span className="placeholder" />}
+                {e.art ? <img src={e.art} alt="" loading="lazy" className={e.photo ? "photo" : "box"} /> : <span className="placeholder" />}
                 <span>{e.name}</span>
                 <small>#{String(e.dex_no).padStart(4, "0")}</small>
               </button>
@@ -224,7 +234,11 @@ export default function LegoPokedexPage() {
               onClick={() => setOpen(open === e.dex_no ? null : e.dex_no)}
             >
               <span className="dex-no">#{String(e.dex_no).padStart(4, "0")}</span>
-              {e.art ? <img src={e.art} alt={e.name} loading="lazy" /> : <span className="placeholder" data-label="" />}
+              {e.art ? (
+                <img src={e.art} alt={e.name} loading="lazy" className={e.photo ? "photo" : "box"} />
+              ) : (
+                <span className="placeholder" data-label="" />
+              )}
               <span className="name">{e.name}</span>
               <span className="lego-dex-how">
                 {e.how === "tile" ? "Scanned" : e.how === "set" ? "Set owned" : e.has_tile ? "" : "No tile"}
@@ -245,6 +259,16 @@ export default function LegoPokedexPage() {
                   </ul>
                 ) : (
                   <p className="settings-note">Caught from a tile in a set this list doesn't know yet.</p>
+                )}
+                <ImagePicker
+                  label="Your build"
+                  value={e.photo}
+                  onChange={(url) => setPhoto(e.dex_no, url)}
+                />
+                {!e.photo && e.set_art && (
+                  <p className="settings-note">
+                    Showing the set's box picture until you add a photo of your own {e.name}.
+                  </p>
                 )}
                 {e.tiles.length > 0 && (
                   <ul className="lego-dex-tiles">

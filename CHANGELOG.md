@@ -8,6 +8,16 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **The LEGO Pokédex shows LEGO, not cards.** Each Pokémon's slot pictured
+  a trading card of it; it shows the LEGO build now — its set's picture from
+  Rebrickable, or your own copy of the set's picture if you set one. Add a
+  photo of your own build from a Pokémon's panel and it replaces the set's,
+  for that Pokémon alone: Bulbasaur and Bidoof share 72155's picture until
+  one of them is photographed. Uncaught builds are faded rather than
+  darkened, which turned the white set pictures into grey squares. Your
+  photos travel in backups and in a sync.
+
 ### Added
 - **The LEGO Pokédex.** LEGO gets *Sets · Pokédex* tabs. The Pokédex lists
   every Pokémon LEGO has made — the February display sets and the 13 Smart

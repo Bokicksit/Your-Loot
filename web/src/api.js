@@ -383,6 +383,10 @@ export const api = {
       method: "POST", body: JSON.stringify({ serial, dex_no: dexNo }),
     }),
   legoDexForget: (id) => request(`/api/lego/pokedex/tiles/${id}`, { method: "DELETE" }),
+  legoDexPhoto: (dexNo, imageUrl) =>
+    request(`/api/lego/pokedex/${dexNo}/photo`, {
+      method: "PUT", body: JSON.stringify({ image_url: imageUrl }),
+    }),
   legoDexSettings: (bySets) =>
     request("/api/lego/pokedex/settings", {
       method: "PUT", body: JSON.stringify({ by_sets: bySets }),

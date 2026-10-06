@@ -7,6 +7,9 @@ the tag's serial number — the Pokémon is in the chip's memory, which the
 browser cannot read — so the first tap of a tile asks which Pokémon it is,
 and every tap after that captures. Owning the set can count instead, for an
 iPhone or anybody without NFC: a switch, off unless asked for.
+
+Pictures are LEGO's, not cards: each Pokémon shows its set's box picture
+from Rebrickable until you photograph your own build, which replaces it.
 """
 
 import re
@@ -21,12 +24,15 @@ from app.auth import current_user
 from app.binder_view import species_names
 from app.db import get_db
 from app.models import (
-    CardAttrs, CollectionItem, LegoAttrs, LegoTile, Module, Owned, Setting, User,
+    CollectionItem, LegoAttrs, LegoTile, Module, Owned, Setting, User,
 )
 
 router = APIRouter(prefix="/pokedex", tags=["lego"])
 
 BY_SETS = "lego_dex_by_sets"
+PHOTO = "lego_dex_photo:"   # + dex number — your own photo of the build
+# Rebrickable's box picture for a set; the LEGO side already shows these
+SET_ART = "https://cdn.rebrickable.com/media/sets/{}-1.jpg"
 MAX_DEX = 1025
 HEX = re.compile(r"^[0-9a-f]{8,32}$")
 
@@ -43,6 +49,10 @@ class DexSettings(BaseModel):
     by_sets: bool
 
 
+class DexPhoto(BaseModel):
+    image_url: str | None = Field(default=None, max_length=500)
+
+
 def _serial(raw: str) -> str:
     """`3a:80:82:24:01:5c:16:e0`, `3A-80-…` and `3a8082…` are one tile."""
     s = re.sub(r"[^0-9a-fA-F]", "", raw or "").lower()
@@ -56,42 +66,30 @@ def _by_sets(db: Session, user: User) -> bool:
     return bool(row and row.value == "1")
 
 
-def _art(db: Session, dex: list[int]) -> dict[int, str]:
-    """A picture per Pokémon, from the card catalogue: an English card of the
-    species with art. The catalogue is already on the server and already
-    licensed for showing, which a new image host would not be."""
-    out: dict[int, str] = {}
-    if not dex:
-        return out
-    rows = db.execute(
-        select(CardAttrs.national_dex_no, CollectionItem.image_url)
-        .join(CollectionItem, CollectionItem.id == CardAttrs.item_id)
-        .where(
-            CardAttrs.national_dex_no.in_(dex),
-            CardAttrs.language == "en",
-            CollectionItem.image_url.is_not(None),
-        )
-        .order_by(CardAttrs.layer, CollectionItem.id)
-    ).all()
-    for n, url in rows:
-        out.setdefault(n, url)
-    return out
-
-
 def render(db: Session, user: User) -> dict:
     by_sets = _by_sets(db, user)
     tiles = db.scalars(
         select(LegoTile).where(LegoTile.user_id == user.id).order_by(LegoTile.created_at)
     ).all()
 
-    # the LEGO sets you own, by bare set number
-    owned_sets = {
-        catalogue.set_key(n)
-        for (n,) in db.execute(
-            select(LegoAttrs.set_number)
-            .join(Owned, Owned.item_id == LegoAttrs.item_id)
-            .where(Owned.user_id == user.id)
+    # the LEGO sets you own, by bare set number, with the picture your copy
+    # of the set carries — which may be one you chose over Rebrickable's
+    owned_art: dict[str, str | None] = {}
+    for n, url in db.execute(
+        select(LegoAttrs.set_number, CollectionItem.image_url)
+        .join(Owned, Owned.item_id == LegoAttrs.item_id)
+        .join(CollectionItem, CollectionItem.id == LegoAttrs.item_id)
+        .where(Owned.user_id == user.id)
+    ).all():
+        key = catalogue.set_key(n)
+        owned_art[key] = owned_art.get(key) or url
+    owned_sets = set(owned_art)
+    photos = {
+        int(p.key[len(PHOTO):]): p.value
+        for p in db.scalars(
+            select(Setting).where(Setting.user_id == user.id, Setting.key.like(PHOTO + "%"))
         ).all()
+        if p.value and p.key[len(PHOTO):].isdigit()
     }
 
     sets_of: dict[int, list[dict]] = {}
@@ -111,7 +109,15 @@ def render(db: Session, user: User) -> dict:
     names = dict(catalogue.NAMES)
     if any(n not in names for n in dex_nos):
         names = {**species_names(db), **names}
-    art = _art(db, dex_nos)
+
+    def set_art(n: int) -> str | None:
+        """The box this Pokémon comes in: one you own first, then one with a
+        Smart Tag, then any — and your copy's own picture if it has one."""
+        sets = sets_of.get(n, [])
+        if not sets:
+            return None
+        best = sorted(sets, key=lambda s: (not s["owned"], not s["tags"]))[0]
+        return owned_art.get(best["number"]) or SET_ART.format(best["number"])
 
     entries = []
     for n in dex_nos:
@@ -121,7 +127,9 @@ def render(db: Session, user: User) -> dict:
         entries.append({
             "dex_no": n,
             "name": names.get(n) or f"#{n:04d}",
-            "art": art.get(n),
+            "photo": photos.get(n),
+            "set_art": set_art(n),
+            "art": photos.get(n) or set_art(n),
             "sets": sets_of.get(n, []),
             "has_tile": n in tagged or bool(mine),
             "captured": how is not None,
@@ -184,6 +192,29 @@ def forget(tile_id: int, db: Session = Depends(get_db), user: User = Depends(cur
     if tile is None or tile.user_id != user.id:
         raise HTTPException(404, "no such tile")
     db.delete(tile)
+    db.commit()
+    return render(db, user)
+
+
+@router.put("/{dex_no}/photo")
+def photo(
+    dex_no: int, body: DexPhoto, db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Your own photo of the build, or none to go back to the box picture."""
+    if not 1 <= dex_no <= MAX_DEX:
+        raise HTTPException(404, "no such Pokémon")
+    key = f"{PHOTO}{dex_no}"
+    url = (body.image_url or "").strip()
+    row = db.get(Setting, (user.id, key))
+    if not url:
+        if row is not None:
+            db.delete(row)
+    else:
+        if row is None:
+            row = Setting(user_id=user.id, key=key)
+            db.add(row)
+        row.value = url
     db.commit()
     return render(db, user)
 

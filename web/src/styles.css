@@ -5707,6 +5707,18 @@ label.check input { width: auto; }
 }
 .lego-dex-cell { display: grid; gap: var(--s-2); min-width: 0; }
 .lego-dex-cell > .dex-slot { width: 100%; }
+/* A box picture is landscape and has to be seen whole; a photo of your own
+   build fills the frame. Square either way, so a row lines up. */
+.lego-dex-grid .dex-slot img,
+.lego-dex-grid .dex-slot .placeholder { aspect-ratio: 1; }
+.lego-dex-grid .dex-slot img.box { object-fit: contain; background: #fff; padding: 4px; }
+.lego-dex-grid .dex-slot img.photo { object-fit: cover; }
+.lego-pair-pick img.box { object-fit: contain; background: #fff; }
+/* Uncaught. The card Pokédex darkens a missing slot's art, which suits a card
+   on a dark ground; a LEGO box picture is white, and darkening white makes a
+   grey square with nothing on it. So it is faded instead — still plainly the
+   set, still plainly not yours yet. */
+.lego-dex-grid .dex-slot.unowned img { filter: grayscale(.85) contrast(.9); opacity: .5; }
 /* a detail panel spans the row it opened from rather than squeezing in */
 .lego-dex-cell:has(.lego-dex-detail) { grid-column: 1 / -1; }
 @media (min-width: 520px) {
