@@ -5,16 +5,16 @@ species — so it is kept here by hand, from LEGO's own announcements. A new
 wave is a few lines added below. A tile from a set not listed yet still
 works: pairing takes any dex number, and the Pokémon joins the grid.
 
-`tags` says whether the set comes with a Smart Tag for each of its Pokémon.
-The 18+ display sets of February 2026 do not; their Pokémon can only be
-captured by owning the set, when that is switched on.
+Smart Play sets only — the kids' sets, built around the Smart Brick, each
+Pokémon with its own Smart Tag. The 18+ display sets (72151 Eevee, 72152
+Pikachu, 72153 Venusaur, Charizard and Blastoise) are left out on purpose:
+they have no tags to scan, and a Pokédex you fill by scanning has no place
+for a Pokémon you can only display. They stay in the LEGO collection like
+any other set.
 """
 
 # (set number, name, dex numbers, has Smart Tags)
 SETS = [
-    ("72151", "Eevee", [133], False),
-    ("72152", "Pikachu and Poké Ball", [25], False),
-    ("72153", "Venusaur, Charizard and Blastoise", [3, 6, 9], False),
     ("72155", "Berry Bash with Bulbasaur and Bidoof", [1, 399], True),
     ("72156", "Trainer's Buggy Adventure with Squirtle", [7], True),
     ("72157", "Charmander and Geodude's Cavern Clash", [4, 74], True),
@@ -33,8 +33,8 @@ SETS = [
 # So the page has names without the card catalogue — somebody who collects
 # LEGO and not cards may never have seeded it.
 NAMES = {
-    1: "Bulbasaur", 3: "Venusaur", 4: "Charmander", 6: "Charizard",
-    7: "Squirtle", 9: "Blastoise", 25: "Pikachu", 39: "Jigglypuff",
+    1: "Bulbasaur", 4: "Charmander", 6: "Charizard",
+    7: "Squirtle", 25: "Pikachu", 39: "Jigglypuff",
     74: "Geodude", 94: "Gengar", 104: "Cubone", 131: "Lapras", 132: "Ditto",
     133: "Eevee", 135: "Jolteon", 150: "Mewtwo", 151: "Mew", 197: "Umbreon",
     399: "Bidoof", 445: "Garchomp", 906: "Sprigatito", 909: "Fuecoco",

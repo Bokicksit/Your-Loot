@@ -8,6 +8,15 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Changed
+- **The LEGO Pokédex is the Smart Play sets only.** The three 18+ display
+  sets (72151 Eevee, 72152 Pikachu, 72153 Venusaur, Charizard and Blastoise)
+  are out of it: they come with no Smart Tags, and this is a Pokédex you fill
+  by scanning. That takes it to 21 Pokémon, every one with a tile. Venusaur
+  and Blastoise leave with them; Eevee, Pikachu and Charizard stay, from
+  their Smart Play sets. The display sets are still ordinary sets in your
+  LEGO collection.
+
 ### Fixed
 - **A managed host's database URL works again.** SQLAlchemy 2.1 (released
   24 September) changed which Postgres driver a plain `postgresql://` URL

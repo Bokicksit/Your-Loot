@@ -39,14 +39,17 @@ def test_every_lego_pokemon_is_listed_and_none_caught(owner, fresh):
     page = owner.get("/api/lego/pokedex").json()
     dex = [e["dex_no"] for e in page["entries"]]
     assert dex == sorted(dex)
-    for n in (25, 399, 906, 132, 3):
+    for n in (25, 399, 906, 132, 6):
         assert n in dex
+    # the 18+ display sets have no Smart Tags and are not in the Pokédex
+    assert 3 not in dex and 9 not in dex, "Venusaur and Blastoise are display-set only"
+    assert len(dex) == 21
     assert page["captured"] == 0 and not page["by_sets"]
     bidoof = _entry(page, 399)
     assert bidoof["name"] == "Bidoof" and bidoof["has_tile"]
     assert any(s["number"] == "72155" for s in bidoof["sets"])
-    # the 18+ display sets come without Smart Tags
-    assert not _entry(page, 3)["has_tile"]
+    assert all(e["has_tile"] for e in page["entries"])
+    assert not any(s["number"] in ("72151", "72152", "72153") for s in _entry(page, 6)["sets"])
 
 
 def test_a_tile_is_paired_once_then_captures(owner, fresh):
@@ -92,18 +95,18 @@ def test_a_pokemon_lego_has_not_listed_yet_can_still_be_caught(owner, fresh):
 
 def test_owning_the_set_counts_only_when_switched_on(owner, fresh):
     item = owner.post(
-        "/api/lego", json={"title": f"Venusaur, Charizard and Blastoise {uuid.uuid4().hex[:4]}",
-                           "set_number": "72153-1"},
+        "/api/lego", json={"title": f"Charizard vs. Jolteon Ultimate Battle {uuid.uuid4().hex[:4]}",
+                           "set_number": "72167-1"},
     ).json()["id"]
     owner.post(f"/api/items/{item}/owned", json={}).raise_for_status()
     try:
         page = owner.get("/api/lego/pokedex").json()
-        assert not _entry(page, 9)["captured"], "scan-only by default"
-        assert any(s["owned"] for s in _entry(page, 9)["sets"])
+        assert not _entry(page, 135)["captured"], "scan-only by default"
+        assert any(s["owned"] for s in _entry(page, 135)["sets"])
 
         page = owner.put("/api/lego/pokedex/settings", json={"by_sets": True}).json()
         assert page["by_sets"]
-        for n in (3, 6, 9):
+        for n in (6, 135):
             assert _entry(page, n)["captured"] and _entry(page, n)["how"] == "set"
         assert not _entry(page, 399)["captured"]
     finally:
@@ -123,7 +126,6 @@ def test_pictures_are_lego_not_cards(owner, fresh):
     bidoof = _entry(page, 399)
     assert bidoof["art"] == "https://cdn.rebrickable.com/media/sets/72155-1.jpg"
     assert bidoof["photo"] is None
-    # a Pokémon in a tagged set and a display set shows the tagged one
     assert _entry(page, 6)["art"].endswith("/72167-1.jpg")
 
     page = owner.put("/api/lego/pokedex/399/photo", json={"image_url": "/images/my-bidoof.jpg"}).json()
