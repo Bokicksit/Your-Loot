@@ -1,4 +1,22 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+
+def with_our_driver(url: str) -> str:
+    """Name the Postgres driver this image actually ships.
+
+    A managed host — Railway, Render, Heroku — hands over `postgresql://…`
+    or the older `postgres://…` with no driver named, and SQLAlchemy picks
+    one. Which one is its decision, not ours: 2.0 picked psycopg2, which is
+    what is installed; 2.1 picks psycopg 3, which is not, and yourloot.app
+    went down on the first build that pulled 2.1 in. Saying psycopg2 here
+    makes the URL mean the same thing whatever SQLAlchemy version is
+    installed. A URL that already names a driver is left alone.
+    """
+    for bare in ("postgresql://", "postgres://"):
+        if url.startswith(bare):
+            return "postgresql+psycopg2://" + url[len(bare):]
+    return url
 
 
 class Settings(BaseSettings):
@@ -6,6 +24,11 @@ class Settings(BaseSettings):
     case-insensitively: database_url <- DATABASE_URL."""
 
     database_url: str = "postgresql+psycopg2://getloot:changeme@localhost:5432/getloot"
+
+    @field_validator("database_url")
+    @classmethod
+    def _driver(cls, v: str) -> str:
+        return with_our_driver(v)
     image_dir: str = "./data/images"
 
     # "single" signs every request in as the owner and shows no login screen,

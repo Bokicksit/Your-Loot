@@ -8,6 +8,16 @@ Full detail is in the commit log, where every change has its own note.
 
 ## [Unreleased]
 
+### Fixed
+- **A managed host's database URL works again.** SQLAlchemy 2.1 (released
+  24 September) changed which Postgres driver a plain `postgresql://` URL
+  means — psycopg 3, which the image doesn't ship. Railway hands over exactly
+  that kind of URL, so the first build to pull 2.1 in crashed on start with
+  *No module named 'psycopg'*. The app now names its own driver whatever form
+  of URL it's given, and SQLAlchemy is held below 2.1 until a move is made on
+  purpose. Self-hosted installs on the compose file were never affected: it
+  names the driver already.
+
 ### Changed
 - **The LEGO Pokédex shows LEGO, not cards.** Each Pokémon's slot pictured
   a trading card of it; it shows the LEGO build now — its set's picture from
